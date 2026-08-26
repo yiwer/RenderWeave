@@ -12,6 +12,7 @@ import cn.hbads.renderweave.template.api.DesignSemanticAuthority.DesignNodeValue
 import cn.hbads.renderweave.template.api.DesignSemanticAuthority.NumberToken;
 import cn.hbads.renderweave.template.api.DesignSemanticAuthority.ObjectNode;
 import cn.hbads.renderweave.template.api.DesignSemanticAuthority.Text;
+import cn.hbads.renderweave.template.api.DesignSemanticAuthority.ExpressionAst;
 
 import java.math.BigDecimal;
 import java.util.HashMap;
@@ -61,10 +62,14 @@ final class DefinitionEngine {
     private final Map<String, DesignNodeValue> definitionWires;
     private final Map<String, EvalOutcome> invocationMemo = new HashMap<>();
     private final Map<String, EvalOutcome> frameMemo = new HashMap<>();
-    private final Map<String, ExpressionParser.ParseResult> parsedExpressions = new HashMap<>();
+    private final Map<String, ExpressionAst> parsedExpressions;
 
-    DefinitionEngine(List<DesignNodeValue> definitionsWire) {
+    DefinitionEngine(
+            List<DesignNodeValue> definitionsWire,
+            Map<String, ExpressionAst> parsedExpressions
+    ) {
         this.definitionWires = new HashMap<>();
+        this.parsedExpressions = Map.copyOf(parsedExpressions);
         for (var wire : definitionsWire) {
             if (wire instanceof ObjectNode definition
                     && definition.members().get("definitionId") instanceof Text id
@@ -493,13 +498,10 @@ final class DefinitionEngine {
             return dependencyError();
         }
         var definitionId = ((Text) wire.members().get("definitionId")).value();
-        var parseResult = parsedExpressions.computeIfAbsent(
-                definitionId, key -> ExpressionParser.parse(
-                        source.value().getBytes(java.nio.charset.StandardCharsets.UTF_8)));
-        if (parseResult instanceof ExpressionParser.ParseRejected) {
+        var ast = parsedExpressions.get(definitionId);
+        if (ast == null) {
             return dependencyError();
         }
-        var ast = ((ExpressionParser.ParsedAst) parseResult).ast();
 
         var inputWires = new HashMap<String, DesignNodeValue>();
         var declarations = new HashMap<String, ExpressionAnalyzer.InputDeclaration>();

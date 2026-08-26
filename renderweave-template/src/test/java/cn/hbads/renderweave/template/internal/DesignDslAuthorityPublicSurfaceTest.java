@@ -139,6 +139,8 @@ class DesignDslAuthorityPublicSurfaceTest {
                         "expression.inputsTotal",
                         "expression.mappingCasesPerDefinition",
                         "expression.mappingCasesTotal",
+                        "expression.astNodesPerExpression",
+                        "expression.astNodesTotal",
                         "expression.definitionGraphEdges",
                         "expression.definitionChainDepth"
                 },

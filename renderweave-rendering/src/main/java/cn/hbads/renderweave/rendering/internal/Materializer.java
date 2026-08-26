@@ -102,7 +102,8 @@ final class Materializer {
     private final long deadlineEpochMilli;
     private final String ownerScope;
 
-    private final Map<String, ObjectNode> documentsByTemplate = new HashMap<>();
+    private final Map<String, DesignSemanticAuthority.Interpreted> interpretationsByTemplate =
+            new HashMap<>();
     private final Map<String, DefinitionEngine> enginesByTemplate = new HashMap<>();
     private final List<ResourceEntry> resources = new ArrayList<>();
     private final List<SidecarEntry> sidecar = new ArrayList<>();
@@ -1126,23 +1127,30 @@ final class Materializer {
     // ------------------------------------------------------------------
 
     private ObjectNode documentOf(TemplateSnapshot snapshot) {
-        return documentsByTemplate.computeIfAbsent(
+        var interpreted = interpretationOf(snapshot);
+        return interpreted == null ? null : interpreted.document();
+    }
+
+    private DesignSemanticAuthority.Interpreted interpretationOf(TemplateSnapshot snapshot) {
+        return interpretationsByTemplate.computeIfAbsent(
                 snapshot.templateId().value(),
                 key -> {
                     var outcome = semantics.interpret(snapshot.canonicalDesignDslUtf8());
                     return outcome instanceof DesignSemanticAuthority.Interpreted interpreted
-                            ? interpreted.document() : null;
+                            ? interpreted : null;
                 });
     }
 
     private DefinitionEngine engineOf(TemplateSnapshot snapshot) {
         return enginesByTemplate.computeIfAbsent(snapshot.templateId().value(), key -> {
-            var document = documentOf(snapshot);
-            if (document == null
-                    || !(document.members().get("definitions") instanceof ArrayNode definitions)) {
-                return new DefinitionEngine(List.of());
+            var interpreted = interpretationOf(snapshot);
+            if (interpreted == null
+                    || !(interpreted.document().members().get("definitions")
+                    instanceof ArrayNode definitions)) {
+                return new DefinitionEngine(List.of(), Map.of());
             }
-            return new DefinitionEngine(definitions.items());
+            return new DefinitionEngine(
+                    definitions.items(), interpreted.expressionsByDefinitionId());
         });
     }
 

@@ -1,4 +1,6 @@
-package cn.hbads.renderweave.rendering.internal;
+package cn.hbads.renderweave.template.internal;
+
+import cn.hbads.renderweave.template.api.DesignSemanticAuthority.ExpressionAst;
 
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
@@ -13,16 +15,11 @@ import java.util.List;
  */
 final class ExpressionParser {
 
-    static final int MAX_SOURCE_UTF8_BYTES = 65_536;
-    static final int MAX_AST_NODES = 4_096;
-
     enum ParseFailureKind {
-        SYNTAX_INVALID,
-        SOURCE_LIMIT_EXCEEDED,
-        AST_LIMIT_EXCEEDED
+        SYNTAX_INVALID
     }
 
-    record ParseFailure(ParseFailureKind kind, int position, String limitId) {
+    record ParseFailure(ParseFailureKind kind, int position) {
     }
 
     sealed interface ParseResult permits ParsedAst, ParseRejected {
@@ -35,46 +32,117 @@ final class ExpressionParser {
     }
 
     private final String source;
+    private final AstNodeReservation astNodes;
     private int position;
-    private int nodeCount;
+    private long nodeCount;
     private ParseFailure failure;
 
-    private ExpressionParser(String source) {
+    private ExpressionParser(String source, AstNodeReservation astNodes) {
         this.source = source;
+        this.astNodes = astNodes;
     }
 
-    static ParseResult parse(byte[] sourceUtf8) {
-        if (sourceUtf8.length > MAX_SOURCE_UTF8_BYTES) {
-            return new ParseRejected(new ParseFailure(
-                    ParseFailureKind.SOURCE_LIMIT_EXCEEDED, 0,
-                    "expression.sourceUtf8BytesPerExpression"));
+    static ParseResult parse(byte[] sourceUtf8, AstNodeReservation astNodes)
+            throws DesignDslFailureException {
+        var parser = new ExpressionParser(
+                new String(sourceUtf8, StandardCharsets.UTF_8), astNodes);
+        try {
+            var expression = parser.parseExpression();
+            if (parser.failure != null) {
+                return new ParseRejected(parser.failure);
+            }
+            parser.skipWhitespace();
+            if (parser.position < parser.source.length()) {
+                return new ParseRejected(new ParseFailure(
+                        ParseFailureKind.SYNTAX_INVALID, parser.position));
+            }
+            return new ParsedAst(expression);
+        } catch (AstReservationRejected rejected) {
+            throw rejected.failure();
         }
-        var parser = new ExpressionParser(new String(sourceUtf8, StandardCharsets.UTF_8));
-        var expression = parser.parseExpression();
-        if (parser.failure != null) {
-            return new ParseRejected(parser.failure);
-        }
-        parser.skipWhitespace();
-        if (parser.position < parser.source.length()) {
-            return new ParseRejected(new ParseFailure(
-                    ParseFailureKind.SYNTAX_INVALID, parser.position, null));
-        }
-        return new ParsedAst(expression);
     }
 
-    private ParseFailure reject(ParseFailureKind kind, int at, String limitId) {
+    private ParseFailure reject(ParseFailureKind kind, int at) {
         if (failure == null) {
-            failure = new ParseFailure(kind, at, limitId);
+            failure = new ParseFailure(kind, at);
         }
         return failure;
     }
 
-    private ExpressionAst count(ExpressionAst node) {
-        nodeCount++;
-        if (nodeCount > MAX_AST_NODES) {
-            reject(ParseFailureKind.AST_LIMIT_EXCEEDED, position, "expression.astNodesPerExpression");
+    private void reserveNode() {
+        long candidate;
+        try {
+            candidate = Math.addExact(nodeCount, 1L);
+            astNodes.reserve(candidate);
+        } catch (DesignDslFailureException rejected) {
+            throw new AstReservationRejected(rejected);
+        } catch (ArithmeticException overflow) {
+            throw new IllegalStateException("Expression AST node counter overflow", overflow);
         }
-        return node;
+        nodeCount = candidate;
+    }
+
+    private ExpressionAst textLiteral(String value) {
+        reserveNode();
+        return new ExpressionAst.TextLiteral(value);
+    }
+
+    private ExpressionAst decimalLiteral(BigDecimal value) {
+        reserveNode();
+        return new ExpressionAst.DecimalLiteral(value);
+    }
+
+    private ExpressionAst booleanLiteral(boolean value) {
+        reserveNode();
+        return new ExpressionAst.BooleanLiteral(value);
+    }
+
+    private ExpressionAst inputRead(String alias) {
+        reserveNode();
+        return new ExpressionAst.InputRead(alias);
+    }
+
+    private ExpressionAst unary(
+            ExpressionAst.UnaryOperator operator,
+            ExpressionAst operand
+    ) {
+        reserveNode();
+        return new ExpressionAst.Unary(operator, operand);
+    }
+
+    private ExpressionAst binary(
+            ExpressionAst.BinaryOperator operator,
+            ExpressionAst left,
+            ExpressionAst right
+    ) {
+        reserveNode();
+        return new ExpressionAst.Binary(operator, left, right);
+    }
+
+    private ExpressionAst call(
+            ExpressionAst.Function function,
+            List<ExpressionAst> arguments
+    ) {
+        reserveNode();
+        return new ExpressionAst.Call(function, arguments);
+    }
+
+    @FunctionalInterface
+    interface AstNodeReservation {
+        void reserve(long perExpressionCandidate) throws DesignDslFailureException;
+    }
+
+    private static final class AstReservationRejected extends RuntimeException {
+        private final DesignDslFailureException failure;
+
+        private AstReservationRejected(DesignDslFailureException failure) {
+            super(null, failure, false, false);
+            this.failure = failure;
+        }
+
+        private DesignDslFailureException failure() {
+            return failure;
+        }
     }
 
     // ------------------------------------------------------------------
@@ -90,7 +158,7 @@ final class ExpressionParser {
         while (failure == null && peekOperator("||")) {
             consumeOperator("||");
             var right = parseAnd();
-            left = count(new ExpressionAst.Binary(ExpressionAst.BinaryOperator.OR, left, right));
+            left = binary(ExpressionAst.BinaryOperator.OR, left, right);
         }
         return left;
     }
@@ -100,7 +168,7 @@ final class ExpressionParser {
         while (failure == null && peekOperator("&&")) {
             consumeOperator("&&");
             var right = parseEquality();
-            left = count(new ExpressionAst.Binary(ExpressionAst.BinaryOperator.AND, left, right));
+            left = binary(ExpressionAst.BinaryOperator.AND, left, right);
         }
         return left;
     }
@@ -110,12 +178,12 @@ final class ExpressionParser {
         while (failure == null) {
             if (peekOperator("==")) {
                 consumeOperator("==");
-                left = count(new ExpressionAst.Binary(
-                        ExpressionAst.BinaryOperator.EQ, left, parseRelational()));
+                left = binary(
+                        ExpressionAst.BinaryOperator.EQ, left, parseRelational());
             } else if (peekOperator("!=")) {
                 consumeOperator("!=");
-                left = count(new ExpressionAst.Binary(
-                        ExpressionAst.BinaryOperator.NOT_EQ, left, parseRelational()));
+                left = binary(
+                        ExpressionAst.BinaryOperator.NOT_EQ, left, parseRelational());
             } else {
                 return left;
             }
@@ -128,20 +196,20 @@ final class ExpressionParser {
         while (failure == null) {
             if (peekOperator("<=")) {
                 consumeOperator("<=");
-                left = count(new ExpressionAst.Binary(
-                        ExpressionAst.BinaryOperator.LT_EQ, left, parseAdditive()));
+                left = binary(
+                        ExpressionAst.BinaryOperator.LT_EQ, left, parseAdditive());
             } else if (peekOperator(">=")) {
                 consumeOperator(">=");
-                left = count(new ExpressionAst.Binary(
-                        ExpressionAst.BinaryOperator.GT_EQ, left, parseAdditive()));
+                left = binary(
+                        ExpressionAst.BinaryOperator.GT_EQ, left, parseAdditive());
             } else if (peekOperator("<")) {
                 consumeOperator("<");
-                left = count(new ExpressionAst.Binary(
-                        ExpressionAst.BinaryOperator.LT, left, parseAdditive()));
+                left = binary(
+                        ExpressionAst.BinaryOperator.LT, left, parseAdditive());
             } else if (peekOperator(">")) {
                 consumeOperator(">");
-                left = count(new ExpressionAst.Binary(
-                        ExpressionAst.BinaryOperator.GT, left, parseAdditive()));
+                left = binary(
+                        ExpressionAst.BinaryOperator.GT, left, parseAdditive());
             } else {
                 return left;
             }
@@ -154,12 +222,12 @@ final class ExpressionParser {
         while (failure == null) {
             if (peekOperator("+")) {
                 consumeOperator("+");
-                left = count(new ExpressionAst.Binary(
-                        ExpressionAst.BinaryOperator.ADD, left, parseMultiplicative()));
+                left = binary(
+                        ExpressionAst.BinaryOperator.ADD, left, parseMultiplicative());
             } else if (peekOperator("-")) {
                 consumeOperator("-");
-                left = count(new ExpressionAst.Binary(
-                        ExpressionAst.BinaryOperator.SUBTRACT, left, parseMultiplicative()));
+                left = binary(
+                        ExpressionAst.BinaryOperator.SUBTRACT, left, parseMultiplicative());
             } else {
                 return left;
             }
@@ -171,8 +239,8 @@ final class ExpressionParser {
         var left = parseUnary();
         while (failure == null && peekOperator("*")) {
             consumeOperator("*");
-            left = count(new ExpressionAst.Binary(
-                    ExpressionAst.BinaryOperator.MULTIPLY, left, parseUnary()));
+            left = binary(
+                    ExpressionAst.BinaryOperator.MULTIPLY, left, parseUnary());
         }
         return left;
     }
@@ -181,13 +249,11 @@ final class ExpressionParser {
         skipWhitespace();
         if (peekOperator("!")) {
             consumeOperator("!");
-            return count(new ExpressionAst.Unary(
-                    ExpressionAst.UnaryOperator.NOT, parseUnary()));
+            return unary(ExpressionAst.UnaryOperator.NOT, parseUnary());
         }
         if (peekOperator("-")) {
             consumeOperator("-");
-            return count(new ExpressionAst.Unary(
-                    ExpressionAst.UnaryOperator.NEGATE, parseUnary()));
+            return unary(ExpressionAst.UnaryOperator.NEGATE, parseUnary());
         }
         return parsePrimary();
     }
@@ -198,7 +264,7 @@ final class ExpressionParser {
         }
         skipWhitespace();
         if (position >= source.length()) {
-            reject(ParseFailureKind.SYNTAX_INVALID, position, null);
+            reject(ParseFailureKind.SYNTAX_INVALID, position);
             return null;
         }
         char current = source.charAt(position);
@@ -209,7 +275,7 @@ final class ExpressionParser {
                 return null;
             }
             if (!peekOperator(")")) {
-                reject(ParseFailureKind.SYNTAX_INVALID, position, null);
+                reject(ParseFailureKind.SYNTAX_INVALID, position);
                 return null;
             }
             consumeOperator(")");
@@ -224,7 +290,7 @@ final class ExpressionParser {
         if (isIdentifierStart(current)) {
             return parseIdentifierLed();
         }
-        reject(ParseFailureKind.SYNTAX_INVALID, position, null);
+        reject(ParseFailureKind.SYNTAX_INVALID, position);
         return null;
     }
 
@@ -237,7 +303,7 @@ final class ExpressionParser {
         if (position < source.length() && source.charAt(position) == '(') {
             var function = ExpressionAst.Function.fromWire(name);
             if (function == null) {
-                reject(ParseFailureKind.SYNTAX_INVALID, position, null);
+                reject(ParseFailureKind.SYNTAX_INVALID, position);
                 return null;
             }
             position++;
@@ -245,7 +311,7 @@ final class ExpressionParser {
             skipWhitespace();
             if (peekOperator(")")) {
                 consumeOperator(")");
-                return count(new ExpressionAst.Call(function, arguments));
+                return call(function, arguments);
             }
             while (true) {
                 var argument = parseExpression();
@@ -260,21 +326,21 @@ final class ExpressionParser {
                 }
                 if (peekOperator(")")) {
                     consumeOperator(")");
-                    return count(new ExpressionAst.Call(function, arguments));
+                    return call(function, arguments);
                 }
-                reject(ParseFailureKind.SYNTAX_INVALID, position, null);
+                reject(ParseFailureKind.SYNTAX_INVALID, position);
                 return null;
             }
         }
         if ("true".equals(name)) {
-            return count(new ExpressionAst.BooleanLiteral(true));
+            return booleanLiteral(true);
         }
         if ("false".equals(name)) {
-            return count(new ExpressionAst.BooleanLiteral(false));
+            return booleanLiteral(false);
         }
         if ("input".equals(name)) {
             if (!peekOperator(".")) {
-                reject(ParseFailureKind.SYNTAX_INVALID, position, null);
+                reject(ParseFailureKind.SYNTAX_INVALID, position);
                 return null;
             }
             consumeOperator(".");
@@ -282,9 +348,9 @@ final class ExpressionParser {
             if (alias == null) {
                 return null;
             }
-            return count(new ExpressionAst.InputRead(alias));
+            return inputRead(alias);
         }
-        reject(ParseFailureKind.SYNTAX_INVALID, position, null);
+        reject(ParseFailureKind.SYNTAX_INVALID, position);
         return null;
     }
 
@@ -293,18 +359,18 @@ final class ExpressionParser {
         var builder = new StringBuilder();
         while (true) {
             if (position >= source.length()) {
-                reject(ParseFailureKind.SYNTAX_INVALID, position, null);
+                reject(ParseFailureKind.SYNTAX_INVALID, position);
                 return null;
             }
             char current = source.charAt(position);
             if (current == '\'') {
                 position++;
-                return count(new ExpressionAst.TextLiteral(builder.toString()));
+                return textLiteral(builder.toString());
             }
             if (current == '\\') {
                 position++;
                 if (position >= source.length()) {
-                    reject(ParseFailureKind.SYNTAX_INVALID, position, null);
+                    reject(ParseFailureKind.SYNTAX_INVALID, position);
                     return null;
                 }
                 char escaped = source.charAt(position);
@@ -317,7 +383,7 @@ final class ExpressionParser {
                     case 'u' -> {
                         position++;
                         if (position >= source.length() || source.charAt(position) != '{') {
-                            reject(ParseFailureKind.SYNTAX_INVALID, position, null);
+                            reject(ParseFailureKind.SYNTAX_INVALID, position);
                             return null;
                         }
                         position++;
@@ -326,7 +392,7 @@ final class ExpressionParser {
                             position++;
                         }
                         if (position >= source.length() || position == start) {
-                            reject(ParseFailureKind.SYNTAX_INVALID, position, null);
+                            reject(ParseFailureKind.SYNTAX_INVALID, position);
                             return null;
                         }
                         var hex = source.substring(start, position);
@@ -334,19 +400,19 @@ final class ExpressionParser {
                         try {
                             codePoint = Integer.parseInt(hex, 16);
                         } catch (NumberFormatException invalid) {
-                            reject(ParseFailureKind.SYNTAX_INVALID, start, null);
+                            reject(ParseFailureKind.SYNTAX_INVALID, start);
                             return null;
                         }
                         if (!Character.isValidCodePoint(codePoint)
                                 || (codePoint >= 0xD800 && codePoint <= 0xDFFF)) {
-                            reject(ParseFailureKind.SYNTAX_INVALID, start, null);
+                            reject(ParseFailureKind.SYNTAX_INVALID, start);
                             return null;
                         }
                         builder.appendCodePoint(codePoint);
                         // position sits on '}'; falls through to the shared advance below.
                     }
                     default -> {
-                        reject(ParseFailureKind.SYNTAX_INVALID, position, null);
+                        reject(ParseFailureKind.SYNTAX_INVALID, position);
                         return null;
                     }
                 }
@@ -369,7 +435,7 @@ final class ExpressionParser {
             position++;
         }
         if (position == integerStart) {
-            reject(ParseFailureKind.SYNTAX_INVALID, position, null);
+            reject(ParseFailureKind.SYNTAX_INVALID, position);
             return null;
         }
         if (position < source.length() && source.charAt(position) == '.') {
@@ -380,7 +446,7 @@ final class ExpressionParser {
                 position++;
             }
             if (position == fractionStart) {
-                reject(ParseFailureKind.SYNTAX_INVALID, position, null);
+                reject(ParseFailureKind.SYNTAX_INVALID, position);
                 return null;
             }
         }
@@ -397,18 +463,18 @@ final class ExpressionParser {
                 position++;
             }
             if (position == exponentStart) {
-                reject(ParseFailureKind.SYNTAX_INVALID, position, null);
+                reject(ParseFailureKind.SYNTAX_INVALID, position);
                 return null;
             }
         }
         var token = source.substring(start, position);
-        return count(new ExpressionAst.DecimalLiteral(new BigDecimal(token)));
+        return decimalLiteral(new BigDecimal(token));
     }
 
     private String readIdentifier() {
         skipWhitespace();
         if (position >= source.length() || !isIdentifierStart(source.charAt(position))) {
-            reject(ParseFailureKind.SYNTAX_INVALID, position, null);
+            reject(ParseFailureKind.SYNTAX_INVALID, position);
             return null;
         }
         int start = position;

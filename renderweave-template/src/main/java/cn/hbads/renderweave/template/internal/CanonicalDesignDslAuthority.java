@@ -413,10 +413,18 @@ final class CanonicalDesignDslAuthority implements DesignDslAuthority {
             normalizedInputs.add(input);
         }
         var source = string(required(entry, "source", pointer + "/source"), pointer + "/source");
+        var sourceUtf8 = source.getBytes(StandardCharsets.UTF_8);
         expressionCapacity.reserveSourceUtf8Bytes(
-                source.getBytes(StandardCharsets.UTF_8).length,
+                sourceUtf8.length,
                 pointer + "/source"
         );
+        var parsed = ExpressionParser.parse(
+                sourceUtf8,
+                candidate -> expressionCapacity.reserveAstNode(candidate, pointer + "/source")
+        );
+        if (parsed instanceof ExpressionParser.ParseRejected) {
+            throw failure(FailureCode.DESIGN_VALUE_INVALID, pointer + "/source");
+        }
         var used = new HashSet<String>();
         scanExpressionInputUsage(source, used);
         for (var alias : aliases.keySet()) {

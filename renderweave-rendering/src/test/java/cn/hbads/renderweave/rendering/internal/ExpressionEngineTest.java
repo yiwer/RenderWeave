@@ -1,5 +1,9 @@
 package cn.hbads.renderweave.rendering.internal;
 
+import cn.hbads.renderweave.template.api.DesignDslAuthority;
+import cn.hbads.renderweave.template.api.DesignSemanticAuthority;
+import cn.hbads.renderweave.template.api.DesignSemanticAuthority.ExpressionAst;
+import cn.hbads.renderweave.template.internal.TemplateModule;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
@@ -30,11 +34,12 @@ class ExpressionEngineTest {
 
     @Test
     void oversizedSourceIsRejected() {
-        var source = ("'" + "a".repeat(70_000) + "'").getBytes(StandardCharsets.UTF_8);
-        var result = ExpressionParser.parse(source);
-        var rejected = assertInstanceOf(ExpressionParser.ParseRejected.class, result);
-        assertEquals(ExpressionParser.ParseFailureKind.SOURCE_LIMIT_EXCEEDED,
-                rejected.failure().kind());
+        var source = "'" + "a".repeat(70_000) + "'";
+        var rejected = assertInstanceOf(
+                DesignDslAuthority.Rejected.class,
+                TemplateModule.designDslAuthority().admit(expressionDesign(source)));
+        assertEquals("expression.sourceUtf8BytesPerExpression",
+                rejected.limit().orElseThrow().id());
     }
 
     @Test
@@ -43,16 +48,19 @@ class ExpressionEngineTest {
         for (int index = 0; index < 4_200; index++) {
             builder.append(" + 1");
         }
-        var result = ExpressionParser.parse(builder.toString().getBytes(StandardCharsets.UTF_8));
-        var rejected = assertInstanceOf(ExpressionParser.ParseRejected.class, result);
-        assertEquals(ExpressionParser.ParseFailureKind.AST_LIMIT_EXCEEDED,
-                rejected.failure().kind());
+        var rejected = assertInstanceOf(
+                DesignDslAuthority.Rejected.class,
+                TemplateModule.designDslAuthority().admit(expressionDesign(builder.toString())));
+        assertEquals("expression.astNodesPerExpression",
+                rejected.limit().orElseThrow().id());
     }
 
     @Test
     void trailingContentIsSyntaxInvalid() {
-        var result = ExpressionParser.parse("1 + 2)".getBytes(StandardCharsets.UTF_8));
-        assertInstanceOf(ExpressionParser.ParseRejected.class, result);
+        var rejected = assertInstanceOf(
+                DesignDslAuthority.Rejected.class,
+                TemplateModule.designDslAuthority().admit(expressionDesign("1 + 2)")));
+        assertEquals(DesignDslAuthority.FailureCode.DESIGN_VALUE_INVALID, rejected.code());
     }
 
     @Test
@@ -295,8 +303,45 @@ class ExpressionEngineTest {
     // ------------------------------------------------------------------
 
     private static ExpressionAst parse(String source) {
-        var result = ExpressionParser.parse(source.getBytes(StandardCharsets.UTF_8));
-        return ((ExpressionParser.ParsedAst) result).ast();
+        var outcome = TemplateModule.designSemanticAuthority().interpret(expressionDesign(source));
+        var interpreted = assertInstanceOf(DesignSemanticAuthority.Interpreted.class, outcome);
+        return interpreted.expressionsByDefinitionId().get(
+                "00000000-0000-4000-8000-0000000000e1");
+    }
+
+    private static byte[] expressionDesign(String source) {
+        return ("""
+                {"definitions":[{"definitionId":"00000000-0000-4000-8000-0000000000e1",\
+                "displayName":"Expression",\
+                "domain":"invocation",\
+                "inputs":[],\
+                "kind":"expression",\
+                "output":"decimal",\
+                "source":"%s"}],\
+                "designRoot":{"bindings":[],"children":[],"heightMm":297,"kind":"canvas",\
+                "nodeId":"00000000-0000-4000-8000-000000000001","widthMm":210},\
+                "displayName":"Expression fixture",\
+                "dslVersion":"renderweave-design/1.0",\
+                "expressionProfile":"renderweave-expression/1.0"}
+                """.formatted(jsonEscape(source))).getBytes(StandardCharsets.UTF_8);
+    }
+
+    private static String jsonEscape(String value) {
+        var escaped = new StringBuilder(value.length());
+        for (int index = 0; index < value.length(); index++) {
+            char current = value.charAt(index);
+            switch (current) {
+                case '"' -> escaped.append("\\\"");
+                case '\\' -> escaped.append("\\\\");
+                case '\b' -> escaped.append("\\b");
+                case '\f' -> escaped.append("\\f");
+                case '\n' -> escaped.append("\\n");
+                case '\r' -> escaped.append("\\r");
+                case '\t' -> escaped.append("\\t");
+                default -> escaped.append(current);
+            }
+        }
+        return escaped.toString();
     }
 
     private static ExpressionEvaluator.EvalOutcome runOk(

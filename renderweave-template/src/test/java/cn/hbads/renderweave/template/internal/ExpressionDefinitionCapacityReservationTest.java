@@ -29,12 +29,41 @@ class ExpressionDefinitionCapacityReservationTest {
             "expression.inputsTotal",
             "expression.mappingCasesPerDefinition",
             "expression.mappingCasesTotal",
+            "expression.astNodesPerExpression",
+            "expression.astNodesTotal",
             "expression.definitionGraphEdges",
             "expression.definitionChainDepth"
     );
 
     @Test
-    void derivesAllEightDefinitionObservationsFromRealAdmittedDocuments() throws Exception {
+    void reservesEveryAuthoredExpressionAstBeforeAdmission() {
+        var recording = new RecordingAuthority(null, null, FailureMode.NONE);
+
+        assertInstanceOf(
+                DesignDslAuthority.Admitted.class,
+                new CanonicalDesignDslAuthority(recording).admit(twoEdgeChainDesign())
+        );
+
+        assertEquals(2, recording.observations.stream().filter(observation ->
+                observation.equals(observation(
+                        "expression.astNodesPerExpression", "3"))).count());
+    }
+
+    @Test
+    void reservesExpressionAstNodesAcrossTheWholeDesignDsl() {
+        var recording = new RecordingAuthority(null, null, FailureMode.NONE);
+
+        assertInstanceOf(
+                DesignDslAuthority.Admitted.class,
+                new CanonicalDesignDslAuthority(recording).admit(twoEdgeChainDesign())
+        );
+
+        assertTrue(recording.observations.contains(observation(
+                "expression.astNodesTotal", "6")));
+    }
+
+    @Test
+    void derivesAllTenDefinitionObservationsFromRealAdmittedDocuments() throws Exception {
         var recording = new RecordingAuthority(null, null, FailureMode.NONE);
         var authority = new CanonicalDesignDslAuthority(recording);
 
@@ -69,6 +98,10 @@ class ExpressionDefinitionCapacityReservationTest {
         assertTrue(recording.observations.contains(observation(
                 "expression.mappingCasesTotal", "3")));
         assertTrue(recording.observations.contains(observation(
+                "expression.astNodesPerExpression", "8")));
+        assertTrue(recording.observations.contains(observation(
+                "expression.astNodesTotal", "8")));
+        assertTrue(recording.observations.contains(observation(
                 "expression.definitionGraphEdges", "1")));
         assertTrue(recording.observations.contains(observation(
                 "expression.definitionChainDepth", "1")));
@@ -97,6 +130,12 @@ class ExpressionDefinitionCapacityReservationTest {
                 Map.entry("expression.mappingCasesTotal",
                         new Probe("admit-mapping-definition-ordered-cases", "3",
                                 "/definitions/0/cases")),
+                Map.entry("expression.astNodesPerExpression",
+                        new Probe("admit-expression-definition-inputs-sorted", "8",
+                                "/definitions/0/source")),
+                Map.entry("expression.astNodesTotal",
+                        new Probe("admit-expression-definition-inputs-sorted", "8",
+                                "/definitions/0/source")),
                 Map.entry("expression.definitionGraphEdges",
                         new Probe("admit-mapping-definition-ordered-cases", "1",
                                 "/definitions")),
@@ -198,6 +237,55 @@ class ExpressionDefinitionCapacityReservationTest {
     }
 
     @Test
+    void perExpressionAstRejectionStopsBeforeTheSameTotalCandidate() {
+        var recording = new RecordingAuthority(
+                "expression.astNodesPerExpression", "2", FailureMode.REJECT);
+
+        var rejected = assertInstanceOf(
+                DesignDslAuthority.Rejected.class,
+                new CanonicalDesignDslAuthority(recording).admit(twoEdgeChainDesign())
+        );
+
+        assertEquals("expression.astNodesPerExpression",
+                rejected.limit().orElseThrow().id());
+        assertTrue(recording.observations.contains(observation(
+                "expression.astNodesPerExpression", "2")));
+        assertFalse(recording.observations.contains(observation(
+                "expression.astNodesTotal", "2")));
+    }
+
+    @Test
+    void totalAstRejectionStopsBeforeTheNextNodeReservation() {
+        var recording = new RecordingAuthority(
+                "expression.astNodesTotal", "2", FailureMode.REJECT);
+
+        var rejected = assertInstanceOf(
+                DesignDslAuthority.Rejected.class,
+                new CanonicalDesignDslAuthority(recording).admit(twoEdgeChainDesign())
+        );
+
+        assertEquals("expression.astNodesTotal", rejected.limit().orElseThrow().id());
+        assertTrue(recording.observations.contains(observation(
+                "expression.astNodesTotal", "2")));
+        assertFalse(recording.observations.contains(observation(
+                "expression.astNodesPerExpression", "3")));
+    }
+
+    @Test
+    void deepUnaryExpressionFailsThroughTheAstLimitWithoutEscapingTheProductSeam() {
+        var rejected = assertInstanceOf(
+                DesignDslAuthority.Rejected.class,
+                new CanonicalDesignDslAuthority().admit(deepUnaryExpressionDesign())
+        );
+
+        assertEquals(DesignDslAuthority.FailureCode.DESIGN_DSL_LIMIT_EXCEEDED,
+                rejected.code());
+        assertEquals("expression.astNodesPerExpression",
+                rejected.limit().orElseThrow().id());
+        assertEquals("/definitions/0/source", rejected.pointer());
+    }
+
+    @Test
     void danglingReferenceKeepsItsStructuralFirstErrorBeforeGraphCapacity() {
         var recording = new RecordingAuthority(
                 "expression.definitionGraphEdges", "1", FailureMode.REJECT);
@@ -234,6 +322,32 @@ class ExpressionDefinitionCapacityReservationTest {
             assertEquals("/definitions/0/inputs", rejected.pointer(), failureMode.name());
             assertEquals("expression.inputsPerExpression",
                     rejected.limit().orElseThrow().id(), failureMode.name());
+        }
+    }
+
+    @Test
+    void invalidOrThrowingAstCapacityAuthorityFailsClosedAtTheSourcePointer() {
+        for (var limitId : List.of(
+                "expression.astNodesPerExpression",
+                "expression.astNodesTotal")) {
+            for (var failureMode : List.of(FailureMode.INVALID, FailureMode.THROW)) {
+                var recording = new RecordingAuthority(limitId, "2", failureMode);
+
+                var rejected = assertInstanceOf(
+                        DesignDslAuthority.Rejected.class,
+                        new CanonicalDesignDslAuthority(recording).admit(twoEdgeChainDesign()),
+                        limitId + ":" + failureMode
+                );
+
+                assertEquals(DesignDslAuthority.FailureCode.DESIGN_DSL_LIMIT_EXCEEDED,
+                        rejected.code(), limitId + ":" + failureMode);
+                assertEquals(DesignDslAuthority.FailureStage.DESIGN_SEMANTIC_VALIDATION,
+                        rejected.stage(), limitId + ":" + failureMode);
+                assertEquals("/definitions/0/source", rejected.pointer(),
+                        limitId + ":" + failureMode);
+                assertEquals(limitId, rejected.limit().orElseThrow().id(),
+                        limitId + ":" + failureMode);
+            }
         }
     }
 
@@ -341,6 +455,20 @@ class ExpressionDefinitionCapacityReservationTest {
                   "source":"'你'"
                 }
                 """);
+    }
+
+    private static byte[] deepUnaryExpressionDesign() {
+        return designWithDefinitions("""
+                {
+                  "definitionId":"00000000-0000-4000-8000-0000000000f1",
+                  "kind":"expression",
+                  "displayName":"Deep unary",
+                  "domain":"invocation",
+                  "output":"decimal",
+                  "inputs":[],
+                  "source":"%s"
+                }
+                """.formatted("-".repeat(4_096) + "1"));
     }
 
     private static byte[] twoMappingDefinitionsDesign() {

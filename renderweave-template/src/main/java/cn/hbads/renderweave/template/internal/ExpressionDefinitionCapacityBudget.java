@@ -17,6 +17,7 @@ final class ExpressionDefinitionCapacityBudget {
     private long sourceUtf8BytesTotal;
     private long inputsTotal;
     private long mappingCasesTotal;
+    private long astNodesTotal;
 
     ExpressionDefinitionCapacityBudget(DesignInputExpressionCapacityAuthority capacity) {
         this.capacity = Objects.requireNonNull(capacity, "capacity");
@@ -58,6 +59,21 @@ final class ExpressionDefinitionCapacityBudget {
         );
         reserve(DesignDslAuthority.Limit.EXPRESSION_MAPPING_CASES_TOTAL,
                 mappingCasesTotal, pointer);
+    }
+
+    void reserveAstNode(long perExpressionCandidate, String pointer)
+            throws DesignDslFailureException {
+        reserve(DesignDslAuthority.Limit.EXPRESSION_AST_NODES_PER_EXPRESSION,
+                perExpressionCandidate, pointer);
+        var totalCandidate = add(
+                astNodesTotal,
+                1L,
+                DesignDslAuthority.Limit.EXPRESSION_AST_NODES_TOTAL,
+                pointer
+        );
+        reserve(DesignDslAuthority.Limit.EXPRESSION_AST_NODES_TOTAL,
+                totalCandidate, pointer);
+        astNodesTotal = totalCandidate;
     }
 
     void reserveDefinitionGraphEdges(long count, String pointer)

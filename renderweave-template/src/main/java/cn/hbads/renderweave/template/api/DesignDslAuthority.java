@@ -93,6 +93,8 @@ public interface DesignDslAuthority {
         EXPRESSION_MAPPING_CASES_PER_DEFINITION(
                 "expression.mappingCasesPerDefinition"),
         EXPRESSION_MAPPING_CASES_TOTAL("expression.mappingCasesTotal"),
+        EXPRESSION_AST_NODES_PER_EXPRESSION("expression.astNodesPerExpression"),
+        EXPRESSION_AST_NODES_TOTAL("expression.astNodesTotal"),
         EXPRESSION_DEFINITION_GRAPH_EDGES("expression.definitionGraphEdges"),
         EXPRESSION_DEFINITION_CHAIN_DEPTH("expression.definitionChainDepth");
 
