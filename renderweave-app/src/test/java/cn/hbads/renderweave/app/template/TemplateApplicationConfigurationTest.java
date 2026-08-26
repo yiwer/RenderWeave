@@ -1,7 +1,9 @@
 package cn.hbads.renderweave.app.template;
 
 import cn.hbads.renderweave.schema.api.StaticSchemaAuthority;
+import cn.hbads.renderweave.template.api.DesignInputExpressionCapacityAuthority;
 import cn.hbads.renderweave.template.api.TemplateApplication;
+import cn.hbads.renderweave.template.internal.TemplateModule;
 import cn.hbads.renderweave.template.spi.OwnerScopeAuthority;
 import cn.hbads.renderweave.template.spi.TemplatePersistence;
 import org.junit.jupiter.api.Test;
@@ -26,6 +28,9 @@ class TemplateApplicationConfigurationTest {
         contextRunner.run(context -> {
             assertThat(context).hasSingleBean(OwnerScopeAuthority.class);
             assertThat(context).hasSingleBean(TemplateApplication.class);
+            assertThat(context).hasSingleBean(DesignInputExpressionCapacityAuthority.class);
+            assertThat(context.getBean(DesignInputExpressionCapacityAuthority.class))
+                    .isSameAs(TemplateModule.designInputExpressionCapacityAuthority());
             assertThat(context.getBean(OwnerScopeAuthority.class))
                     .isInstanceOf(FailClosedOwnerScopeAuthority.class);
         });

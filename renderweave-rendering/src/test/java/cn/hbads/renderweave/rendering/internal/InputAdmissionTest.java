@@ -3,6 +3,7 @@ package cn.hbads.renderweave.rendering.internal;
 import cn.hbads.renderweave.rendering.api.EvaluationStage;
 import cn.hbads.renderweave.rendering.api.RenderingProblem;
 import cn.hbads.renderweave.template.api.TemplateClosureAuthority;
+import cn.hbads.renderweave.template.internal.TemplateModule;
 import cn.hbads.renderweave.schema.definition.ArrayConstraints;
 import cn.hbads.renderweave.schema.definition.ArrayValue;
 import cn.hbads.renderweave.schema.definition.BooleanConstraints;
@@ -57,7 +58,7 @@ class InputAdmissionTest {
                 + "},\"customValues\":[{\"definitionId\":\"" + PUBLIC_DEFINITION_ID
                 + "\",\"value\":\"win\"}]}").getBytes(StandardCharsets.UTF_8);
 
-        var result = InputAdmission.admit(body, snapshot(), resolver());
+        var result = InputAdmission.admit(body, snapshot(), capacityAuthority(), resolver());
 
         var admitted = assertInstanceOf(InputAdmission.AdmissionAdmitted.class, result);
         var input = admitted.input();
@@ -90,7 +91,7 @@ class InputAdmissionTest {
 
         var admitted = assertInstanceOf(
                 InputAdmission.AdmissionAdmitted.class,
-                InputAdmission.admit(body, snapshot(), resolver()));
+                InputAdmission.admit(body, snapshot(), capacityAuthority(), resolver()));
 
         var fields = admitted.input().rootDocument().fields();
         assertTrue(fields.get("age").isEmpty());
@@ -105,7 +106,7 @@ class InputAdmissionTest {
 
         var admitted = assertInstanceOf(
                 InputAdmission.AdmissionAdmitted.class,
-                InputAdmission.admit(body, snapshot(), resolver()));
+                InputAdmission.admit(body, snapshot(), capacityAuthority(), resolver()));
 
         assertEquals(6, admitted.input().rootDocument().fields().size());
         assertTrue(!admitted.input().rootDocument().fields().containsKey("surprise"));
@@ -117,7 +118,7 @@ class InputAdmissionTest {
 
         var rejected = assertInstanceOf(
                 InputAdmission.AdmissionRejected.class,
-                InputAdmission.admit(body, snapshot(), resolver()));
+                InputAdmission.admit(body, snapshot(), capacityAuthority(), resolver()));
 
         var problem = rejected.problems().get(0);
         assertEquals(EvaluationStage.INPUT_ADMISSION, problem.stage());
@@ -130,7 +131,7 @@ class InputAdmissionTest {
 
         assertInstanceOf(
                 InputAdmission.AdmissionRejected.class,
-                InputAdmission.admit(body, snapshot(), resolver()));
+                InputAdmission.admit(body, snapshot(), capacityAuthority(), resolver()));
     }
 
     @Test
@@ -141,7 +142,7 @@ class InputAdmissionTest {
 
         var admitted = assertInstanceOf(
                 InputAdmission.AdmissionAdmitted.class,
-                InputAdmission.admit(body, snapshot(), resolver()));
+                InputAdmission.admit(body, snapshot(), capacityAuthority(), resolver()));
 
         assertEquals(2, admitted.input().customs().size());
         assertEquals(new DesignValue.Text("d1"),
@@ -156,7 +157,7 @@ class InputAdmissionTest {
 
         var admitted = assertInstanceOf(
                 InputAdmission.AdmissionAdmitted.class,
-                InputAdmission.admit(body, snapshot(), resolver()));
+                InputAdmission.admit(body, snapshot(), capacityAuthority(), resolver()));
 
         assertEquals(new DesignValue.Decimal(new BigDecimal("5")),
                 admitted.input().customs().get(PRIVATE_DEFINITION_ID));
@@ -171,7 +172,7 @@ class InputAdmissionTest {
 
         var rejected = assertInstanceOf(
                 InputAdmission.AdmissionRejected.class,
-                InputAdmission.admit(body, snapshot(), resolver()));
+                InputAdmission.admit(body, snapshot(), capacityAuthority(), resolver()));
 
         assertEquals(EvaluationStage.INPUT_ADMISSION, rejected.problems().get(0).stage());
         assertTrue(rejected.problems().get(0).safeLocation().orElseThrow()
@@ -188,7 +189,7 @@ class InputAdmissionTest {
 
         var admitted = assertInstanceOf(
                 InputAdmission.AdmissionAdmitted.class,
-                InputAdmission.admit(body, snapshot(), resolver()));
+                InputAdmission.admit(body, snapshot(), capacityAuthority(), resolver()));
 
         assertEquals(new DesignValue.Text("second"),
                 admitted.input().customs().get(PUBLIC_DEFINITION_ID));
@@ -199,7 +200,7 @@ class InputAdmissionTest {
         var rejected = assertInstanceOf(
                 InputAdmission.AdmissionRejected.class,
                 InputAdmission.admit("{\"nope\":1}".getBytes(StandardCharsets.UTF_8),
-                        snapshot(), resolver()));
+                        snapshot(), capacityAuthority(), resolver()));
 
         assertEquals(EvaluationStage.REQUEST_ADMISSION, rejected.problems().get(0).stage());
     }
@@ -209,6 +210,7 @@ class InputAdmissionTest {
         var result = InputAdmission.admit(
                 "{\"rootDocument\":{\"name\":\"alpha\"}}".getBytes(StandardCharsets.UTF_8),
                 snapshot(),
+                capacityAuthority(),
                 target -> {
                     throw new IllegalStateException("schema store down");
                 });
@@ -219,6 +221,11 @@ class InputAdmissionTest {
     // ------------------------------------------------------------------
     // fixtures
     // ------------------------------------------------------------------
+
+    private static cn.hbads.renderweave.template.api.DesignInputExpressionCapacityAuthority
+            capacityAuthority() {
+        return TemplateModule.designInputExpressionCapacityAuthority();
+    }
 
     private static TemplateClosureAuthority.TemplateSnapshot snapshot() {
         var canonical = ("{\"dslVersion\":\"renderweave-design/1.0\","

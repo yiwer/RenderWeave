@@ -4,6 +4,7 @@ import cn.hbads.renderweave.rendering.api.EvaluationStage;
 import cn.hbads.renderweave.rendering.api.RenderingProblem;
 import cn.hbads.renderweave.rendering.api.RenderingProblem.LimitId;
 import cn.hbads.renderweave.rendering.api.RenderingProblem.ProblemCode;
+import cn.hbads.renderweave.template.api.DesignInputExpressionCapacityAuthority;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -19,19 +20,6 @@ import java.util.regex.Pattern;
  * 再交给后续按 definitionId 分组的 Custom 消解。
  */
 final class RenderInputEnvelope {
-
-    static final RenderJsonParser.JsonBudget RENDER_INPUT_BUDGET = new RenderJsonParser.JsonBudget(
-            "renderInput",
-            8_388_608L,   // utf8Bytes
-            32,           // jsonDepth
-            1024,         // objectMembers
-            10_000,       // arrayItems
-            250_000L,     // totalValuesAndContainers
-            1_048_576L,   // stringUtf8Bytes
-            256           // numberTokenBytes
-    );
-
-    private static final int MAX_CUSTOM_VALUE_ENTRIES = 256;
     private static final Set<String> ENVELOPE_MEMBERS = Set.of("rootDocument", "customValues");
     private static final Set<String> ASSIGNMENT_MEMBERS = Set.of("definitionId", "value");
     private static final Pattern UUID_V4 = Pattern.compile(
@@ -71,9 +59,16 @@ final class RenderInputEnvelope {
     private RenderInputEnvelope() {
     }
 
-    static EnvelopeResult parse(byte[] body) {
+    static EnvelopeResult parse(
+            byte[] body,
+            DesignInputExpressionCapacityAuthority capacityAuthority
+    ) {
         Objects.requireNonNull(body, "body");
-        var parseResult = RenderJsonParser.parse(body, RENDER_INPUT_BUDGET);
+        Objects.requireNonNull(capacityAuthority, "capacityAuthority");
+        var parseResult = RenderJsonParser.parse(
+                body,
+                new RenderJsonParser.AuthorityBudget("renderInput", capacityAuthority)
+        );
         if (parseResult instanceof RenderJsonParser.ParseRejected rejected) {
             return new EnvelopeRejected(List.of(toProblem(rejected.failure())));
         }
@@ -93,20 +88,23 @@ final class RenderInputEnvelope {
         if (!(rootDocument instanceof RenderJson.ObjectValue)) {
             return rejected("/rootDocument", "rootDocument must be an object");
         }
-        var assignments = new ArrayList<CustomAssignment>();
         var customValues = envelope.members().get("customValues");
         if (customValues != null) {
             if (!(customValues instanceof RenderJson.ArrayValue entries)) {
                 return rejected("/customValues", "customValues must be an array");
             }
-            if (entries.items().size() > MAX_CUSTOM_VALUE_ENTRIES) {
-                return new EnvelopeRejected(List.of(new RenderingProblem(
-                        ProblemCode.RENDER_INPUT_LIMIT_EXCEEDED,
-                        EvaluationStage.REQUEST_ADMISSION,
-                        Optional.of("/customValues"),
-                        Optional.of(new LimitId("renderInput.customValueEntries"))
-                )));
+            var capacityProblem = reserve(
+                    capacityAuthority,
+                    "renderInput.customValueEntries",
+                    entries.items().size(),
+                    "/customValues"
+            );
+            if (capacityProblem != null) {
+                return new EnvelopeRejected(List.of(capacityProblem));
             }
+        }
+        var assignments = new ArrayList<CustomAssignment>();
+        if (customValues instanceof RenderJson.ArrayValue entries) {
             for (int index = 0; index < entries.items().size(); index++) {
                 var pointer = "/customValues/" + index;
                 if (!(entries.items().get(index) instanceof RenderJson.ObjectValue assignment)) {
@@ -143,12 +141,12 @@ final class RenderInputEnvelope {
 
     private static RenderingProblem toProblem(RenderJsonParser.JsonParseFailure failure) {
         return switch (failure.kind()) {
-            case LIMIT_EXCEEDED -> new RenderingProblem(
-                    ProblemCode.RENDER_INPUT_LIMIT_EXCEEDED,
-                    EvaluationStage.REQUEST_ADMISSION,
-                    pointer(failure.pointer()),
-                    Optional.of(new LimitId(failure.limitId()))
+            case LIMIT_EXCEEDED -> terminalProblem(
+                    failure.terminal(),
+                    failure.limitId(),
+                    failure.pointer()
             );
+            case CAPACITY_AUTHORITY_INVALID -> internalCapacityProblem();
             case CONTENT_ENCODING_UNSUPPORTED, SYNTAX_INVALID, DUPLICATE_MEMBER, VALUE_EXPECTED ->
                     new RenderingProblem(
                             ProblemCode.RENDER_INPUT_CONTENT_ENCODING_UNSUPPORTED,
@@ -157,6 +155,58 @@ final class RenderInputEnvelope {
                             Optional.empty()
                     );
         };
+    }
+
+    private static RenderingProblem reserve(
+            DesignInputExpressionCapacityAuthority authority,
+            String limitId,
+            long observedValue,
+            String pointer
+    ) {
+        final DesignInputExpressionCapacityAuthority.Decision decision;
+        try {
+            decision = authority.evaluate(new DesignInputExpressionCapacityAuthority.Observation(
+                    limitId,
+                    Long.toString(observedValue)
+            ));
+        } catch (RuntimeException unavailable) {
+            return internalCapacityProblem();
+        }
+        return switch (decision) {
+            case DesignInputExpressionCapacityAuthority.Accepted ignored -> null;
+            case DesignInputExpressionCapacityAuthority.Rejected rejected ->
+                    terminalProblem(rejected.terminal(), limitId, pointer);
+            case DesignInputExpressionCapacityAuthority.Invalid ignored ->
+                    internalCapacityProblem();
+            case null -> internalCapacityProblem();
+        };
+    }
+
+    private static RenderingProblem terminalProblem(
+            DesignInputExpressionCapacityAuthority.Terminal terminal,
+            String limitId,
+            String pointer
+    ) {
+        if (terminal == null) {
+            return internalCapacityProblem();
+        }
+        try {
+            return new RenderingProblem(
+                    ProblemCode.valueOf(terminal.code()),
+                    EvaluationStage.valueOf(terminal.publicRenderStage()),
+                    pointer(pointer),
+                    Optional.of(new LimitId(limitId))
+            );
+        } catch (IllegalArgumentException invalidTerminal) {
+            return internalCapacityProblem();
+        }
+    }
+
+    private static RenderingProblem internalCapacityProblem() {
+        return RenderingProblem.of(
+                ProblemCode.RENDER_INTERNAL_ERROR,
+                EvaluationStage.INPUT_ADMISSION
+        );
     }
 
     private static EnvelopeRejected rejected(String pointer, String ignoredReason) {

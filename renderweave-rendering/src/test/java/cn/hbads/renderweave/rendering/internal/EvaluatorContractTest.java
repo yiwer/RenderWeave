@@ -78,6 +78,7 @@ class EvaluatorContractTest {
         var closure = closureWith(canvasWithRect());
         var evaluator = new cn.hbads.renderweave.rendering.internal.CanonicalEvaluator(
                 scriptedClosure(closure),
+                TemplateModule.designInputExpressionCapacityAuthority(),
                 TemplateModule.designSemanticAuthority(),
                 TemplateModule.designDslAuthority(),
                 null,
@@ -102,6 +103,7 @@ class EvaluatorContractTest {
     void unstableClosureRejectsWithFrozenCode() {
         var evaluator = new cn.hbads.renderweave.rendering.internal.CanonicalEvaluator(
                 (renderRequestId, rootTemplateId) -> new TemplateClosureAuthority.ClosureUnstable(),
+                TemplateModule.designInputExpressionCapacityAuthority(),
                 TemplateModule.designSemanticAuthority(),
                 TemplateModule.designDslAuthority(),
                 null,
@@ -134,6 +136,7 @@ class EvaluatorContractTest {
         var assets = new CapturingAssetPort();
         var evaluator = new CanonicalEvaluator(
                 scriptedClosure(closureWith(canvasWithImage())),
+                TemplateModule.designInputExpressionCapacityAuthority(),
                 TemplateModule.designSemanticAuthority(),
                 TemplateModule.designDslAuthority(),
                 assets,
@@ -171,6 +174,7 @@ class EvaluatorContractTest {
             ClosureSnapshot closure, ValidationTargetResolver resolver) {
         return new cn.hbads.renderweave.rendering.internal.CanonicalEvaluator(
                 scriptedClosure(closure),
+                TemplateModule.designInputExpressionCapacityAuthority(),
                 TemplateModule.designSemanticAuthority(),
                 TemplateModule.designDslAuthority(),
                 null,

@@ -3,6 +3,7 @@ package cn.hbads.renderweave.app.template;
 import cn.hbads.renderweave.asset.spi.AssetReferencePort;
 import cn.hbads.renderweave.schema.api.StaticSchemaAuthority;
 import cn.hbads.renderweave.template.api.AssetReferenceAuthority;
+import cn.hbads.renderweave.template.api.DesignInputExpressionCapacityAuthority;
 import cn.hbads.renderweave.template.api.TemplateApplication;
 import cn.hbads.renderweave.template.api.TemplateReadinessAuthority;
 import cn.hbads.renderweave.template.internal.TemplateModule;
@@ -89,6 +90,11 @@ class TemplateApplicationConfiguration {
     @Bean
     cn.hbads.renderweave.template.api.DesignSemanticAuthority templateDesignSemanticAuthority() {
         return TemplateModule.designSemanticAuthority();
+    }
+
+    @Bean
+    DesignInputExpressionCapacityAuthority templateDesignInputExpressionCapacityAuthority() {
+        return TemplateModule.designInputExpressionCapacityAuthority();
     }
 
     @Bean

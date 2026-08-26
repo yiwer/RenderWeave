@@ -8,6 +8,7 @@ import cn.hbads.renderweave.rendering.api.RenderingApplication.RenderOperationId
 import cn.hbads.renderweave.rendering.api.RenderingApplication.RenderOutcome;
 import cn.hbads.renderweave.rendering.api.RenderingApplication.RenderPurpose;
 import cn.hbads.renderweave.rendering.api.RenderingProblem;
+import cn.hbads.renderweave.template.api.DesignInputExpressionCapacityAuthority;
 import cn.hbads.renderweave.template.api.TemplateApplication.TemplateId;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
@@ -26,6 +27,7 @@ import java.util.Base64;
 import java.util.Collections;
 import java.util.HexFormat;
 import java.util.LinkedHashMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
@@ -57,9 +59,17 @@ final class RenderingController {
     private static final Set<String> OUTPUT_QUERY = Set.of("format", "dpi", "quality");
 
     private final RenderingApplication rendering;
+    private final DesignInputExpressionCapacityAuthority capacityAuthority;
 
-    RenderingController(RenderingApplication rendering) {
+    RenderingController(
+            RenderingApplication rendering,
+            DesignInputExpressionCapacityAuthority capacityAuthority
+    ) {
         this.rendering = java.util.Objects.requireNonNull(rendering, "rendering");
+        this.capacityAuthority = java.util.Objects.requireNonNull(
+                capacityAuthority,
+                "capacityAuthority"
+        );
     }
 
     @PostMapping("/{templateId}/render")
@@ -92,12 +102,17 @@ final class RenderingController {
                     "RENDER_INPUT_MEDIA_TYPE_UNSUPPORTED",
                     Optional.empty());
         }
-        if (!isIdentityEncoding(request)) {
-            return requestProblem(
-                    HttpStatus.BAD_REQUEST,
-                    RenderingProblem.ProblemCode
-                            .RENDER_INPUT_CONTENT_ENCODING_UNSUPPORTED.name(),
-                    Optional.empty());
+        var encodingProblem = contentEncodingProblem(request);
+        if (encodingProblem.isPresent()) {
+            var rejected = encodingProblem.orElseThrow();
+            return problem(
+                    status(rejected),
+                    null,
+                    rejected.code().name(),
+                    rejected.stage().name(),
+                    Optional.empty(),
+                    Optional.empty()
+            );
         }
 
         final TemplateId templateId;
@@ -335,10 +350,57 @@ final class RenderingController {
         }
     }
 
-    private static boolean isIdentityEncoding(HttpServletRequest request) {
+    private Optional<RenderingProblem> contentEncodingProblem(HttpServletRequest request) {
+        var observation = new DesignInputExpressionCapacityAuthority.Observation(
+                "renderInput.contentEncoding",
+                contentEncodingObservation(request)
+        );
+        final DesignInputExpressionCapacityAuthority.Decision decision;
+        try {
+            decision = capacityAuthority.evaluate(observation);
+        } catch (RuntimeException unavailable) {
+            return Optional.of(internalCapacityProblem());
+        }
+        return switch (decision) {
+            case DesignInputExpressionCapacityAuthority.Accepted ignored -> Optional.empty();
+            case DesignInputExpressionCapacityAuthority.Rejected rejected ->
+                    Optional.of(terminalProblem(rejected.terminal()));
+            case DesignInputExpressionCapacityAuthority.Invalid ignored ->
+                    Optional.of(internalCapacityProblem());
+            case null -> Optional.of(internalCapacityProblem());
+        };
+    }
+
+    private static String contentEncodingObservation(HttpServletRequest request) {
         var values = Collections.list(request.getHeaders("Content-Encoding"));
-        return values.isEmpty()
-                || (values.size() == 1 && "identity".equalsIgnoreCase(values.get(0).strip()));
+        if (values.isEmpty()) {
+            return "identity";
+        }
+        if (values.size() != 1 || values.get(0) == null) {
+            return "invalid";
+        }
+        var value = values.get(0).strip();
+        return value.isEmpty() ? "invalid" : value.toLowerCase(Locale.ROOT);
+    }
+
+    private static RenderingProblem terminalProblem(
+            DesignInputExpressionCapacityAuthority.Terminal terminal
+    ) {
+        try {
+            return RenderingProblem.of(
+                    RenderingProblem.ProblemCode.valueOf(terminal.code()),
+                    EvaluationStage.valueOf(terminal.publicRenderStage())
+            );
+        } catch (IllegalArgumentException | NullPointerException invalidTerminal) {
+            return internalCapacityProblem();
+        }
+    }
+
+    private static RenderingProblem internalCapacityProblem() {
+        return RenderingProblem.of(
+                RenderingProblem.ProblemCode.RENDER_INTERNAL_ERROR,
+                EvaluationStage.INPUT_ADMISSION
+        );
     }
 
     private static byte[] boundedInput(HttpServletRequest request)

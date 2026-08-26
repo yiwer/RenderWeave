@@ -13,6 +13,7 @@ import cn.hbads.renderweave.rendering.spi.RendererProfileAuthority;
 import cn.hbads.renderweave.rendering.spi.RenderingAuthority;
 import cn.hbads.renderweave.rendering.spi.RenderingCapabilityRuntime;
 import cn.hbads.renderweave.template.api.DesignDslAuthority;
+import cn.hbads.renderweave.template.api.DesignInputExpressionCapacityAuthority;
 import cn.hbads.renderweave.template.api.DesignSemanticAuthority;
 import cn.hbads.renderweave.template.api.TemplateClosureAuthority;
 import cn.hbads.renderweave.template.spi.TemplatePersistence;
@@ -132,6 +133,7 @@ class RenderingApplicationConfiguration {
     @Bean
     Evaluator renderingEvaluator(
             TemplateClosureAuthority closureAuthority,
+            DesignInputExpressionCapacityAuthority capacityAuthority,
             DesignSemanticAuthority semantics,
             DesignDslAuthority dslAuthority,
             ObjectProvider<AssetResolutionPort> assets,
@@ -141,6 +143,7 @@ class RenderingApplicationConfiguration {
     ) {
         return RenderingModule.evaluator(
                 closureAuthority,
+                capacityAuthority,
                 semantics,
                 dslAuthority,
                 assets.getIfAvailable(),

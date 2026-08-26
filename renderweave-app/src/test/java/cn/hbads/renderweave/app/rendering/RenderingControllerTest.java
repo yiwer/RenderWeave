@@ -8,6 +8,7 @@ import cn.hbads.renderweave.rendering.api.RenderingApplication.RenderOperationId
 import cn.hbads.renderweave.rendering.api.RenderingApplication.RenderOutcome;
 import cn.hbads.renderweave.rendering.api.RenderingApplication.RenderPurpose;
 import cn.hbads.renderweave.rendering.api.RenderingProblem;
+import cn.hbads.renderweave.template.internal.TemplateModule;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -216,7 +217,10 @@ class RenderingControllerTest {
     }
 
     private static MockMvc mvc(RenderingApplication application) {
-        return MockMvcBuilders.standaloneSetup(new RenderingController(application)).build();
+        return MockMvcBuilders.standaloneSetup(new RenderingController(
+                application,
+                TemplateModule.designInputExpressionCapacityAuthority()
+        )).build();
     }
 
     private static RenderOperationId operationId() {

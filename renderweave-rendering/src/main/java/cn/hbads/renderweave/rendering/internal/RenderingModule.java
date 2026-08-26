@@ -7,6 +7,7 @@ import cn.hbads.renderweave.rendering.spi.RenderEngine;
 import cn.hbads.renderweave.rendering.spi.RendererProfileAuthority;
 import cn.hbads.renderweave.rendering.spi.RenderingAuthority;
 import cn.hbads.renderweave.rendering.spi.RenderingCapabilityRuntime;
+import cn.hbads.renderweave.template.api.DesignInputExpressionCapacityAuthority;
 import cn.hbads.renderweave.template.api.DesignDslAuthority;
 import cn.hbads.renderweave.template.api.DesignSemanticAuthority;
 import cn.hbads.renderweave.template.api.TemplateClosureAuthority;
@@ -33,6 +34,7 @@ public final class RenderingModule {
      */
     public static Evaluator evaluator(
             TemplateClosureAuthority closureAuthority,
+            DesignInputExpressionCapacityAuthority capacityAuthority,
             DesignSemanticAuthority semantics,
             DesignDslAuthority dslAuthority,
             AssetResolutionPort assets,
@@ -42,6 +44,7 @@ public final class RenderingModule {
     ) {
         return new CanonicalEvaluator(
                 Objects.requireNonNull(closureAuthority, "closureAuthority"),
+                Objects.requireNonNull(capacityAuthority, "capacityAuthority"),
                 Objects.requireNonNull(semantics, "semantics"),
                 Objects.requireNonNull(dslAuthority, "dslAuthority"),
                 assets,

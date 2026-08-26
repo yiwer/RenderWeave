@@ -3,7 +3,6 @@ package cn.hbads.renderweave.rendering.internal;
 import cn.hbads.renderweave.rendering.api.EvaluationStage;
 import cn.hbads.renderweave.rendering.api.RenderingProblem;
 import cn.hbads.renderweave.rendering.api.RenderingProblem.ProblemCode;
-import cn.hbads.renderweave.template.api.TemplateClosureAuthority.TemplateSnapshot;
 import cn.hbads.renderweave.schema.definition.ArrayValue;
 import cn.hbads.renderweave.schema.definition.BooleanValue;
 import cn.hbads.renderweave.schema.definition.DateValue;
@@ -13,6 +12,8 @@ import cn.hbads.renderweave.schema.definition.StaticSchemaRef;
 import cn.hbads.renderweave.schema.definition.TextValue;
 import cn.hbads.renderweave.schema.definition.TimeValue;
 import cn.hbads.renderweave.schema.definition.ValueDescriptor;
+import cn.hbads.renderweave.template.api.DesignInputExpressionCapacityAuthority;
+import cn.hbads.renderweave.template.api.TemplateClosureAuthority.TemplateSnapshot;
 import cn.hbads.renderweave.validation.InvalidValidationRequestException;
 import cn.hbads.renderweave.validation.ResolvedSchema;
 import cn.hbads.renderweave.validation.ResolvedSchemaIdentity;
@@ -71,13 +72,15 @@ final class InputAdmission {
     static AdmissionResult admit(
             byte[] envelopeBody,
             TemplateSnapshot rootSnapshot,
+            DesignInputExpressionCapacityAuthority capacityAuthority,
             ValidationTargetResolver resolver
     ) {
         Objects.requireNonNull(envelopeBody, "envelopeBody");
         Objects.requireNonNull(rootSnapshot, "rootSnapshot");
+        Objects.requireNonNull(capacityAuthority, "capacityAuthority");
         Objects.requireNonNull(resolver, "resolver");
 
-        var envelopeResult = RenderInputEnvelope.parse(envelopeBody);
+        var envelopeResult = RenderInputEnvelope.parse(envelopeBody, capacityAuthority);
         if (envelopeResult instanceof RenderInputEnvelope.EnvelopeRejected rejected) {
             return new AdmissionRejected(rejected.problems());
         }

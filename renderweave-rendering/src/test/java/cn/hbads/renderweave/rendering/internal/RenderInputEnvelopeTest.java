@@ -2,6 +2,7 @@ package cn.hbads.renderweave.rendering.internal;
 
 import cn.hbads.renderweave.rendering.api.EvaluationStage;
 import cn.hbads.renderweave.rendering.api.RenderingProblem;
+import cn.hbads.renderweave.template.internal.TemplateModule;
 import org.junit.jupiter.api.Test;
 
 import java.nio.charset.StandardCharsets;
@@ -18,7 +19,7 @@ class RenderInputEnvelopeTest {
     void minimalEnvelopeAdmitsWithVerbatimRootDocumentBytes() {
         var body = "{\"rootDocument\":{\"name\":\"a\",\"amount\":30.50}}".getBytes(StandardCharsets.UTF_8);
 
-        var result = RenderInputEnvelope.parse(body);
+        var result = parse(body);
 
         var admitted = assertInstanceOf(RenderInputEnvelope.EnvelopeAdmitted.class, result);
         var envelope = admitted.envelope();
@@ -36,7 +37,7 @@ class RenderInputEnvelopeTest {
                 .getBytes(StandardCharsets.UTF_8);
 
         var admitted = assertInstanceOf(
-                RenderInputEnvelope.EnvelopeAdmitted.class, RenderInputEnvelope.parse(body));
+                RenderInputEnvelope.EnvelopeAdmitted.class, parse(body));
 
         assertEquals(1, admitted.envelope().assignments().size());
         assertEquals(DEFINITION_ID, admitted.envelope().assignments().get(0).definitionId());
@@ -47,7 +48,7 @@ class RenderInputEnvelopeTest {
     void omittedCustomValuesEqualsEmptyList() {
         var admitted = assertInstanceOf(
                 RenderInputEnvelope.EnvelopeAdmitted.class,
-                RenderInputEnvelope.parse("{\"rootDocument\":{}}".getBytes(StandardCharsets.UTF_8)));
+                parse("{\"rootDocument\":{}}".getBytes(StandardCharsets.UTF_8)));
         assertEquals(0, admitted.envelope().assignments().size());
     }
 
@@ -104,7 +105,7 @@ class RenderInputEnvelopeTest {
         var body = new byte[] { '{', '"', 'r', '"', ':', (byte) 0xFF, '}' };
 
         var rejected = assertInstanceOf(
-                RenderInputEnvelope.EnvelopeRejected.class, RenderInputEnvelope.parse(body));
+                RenderInputEnvelope.EnvelopeRejected.class, parse(body));
 
         assertEquals(
                 RenderingProblem.ProblemCode.RENDER_INPUT_CONTENT_ENCODING_UNSUPPORTED,
@@ -199,7 +200,7 @@ class RenderInputEnvelopeTest {
         var body = "{\"rootDocument\":{\"a\":\"\\u00e9\\ud83d\\ude00\"}}".getBytes(StandardCharsets.UTF_8);
 
         var admitted = assertInstanceOf(
-                RenderInputEnvelope.EnvelopeAdmitted.class, RenderInputEnvelope.parse(body));
+                RenderInputEnvelope.EnvelopeAdmitted.class, parse(body));
 
         var root = (RenderJson.ObjectValue) admitted.envelope().rootDocument();
         var value = (RenderJson.StringValue) root.members().get("a");
@@ -209,18 +210,26 @@ class RenderInputEnvelopeTest {
     private static void assertEnvelopeRejected(String body) {
         var rejected = assertInstanceOf(
                 RenderInputEnvelope.EnvelopeRejected.class,
-                RenderInputEnvelope.parse(body.getBytes(StandardCharsets.UTF_8)));
+                parse(body.getBytes(StandardCharsets.UTF_8)));
         assertEquals(EvaluationStage.REQUEST_ADMISSION, rejected.problems().get(0).stage());
     }
 
     private static RenderInputEnvelope.EnvelopeRejected assertLimitRejected(String body) {
         var rejected = assertInstanceOf(
                 RenderInputEnvelope.EnvelopeRejected.class,
-                RenderInputEnvelope.parse(body.getBytes(StandardCharsets.UTF_8)));
+                parse(body.getBytes(StandardCharsets.UTF_8)));
         assertEquals(
                 RenderingProblem.ProblemCode.RENDER_INPUT_LIMIT_EXCEEDED,
                 rejected.problems().get(0).code());
+        assertEquals(EvaluationStage.INPUT_ADMISSION, rejected.problems().get(0).stage());
         assertTrue(rejected.problems().get(0).limitId().isPresent());
         return rejected;
+    }
+
+    private static RenderInputEnvelope.EnvelopeResult parse(byte[] body) {
+        return RenderInputEnvelope.parse(
+                body,
+                TemplateModule.designInputExpressionCapacityAuthority()
+        );
     }
 }

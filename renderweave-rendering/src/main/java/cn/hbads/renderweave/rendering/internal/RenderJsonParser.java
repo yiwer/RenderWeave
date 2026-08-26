@@ -1,5 +1,7 @@
 package cn.hbads.renderweave.rendering.internal;
 
+import cn.hbads.renderweave.template.api.DesignInputExpressionCapacityAuthority;
+
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -13,6 +15,31 @@ import java.util.Objects;
  */
 final class RenderJsonParser {
 
+    interface CapacityBudget {
+        String limitIdPrefix();
+
+        CapacityReservation reserve(String suffix, long observedValue);
+    }
+
+    private sealed interface CapacityReservation
+            permits CapacityAccepted, CapacityRejected, CapacityInvalid {
+    }
+
+    private enum CapacityAccepted implements CapacityReservation {
+        INSTANCE
+    }
+
+    private record CapacityRejected(
+            String limitId,
+            DesignInputExpressionCapacityAuthority.Terminal terminal
+    ) implements CapacityReservation {
+    }
+
+    private record CapacityInvalid() implements CapacityReservation {
+    }
+
+    private static final CapacityInvalid CAPACITY_INVALID = new CapacityInvalid();
+
     /** Counting budget with the capacity-group name used as limitId prefix. */
     record JsonBudget(
             String limitIdPrefix,
@@ -23,9 +50,60 @@ final class RenderJsonParser {
             long maxTotalValuesAndContainers,
             long maxStringUtf8Bytes,
             int maxNumberTokenBytes
-    ) {
+    ) implements CapacityBudget {
         JsonBudget {
             Objects.requireNonNull(limitIdPrefix, "limitIdPrefix");
+        }
+
+        @Override
+        public CapacityReservation reserve(String suffix, long observedValue) {
+            long maximum = switch (suffix) {
+                case "utf8Bytes" -> maxUtf8Bytes;
+                case "jsonDepth" -> maxDepth;
+                case "objectMembers" -> maxObjectMembers;
+                case "arrayItems" -> maxArrayItems;
+                case "totalValuesAndContainers" -> maxTotalValuesAndContainers;
+                case "stringUtf8Bytes" -> maxStringUtf8Bytes;
+                case "numberTokenBytes" -> maxNumberTokenBytes;
+                default -> throw new IllegalArgumentException("unknown JSON budget axis: " + suffix);
+            };
+            return observedValue <= maximum
+                    ? CapacityAccepted.INSTANCE
+                    : new CapacityRejected(limitIdPrefix + "." + suffix, null);
+        }
+    }
+
+    record AuthorityBudget(
+            String limitIdPrefix,
+            DesignInputExpressionCapacityAuthority authority
+    ) implements CapacityBudget {
+        AuthorityBudget {
+            Objects.requireNonNull(limitIdPrefix, "limitIdPrefix");
+            Objects.requireNonNull(authority, "authority");
+        }
+
+        @Override
+        public CapacityReservation reserve(String suffix, long observedValue) {
+            var limitId = limitIdPrefix + "." + suffix;
+            final DesignInputExpressionCapacityAuthority.Decision decision;
+            try {
+                decision = authority.evaluate(
+                        new DesignInputExpressionCapacityAuthority.Observation(
+                                limitId,
+                                Long.toString(observedValue)
+                        )
+                );
+            } catch (RuntimeException unavailable) {
+                return CAPACITY_INVALID;
+            }
+            return switch (decision) {
+                case DesignInputExpressionCapacityAuthority.Accepted ignored ->
+                        CapacityAccepted.INSTANCE;
+                case DesignInputExpressionCapacityAuthority.Rejected rejected ->
+                        new CapacityRejected(limitId, rejected.terminal());
+                case DesignInputExpressionCapacityAuthority.Invalid ignored -> CAPACITY_INVALID;
+                case null -> CAPACITY_INVALID;
+            };
         }
     }
 
@@ -34,10 +112,19 @@ final class RenderJsonParser {
         SYNTAX_INVALID,
         DUPLICATE_MEMBER,
         LIMIT_EXCEEDED,
+        CAPACITY_AUTHORITY_INVALID,
         VALUE_EXPECTED
     }
 
-    record JsonParseFailure(FailureKind kind, String pointer, String limitId) {
+    record JsonParseFailure(
+            FailureKind kind,
+            String pointer,
+            String limitId,
+            DesignInputExpressionCapacityAuthority.Terminal terminal
+    ) {
+        JsonParseFailure(FailureKind kind, String pointer, String limitId) {
+            this(kind, pointer, limitId, null);
+        }
     }
 
     sealed interface ParseResult permits Parsed, ParseRejected {
@@ -50,21 +137,21 @@ final class RenderJsonParser {
     }
 
     private final byte[] body;
-    private final JsonBudget budget;
+    private final CapacityBudget budget;
     private int position;
     private long totalValues;
 
-    private RenderJsonParser(byte[] body, JsonBudget budget) {
+    private RenderJsonParser(byte[] body, CapacityBudget budget) {
         this.body = body;
         this.budget = budget;
     }
 
-    static ParseResult parse(byte[] body, JsonBudget budget) {
+    static ParseResult parse(byte[] body, CapacityBudget budget) {
         Objects.requireNonNull(body, "body");
         Objects.requireNonNull(budget, "budget");
-        if (body.length > budget.maxUtf8Bytes()) {
-            return new ParseRejected(new JsonParseFailure(
-                    FailureKind.LIMIT_EXCEEDED, "", budget.limitIdPrefix() + ".utf8Bytes"));
+        var bodyReservation = budget.reserve("utf8Bytes", body.length);
+        if (!(bodyReservation instanceof CapacityAccepted)) {
+            return new ParseRejected(capacityFailure(bodyReservation, ""));
         }
         if (!isValidUtf8(body)) {
             return new ParseRejected(new JsonParseFailure(
@@ -86,22 +173,58 @@ final class RenderJsonParser {
     private JsonParseFailure failure;
 
     private JsonParseFailure reject(FailureKind kind, String pointer, String limitId) {
+        return reject(kind, pointer, limitId, null);
+    }
+
+    private JsonParseFailure reject(
+            FailureKind kind,
+            String pointer,
+            String limitId,
+            DesignInputExpressionCapacityAuthority.Terminal terminal
+    ) {
         if (failure == null) {
-            failure = new JsonParseFailure(kind, pointer, limitId);
+            failure = new JsonParseFailure(kind, pointer, limitId, terminal);
         }
         return failure;
+    }
+
+    private boolean reserve(String suffix, long observedValue, String pointer) {
+        var reservation = budget.reserve(suffix, observedValue);
+        if (reservation instanceof CapacityAccepted) {
+            return true;
+        }
+        failure = capacityFailure(reservation, pointer);
+        return false;
+    }
+
+    private static JsonParseFailure capacityFailure(
+            CapacityReservation reservation,
+            String pointer
+    ) {
+        if (reservation instanceof CapacityRejected rejected) {
+            return new JsonParseFailure(
+                    FailureKind.LIMIT_EXCEEDED,
+                    pointer,
+                    rejected.limitId(),
+                    rejected.terminal()
+            );
+        }
+        return new JsonParseFailure(
+                FailureKind.CAPACITY_AUTHORITY_INVALID,
+                pointer,
+                null
+        );
     }
 
     private RenderJson parseValue(int depth, String pointer) {
         if (failure != null) {
             return null;
         }
-        totalValues++;
-        if (totalValues > budget.maxTotalValuesAndContainers()) {
-            reject(FailureKind.LIMIT_EXCEEDED, pointer,
-                    budget.limitIdPrefix() + ".totalValuesAndContainers");
+        long candidateTotal = totalValues + 1;
+        if (!reserve("totalValuesAndContainers", candidateTotal, pointer)) {
             return null;
         }
+        totalValues = candidateTotal;
         skipWhitespace();
         if (position >= body.length) {
             reject(FailureKind.VALUE_EXPECTED, pointer, null);
@@ -135,8 +258,7 @@ final class RenderJsonParser {
     }
 
     private RenderJson parseObject(int depth, String pointer) {
-        if (depth + 1 > budget.maxDepth()) {
-            reject(FailureKind.LIMIT_EXCEEDED, pointer, budget.limitIdPrefix() + ".jsonDepth");
+        if (!reserve("jsonDepth", depth + 1L, pointer)) {
             return null;
         }
         int start = position;
@@ -169,14 +291,14 @@ final class RenderJsonParser {
             if (value == null) {
                 return null;
             }
-            if (members.put(memberName, value) != null) {
+            if (members.containsKey(memberName)) {
                 reject(FailureKind.DUPLICATE_MEMBER, memberPointer, null);
                 return null;
             }
-            if (members.size() > budget.maxObjectMembers()) {
-                reject(FailureKind.LIMIT_EXCEEDED, pointer, budget.limitIdPrefix() + ".objectMembers");
+            if (!reserve("objectMembers", members.size() + 1L, pointer)) {
                 return null;
             }
+            members.put(memberName, value);
             skipWhitespace();
             if (position >= body.length) {
                 reject(FailureKind.SYNTAX_INVALID, pointer, null);
@@ -196,8 +318,7 @@ final class RenderJsonParser {
     }
 
     private RenderJson parseArray(int depth, String pointer) {
-        if (depth + 1 > budget.maxDepth()) {
-            reject(FailureKind.LIMIT_EXCEEDED, pointer, budget.limitIdPrefix() + ".jsonDepth");
+        if (!reserve("jsonDepth", depth + 1L, pointer)) {
             return null;
         }
         int start = position;
@@ -213,11 +334,10 @@ final class RenderJsonParser {
             if (item == null) {
                 return null;
             }
-            items.add(item);
-            if (items.size() > budget.maxArrayItems()) {
-                reject(FailureKind.LIMIT_EXCEEDED, pointer, budget.limitIdPrefix() + ".arrayItems");
+            if (!reserve("arrayItems", items.size() + 1L, pointer)) {
                 return null;
             }
+            items.add(item);
             skipWhitespace();
             if (position >= body.length) {
                 reject(FailureKind.SYNTAX_INVALID, pointer, null);
@@ -248,9 +368,7 @@ final class RenderJsonParser {
             }
             byte current = body[position];
             if (current == '"') {
-                if (utf8Bytes > budget.maxStringUtf8Bytes()) {
-                    reject(FailureKind.LIMIT_EXCEEDED, pointer,
-                            budget.limitIdPrefix() + ".stringUtf8Bytes");
+                if (!reserve("stringUtf8Bytes", utf8Bytes, pointer)) {
                     return null;
                 }
                 position++;
@@ -426,8 +544,7 @@ final class RenderJsonParser {
             }
         }
         int length = position - start;
-        if (length > budget.maxNumberTokenBytes()) {
-            reject(FailureKind.LIMIT_EXCEEDED, pointer, budget.limitIdPrefix() + ".numberTokenBytes");
+        if (!reserve("numberTokenBytes", length, pointer)) {
             return null;
         }
         var token = new String(body, start, length, StandardCharsets.US_ASCII);

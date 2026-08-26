@@ -6,6 +6,7 @@ import cn.hbads.renderweave.rendering.api.RenderingProblem;
 import cn.hbads.renderweave.rendering.api.RenderingProblem.LimitId;
 import cn.hbads.renderweave.rendering.api.RenderingProblem.ProblemCode;
 import cn.hbads.renderweave.rendering.spi.AssetResolutionPort;
+import cn.hbads.renderweave.template.api.DesignInputExpressionCapacityAuthority;
 import cn.hbads.renderweave.template.api.DesignDslAuthority;
 import cn.hbads.renderweave.template.api.DesignSemanticAuthority;
 import cn.hbads.renderweave.template.api.TemplateClosureAuthority;
@@ -26,6 +27,7 @@ import java.util.Optional;
 final class CanonicalEvaluator implements Evaluator {
 
     private final TemplateClosureAuthority closureAuthority;
+    private final DesignInputExpressionCapacityAuthority capacityAuthority;
     private final DesignSemanticAuthority semantics;
     private final DesignDslAuthority dslAuthority;
     private final AssetResolutionPort assets;
@@ -35,6 +37,7 @@ final class CanonicalEvaluator implements Evaluator {
 
     CanonicalEvaluator(
             TemplateClosureAuthority closureAuthority,
+            DesignInputExpressionCapacityAuthority capacityAuthority,
             DesignSemanticAuthority semantics,
             DesignDslAuthority dslAuthority,
             AssetResolutionPort assets,
@@ -43,6 +46,7 @@ final class CanonicalEvaluator implements Evaluator {
             Clock clock
     ) {
         this.closureAuthority = Objects.requireNonNull(closureAuthority, "closureAuthority");
+        this.capacityAuthority = Objects.requireNonNull(capacityAuthority, "capacityAuthority");
         this.semantics = Objects.requireNonNull(semantics, "semantics");
         this.dslAuthority = Objects.requireNonNull(dslAuthority, "dslAuthority");
         this.assets = assets;
@@ -103,7 +107,7 @@ final class CanonicalEvaluator implements Evaluator {
         }
 
         var admission = InputAdmission.admit(
-                command.rawRenderInputUtf8(), rootSnapshot, validationResolver);
+                command.rawRenderInputUtf8(), rootSnapshot, capacityAuthority, validationResolver);
         if (admission instanceof InputAdmission.AdmissionRejected admissionRejected) {
             return new EvaluationOutcome.Rejected(
                     admissionRejected.problems().get(0).stage(),

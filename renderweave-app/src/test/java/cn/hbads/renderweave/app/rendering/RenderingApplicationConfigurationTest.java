@@ -11,9 +11,11 @@ import cn.hbads.renderweave.schema.definition.StaticSchemaRef;
 import cn.hbads.renderweave.schema.identity.SchemaKey;
 import cn.hbads.renderweave.schema.identity.VersionTag;
 import cn.hbads.renderweave.template.api.DesignDslAuthority;
+import cn.hbads.renderweave.template.api.DesignInputExpressionCapacityAuthority;
 import cn.hbads.renderweave.template.api.DesignSemanticAuthority;
 import cn.hbads.renderweave.template.api.TemplateApplication.TemplateId;
 import cn.hbads.renderweave.template.api.TemplateClosureAuthority;
+import cn.hbads.renderweave.template.internal.TemplateModule;
 import cn.hbads.renderweave.template.spi.OwnerScopeAuthority;
 import cn.hbads.renderweave.template.spi.TemplatePersistence;
 import cn.hbads.renderweave.validation.ValidationTargetResolver;
@@ -32,6 +34,8 @@ class RenderingApplicationConfigurationTest {
     private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
             .withUserConfiguration(RenderingApplicationConfiguration.class)
             .withBean(TemplateClosureAuthority.class, () -> mock(TemplateClosureAuthority.class))
+            .withBean(DesignInputExpressionCapacityAuthority.class,
+                    TemplateModule::designInputExpressionCapacityAuthority)
             .withBean(DesignSemanticAuthority.class, () -> mock(DesignSemanticAuthority.class))
             .withBean(DesignDslAuthority.class, () -> mock(DesignDslAuthority.class))
             .withBean(TemplatePersistence.class, RenderingApplicationConfigurationTest::templates)
