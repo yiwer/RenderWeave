@@ -655,6 +655,11 @@ Label: wayfinder:map
   Rendering/App、OpenAPI/Node 24、`fast`、顺序 `server` 与 clean 17-step Goal `full` 均绿。公共 Rendering API 已
   开放，但默认无 Certified Profile 时仍真实失败封闭；Profile/daemon success/E6 UI/正式 `/templates` route 与
   native build 继续关闭，不制造图片或 fallback。
+- [实现 Editor E6 权威预览纵切](issues/125-editor-e6-authoritative-preview.md) —
+  **in_progress / claimed by Codex `/root`**；T124 已解除真实 public preview seam 前置，当前 single-writer frontier
+  闭合 raw RenderInput、完整 length/digest/profile 核验、current-only single-slot generation guard、失败撤图/
+  问题聚焦与 save-and-preview 顺序非原子。正式 `/templates` route、Profile/daemon success、native build与
+  public Engine cancel 均不由本票偷渡。
 - [验证 Product Editor 状态、恢复与权威预览架构](issues/09-validate-product-editor-architecture.md) —
   throwaway 逻辑原型（`/prototype/editor-state-model`，不进产品 route）把冻结编辑器规则编码为确定性
   fixture 状态机：10 个引导走查场景 37/37 断言 + 自由操作冒烟 + 键盘焦点检查全部通过（Playwright A1，
@@ -785,7 +790,7 @@ Label: wayfinder:map
   JPEG/Engine 接线仍须另行登记，物理 Linux 双 CPU-family
   认证与 J1/A3 属届时另行授权的执行级门控。
 - Editor T27/E1、T28/E2、T29/E3、T30/E4a、T31/E4b、T32/E5、T35/E7、T36/E8 与 T37/E9 均已单独登记并完成；
-  E6 仍被真实 Renderer output/public preview seam 阻塞。T38 也已完成不依赖未冻结 residual tolerance 的 definite
+  T124 已解除 E6 的真实 public preview seam 前置，E6 现由 T125 single-writer 实施中。T38 也已完成不依赖未冻结 residual tolerance 的 definite
   Stack singleton main-axis FILL 子闭包；T39 definite Grid 每轴 singleton FRACTION 子闭包也已完成；T40
   singleton AUTO 固定贡献子闭包现也已完成，T41 independent multi-AUTO constraint 子闭包也已完成；T44 也已
   完成 AUTO 对 T42/T43 resource-free HUG child 的消费；

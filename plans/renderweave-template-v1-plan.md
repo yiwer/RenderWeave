@@ -4645,3 +4645,26 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
   `resolved / automated_verified`；E6 Web preview、正式 `/templates` product route、J1/A3/READY 与外部副作用未推进。
   最终状态更新后的 affected `render` `.sdlc/evidence/20260826-072836-render/`（2/2，86.570 秒）与 resolution
   `fast` `.sdlc/evidence/20260826-073019-fast/`（3/3，27.707 秒）也均 passed。
+
+## 125. TV1-T125 执行卡
+
+- 决策：T124 commit `788c7ab5` 已合入并 push `main`，公共 Authoritative Preview HTTP seam 已解除 Editor E6 的
+  实现前置；现有 E1–E5/E7–E9 与 T114 产品页 substrate 均真实存在，因此当前唯一未阻塞最终产品 frontier 是 E6，
+  而不是 `/prototype`、fixture preview 或未认证 daemon success。
+- Interface/seam：新增 Web-owned `TemplatePreviewTransport` 与一个 Editor preview coordinator；发送原始 strict
+  RenderInput UTF-8 bytes，只在完整核验 200 image 的 length/digest/result+profile headers 后原子创建唯一 object URL。
+  非 200 只接受 closed render problem；其他 transport/contract drift fail closed并零图。
+- 精确语义：basis 绑定 saved current revision/hash、无本地分歧、preview generation、exact input bytes与
+  format/DPI/JPEG quality；edit/input/parameter/current/readiness变化立即撤图，single-active + abort + generation guard
+  丢弃迟到结果。dirty 动作严格 save → READY current → 独立 preview，保存成功与预览失败分别呈现且不回滚 revision。
+- UI：沿 Canvas Focus 增加 dock具名入口和中央独立 panel；输入样例不落 Local recovery，失败摘要程序聚焦，图片有
+  responsive尺寸、alt与完整安全 metadata。T124 无 public cancel endpoint，因此只提供诚实“停止等待”并说明服务端
+  operation可能继续，不声称 cooperative Engine cancel。
+- 允许影响：T125 tracker/map/plan、`web/src/features/template-editor` preview deep module/tests/shell/CSS，以及必要 Web
+  gate/evidence；不修改用户 Image-Only dirty work。
+- 禁止影响：Java/OpenAPI/generated SDK/migration、Renderer/Profile registration/certification、daemon success/native
+  build、LayoutTrace/public cancel、App/nav/正式 `/templates` route、fixture/fake raster/旧图 fallback、provider/API Key/
+  真实数据/生产/J1/A3/READY。
+- TDD/gates：pure transport RED → DOM workflow/a11y RED → minimal GREEN/refactor；focused Node 24 → Editor/Web
+  test/typecheck/lint/build → `web` → `fast` → Goal `full` → resolution `fast`。Maven串行、精确 staging；最高只报
+  `automated_verified`。

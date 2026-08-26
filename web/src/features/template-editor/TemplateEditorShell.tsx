@@ -97,6 +97,18 @@ import {
   locateTemplateProblem,
   type TemplateProblemLocation,
 } from './template-problem-locator';
+import {
+  TemplatePreviewPanel,
+  useTemplatePreviewCoordinator,
+  type TemplatePreviewCoordinator,
+} from './TemplatePreviewPanel';
+import {
+  defaultTemplatePreviewObjectUrls,
+  defaultTemplatePreviewTransport,
+  type TemplatePreviewObjectUrlFactory,
+  type TemplatePreviewRequest,
+  type TemplatePreviewTransport,
+} from './template-preview';
 import './template-editor.css';
 
 type EditorEntry = TemplateRecoveryEntry;
@@ -115,6 +127,8 @@ interface TemplateEditorShellProps {
   session: TemplateEditorSession;
   onRetryReadiness?: () => void;
   saveTransport?: TemplateSaveTransport;
+  previewTransport?: TemplatePreviewTransport;
+  previewObjectUrls?: TemplatePreviewObjectUrlFactory;
   initialSaveNotice?: string;
   onSessionCommitted?: (session: StructuredEditorSession, saveNotice?: string) => void;
   recoveryStorage?: TemplateRecoveryStorage;
@@ -134,12 +148,15 @@ export function TemplateEditorShell({
   session,
   onRetryReadiness,
   saveTransport,
+  previewTransport,
+  previewObjectUrls = defaultTemplatePreviewObjectUrls,
   initialSaveNotice,
   onSessionCommitted,
   recoveryStorage,
   recoveryNow = Date.now,
   download = defaultTemplateEditorDownload,
 }: TemplateEditorShellProps) {
+  const preview = useTemplatePreviewCoordinator(session, previewTransport, previewObjectUrls);
   if (session.mode === 'raw-repair') {
     return <RawRepairShell session={session} download={download} />;
   }
@@ -156,6 +173,7 @@ export function TemplateEditorShell({
       session={session}
       onRetryReadiness={onRetryReadiness}
       saveTransport={saveTransport}
+      preview={preview}
       initialSaveNotice={initialSaveNotice}
       onSessionCommitted={onSessionCommitted}
       recoveryStorage={recoveryStorage}
@@ -169,6 +187,8 @@ interface TemplateEditorSurfaceProps {
   templateId: string;
   transport?: TemplateEditorTransport;
   saveTransport?: TemplateSaveTransport;
+  previewTransport?: TemplatePreviewTransport;
+  previewObjectUrls?: TemplatePreviewObjectUrlFactory;
   recoveryStorage?: TemplateRecoveryStorage;
   recoveryNow?: () => number;
   download?: TemplateEditorDownload;
@@ -183,6 +203,8 @@ export function TemplateEditorSurface({
   templateId,
   transport = defaultTemplateEditorTransport,
   saveTransport,
+  previewTransport,
+  previewObjectUrls,
   recoveryStorage,
   recoveryNow = Date.now,
   download,
@@ -192,6 +214,8 @@ export function TemplateEditorSurface({
   const generation = useRef(0);
   const effectiveSaveTransport = saveTransport
     ?? (transport === defaultTemplateEditorTransport ? defaultTemplateSaveTransport : undefined);
+  const effectivePreviewTransport = previewTransport
+    ?? (transport === defaultTemplateEditorTransport ? defaultTemplatePreviewTransport : undefined);
   const effectiveRecoveryStorage = recoveryStorage ?? browserTemplateRecoveryStorage();
 
   useEffect(() => {
@@ -240,6 +264,8 @@ export function TemplateEditorSurface({
       session={surface.session}
       onRetryReadiness={() => setRetryKey((value) => value + 1)}
       saveTransport={effectiveSaveTransport}
+      previewTransport={effectivePreviewTransport}
+      previewObjectUrls={previewObjectUrls}
       initialSaveNotice={surface.saveNotice}
       onSessionCommitted={(session, saveNotice) => setSurface({
         state: 'open',
@@ -317,10 +343,17 @@ type StructuredImportView =
   | { state: 'notice'; message: string }
   | { state: 'error'; message: string };
 
+interface PendingPreviewAfterSave {
+  draftCanonical: string;
+  previewGeneration: number;
+  request: TemplatePreviewRequest;
+}
+
 function StructuredShell({
   session: incomingSession,
   onRetryReadiness,
   saveTransport,
+  preview,
   initialSaveNotice,
   onSessionCommitted,
   recoveryStorage,
@@ -330,6 +363,7 @@ function StructuredShell({
   session: StructuredEditorSession;
   onRetryReadiness?: () => void;
   saveTransport?: TemplateSaveTransport;
+  preview: TemplatePreviewCoordinator;
   initialSaveNotice?: string;
   onSessionCommitted?: (session: StructuredEditorSession, saveNotice?: string) => void;
   recoveryStorage?: TemplateRecoveryStorage;
@@ -357,6 +391,7 @@ function StructuredShell({
   const cachedRecovery = useRef<TemplateRecoveryRecord | null>(null);
   const importEpoch = useRef(0);
   const pendingImportAfterSave = useRef<StructuredImportCandidate | null>(null);
+  const pendingPreviewAfterSave = useRef<PendingPreviewAfterSave | null>(null);
   const incomingSessionRef = useRef(incomingSession);
   const editorRootRef = useRef<HTMLDivElement>(null);
   const incomingBaselineKey = baselineIdentity(incomingSession.baseline);
@@ -366,6 +401,9 @@ function StructuredShell({
       : localSession,
     [incomingSession.baseline, incomingSession.readiness, localSession],
   );
+  useEffect(() => {
+    preview.syncSession(session);
+  }, [preview, session]);
   const nodes = useMemo(() => projectStructuredNodes(session), [session]);
   const [entry, setEntry] = useState<EditorEntry>('structure');
   const [selectedNodeId, setSelectedNodeId] = useState(nodes[0]?.nodeId ?? '');
@@ -420,6 +458,8 @@ function StructuredShell({
 
   const acceptLocalChange = (next: StructuredEditorSession) => {
     if (localLocked) return;
+    pendingPreviewAfterSave.current = null;
+    preview.invalidate('DesignDSL 本地工作副本已变化；旧权威图片已撤下。');
     if (importView.state === 'candidate') {
       setImportView({ state: 'stale', message: '导入候选已因本地 generation 变化而失效。' });
     }
@@ -545,6 +585,8 @@ function StructuredShell({
       return false;
     }
     pendingImportAfterSave.current = null;
+    pendingPreviewAfterSave.current = null;
+    preview.invalidate('导入内容已替换本地工作副本；旧权威图片已撤下。');
     setLocalSession(adopted.session);
     setSaveView({ state: 'idle' });
     setRecoveryBase(undefined);
@@ -610,6 +652,8 @@ function StructuredShell({
       return;
     }
     applyRecoveredEditState(record.editState);
+    pendingPreviewAfterSave.current = null;
+    preview.invalidate('Local recovery 已恢复为本地草稿；旧权威图片已撤下。');
     setRecoveryBase({
       revision: record.baseRevision,
       contentHash: record.baseContentHash,
@@ -634,6 +678,8 @@ function StructuredShell({
     if (!clearRecoveryNow()) return;
     const clean = createSessionFromBaseline(session.baseline, session.readiness);
     if (clean.mode !== 'structured') return;
+    pendingPreviewAfterSave.current = null;
+    preview.invalidate('Local recovery 草稿已放弃；旧权威图片已撤下。');
     setLocalSession({
       ...clean,
       previewGeneration: session.previewGeneration + 1,
@@ -714,13 +760,61 @@ function StructuredShell({
     return () => window.removeEventListener('beforeunload', beforeUnload);
   }, [dirty, recoveryStorage]);
 
+  const continuePreviewAfterCommit = (
+    committed: StructuredEditorSession,
+  ): string | undefined => {
+    const intent = pendingPreviewAfterSave.current;
+    pendingPreviewAfterSave.current = null;
+    if (!intent) return undefined;
+    if (intent.draftCanonical !== session.workingCopy.canonicalDesignDsl
+      || intent.previewGeneration !== session.previewGeneration
+      || intent.draftCanonical !== committed.baseline.canonicalDesignDsl) {
+      preview.reportProblem({
+        source: 'client',
+        code: 'EDITOR_PREVIEW_SAVE_BASIS_MISMATCH',
+        message: `revision ${committed.baseline.revision} 已采用，但 canonical 内容与保存并预览 intent 不一致；未启动权威预览。`,
+      }, true);
+      return `revision ${committed.baseline.revision} 已采用；预览 intent 已安全终止。`;
+    }
+    const committedGuard = authoritativePreviewGuard(committed);
+    if (committedGuard.state === 'blocked') {
+      const invalid = committed.readiness.state === 'checked'
+        && committed.readiness.value === 'INVALID';
+      preview.reportProblem({
+        source: 'client',
+        code: invalid
+          ? 'EDITOR_PREVIEW_SAVED_CURRENT_INVALID'
+          : 'EDITOR_PREVIEW_SAVED_CURRENT_NOT_READY',
+        message: invalid
+          ? `revision ${committed.baseline.revision} 已保存为 INVALID；未启动权威预览。`
+          : `revision ${committed.baseline.revision} 已保存，但 current 尚不能形成 READY snapshot；未启动权威预览。`,
+      }, true);
+      return invalid
+        ? `revision ${committed.baseline.revision} 已保存为 INVALID；未启动权威预览。`
+        : `revision ${committed.baseline.revision} 已保存；当前未启动权威预览。`;
+    }
+    void preview.start(committed, intent.request, { savedFirst: true });
+    return `revision ${committed.baseline.revision} 已保存；权威预览已作为独立操作发起。`;
+  };
+
+  const abandonPendingPreview = (saveCode: string) => {
+    if (!pendingPreviewAfterSave.current) return;
+    pendingPreviewAfterSave.current = null;
+    preview.reportProblem({
+      source: 'client',
+      code: 'EDITOR_PREVIEW_SAVE_NOT_COMPLETED',
+      message: `Template 保存未完成（${saveCode}）；未启动权威预览。`,
+    });
+  };
+
   const acceptSaveResult = (result: TemplateSaveResult) => {
     switch (result.state) {
-      case 'saved':
+      case 'saved': {
         clearRecoveryNow();
         setRecoveryBase(undefined);
         setRecoveryView(recoveryStorage ? { state: 'none' } : { state: 'disabled' });
         if (pendingImportAfterSave.current) {
+          pendingPreviewAfterSave.current = null;
           adoptImportCandidate(pendingImportAfterSave.current, result.session, {
             rebasedAfterSave: true,
             recoveryCleared: true,
@@ -732,9 +826,13 @@ function StructuredShell({
           setImportView({ state: 'stale', message: '导入候选已因本地 generation 变化而失效。' });
         }
         setLocalSession(result.session);
-        setSaveView({ state: 'idle' });
-        onSessionCommitted?.(result.session);
+        const previewNotice = continuePreviewAfterCommit(result.session);
+        setSaveView(previewNotice
+          ? { state: 'confirmed-current', message: previewNotice }
+          : { state: 'idle' });
+        onSessionCommitted?.(result.session, previewNotice);
         return;
+      }
       case 'conflict':
         setSaveView({
           state: 'conflict',
@@ -751,10 +849,12 @@ function StructuredShell({
         return;
       case 'rejected':
         pendingImportAfterSave.current = null;
+        abandonPendingPreview(result.code);
         setSaveView({ state: 'rejected', code: result.code, message: result.message });
         return;
       case 'offer-invalidated':
         pendingImportAfterSave.current = null;
+        abandonPendingPreview(result.code);
         setSaveView({
           state: 'rejected',
           code: result.code,
@@ -770,11 +870,12 @@ function StructuredShell({
 
   const acceptReconciliationResult = (result: TemplateSaveReconciliationResult) => {
     switch (result.state) {
-      case 'adopted':
+      case 'adopted': {
         clearRecoveryNow();
         setRecoveryBase(undefined);
         setRecoveryView(recoveryStorage ? { state: 'none' } : { state: 'disabled' });
         if (pendingImportAfterSave.current) {
+          pendingPreviewAfterSave.current = null;
           adoptImportCandidate(pendingImportAfterSave.current, result.session, {
             rebasedAfterSave: true,
             recoveryCleared: true,
@@ -786,9 +887,12 @@ function StructuredShell({
           setImportView({ state: 'stale', message: '导入候选已因本地 generation 变化而失效。' });
         }
         setLocalSession(result.session);
-        setSaveView({ state: 'confirmed-current', message: result.message });
-        onSessionCommitted?.(result.session, result.message);
+        const previewNotice = continuePreviewAfterCommit(result.session);
+        const adoptedNotice = previewNotice ?? result.message;
+        setSaveView({ state: 'confirmed-current', message: adoptedNotice });
+        onSessionCommitted?.(result.session, adoptedNotice);
         return;
+      }
       case 'retryable':
         setSaveView({ state: 'retryable', attempt: result.attempt, message: result.message });
         return;
@@ -796,12 +900,14 @@ function StructuredShell({
         setSaveView({ state: 'conflict', offer: result.offer, message: result.message });
         return;
       case 'deleted':
+        abandonPendingPreview('TEMPLATE_DELETED');
         setSaveView({ state: 'deleted', attempt: result.attempt, message: result.message });
         return;
       case 'unavailable':
         setSaveView({ state: 'unknown', attempt: result.attempt, message: result.message });
         return;
       case 'failed-closed':
+        abandonPendingPreview(result.code);
         setSaveView({
           state: 'failed-closed',
           attempt: result.attempt,
@@ -949,9 +1055,10 @@ function StructuredShell({
     acceptSaveResult(result);
   };
 
-  const save = () => {
+  const save = (origin: 'plain' | 'preview' | 'import' = 'plain') => {
     const transport = saveTransport;
     if (!transport) return;
+    if (origin !== 'preview') pendingPreviewAfterSave.current = null;
     if (recoveryView.state === 'restored') {
       const overwrite = recoveryOverwriteOffer(
         session,
@@ -978,17 +1085,34 @@ function StructuredShell({
       ),
     );
   };
+  const generatePreview = () => {
+    if (!preview.enabled || localLocked) return;
+    if (!dirty) {
+      void preview.start(session);
+      return;
+    }
+    if (!saveTransport) return;
+    pendingImportAfterSave.current = null;
+    pendingPreviewAfterSave.current = {
+      draftCanonical: session.workingCopy.canonicalDesignDsl,
+      previewGeneration: session.previewGeneration,
+      request: { ...preview.request },
+    };
+    save('preview');
+  };
   const saveThenAdoptImport = (candidate: StructuredImportCandidate) => {
     if (!saveTransport || !candidateStillBound(candidate, session)) {
       setImportView({ state: 'stale', message: '导入候选已因本地 generation 变化而失效。' });
       return;
     }
+    pendingPreviewAfterSave.current = null;
     pendingImportAfterSave.current = candidate;
-    save();
+    save('import');
   };
   const cancelSaveOffer = () => {
     const pending = pendingImportAfterSave.current;
     pendingImportAfterSave.current = null;
+    abandonPendingPreview('EDITOR_PREVIEW_SAVE_CANCELLED');
     setSaveView({ state: 'idle' });
     if (pending) cancelImportReplacement(pending);
   };
@@ -1252,6 +1376,16 @@ function StructuredShell({
             />
           ) : null}
           <CanvasProjection workingCopy={session.workingCopy} nodes={nodes} />
+          {preview.enabled ? (
+            <TemplatePreviewPanel
+              coordinator={preview}
+              session={session}
+              documentName={workingName}
+              localLocked={localLocked}
+              canSave={saveTransport !== undefined}
+              onGenerate={generatePreview}
+            />
+          ) : null}
         </section>
 
         {inspectorOpen ? (
@@ -1296,6 +1430,18 @@ function StructuredShell({
             <PanelRight aria-hidden="true" size={15} />
             检视器
           </button>
+          {preview.enabled ? (
+            <button
+              type="button"
+              aria-pressed={preview.panelOpen}
+              aria-controls="template-authoritative-preview-panel"
+              aria-label={preview.panelOpen ? '关闭权威预览' : '打开权威预览'}
+              onClick={preview.panelOpen ? preview.close : preview.open}
+            >
+              <ShieldCheck aria-hidden="true" size={15} />
+              权威预览
+            </button>
+          ) : null}
           <span>{nodes.length} 个 authored 节点</span>
         </div>
       </main>
