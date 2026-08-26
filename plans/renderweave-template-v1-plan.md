@@ -1,10 +1,10 @@
 # RenderWeave Template v1 Implementation Plan
 
-- 当前 frontier（2026-08-26）：TV1-T01–T127 均已 `resolved`；冻结 DAG 复算确认 T127 只完成
-  `java-domain-authority` 的真实 capacity component，不能越过仍缺的 `transactional-integration-replayer` 直接发行
-  records。TV1-T128 已由 Codex `/root` single-writer claim，正在绑定真实 PostgreSQL 原子提交/幂等/回滚 replay 与
-  class-level exact target；formal Domain Services Case/Oracle 继续为 0。
-- 状态：`in_progress`；TV1-T128=`in_progress`；TV1-T127=`automated_verified`；TV1-T01/T02/T03/T04/T05/T06/T07/T08/T09/T10/T10b/T11/T12a/T12b/T13/T14/T14b/T15/T16/T17/T18/T19/T20/T22=`automated_verified`
+- 当前 frontier（2026-08-26）：TV1-T01–T128 均已 `resolved`；T128 已为第一个 Domain Services capacity class
+  绑定真实 PostgreSQL 原子提交/幂等/回滚 replay、class-level exact target 与两个 executor manifests，并取得
+  `preissuanceReady=true`。formal Domain Services Case/Oracle 仍为 0；下一安全动作是复算冻结 DAG，并以独立票执行
+  append-only formal issuance，不能在 T128 收口中越级发行。
+- 状态：`in_progress`；TV1-T128=`automated_verified`；TV1-T127=`automated_verified`；TV1-T01/T02/T03/T04/T05/T06/T07/T08/T09/T10/T10b/T11/T12a/T12b/T13/T14/T14b/T15/T16/T17/T18/T19/T20/T22=`automated_verified`
   （T09 另含人工 J1），TV1-T21=`automated_verified`（首个 Rendering 纵切——renderweave-rendering
   首个 artifact、TemplateClosureAuthority/Evaluator stage 1–8/seal、CapabilityState 加密落盘、
   RenderNodeContract 向量语料 Java primary、端到端 assembly 证明）；TV1-T13 已完成 AssetResolver、加密
@@ -4787,3 +4787,31 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
   Renderer/Profile/native build、provider/API Key/真实数据/生产/J1/A3/READY。
 - TDD/gates：missing executor RED → focused PostgreSQL GREEN → implementation commit → target materialization →
   `domain-services` → `asset`/`fast` → sequential `server` → Goal `full` → resolution `fast`；Maven 串行、精确 staging。
+
+### TV1-T128 resolution evidence
+
+- 生命周期：`resolved / automated_verified`。实现 revision `b791fccb3c6d3bdfcff31d45ed5ae170fd9d982f`
+  新增 app test-scope `transactional-integration-replayer`，直接执行产品 `PostgresAssetPersistence`；目标 revision
+  `b7d336ae8a0defaca83874f42ef7db31ec6176a1` 物化 class target 与两个 executor manifests。
+- Exact binding：target SHA-256 `d2b785bcf454c62f0508dc74d195e3875f550df74a949844408fe005c1e2bcfb`；
+  `java-domain-authority` manifest 为 `1fcaae74c1bc2f4eaecc6e9aaf436fddaa15d32cc449c5b05b79a4b33fb0dafb`，
+  `transactional-integration-replayer` manifest 为
+  `1553d1b48ac677f2562d4ad8f1dd03ab519966bb4a0f75c04198e845e751604c`；12+12 assigned corpus digest 为
+  `5a236de3cf36155df7244b049b045cefda55960cf16efe8212c3981e5463844f`，materializer byte-identical replay 通过。
+- 正式 class gate `.sdlc/evidence/20260826-115041-domain-services/` 为 executor roles 2/2、capacity 12/12、
+  transaction 3/3。真实 Testcontainers PostgreSQL 16.13 runtime image digest 精确等于
+  `sha256:4e6e670bb069649261c9c18031f0aded7bb249a5b6664ddec29c013a89310d50`；成功 create 的五项观察原子提交、
+  replay/conflict 零写和末步 duplicate-key 整事务回滚均通过。Python independent closure 报告
+  `preissuanceReady=true`、`executionClassExecutable=false`；formal registry 仍为 46/46，Domain Services 0/0。
+- 受影响 `asset` `.sdlc/evidence/20260826-115306-asset/`、`fast`
+  `.sdlc/evidence/20260826-115344-fast/` 与顺序 `server`
+  `.sdlc/evidence/20260826-115413-server/` 全绿；发布级 `full`
+  `.sdlc/evidence/20260826-122113-full/` 在 exact target revision 上 17/17 steps、1641.446 秒通过，覆盖完整 Maven
+  reactor、Node 24 Web 32 files / 251 tests、typecheck/lint/build、runtime/R0/R1/P0 与正式产品浏览器旅程。
+- 首次 `full` `.sdlc/evidence/20260826-121219-full/` 在产品测试前因 Git-clean 文件的物理 CRLF 违反 LF 静态约束
+  失败；零语义/staged diff 地机械归一 LF并刷新 index 后，恢复 gate
+  `.sdlc/evidence/20260826-122045-t128-template-static-recovery/` 与最终 `full` 均通过。360 项用户 dirty work、其指纹与
+  备份 stash 保持原样。
+- 本票没有 append formal records、注册/认证 Profile、运行独立 native deployment/rehearsal、调用 provider、读取
+  API Key、处理真实数据/生产或取得 J1/A3/READY。Repository `full` 的既有 Rust checks 不改变
+  `BUILD_NOT_AUTHORIZED`、`NOT_REGISTERED`、`NOT_CERTIFIED`；下一步必须按冻结 DAG 另行发行 records。

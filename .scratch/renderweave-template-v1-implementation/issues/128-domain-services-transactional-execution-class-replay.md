@@ -1,8 +1,8 @@
 # 物化 Domain Services 类级事务执行目标与独立 replay
 
 Type: task
-Status: in_progress
-Claimed by: Codex `/root`
+Status: resolved / automated_verified
+Claimed by: —
 Blocked by: 127（已 resolved）
 
 ## Question
@@ -40,4 +40,32 @@ Testcontainers 当作生产数据库认证，也不越级 append formal registry
 
 ## Results
 
-- pending
+- 实现 revision `b791fccb3c6d3bdfcff31d45ed5ae170fd9d982f` 新增 app test-scope 的真实产品事务 replay，
+  直接执行 `PostgresAssetPersistence`：成功 create 原子形成 aggregate/content/audit/idempotency/capacity，幂等
+  replay/conflict 零写，末步 duplicate key 返回 `ASSET_ID_COLLISION` 并完整回滚尝试写入。3/3 场景通过，未读取
+  scalar fixture payload，也未使用 H2/SQLite/mock transaction。
+- 目标 revision `b7d336ae8a0defaca83874f42ef7db31ec6176a1` 物化 exact class target 与两个 executor manifests：
+  target SHA-256 `d2b785bcf454c62f0508dc74d195e3875f550df74a949844408fe005c1e2bcfb`，
+  `java-domain-authority` manifest SHA-256 `1fcaae74c1bc2f4eaecc6e9aaf436fddaa15d32cc449c5b05b79a4b33fb0dafb`，
+  `transactional-integration-replayer` manifest SHA-256
+  `1553d1b48ac677f2562d4ad8f1dd03ab519966bb4a0f75c04198e845e751604c`；materializer byte-identical replay
+  通过，assigned 12 Case + 12 Oracle corpus digest 为
+  `5a236de3cf36155df7244b049b045cefda55960cf16efe8212c3981e5463844f`。
+- 正式 `domain-services` 证据 `.sdlc/evidence/20260826-115041-domain-services/` 为两个角色 2/2、capacity
+  12/12、transaction 3/3；Testcontainers 实际 PostgreSQL 16.13，runtime image digest 精确为
+  `sha256:4e6e670bb069649261c9c18031f0aded7bb249a5b6664ddec29c013a89310d50`。Python 独立闭包 verifier
+  重建 exact Git blobs、assigned subset、两个 manifest 与 Java reports 后报告 `preissuanceReady=true`；formal
+  registry 仍为 46 Case / 46 Oracle、Domain Services 0/0，`executionClassExecutable=false`。
+- 受影响 `asset` `.sdlc/evidence/20260826-115306-asset/`（Asset 97/97、kernel 41/41、capacity 12/12）、
+  `fast` `.sdlc/evidence/20260826-115344-fast/` 与顺序 `server`
+  `.sdlc/evidence/20260826-115413-server/` 全绿；发布级 `full`
+  `.sdlc/evidence/20260826-122113-full/` 在 exact `b7d336ae...` 上 17/17 steps、1641.446 秒通过，覆盖完整 Maven
+  reactor、Node 24 Web 32 files / 251 tests、typecheck/lint/build、runtime canary、R0/R1/P0、正式 Template 产品
+  journey 与 Draft/Inference 浏览器旅程（25 passed + 1 controlled skip；另有真实 inference replay 1/1）。
+- 首次 `full` `.sdlc/evidence/20260826-121219-full/` 在任何产品测试前因 Git-clean 工作树的物理 CRLF 违反静态
+  LF 约束而失败；仅将内容等价的 clean tracked bytes 机械归一为 LF并刷新 index stat，确认 staged/semantic diff
+  均为 0 后，恢复 gate `.sdlc/evidence/20260826-122045-t128-template-static-recovery/` 与最终 `full` 均通过。
+  用户既有 360 项 dirty work、其指纹与备份 stash 保持不变。
+- 本票没有 append formal Case/Oracle、注册或认证 Profile、运行独立 native deployment/rehearsal、调用 provider、
+  读取 API Key、处理真实数据/生产，亦未取得 J1/A3/READY。Repository `full` 中既有 Rust checks 不改变
+  `BUILD_NOT_AUTHORIZED`、`NOT_REGISTERED`、`NOT_CERTIFIED`；formal issuance 留给 DAG 复算后的独立票。

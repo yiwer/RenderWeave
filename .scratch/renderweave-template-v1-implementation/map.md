@@ -820,8 +820,9 @@ Label: wayfinder:map
   失败撤下、Local recovery、import+三模式+dirty guard、a11y+问题定位投影）；各切片在自身前置满足后按
   single-writer 登记，Editor 产品 route 在 E1–E9 真实存在前不开放。Asset picker/catalog UI 随 Editor
   实施票同批。
-- T128 正在补齐第一个 capacity class 的 exact product target、两个 executor manifests 与 PostgreSQL 独立 replay；
-  正式 Case/Oracle append、其余 execution-class target、Profile 发行、Editor J1、Renderer 双物理 Linux CPU-family
+- T128 已补齐第一个 capacity class 的 exact product target、两个 executor manifests 与 PostgreSQL 独立 replay，
+  independent closure 报告 `preissuanceReady=true`；formal Domain Services Case/Oracle 仍为 0，append 必须在 DAG
+  复算后按独立票完成。其余 execution-class target、Profile 发行、Editor J1、Renderer 双物理 Linux CPU-family
   认证与最终生命周期升级仍须以届时真实产品 artifact 和 executor 为输入另行切票；Ticket 19 保持 open。
 
 ## Out of scope
