@@ -1,10 +1,11 @@
 # RenderWeave Template v1 Implementation Plan
 
-- 当前 frontier（2026-08-26）：TV1-T01–T128 均已 `resolved`；冻结 DAG 复算确认 T128 的 exact target、两个 executor
-  manifests 与真实 PostgreSQL replay 已满足 Domain Services 发行前置。TV1-T129 已由 Codex `/root` single-writer
-  claim，正在以既有 46/46 formal registry 为不可变前缀，发行 assigned 12 Case + 12 Oracle，并完成中央 catalog 与
-  post-issuance 双重 replay；其余 capacity records 不随本票发行。
-- 状态：`in_progress`；TV1-T129=`in_progress`；TV1-T128=`automated_verified`；TV1-T127=`automated_verified`；TV1-T01/T02/T03/T04/T05/T06/T07/T08/T09/T10/T10b/T11/T12a/T12b/T13/T14/T14b/T15/T16/T17/T18/T19/T20/T22=`automated_verified`
+- 当前 frontier（2026-08-26）：TV1-T01–T129 均已 `resolved`；T129 已以旧 46/46 formal bytes 为不可变前缀，只追加
+  assigned Domain Services 12 Case + 12 Oracle，并完成中央 catalog 与 post-issuance 双重 replay。冻结 bootstrap 复算后，
+  下一唯一未阻塞 frontier 是 ordinal 3 `EXEC::DESIGN_INPUT_EXPRESSION::1.0` 的 exact product target、
+  `java-semantic-authority`、`typescript-independent-authoring-replayer` 与独立产品 replay；其 195 个 capacity candidates
+  在 class 真正 executable 前仍不得发行，必须在 T129 收口推送后由下一独立票 single-writer claim。
+- 状态：`in_progress`；TV1-T129=`automated_verified`；TV1-T128=`automated_verified`；TV1-T127=`automated_verified`；TV1-T01/T02/T03/T04/T05/T06/T07/T08/T09/T10/T10b/T11/T12a/T12b/T13/T14/T14b/T15/T16/T17/T18/T19/T20/T22=`automated_verified`
   （T09 另含人工 J1），TV1-T21=`automated_verified`（首个 Rendering 纵切——renderweave-rendering
   首个 artifact、TemplateClosureAuthority/Evaluator stage 1–8/seal、CapabilityState 加密落盘、
   RenderNodeContract 向量语料 Java primary、端到端 assembly 证明）；TV1-T13 已完成 AssetResolver、加密
@@ -4835,3 +4836,34 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
   build、provider/API Key/真实数据/生产/J1/A3/READY，以及用户既有 dirty work。
 - TDD/gates：missing issuer/post-verifier RED → deterministic expected poststate → exact append → Node/Python post replay →
   fresh `domain-services` → `template-static`/`asset`/`fast` → sequential `server` → Goal `full` → resolution `fast`。
+
+### TV1-T129 resolution evidence
+
+- 生命周期：`resolved / automated_verified`。实现 revision `2298349afa00a60624cca52a5f0074dbde273941` 新增
+  fail-closed issuer 与双 verifier；修正 revision `adfd0da82c257111a871d97284e7697b2cf92bf7` 成为 target 绑定的
+  implementation identity；正式发行 revision `ccdcc255a5e6130305fcd26bd9017b9a145fec84` 只追加目标 suffix 并同步
+  central/spec closure。
+- Append identity：旧 46 Case / 46 Oracle bytes 分别保持 SHA-256
+  `ebe58e84977ee84befe89f8c126f37fbec7076cd7725b29f1b7609448fe7ef16`、
+  `3825b9fb40c1b43c484da3ebdf29429ed749e622012212ca79f9cea5b9cb9339` 精确前缀；新 registry 为 58/58，
+  Case SHA-256 `bba2e350cc29c5fc8faae7f4bdb47c8bd0e2e60a3dd78d6f64d9d355b2440add`，Oracle SHA-256
+  `a0f513b0d305d00b1797f32db38488b92e5775fa8c19a3fcb00d4e2394e3d2db`。新增部分仅为 assigned Domain
+  Services 12/12，corpus digest `5a236de3cf36155df7244b049b045cefda55960cf16efe8212c3981e5463844f`。
+- Post-issuance：target SHA-256 `44c1d878848ab87fc4e4485c4b6142f1710204f39b64578c0a95102a7b0288e2`；
+  `.sdlc/evidence/20260826-132006-domain-services-record-issuance/` 的 Node 24/Python 3.13 verifier 均为
+  421/421。正式 A2 evidence SHA-256 `25300d96c9e48c10de420a50601b69ad2127f0ca2e0d843a78617a0b2f830c27`。
+  Domain class 已为 12/12 `EXECUTABLE_A2_REPLAYED`；Phase 2 保持 `CAPACITY_BOUNDARY`，全局仅 12/525。
+- Central replay：SPEC Registry 1.14 target SHA-256
+  `64019fa9b8c91d999032ce0fb6fbe689ef2d242d65307e0e81566321a32901fc`，393 artifacts，Node/Python
+  22974/22882 checks；Editor namespace 保持 0/0 formal records，静态 38/21165 checks。正式 `template-static`
+  `.sdlc/evidence/20260826-133205-t129-template-static/` 通过且 authority replay byte-identical。
+- Fresh product replay `domain-services` `.sdlc/evidence/20260826-133238-t129-domain-services/` 通过 executor roles
+  2/2、capacity 12/12、真实 Testcontainers PostgreSQL transaction 3/3；`fast`
+  `.sdlc/evidence/20260826-133503-fast/` 与顺序 `server` `.sdlc/evidence/20260826-133527-server/` 全绿。
+  发布级 `full` `.sdlc/evidence/20260826-134646-full/` 在 exact issuance revision 上 17/17 steps、1118.377 秒通过，
+  覆盖完整 Maven reactor、Node 24 Web 32 files / 251 tests、typecheck/lint/build、runtime/R0/R1/P0 与正式产品浏览器
+  旅程（25 passed + 1 controlled skip；另有 inference replay 1/1）；外部 provider/API Key/reservation/cost 均为 0。
+- 360 项用户 dirty work 的指纹仍为 `4bddd1c955a4b4f55d984f3febd551742dd6f63c`，备份 stash
+  `f3c29199ec510ec3f809b3f8263f5d2806cb0740` 未变。本票没有发行其余 513 capacity 或 combined/non-capacity
+  records，没有注册/认证 Profile、运行独立 native build/deployment/rehearsal、处理真实数据/生产或取得 J1/A3/READY；
+  repository `full` 的既有 Rust checks 不改变 `BUILD_NOT_AUTHORIZED`。
