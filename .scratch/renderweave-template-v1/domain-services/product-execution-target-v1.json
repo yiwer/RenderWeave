@@ -1,0 +1,187 @@
+{
+  "artifactVersion": "renderweave-domain-services-capacity-product-target/1.0",
+  "targetId": "DOMAIN_SERVICES_CAPACITY_TARGET::ASSET_CONTENT_GUARD::1.0",
+  "status": "ISSUED_EXACT_PRODUCT_TARGET",
+  "implementationRevision": "96dcf3fdb847a59ec70265bb8f60f686b342ff82",
+  "executionClass": "EXEC::DOMAIN_SERVICES::1.0",
+  "guardContractId": "renderweave-domain-asset-content-capacity-guard/1.0",
+  "comparator": "MAX_INCLUSIVE",
+  "artifacts": [
+    {
+      "role": "productionGuard",
+      "path": "renderweave-asset/src/main/java/cn/hbads/renderweave/asset/internal/AssetContentCapacityGuard.java",
+      "sha256": "sha256:d44d9671849034b915ff8294783dbd9293f0783ea26ec70cfce65dcaffc23bd3",
+      "byteLength": 3383
+    },
+    {
+      "role": "rawBytesConsumer",
+      "path": "renderweave-asset/src/main/java/cn/hbads/renderweave/asset/internal/CanonicalAssetAcceptanceAuthority.java",
+      "sha256": "sha256:a55f19255ebb3ed3c4d3498b7392fdb918c42be17f0e2d6318dce4597523e389",
+      "byteLength": 2459
+    },
+    {
+      "role": "pngConsumer",
+      "path": "renderweave-asset/src/main/java/cn/hbads/renderweave/asset/internal/PngAdmission.java",
+      "sha256": "sha256:fba03b7ab4f83660b62ef0e3bdec25a75f81c28a899da734a390c807644c45ef",
+      "byteLength": 15831
+    },
+    {
+      "role": "jpegConsumer",
+      "path": "renderweave-asset/src/main/java/cn/hbads/renderweave/asset/internal/JpegAdmission.java",
+      "sha256": "sha256:c025f48e6ce255cbf77eb69b790cb6b9e5d3f29906072f4481692f9de1330dae",
+      "byteLength": 23562
+    },
+    {
+      "role": "webpConsumer",
+      "path": "renderweave-asset/src/main/java/cn/hbads/renderweave/asset/internal/WebpAdmission.java",
+      "sha256": "sha256:f3d15be96065d9ecb92993c84dd538016e99e93702bb7fde0429dce553145877",
+      "byteLength": 16497
+    },
+    {
+      "role": "guardContractTest",
+      "path": "renderweave-asset/src/test/java/cn/hbads/renderweave/asset/internal/AssetContentCapacityGuardTest.java",
+      "sha256": "sha256:49acf4c4c91ad45672f97c547c82d93649bb20238063f8a429fe861a2093d080",
+      "byteLength": 3925
+    },
+    {
+      "role": "primaryExecutor",
+      "path": "renderweave-asset/src/test/java/cn/hbads/renderweave/asset/internal/DomainServicesCapacityConformanceTest.java",
+      "sha256": "sha256:b6deacc222c21342b23adacefff5d25bb7be4b92bf5ed95ad007737a85d68388",
+      "byteLength": 11384
+    },
+    {
+      "role": "architectureProof",
+      "path": "renderweave-asset/src/test/java/cn/hbads/renderweave/asset/internal/AssetModuleArchitectureTest.java",
+      "sha256": "sha256:ae38a18ddab8d6f6a71053052b3357a3e8f8e3b9fceca1ffda79e1495f92ea18",
+      "byteLength": 4967
+    },
+    {
+      "role": "assetKernelIntegrationProof",
+      "path": "renderweave-asset/src/test/java/cn/hbads/renderweave/asset/internal/AssetAcceptanceKernelTest.java",
+      "sha256": "sha256:62a85adeae42afdc5d8a5a85a796d47038b20fb4e3341bd45ca1ab19b3a02315",
+      "byteLength": 15496
+    },
+    {
+      "role": "jpegIntegrationProof",
+      "path": "renderweave-asset/src/test/java/cn/hbads/renderweave/asset/internal/JpegAdmissionTest.java",
+      "sha256": "sha256:2e6c3dead9a171a93fcd6b4fd08b9d518b86c516cdad4ca652141d5c41735620",
+      "byteLength": 9466
+    },
+    {
+      "role": "webpIntegrationProof",
+      "path": "renderweave-asset/src/test/java/cn/hbads/renderweave/asset/internal/WebpAdmissionTest.java",
+      "sha256": "sha256:49af91331cffeb02c4b65c4cda1ec79e2f93d6d66a7265a86fc28ebf221cd043",
+      "byteLength": 11265
+    },
+    {
+      "role": "independentExecutor",
+      "path": "tools/verify-domain-services-capacity.py",
+      "sha256": "sha256:d4ebcc3770fbb7af3c2a87ec85f2ff5504166b2b646d28aa78f1452bbffbff2d",
+      "byteLength": 26551
+    },
+    {
+      "role": "capacityCoverage",
+      "path": ".scratch/renderweave-template-v1/conformance-capacity-coverage-v1.json",
+      "sha256": "sha256:d9662c79464f0fe726ff9067068d9317565e4f4d1caa13b04cf5c0b2e0e60582",
+      "byteLength": 318460
+    },
+    {
+      "role": "fixtureContract",
+      "path": ".scratch/renderweave-template-v1/domain-services/fixture-contract-v1.json",
+      "sha256": "sha256:d04fd28556619a26d5c3ed6653510da73815153791c8ae7b3e86e30158297657",
+      "byteLength": 3273
+    },
+    {
+      "role": "observationAdapter",
+      "path": ".scratch/renderweave-template-v1/domain-services/observation-adapter-v1.json",
+      "sha256": "sha256:4bda561d8628461b783796e38acb9066e840c307479603e39afa6c241393ea06",
+      "byteLength": 6006
+    }
+  ],
+  "fixtures": [
+    {
+      "path": "domain-services/fixtures/cap-accepted-font-bytes-per-content-above.json",
+      "sha256": "sha256:ba908ff1a49e2d2e8a33ce560c729806f2dac45beeb5651fa4350f034f1abe3a",
+      "byteLength": 1751
+    },
+    {
+      "path": "domain-services/fixtures/cap-accepted-font-bytes-per-content-at.json",
+      "sha256": "sha256:8fdb9567ad1957bd9a265dd1a59d2c845347bc343000709a3ddc552aaf63efa5",
+      "byteLength": 1745
+    },
+    {
+      "path": "domain-services/fixtures/cap-accepted-font-bytes-per-content-below.json",
+      "sha256": "sha256:9b1de931eb44862143b2877bb137cb00495a1e0efcb0df7aea25ab31d1c123cf",
+      "byteLength": 1751
+    },
+    {
+      "path": "domain-services/fixtures/cap-accepted-image-bytes-per-content-above.json",
+      "sha256": "sha256:80f74af2401bb68348c9c0f0ebcfb71ce1de05e06c70b9a396583d8ca1f6a7bc",
+      "byteLength": 1753
+    },
+    {
+      "path": "domain-services/fixtures/cap-accepted-image-bytes-per-content-at.json",
+      "sha256": "sha256:a60e8b34ff08bc611c97219e9dbecde018bbe233204849c45166d812b87c00ed",
+      "byteLength": 1747
+    },
+    {
+      "path": "domain-services/fixtures/cap-accepted-image-bytes-per-content-below.json",
+      "sha256": "sha256:97254adbe256d5c1d5f94daa59b330a6314cfc74fb58acde2b3104d6df2d4a88",
+      "byteLength": 1753
+    },
+    {
+      "path": "domain-services/fixtures/cap-accepted-image-edge-pixels-per-content-above.json",
+      "sha256": "sha256:8690c3ce20dd1cb38f8f7074d7d1871cbd9890b0e1277eb63b21d3d5648199d4",
+      "byteLength": 1760
+    },
+    {
+      "path": "domain-services/fixtures/cap-accepted-image-edge-pixels-per-content-at.json",
+      "sha256": "sha256:7c88a46d208e4bc43f00922db79ddf493de7838121ca059432571b00ebdb633d",
+      "byteLength": 1754
+    },
+    {
+      "path": "domain-services/fixtures/cap-accepted-image-edge-pixels-per-content-below.json",
+      "sha256": "sha256:ecc5f1be6e72b756590d08b845d308067368529ce65d7e386cac2550d4fa0210",
+      "byteLength": 1760
+    },
+    {
+      "path": "domain-services/fixtures/cap-accepted-image-pixels-per-content-above.json",
+      "sha256": "sha256:110739ebd4a7ff04ddb44854c2874e8184fa617696b802f92bbb58449b913788",
+      "byteLength": 1756
+    },
+    {
+      "path": "domain-services/fixtures/cap-accepted-image-pixels-per-content-at.json",
+      "sha256": "sha256:40414d653fda69ad6e3e751ea2263c52b411b6b137950d4c9a08931352cbd4db",
+      "byteLength": 1750
+    },
+    {
+      "path": "domain-services/fixtures/cap-accepted-image-pixels-per-content-below.json",
+      "sha256": "sha256:9b2566c5fa8d84b004bb256982534a1ec8e2d3be5119134083639e81e5b8751f",
+      "byteLength": 1755
+    }
+  ],
+  "integrationProof": {
+    "directConsumers": [
+      "cn.hbads.renderweave.asset.internal.CanonicalAssetAcceptanceAuthority",
+      "cn.hbads.renderweave.asset.internal.PngAdmission",
+      "cn.hbads.renderweave.asset.internal.JpegAdmission",
+      "cn.hbads.renderweave.asset.internal.WebpAdmission"
+    ],
+    "behavioralTests": [
+      "cn.hbads.renderweave.asset.internal.AssetAcceptanceKernelTest#enforcesRawByteBudgetsPerKind",
+      "cn.hbads.renderweave.asset.internal.AssetAcceptanceKernelTest#enforcesImageDimensionLimitsBeforeDecode",
+      "cn.hbads.renderweave.asset.internal.JpegAdmissionTest#rejectsOversizedFrameThroughTheSharedCapacityGuardBeforeDecode",
+      "cn.hbads.renderweave.asset.internal.WebpAdmissionTest#rejectsOversizedCanvasThroughTheSharedCapacityGuardBeforeFrameDecode"
+    ],
+    "authoritativeAdmissionPathProvenSeparately": true,
+    "fullUploadPathProvenByScalarProbe": false
+  },
+  "boundary": {
+    "productApiSurfaceCreated": false,
+    "mediaPayloadRequiredForScalarProbe": false,
+    "databaseRequiredForScalarProbe": false,
+    "nativeRendererInvoked": false,
+    "formalRecordsIssued": false,
+    "recordIssuanceAllowed": false
+  }
+}
