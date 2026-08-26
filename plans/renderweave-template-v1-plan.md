@@ -1,11 +1,10 @@
 # RenderWeave Template v1 Implementation Plan
 
-- 当前 frontier（2026-08-26）：TV1-T01–T129 均已 `resolved`；T129 已以旧 46/46 formal bytes 为不可变前缀，只追加
-  assigned Domain Services 12 Case + 12 Oracle，并完成中央 catalog 与 post-issuance 双重 replay。冻结 bootstrap 复算后，
-  下一唯一未阻塞 frontier 是 ordinal 3 `EXEC::DESIGN_INPUT_EXPRESSION::1.0` 的 exact product target、
-  `java-semantic-authority`、`typescript-independent-authoring-replayer` 与独立产品 replay；其 195 个 capacity candidates
-  在 class 真正 executable 前仍不得发行，必须在 T129 收口推送后由下一独立票 single-writer claim。
-- 状态：`in_progress`；TV1-T129=`automated_verified`；TV1-T128=`automated_verified`；TV1-T127=`automated_verified`；TV1-T01/T02/T03/T04/T05/T06/T07/T08/T09/T10/T10b/T11/T12a/T12b/T13/T14/T14b/T15/T16/T17/T18/T19/T20/T22=`automated_verified`
+- 当前 frontier（2026-08-26）：TV1-T01–T130 均已 `resolved`；T130 已完成 65 轴共享容量 authority、Java/TypeScript
+  195/195 component replay 与 DesignDSL parser/canonical 九轴真实接线。冻结 DAG 的 ordinal 3
+  `EXEC::DESIGN_INPUT_EXPRESSION::1.0` 仍是唯一未阻塞 frontier；其余 56 个产品 reservation source、两个 class
+  required executor manifests、独立产品 replay 与 195 条 formal issuance 继续 pending，须由下一独立票 single-writer claim。
+- 状态：`in_progress`；TV1-T130=`automated_verified`；TV1-T129=`automated_verified`；TV1-T128=`automated_verified`；TV1-T127=`automated_verified`；TV1-T01/T02/T03/T04/T05/T06/T07/T08/T09/T10/T10b/T11/T12a/T12b/T13/T14/T14b/T15/T16/T17/T18/T19/T20/T22=`automated_verified`
   （T09 另含人工 J1），TV1-T21=`automated_verified`（首个 Rendering 纵切——renderweave-rendering
   首个 artifact、TemplateClosureAuthority/Evaluator stage 1–8/seal、CapabilityState 加密落盘、
   RenderNodeContract 向量语料 Java primary、端到端 assembly 证明）；TV1-T13 已完成 AssetResolver、加密
@@ -4867,3 +4866,32 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
   `f3c29199ec510ec3f809b3f8263f5d2806cb0740` 未变。本票没有发行其余 513 capacity 或 combined/non-capacity
   records，没有注册/认证 Profile、运行独立 native build/deployment/rehearsal、处理真实数据/生产或取得 J1/A3/READY；
   repository `full` 的既有 Rust checks 不改变 `BUILD_NOT_AUTHORIZED`。
+
+## 130. TV1-T130 执行卡
+
+- 决策：先建立 `DesignInputExpressionCapacityAuthority` 深 module；Interface 仅为 closed observation → decision，唯一
+  canonical implementation 隐藏 65 轴 profile、类型解析、比较器与 terminal 映射。纯进程内计算不创建 SPI/远程 port；
+  seam 位于 Template-owned public Interface，使后续 Rendering 沿既有依赖方向复用。
+- 本票产品接线：完整 profile 可评估 195 个 scalar/token fixture；真实产品路径仅接 `designDslParser` 九轴，包括
+  `StrictJsonParser` 的八项 parse budget 与 `CanonicalJsonWriter` counting sink。其余 semantic/RenderInput/problem/
+  Expression/geometry reservation sources 明确为 56 pending，不能签发 class required executor manifests。
+- 双语言 component replay：Java primary 必须调用产品 Interface；TypeScript independent 必须从 frozen coverage 独立解释，
+  不导入 Java helper/profile、不读取 planned assertions/Oracle。报告/target 必须写明 195/195、wired 9/65、
+  `preissuanceReady=false`、`recordIssuanceAllowed=false`。
+- TDD/验证：missing Interface/profile/executors RED → guard GREEN → parser/canonical recording proof → 211-vector byte-identical
+  regression → Java/TypeScript 195 replay → `template`/`template-static`/`fast` → sequential `server` → Goal `full` →
+  resolution `fast`。大边界走 scalar executor，产品接线 proof 不分配 16 MiB/百万节点 payload。
+- 禁止影响：formal registry（保持 58/58）、central class executable 状态、API/OpenAPI/migration/Web 页面语义、其他
+  execution class、Renderer/Profile/native build、provider/API Key/真实数据/生产/J1/A3/READY 与用户既有 dirty work。
+- Results：产品实现 revision `3c583a4b01666a3122d1d11973f39cdcccb8eff5` 与 target revision
+  `bafc2a23aaa750142df281625565732cc724d5f3` 已完成。component target SHA-256 为
+  `049e78fb920d8317d95579b96cddca18de424811859b388e55cba1afbbe0432f`；Java/TypeScript 65 axes、195/195 cases、
+  2600 independent checks，wired 9/65、remaining 56，class preissuance/issuance/executable 均 false。
+- Gates：`template` `.sdlc/evidence/20260826-144600-template/`、`fast`
+  `.sdlc/evidence/20260826-144653-fast/`、顺序重跑 `server`
+  `.sdlc/evidence/20260826-151325-server/` 全绿；发布级 `full`
+  `.sdlc/evidence/20260826-152600-full/` 为 17/17 steps、1669.266 秒，正式产品浏览器旅程 25 passed + 1
+  controlled skip，另有 inference replay 1/1。formal registry 保持 58/58，外部 provider/API Key/reservation/cost 为 0。
+- Boundary：首次 server 的用户-owned AF_UNIX 测试低频 timeout 已留证并隔离复现，未篡改该 360 项 dirty work；完整
+  server 重跑和 `full` 中同一用例均绿。备份 stash `f3c29199ec510ec3f809b3f8263f5d2806cb0740` 未变；未发行 195
+  Design/Input/Expression records，未注册/认证 Profile 或取得 J1/A3/READY，`BUILD_NOT_AUTHORIZED` 保持。

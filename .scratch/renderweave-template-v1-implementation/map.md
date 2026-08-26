@@ -684,6 +684,10 @@ Label: wayfinder:map
   12 Case + 12 Oracle。Node/Python post replay 各 421/421，中央 class 已为 12/12
   `EXECUTABLE_A2_REPLAYED`；SPEC Registry 1.14 双执行器、真实 PostgreSQL class gate、`fast`、顺序 `server` 与
   17-step Goal `full` 均绿。Phase 2 仍为 `CAPACITY_BOUNDARY`，只完成 12/525，不关闭 Ticket 19。
+- [物化 Design/Input/Expression 共享容量 module 与首批产品路径](issues/130-design-input-expression-capacity-guard.md) —
+  **resolved / automated_verified**；Template-owned 单方法 Interface 已隐藏 65 轴完整规则，Java/TypeScript 对 195 个
+  scalar fixture 完成 195/195、2600-check 独立 replay，DesignDSL parser/canonical 九个真实 reservation point 已接到
+  唯一实现。报告诚实保持 wired 9/65、remaining 56、preissuance/issuance/executable 全 false；未发行正式记录。
 - [验证 Product Editor 状态、恢复与权威预览架构](issues/09-validate-product-editor-architecture.md) —
   throwaway 逻辑原型（`/prototype/editor-state-model`，不进产品 route）把冻结编辑器规则编码为确定性
   fixture 状态机：10 个引导走查场景 37/37 断言 + 自由操作冒烟 + 键盘焦点检查全部通过（Playwright A1，
@@ -826,10 +830,10 @@ Label: wayfinder:map
   single-writer 登记，Editor 产品 route 在 E1–E9 真实存在前不开放。Asset picker/catalog UI 随 Editor
   实施票同批。
 - T129 已以旧 46/46 formal bytes 为不可变前缀发行精确 12+12 Domain Services suffix，并完成中央 catalog 与
-  post-issuance 双重 replay；冻结 bootstrap 的下一唯一未阻塞 frontier 是 ordinal 3
-  `EXEC::DESIGN_INPUT_EXPRESSION::1.0` 的 exact product target、两个 executor manifests 与独立产品 replay，195 个
-  capacity candidates 在该 class 真实可执行前仍不得发行。其余 execution-class target、Profile 发行、Editor J1、
-  Renderer 双物理 Linux CPU-family
+  post-issuance 双重 replay；T130 随后完成 ordinal 3 `EXEC::DESIGN_INPUT_EXPRESSION::1.0` 的 65 轴唯一容量
+  authority、195/195 component replay 与首批九个产品 reservation point。该 class 仍有 56 个产品轴待接线，195 个
+  capacity candidates 在全部真实接线、两个 required executor manifests 与独立产品 replay 完成前仍不得发行。其余
+  execution-class target、Profile 发行、Editor J1、Renderer 双物理 Linux CPU-family
   认证与最终生命周期升级仍须以届时真实产品 artifact 和 executor 为输入另行切票；Ticket 19 保持 open。
 
 ## Out of scope
