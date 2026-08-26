@@ -7,8 +7,8 @@ type Decimal = { unscaled: bigint; scale: number };
 
 const EXECUTION_CLASS = "EXEC::DESIGN_INPUT_EXPRESSION::1.0";
 const TARGET_VERSION = "renderweave-design-input-expression-capacity-component-target/1.0";
-const TARGET_ID = "DESIGN_INPUT_EXPRESSION_TARGET::CAPACITY_AUTHORITY_PARTIAL_WIRING::6.0";
-const IMPLEMENTATION_REVISION = "91da8d56be811139835a845f5d5313682cf4a6d9";
+const TARGET_ID = "DESIGN_INPUT_EXPRESSION_TARGET::CAPACITY_AUTHORITY_PARTIAL_WIRING::7.0";
+const IMPLEMENTATION_REVISION = "6aba539dcf25f2fbc66f7854d42d62487326a8a3";
 const REPORT_VERSION = "renderweave-design-input-expression-capacity-independent/1";
 const INTEGER = /^-?(?:0|[1-9][0-9]*)$/;
 const DECIMAL = /^-?(?:0|[1-9][0-9]*)(?:\.[0-9]+)?$/;
@@ -24,9 +24,14 @@ const FORBIDDEN_FIXTURE_KEYS = new Set([
   "default",
   "script",
 ]);
-const EXPRESSION_AST_WIRED_IDS = [
-  "expression.astNodesPerExpression",
-  "expression.astNodesTotal",
+const EXPRESSION_DECIMAL_WIRED_IDS = [
+  "expression.admittedDecimalPrecisionDigits",
+  "expression.admittedDecimalScaleMin",
+  "expression.admittedDecimalScaleMax",
+  "expression.intermediateDecimalPrecisionDigits",
+  "expression.intermediateDecimalScaleMin",
+  "expression.intermediateDecimalScaleMax",
+  "expression.explicitRoundingScaleMax",
 ];
 const RETIRED_RENDERING_OWNED_EXPRESSION_ARTIFACTS = [
   "renderweave-rendering/src/main/java/cn/hbads/renderweave/rendering/internal/ExpressionAst.java",
@@ -179,8 +184,8 @@ function main(): void {
     "renderweave-design-input-expression-capacity-guard/1.0", "guard contract");
   requireEqual(target.scalarReplay.axisCount, 65, "target scalar axis count");
   requireEqual(target.scalarReplay.caseCount, 195, "target scalar case count");
-  requireEqual(target.productWiring.wiredAxisCount, 48, "wired product axes");
-  requireEqual(target.productWiring.remainingAxisCount, 17, "remaining product axes");
+  requireEqual(target.productWiring.wiredAxisCount, 55, "wired product axes");
+  requireEqual(target.productWiring.remainingAxisCount, 10, "remaining product axes");
   requireEqual(target.boundary.preissuanceReady, false, "target preissuance boundary");
   requireEqual(target.boundary.recordIssuanceAllowed, false, "target issuance boundary");
   requireEqual(target.boundary.executionClassExecutable, false, "target executable boundary");
@@ -198,14 +203,13 @@ function main(): void {
   requireEqual(predecessor.productWiring.expressionDefinitionReservationProof,
     "cn.hbads.renderweave.template.internal.ExpressionDefinitionCapacityReservationTest",
     "predecessor Expression Definition reservation proof");
-  requireEqual(predecessor.productWiring.expressionDefinitionReservationProofAxisCount, 8,
+  requireEqual(predecessor.productWiring.expressionDefinitionReservationProofAxisCount, 10,
     "predecessor Expression Definition reservation proof axis count");
-  const expectedWired = [...predecessorWired, ...EXPRESSION_AST_WIRED_IDS].sort();
+  const expectedWired = [...predecessorWired, ...EXPRESSION_DECIMAL_WIRED_IDS].sort();
   const targetWired = target.productWiring.wiredLimitIds as string[];
-  requireEqual(new Set(targetWired).size, 48, "unique wired product axes");
+  requireEqual(new Set(targetWired).size, 55, "unique wired product axes");
   requireEqual([...targetWired].sort(), expectedWired, "monotonic wired product axes");
   requireEqual(target.productWiring.remainingGroups, [
-    { group: "expression", axisCount: 7, status: "PRODUCT_RESERVATION_POINTS_PENDING" },
     { group: "geometry", axisCount: 10, status: "PRODUCT_RESERVATION_POINTS_PENDING" },
   ], "remaining product groups");
   requireEqual(target.productWiring.expressionDefinitionReservationProof,
@@ -216,6 +220,13 @@ function main(): void {
   requireEqual(target.productWiring.expressionAstConsumptionProof,
     "cn.hbads.renderweave.rendering.internal.ExpressionEngineTest",
     "Expression AST Rendering consumption proof");
+  requireEqual(target.productWiring.expressionDecimalReservationProof, [
+    "cn.hbads.renderweave.template.internal.ExpressionDecimalCapacityReservationTest",
+    "cn.hbads.renderweave.rendering.internal.ExpressionDecimalCapacityEvaluationTest",
+    "cn.hbads.renderweave.rendering.internal.MaterializerTest#injectedCapacityAuthorityReachesExpressionEvaluation",
+  ], "Expression decimal reservation proof");
+  requireEqual(target.productWiring.expressionDecimalReservationProofAxisCount, 7,
+    "Expression decimal reservation proof axis count");
   requireEqual(target.productWiring.retiredRenderingOwnedExpressionArtifacts,
     RETIRED_RENDERING_OWNED_EXPRESSION_ARTIFACTS,
     "retired Rendering-owned Expression artifacts");
@@ -247,8 +258,8 @@ function main(): void {
   requireEqual(primary.caseCount, 195, "primary case count");
   requireEqual(primary.passed, 195, "primary passed count");
   requireEqual(primary.failed, 0, "primary failure count");
-  requireEqual(primary.boundary.wiredProductAxisCount, 48, "primary wired axes");
-  requireEqual(primary.boundary.remainingProductAxisCount, 17, "primary remaining axes");
+  requireEqual(primary.boundary.wiredProductAxisCount, 55, "primary wired axes");
+  requireEqual(primary.boundary.remainingProductAxisCount, 10, "primary remaining axes");
   requireEqual(primary.boundary.preissuanceReady, false, "primary preissuance boundary");
   requireEqual(primary.boundary.recordIssuanceAllowed, false, "primary issuance boundary");
   requireEqual(primary.boundary.executionClassExecutable, false, "primary executable boundary");
@@ -333,7 +344,7 @@ function main(): void {
     assurance: "A2_COMPONENT_SCALAR_REPLAY_PARTIAL_PRODUCT_WIRING",
     executionClass: EXECUTION_CLASS,
     targetManifest: {
-      path: ".scratch/renderweave-template-v1/design-input-expression/capacity-component-target-v6.json",
+      path: ".scratch/renderweave-template-v1/design-input-expression/capacity-component-target-v7.json",
       sha256: sha256(targetBytes),
       byteLength: targetBytes.length,
     },
@@ -348,8 +359,8 @@ function main(): void {
     observationDigest: sha256(Buffer.from(JSON.stringify(normalizedObservations), "utf8")),
     boundary: {
       scalarGuardOnly: true,
-      wiredProductAxisCount: 48,
-      remainingProductAxisCount: 17,
+      wiredProductAxisCount: 55,
+      remainingProductAxisCount: 10,
       productReservationProofComplete: false,
       preissuanceReady: false,
       formalRecordsIssued: 0,
@@ -359,7 +370,7 @@ function main(): void {
   };
   writeFileSync(reportPath, `${JSON.stringify(report, null, 2)}\n`, { flag: "wx" });
   process.stdout.write(
-    `DESIGN_INPUT_EXPRESSION independent replay: ${observedCases.size}/195 PASS, 48/65 wired\n`,
+    `DESIGN_INPUT_EXPRESSION independent replay: ${observedCases.size}/195 PASS, 55/65 wired\n`,
   );
 }
 

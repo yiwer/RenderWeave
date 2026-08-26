@@ -28,7 +28,7 @@ class DesignInputExpressionCapacityConformanceTest {
 
     private static final ObjectMapper JSON = new ObjectMapper();
     private static final String TARGET_PATH =
-            ".scratch/renderweave-template-v1/design-input-expression/capacity-component-target-v6.json";
+            ".scratch/renderweave-template-v1/design-input-expression/capacity-component-target-v7.json";
     private static final Set<String> FIXTURE_MEMBERS = Set.of(
             "fixtureVersion", "generatorProfile", "executionClass", "baseline", "scenario",
             "observationAdapter", "targetContract"
@@ -163,14 +163,14 @@ class DesignInputExpressionCapacityConformanceTest {
         JsonNode target = JSON.readTree(targetBytes);
         assertEquals("renderweave-design-input-expression-capacity-component-target/1.0",
                 target.get("artifactVersion").asText());
-        assertEquals("DESIGN_INPUT_EXPRESSION_TARGET::CAPACITY_AUTHORITY_PARTIAL_WIRING::6.0",
+        assertEquals("DESIGN_INPUT_EXPRESSION_TARGET::CAPACITY_AUTHORITY_PARTIAL_WIRING::7.0",
                 target.get("targetId").asText());
         assertEquals("EXEC::DESIGN_INPUT_EXPRESSION::1.0",
                 target.get("executionClass").asText());
         assertEquals("renderweave-design-input-expression-capacity-guard/1.0",
                 target.get("guardContractId").asText());
-        assertEquals(48, target.get("productWiring").get("wiredAxisCount").asInt());
-        assertEquals(17, target.get("productWiring").get("remainingAxisCount").asInt());
+        assertEquals(55, target.get("productWiring").get("wiredAxisCount").asInt());
+        assertEquals(10, target.get("productWiring").get("remainingAxisCount").asInt());
 
         var targetBinding = new LinkedHashMap<String, Object>();
         targetBinding.put("path", TARGET_PATH);
@@ -198,8 +198,8 @@ class DesignInputExpressionCapacityConformanceTest {
 
         var boundary = new LinkedHashMap<String, Object>();
         boundary.put("scalarGuardOnly", true);
-        boundary.put("wiredProductAxisCount", 48);
-        boundary.put("remainingProductAxisCount", 17);
+        boundary.put("wiredProductAxisCount", 55);
+        boundary.put("remainingProductAxisCount", 10);
         boundary.put("parserOrCanonicalizerExecutedByScalarProbe", false);
         boundary.put("productReservationProofSeparate", true);
         boundary.put("formalRecordsIssued", 0);
