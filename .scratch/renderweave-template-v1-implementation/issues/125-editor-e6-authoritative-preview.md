@@ -1,8 +1,8 @@
 # 实现 Editor E6 权威预览纵切
 
 Type: task
-Status: in_progress
-Claimed by: Codex `/root`（single-writer）
+Status: resolved / automated_verified
+Claimed by: —
 Blocked by: 09, 27, 28, 29, 30, 31, 32, 35, 36, 37, 114, 124（均已 resolved）
 
 ## Question
@@ -52,3 +52,24 @@ T124 也已开放 server-selected Authoritative Preview HTTP seam；但产品 Ed
   failure focus、停止等待/object URL revoke与非 Structured模式隐藏；然后实现最小 GREEN并重构。
 - focused Node 24 → 全量 Editor/Web test/typecheck/lint/build → `web` → `fast` → Goal `full` → resolution `fast`；
   Maven串行、精确 staging，不纳入既有 Image-Only dirty work。最高只报 `automated_verified`。
+
+## Results
+
+- 已物化真实产品 Editor E6：Web-owned transport 原样发送 strict RenderInput bytes，只在完整核验 media、length、
+  SHA-256 digest、result/profile identity、format/dimensions/DPI/quality 后建立唯一 object URL；closed problem、网络/契约
+  漂移与 Web Crypto 不可用均零图失败并聚焦具名摘要，Engine identity 与敏感内部值不进入 UI。
+- preview coordinator 绑定 saved current revision/hash、generation、exact input 与 output parameters；编辑、导入、恢复、
+  readiness/baseline、输入或参数变化均立即撤图，one-active/abort/generation guard 丢弃迟到响应。“停止等待”如实只停止
+  浏览器等待，不声称取消服务端 operation；RootDocument 样例不进入 Template revision、Local recovery 或日志。
+- clean READY 可直接 preview；dirty 主动作严格执行既有 save → READY current → 独立 preview。conflict/unknown 继续沿用
+  显式 overwrite/retry/reconciliation 纪律，INVALID/reject/delete/fail-closed 不预览；保存成功不会因随后预览失败而回滚。
+- TDD 先得到缺失 preview module/contract 的 RED；GREEN 后 focused 29/29、Editor 14 files/165 tests、clean Node 24 Web
+  30 files/246 tests、typecheck、lint 与 production build 全绿。A1 `web` `.sdlc/evidence/20260826-081259-web/`
+  （121.693 秒）、affected `fast` `.sdlc/evidence/20260826-081512-fast/`（3/3，31.407 秒）与 clean 17-step Goal
+  `full` `.sdlc/evidence/20260826-081724-full/`（17/17，1601.209 秒）均 passed；`full` 覆盖 App 367 tests/
+  0 failures/0 errors/15 skipped、Playwright 23 passed + 1 controlled skip、runtime/Draft/inference journeys，
+  R0/R1/P0 provider attempts=0、API Key reads=0。状态回填后的 resolution `fast`
+  `.sdlc/evidence/20260826-084725-fast/`（3/3，12.599 秒）通过；首次 cold-worktree 尝试
+  `.sdlc/evidence/20260826-084623-fast/` 仅因尚未安装锁定 Web 依赖、`tsc` 未启动而失败，`npm ci` 后同 gate 绿色。
+- 状态为 `resolved / automated_verified`。本票没有挂载 App/nav/正式 `/templates` route，也没有推进 Profile registration/
+  certification、daemon native success、J1/A3/READY 或任何外部副作用；这些产品激活与真实浏览器验收由下一独立票继续。

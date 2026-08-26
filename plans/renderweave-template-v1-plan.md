@@ -4668,3 +4668,17 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
 - TDD/gates：pure transport RED → DOM workflow/a11y RED → minimal GREEN/refactor；focused Node 24 → Editor/Web
   test/typecheck/lint/build → `web` → `fast` → Goal `full` → resolution `fast`。Maven串行、精确 staging；最高只报
   `automated_verified`。
+- 结果：已物化 Web-owned authoritative preview transport/coordinator 与真实 Editor panel；raw RenderInput 不经
+  parse/rewrite，完整 image metadata/length/digest/profile 校验后才建唯一 object URL，closed failure 零图并聚焦，
+  edit/input/parameter/current/readiness 变化撤图，one-active + abort + generation guard 丢弃迟到结果。本地输入样例不持久化，
+  “停止等待”不虚构服务端/Engine cancel；dirty 主动作严格 save → READY current → preview，保存与预览结果独立。
+- 验证：TDD RED 后 focused 29/29、Editor 14 files/165 tests、clean Node 24 Web 30 files/246 tests、typecheck/lint/build
+  全绿；A1 `web` `.sdlc/evidence/20260826-081259-web/`（121.693 秒）、affected `fast`
+  `.sdlc/evidence/20260826-081512-fast/`（3/3，31.407 秒）、clean Goal `full`
+  `.sdlc/evidence/20260826-081724-full/`（17/17，1601.209 秒）均 passed。`full` 覆盖 App 367 tests/
+  0 failures/0 errors/15 skipped、Playwright 23 passed + 1 controlled skip、runtime/Draft/inference journeys；
+  R0/R1/P0 provider attempts=0、API Key reads=0。状态回填后的 resolution `fast`
+  `.sdlc/evidence/20260826-084725-fast/`（3/3，12.599 秒）通过；此前 cold worktree 未安装锁定 Web 依赖导致
+  `.sdlc/evidence/20260826-084623-fast/` 在 `tsc` 启动前失败，`npm ci` 后同 gate 绿色，不构成产品失败。
+- 生命周期：T125=`resolved / automated_verified`。正式 `/templates` App route/nav、产品浏览器验收、Profile registration/
+  certification、daemon native success、J1/A3/READY 与所有外部副作用均未推进；下一 frontier 是独立产品激活票。

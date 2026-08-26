@@ -656,10 +656,11 @@ Label: wayfinder:map
   开放，但默认无 Certified Profile 时仍真实失败封闭；Profile/daemon success/E6 UI/正式 `/templates` route 与
   native build 继续关闭，不制造图片或 fallback。
 - [实现 Editor E6 权威预览纵切](issues/125-editor-e6-authoritative-preview.md) —
-  **in_progress / claimed by Codex `/root`**；T124 已解除真实 public preview seam 前置，当前 single-writer frontier
-  闭合 raw RenderInput、完整 length/digest/profile 核验、current-only single-slot generation guard、失败撤图/
-  问题聚焦与 save-and-preview 顺序非原子。正式 `/templates` route、Profile/daemon success、native build与
-  public Engine cancel 均不由本票偷渡。
+  **resolved / automated_verified**；真实产品 Editor 已闭合 raw RenderInput、完整 length/digest/profile 核验、
+  current-only single-slot generation guard、失败撤图/问题聚焦、诚实停止与 save-and-preview 顺序非原子；focused
+  29/29、Editor 165、clean Node 24 Web 246、`web`/`fast`/17-step Goal `full`/resolution `fast` 均绿。正式
+  `/templates` route、导航与产品浏览器验收留给下一独立激活票；Profile/daemon success、native build与 public
+  Engine cancel 仍关闭。
 - [验证 Product Editor 状态、恢复与权威预览架构](issues/09-validate-product-editor-architecture.md) —
   throwaway 逻辑原型（`/prototype/editor-state-model`，不进产品 route）把冻结编辑器规则编码为确定性
   fixture 状态机：10 个引导走查场景 37/37 断言 + 自由操作冒烟 + 键盘焦点检查全部通过（Playwright A1，
