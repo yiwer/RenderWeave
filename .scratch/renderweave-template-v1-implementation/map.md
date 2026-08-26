@@ -821,8 +821,9 @@ Label: wayfinder:map
   single-writer 登记，Editor 产品 route 在 E1–E9 真实存在前不开放。Asset picker/catalog UI 随 Editor
   实施票同批。
 - T128 已补齐第一个 capacity class 的 exact product target、两个 executor manifests 与 PostgreSQL 独立 replay，
-  independent closure 报告 `preissuanceReady=true`；formal Domain Services Case/Oracle 仍为 0，append 必须在 DAG
-  复算后按独立票完成。其余 execution-class target、Profile 发行、Editor J1、Renderer 双物理 Linux CPU-family
+  independent closure 报告 `preissuanceReady=true`；DAG 复算后 T129 已由 Codex `/root` claim，正在以旧 46/46
+  formal bytes 为不可变前缀发行精确 12+12 Domain Services suffix，并补齐中央 catalog 与 post-issuance 双重 replay。
+  其余 execution-class target、Profile 发行、Editor J1、Renderer 双物理 Linux CPU-family
   认证与最终生命周期升级仍须以届时真实产品 artifact 和 executor 为输入另行切票；Ticket 19 保持 open。
 
 ## Out of scope

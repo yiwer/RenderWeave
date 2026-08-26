@@ -602,16 +602,61 @@ function compareOracle(oracle, observation) {
   }
 }
 
+let formalRegistry = null;
+
 function validateTarget() {
   if (!targetPath) throw new Error("--target is required unless --bootstrap-only is used");
   const target = json(`.scratch/renderweave-template-v1/${targetPath.replace(/^.*?spec-registry\//, "spec-registry/")}`);
   check(target.targetId === "SPEC_TARGET::REGISTRY::1.0" && target.executionClass === EXECUTION_CLASS, "TARGET_ID_CLASS", target.targetId);
   for (const entry of target.artifacts) check(digest(bytes(`.scratch/renderweave-template-v1/${entry.path}`)) === entry.sha256, "TARGET_ARTIFACT_DIGEST", entry.path);
-  const useFormal = target.registryBindings.formalStatus === "ISSUED_BYTE_IDENTICAL";
-  const casePath = useFormal ? ".scratch/renderweave-template-v1/conformance-cases-v1.jsonl" : `.scratch/renderweave-template-v1/${target.registryBindings.candidateCases.path}`;
-  const oraclePath = useFormal ? ".scratch/renderweave-template-v1/conformance-oracles-v1.jsonl" : `.scratch/renderweave-template-v1/${target.registryBindings.candidateOracles.path}`;
-  check(digest(bytes(casePath)) === target.registryBindings.candidateCases.sha256, "CASE_REGISTRY_BINDING", casePath);
-  check(digest(bytes(oraclePath)) === target.registryBindings.candidateOracles.sha256, "ORACLE_REGISTRY_BINDING", oraclePath);
+  const casePath = `.scratch/renderweave-template-v1/${target.registryBindings.candidateCases.path}`;
+  const oraclePath = `.scratch/renderweave-template-v1/${target.registryBindings.candidateOracles.path}`;
+  const candidateCaseBytes = bytes(casePath);
+  const candidateOracleBytes = bytes(oraclePath);
+  check(digest(candidateCaseBytes) === target.registryBindings.candidateCases.sha256, "CASE_REGISTRY_BINDING", casePath);
+  check(digest(candidateOracleBytes) === target.registryBindings.candidateOracles.sha256, "ORACLE_REGISTRY_BINDING", oraclePath);
+  const formalCasePath = ".scratch/renderweave-template-v1/conformance-cases-v1.jsonl";
+  const formalOraclePath = ".scratch/renderweave-template-v1/conformance-oracles-v1.jsonl";
+  const formalCaseBytes = bytes(formalCasePath);
+  const formalOracleBytes = bytes(formalOraclePath);
+  const formalStatus = target.registryBindings.formalStatus;
+  check(target.registryBindings.formalCases.expectedSha256 === digest(formalCaseBytes) &&
+    target.registryBindings.formalCases.observedSha256 === digest(formalCaseBytes),
+  "FORMAL_CASE_REGISTRY_BINDING", digest(formalCaseBytes));
+  check(target.registryBindings.formalOracles.expectedSha256 === digest(formalOracleBytes) &&
+    target.registryBindings.formalOracles.observedSha256 === digest(formalOracleBytes),
+  "FORMAL_ORACLE_REGISTRY_BINDING", digest(formalOracleBytes));
+  if (formalStatus === "ISSUED_BYTE_IDENTICAL") {
+    check(formalCaseBytes.equals(candidateCaseBytes), "FORMAL_CASE_BYTE_IDENTICAL", formalCasePath);
+    check(formalOracleBytes.equals(candidateOracleBytes), "FORMAL_ORACLE_BYTE_IDENTICAL", formalOraclePath);
+  } else if (formalStatus === "ISSUED_APPEND_ONLY_PREFIX") {
+    check(formalCaseBytes.subarray(0, candidateCaseBytes.length).equals(candidateCaseBytes),
+      "FORMAL_CASE_PREFIX_PRESERVED", formalCasePath);
+    check(formalOracleBytes.subarray(0, candidateOracleBytes.length).equals(candidateOracleBytes),
+      "FORMAL_ORACLE_PREFIX_PRESERVED", formalOraclePath);
+    const issuance = target.registryBindings.appendOnlyIssuance;
+    const issuanceBytes = bytes(`.scratch/renderweave-template-v1/${issuance.target.path}`);
+    check(digest(issuanceBytes) === issuance.target.sha256 && issuanceBytes.length === issuance.target.byteLength,
+      "APPEND_ISSUANCE_TARGET_BINDING", issuance.target.path);
+    const issuanceTarget = JSON.parse(issuanceBytes.toString("utf8"));
+    check(issuanceTarget.assignedCorpus.assignedCorpusDigest === issuance.assignedCorpusDigest &&
+      issuance.appendedExecutionClass === "EXEC::DOMAIN_SERVICES::1.0" && issuance.appendedCaseCount === 12 &&
+      issuance.appendedOracleCount === 12,
+    "APPEND_ISSUANCE_CORPUS", issuance.assignedCorpusDigest);
+    check(issuanceTarget.poststate.formalCases.sha256 === digest(formalCaseBytes) &&
+      issuanceTarget.poststate.formalOracles.sha256 === digest(formalOracleBytes),
+    "APPEND_ISSUANCE_POSTSTATE", issuance.target.path);
+  } else {
+    check(false, "FORMAL_STATUS", formalStatus);
+  }
+  formalRegistry = {
+    status: formalStatus,
+    caseCount: parseJsonl(formalCasePath).length,
+    oracleCount: parseJsonl(formalOraclePath).length,
+    caseSha256: digest(formalCaseBytes),
+    oracleSha256: digest(formalOracleBytes),
+    preservedSpecPrefix: true,
+  };
   const requirementState = validateRequirementRegistry();
   const profile = json(".scratch/renderweave-template-v1/conformance-probe-profile-v1.json");
   const probeById = new Map(profile.probes.map((probe) => [probe.probeId, probe]));
@@ -698,7 +743,8 @@ const result = {
   status: failures.length === 0 ? "PASS" : "FAIL",
   checkCount: checks.length,
   failureCount: failures.length,
-  failures
+  failures,
+  formalRegistry
 };
 process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
 if (failures.length) process.exitCode = 1;

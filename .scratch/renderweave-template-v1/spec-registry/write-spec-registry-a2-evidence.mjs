@@ -104,17 +104,84 @@ const formalCases = artifact("conformance-cases-v1.jsonl");
 const formalOracles = artifact("conformance-oracles-v1.jsonl");
 const candidateCases = artifact("spec-registry/candidate/conformance-cases-v1.jsonl");
 const candidateOracles = artifact("spec-registry/candidate/conformance-oracles-v1.jsonl");
-if (formalCases.sha256 !== candidateCases.sha256 || formalOracles.sha256 !== candidateOracles.sha256) {
-  throw new Error("issued SPEC registries are no longer byte-identical to their candidates");
+const formalStatus = target.registryBindings.formalStatus;
+const formalCaseBytes = bytes(formalCases.path);
+const formalOracleBytes = bytes(formalOracles.path);
+const candidateCaseBytes = bytes(candidateCases.path);
+const candidateOracleBytes = bytes(candidateOracles.path);
+let byteIdenticalToCandidate = false;
+let byteIdenticalSpecPrefix = false;
+if (formalStatus === "ISSUED_BYTE_IDENTICAL") {
+  byteIdenticalToCandidate = formalCases.sha256 === candidateCases.sha256 &&
+    formalOracles.sha256 === candidateOracles.sha256;
+  byteIdenticalSpecPrefix = byteIdenticalToCandidate;
+  if (!byteIdenticalToCandidate) throw new Error("issued SPEC registries are not byte-identical to their candidates");
+} else if (formalStatus === "ISSUED_APPEND_ONLY_PREFIX") {
+  byteIdenticalSpecPrefix = formalCaseBytes.subarray(0, candidateCaseBytes.length).equals(candidateCaseBytes) &&
+    formalOracleBytes.subarray(0, candidateOracleBytes.length).equals(candidateOracleBytes);
+  if (!byteIdenticalSpecPrefix) throw new Error("append-only registries do not preserve the exact SPEC candidate prefix");
+  if (formalCases.sha256 !== target.registryBindings.formalCases.observedSha256 ||
+      formalOracles.sha256 !== target.registryBindings.formalOracles.observedSha256) {
+    throw new Error("append-only formal registry binding drifted");
+  }
+} else {
+  throw new Error(`unsupported formal registry status: ${formalStatus}`);
 }
 
 const requirements = json("requirements-v1.json");
 const snapshotPolicy = json("conformance-manifest-snapshot-policy-v1.json");
 const capacityMaterialization = json("capacity-boundary/materialization-manifest-v1.json");
 
+const acceptance = json("acceptance-manifest-v1.json");
+const executionCatalog = artifact("conformance-execution-classes-v1.json");
+const bootstrapOrder = artifact("conformance-bootstrap-order-v1.json");
+const registries = acceptance.conformanceRegistries;
+registries.executionClassCatalog.sha256 = executionCatalog.sha256.replace("sha256:", "");
+registries.executionClassCatalog.executorManifestStatus =
+  "SPEC_REGISTRY_AND_DOMAIN_SERVICES_FROZEN_OTHER_CLASSES_PENDING";
+registries.executionClassCatalog.targetManifestStatus =
+  "SPEC_REGISTRY_AND_DOMAIN_SERVICES_FROZEN_OTHER_CLASSES_PENDING";
+registries.bootstrapOrder.sha256 = bootstrapOrder.sha256.replace("sha256:", "");
+registries.bootstrapOrder.currentPhase = "CAPACITY_BOUNDARY";
+registries.bootstrapOrder.status =
+  "domain-services-12-capacity-records-issued-a2-other-class-product-gates-pending";
+registries.specRegistryBootstrap.implementationRevision = target.implementationRevision;
+registries.specRegistryBootstrap.targetManifest = {
+  path: targetPath,
+  sha256: targetArtifact.sha256.replace("sha256:", ""),
+  byteLength: targetArtifact.byteLength,
+  artifactCount: target.artifacts.length,
+};
+registries.specRegistryBootstrap.executorManifests = [
+  {
+    role: "primary-registry-validator",
+    path: primaryExecutorPath,
+    sha256: primaryExecutorArtifact.sha256.replace("sha256:", ""),
+    byteLength: primaryExecutorArtifact.byteLength,
+  },
+  {
+    role: "independent-schema-and-graph-replayer",
+    path: independentExecutorPath,
+    sha256: independentExecutorArtifact.sha256.replace("sha256:", ""),
+    byteLength: independentExecutorArtifact.byteLength,
+  },
+];
+registries.specRegistryBootstrap.primaryReplayCheckCount = primary.checkCount;
+registries.specRegistryBootstrap.independentReplayCheckCount = independent.checkCount;
+registries.caseRegistry.recordCount = recordCount(formalCases.path);
+registries.caseRegistry.sha256 = formalCases.sha256.replace("sha256:", "");
+registries.oracleRegistry.recordCount = recordCount(formalOracles.path);
+registries.oracleRegistry.sha256 = formalOracles.sha256.replace("sha256:", "");
+acceptance.counts.issuedSpecRegistryCases = recordCount(candidateCases.path);
+acceptance.counts.issuedSpecRegistryOracles = recordCount(candidateOracles.path);
+acceptance.counts.issuedCapacityBoundaryCases = formalStatus === "ISSUED_APPEND_ONLY_PREFIX" ? 12 : 0;
+acceptance.counts.issuedCapacityBoundaryOracles = formalStatus === "ISSUED_APPEND_ONLY_PREFIX" ? 12 : 0;
+acceptance.counts.executableContractBoundaryCases = formalStatus === "ISSUED_APPEND_ONLY_PREFIX" ? 12 : 0;
+writeJson("acceptance-manifest-v1.json", acceptance);
+
 const evidence = {
-  evidenceVersion: "renderweave-spec-registry-a2/1.1",
-  evidenceId: "SPEC_REGISTRY_A2::2026-08-17::000002",
+  evidenceVersion: "renderweave-spec-registry-a2/1.2",
+  evidenceId: "SPEC_REGISTRY_A2::2026-08-26::000003",
   status: "PASS",
   grade: "A2_INDEPENDENTLY_REPLAYED",
   scope: "EXEC::SPEC_REGISTRY::1.0 only",
@@ -144,7 +211,9 @@ const evidence = {
       axisCount: capacityMaterialization.counts.axisCount,
       candidateCaseCount: capacityMaterialization.counts.shapeCandidateCaseCount,
       candidateOracleCount: capacityMaterialization.counts.shapeCandidateOracleCount,
-      formallyIssued: false,
+      formallyIssued: formalStatus === "ISSUED_APPEND_ONLY_PREFIX",
+      formallyIssuedCaseCount: formalStatus === "ISSUED_APPEND_ONLY_PREFIX" ? 12 : 0,
+      formallyIssuedOracleCount: formalStatus === "ISSUED_APPEND_ONLY_PREFIX" ? 12 : 0,
     },
     targetManifest: targetArtifact,
     primaryExecutorManifest: primaryExecutorArtifact,
@@ -158,7 +227,8 @@ const evidence = {
     formalCases: {
       ...formalCases,
       recordCount: recordCount(formalCases.path),
-      byteIdenticalToCandidate: true,
+      byteIdenticalToCandidate,
+      byteIdenticalSpecPrefix,
     },
     candidateOracles: {
       ...candidateOracles,
@@ -167,7 +237,8 @@ const evidence = {
     formalOracles: {
       ...formalOracles,
       recordCount: recordCount(formalOracles.path),
-      byteIdenticalToCandidate: true,
+      byteIdenticalToCandidate,
+      byteIdenticalSpecPrefix,
     },
     activeCorpusDigest: target.activeCorpusDigest,
   },
@@ -191,13 +262,15 @@ const evidence = {
   },
   observedFrontier: {
     snapshotCatalogClosureValid: true,
-    issuedSpecCaseCount: recordCount(formalCases.path),
-    issuedSpecOracleCount: recordCount(formalOracles.path),
+    issuedSpecCaseCount: recordCount(candidateCases.path),
+    issuedSpecOracleCount: recordCount(candidateOracles.path),
+    totalFormalCaseCount: recordCount(formalCases.path),
+    totalFormalOracleCount: recordCount(formalOracles.path),
     capacityAxisCount: capacityMaterialization.counts.axisCount,
     capacityShapeCandidateCaseCount: capacityMaterialization.counts.shapeCandidateCaseCount,
     capacityShapeCandidateOracleCount: capacityMaterialization.counts.shapeCandidateOracleCount,
-    capacityRecordsIssued: 0,
-    capacityProductExecutionObserved: false,
+    capacityRecordsIssued: formalStatus === "ISSUED_APPEND_ONLY_PREFIX" ? 12 : 0,
+    capacityProductExecutionObserved: formalStatus === "ISSUED_APPEND_ONLY_PREFIX",
   },
   sideEffects: {
     productCodeFilesChanged: 0,
@@ -210,7 +283,7 @@ const evidence = {
   boundary: {
     currentIssuancePhase: "CAPACITY_BOUNDARY",
     otherExecutionClassesExecutable: false,
-    isolatedCapacityRecordsIssued: 0,
+    isolatedCapacityRecordsIssued: formalStatus === "ISSUED_APPEND_ONLY_PREFIX" ? 12 : 0,
     combinedCapacityRecordsIssued: 0,
     fullAutomatedCorpusExecutable: false,
     rendererCertified: false,

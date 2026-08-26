@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = resolve(here, "..");
-const implementationRevision = "spec-registry-bootstrap/1.13";
+const implementationRevision = "spec-registry-bootstrap/1.14";
 
 function bytes(relativePath) {
   return readFileSync(resolve(root, relativePath));
@@ -42,6 +42,21 @@ const snapshotPolicy = json("conformance-manifest-snapshot-policy-v1.json");
 const requiredPaths = new Set(target.artifacts.map((entry) => entry.path));
 requiredPaths.add("conformance-manifest-snapshot-policy-v1.json");
 requiredPaths.add("spec-registry/refresh-spec-registry-postissuance-target.mjs");
+for (const domainIssuancePath of [
+  "domain-services/execution-class-target-v1.json",
+  "domain-services/java-domain-authority-executor-manifest-v1.json",
+  "domain-services/transactional-integration-replayer-manifest-v1.json",
+  "domain-services/capacity-record-issuance-target-v1.json",
+  "domain-services/materialize-domain-services-capacity-issuance.py",
+  "domain-services/validate-domain-services-postissuance-primary.mjs",
+  "domain-services/validate_domain_services_postissuance_independent.py",
+  "domain-services/write-domain-services-postissuance-a2-evidence.mjs",
+  "domain-services/postissuance-primary-result-v1.json",
+  "domain-services/postissuance-independent-result-v1.json",
+  "domain-services/domain-services-capacity-postissuance-a2-2026-08-26.json"
+]) {
+  requiredPaths.add(domainIssuancePath);
+}
 for (const editorAdmissionPath of [
   "editor-automated/execution-admission-contract-v1.json",
   "editor-automated/non-capacity-assignment-v1.json",

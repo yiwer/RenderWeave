@@ -624,7 +624,11 @@ def compare_oracle(oracle, observation):
             check(observation[probe_id] == assertion["expected"]["value"], "ORACLE_LITERAL_EQ", f'{oracle["oracleId"]}:{assertion["assertionId"]}')
 
 
+formal_registry = None
+
+
 def validate_target() -> None:
+    global formal_registry
     if not cli.target:
         raise RuntimeError("--target required")
     normalized = cli.target[cli.target.index("spec-registry/") :] if "spec-registry/" in cli.target else cli.target
@@ -632,11 +636,51 @@ def validate_target() -> None:
     check(target["targetId"] == "SPEC_TARGET::REGISTRY::1.0" and target["executionClass"] == EXECUTION_CLASS, "TARGET_ID_CLASS", target["targetId"])
     for artifact in target["artifacts"]:
         check(digest(raw(".scratch/renderweave-template-v1/" + artifact["path"])) == artifact["sha256"], "TARGET_ARTIFACT_DIGEST", artifact["path"])
-    formal = target["registryBindings"]["formalStatus"] == "ISSUED_BYTE_IDENTICAL"
-    case_path = ".scratch/renderweave-template-v1/conformance-cases-v1.jsonl" if formal else ".scratch/renderweave-template-v1/" + target["registryBindings"]["candidateCases"]["path"]
-    oracle_path = ".scratch/renderweave-template-v1/conformance-oracles-v1.jsonl" if formal else ".scratch/renderweave-template-v1/" + target["registryBindings"]["candidateOracles"]["path"]
-    check(digest(raw(case_path)) == target["registryBindings"]["candidateCases"]["sha256"], "CASE_REGISTRY_BINDING", case_path)
-    check(digest(raw(oracle_path)) == target["registryBindings"]["candidateOracles"]["sha256"], "ORACLE_REGISTRY_BINDING", oracle_path)
+    case_path = ".scratch/renderweave-template-v1/" + target["registryBindings"]["candidateCases"]["path"]
+    oracle_path = ".scratch/renderweave-template-v1/" + target["registryBindings"]["candidateOracles"]["path"]
+    candidate_cases = raw(case_path)
+    candidate_oracles = raw(oracle_path)
+    check(digest(candidate_cases) == target["registryBindings"]["candidateCases"]["sha256"], "CASE_REGISTRY_BINDING", case_path)
+    check(digest(candidate_oracles) == target["registryBindings"]["candidateOracles"]["sha256"], "ORACLE_REGISTRY_BINDING", oracle_path)
+    formal_case_path = ".scratch/renderweave-template-v1/conformance-cases-v1.jsonl"
+    formal_oracle_path = ".scratch/renderweave-template-v1/conformance-oracles-v1.jsonl"
+    formal_cases = raw(formal_case_path)
+    formal_oracles = raw(formal_oracle_path)
+    formal_status = target["registryBindings"]["formalStatus"]
+    check(target["registryBindings"]["formalCases"]["expectedSha256"] == digest(formal_cases) and
+          target["registryBindings"]["formalCases"]["observedSha256"] == digest(formal_cases),
+          "FORMAL_CASE_REGISTRY_BINDING", digest(formal_cases))
+    check(target["registryBindings"]["formalOracles"]["expectedSha256"] == digest(formal_oracles) and
+          target["registryBindings"]["formalOracles"]["observedSha256"] == digest(formal_oracles),
+          "FORMAL_ORACLE_REGISTRY_BINDING", digest(formal_oracles))
+    if formal_status == "ISSUED_BYTE_IDENTICAL":
+        check(formal_cases == candidate_cases, "FORMAL_CASE_BYTE_IDENTICAL", formal_case_path)
+        check(formal_oracles == candidate_oracles, "FORMAL_ORACLE_BYTE_IDENTICAL", formal_oracle_path)
+    elif formal_status == "ISSUED_APPEND_ONLY_PREFIX":
+        check(formal_cases.startswith(candidate_cases), "FORMAL_CASE_PREFIX_PRESERVED", formal_case_path)
+        check(formal_oracles.startswith(candidate_oracles), "FORMAL_ORACLE_PREFIX_PRESERVED", formal_oracle_path)
+        issuance = target["registryBindings"]["appendOnlyIssuance"]
+        issuance_bytes = raw(".scratch/renderweave-template-v1/" + issuance["target"]["path"])
+        check(digest(issuance_bytes) == issuance["target"]["sha256"] and
+              len(issuance_bytes) == issuance["target"]["byteLength"],
+              "APPEND_ISSUANCE_TARGET_BINDING", issuance["target"]["path"])
+        issuance_target = json.loads(issuance_bytes)
+        check(issuance_target["assignedCorpus"]["assignedCorpusDigest"] == issuance["assignedCorpusDigest"] and
+              issuance["appendedCaseCount"] == 12 and issuance["appendedOracleCount"] == 12,
+              "APPEND_ISSUANCE_CORPUS", issuance["assignedCorpusDigest"])
+        check(issuance_target["poststate"]["formalCases"]["sha256"] == digest(formal_cases) and
+              issuance_target["poststate"]["formalOracles"]["sha256"] == digest(formal_oracles),
+              "APPEND_ISSUANCE_POSTSTATE", issuance["target"]["path"])
+    else:
+        check(False, "FORMAL_STATUS", formal_status)
+    formal_registry = {
+        "status": formal_status,
+        "caseCount": len(parse_jsonl(formal_case_path)),
+        "oracleCount": len(parse_jsonl(formal_oracle_path)),
+        "caseSha256": digest(formal_cases),
+        "oracleSha256": digest(formal_oracles),
+        "preservedSpecPrefix": True,
+    }
     requirements, rows, all_rows = parse_requirements()
     profile = load(".scratch/renderweave-template-v1/conformance-probe-profile-v1.json")
     probes = {probe["probeId"]: probe for probe in profile["probes"]}
@@ -722,6 +766,7 @@ result = {
     "checkCount": len(checks),
     "failureCount": len(failures),
     "failures": failures,
+    "formalRegistry": formal_registry,
 }
 print(json.dumps(result, indent=2, ensure_ascii=False))
 sys.exit(1 if failures else 0)

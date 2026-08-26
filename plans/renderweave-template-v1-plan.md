@@ -1,10 +1,10 @@
 # RenderWeave Template v1 Implementation Plan
 
-- 当前 frontier（2026-08-26）：TV1-T01–T128 均已 `resolved`；T128 已为第一个 Domain Services capacity class
-  绑定真实 PostgreSQL 原子提交/幂等/回滚 replay、class-level exact target 与两个 executor manifests，并取得
-  `preissuanceReady=true`。formal Domain Services Case/Oracle 仍为 0；下一安全动作是复算冻结 DAG，并以独立票执行
-  append-only formal issuance，不能在 T128 收口中越级发行。
-- 状态：`in_progress`；TV1-T128=`automated_verified`；TV1-T127=`automated_verified`；TV1-T01/T02/T03/T04/T05/T06/T07/T08/T09/T10/T10b/T11/T12a/T12b/T13/T14/T14b/T15/T16/T17/T18/T19/T20/T22=`automated_verified`
+- 当前 frontier（2026-08-26）：TV1-T01–T128 均已 `resolved`；冻结 DAG 复算确认 T128 的 exact target、两个 executor
+  manifests 与真实 PostgreSQL replay 已满足 Domain Services 发行前置。TV1-T129 已由 Codex `/root` single-writer
+  claim，正在以既有 46/46 formal registry 为不可变前缀，发行 assigned 12 Case + 12 Oracle，并完成中央 catalog 与
+  post-issuance 双重 replay；其余 capacity records 不随本票发行。
+- 状态：`in_progress`；TV1-T129=`in_progress`；TV1-T128=`automated_verified`；TV1-T127=`automated_verified`；TV1-T01/T02/T03/T04/T05/T06/T07/T08/T09/T10/T10b/T11/T12a/T12b/T13/T14/T14b/T15/T16/T17/T18/T19/T20/T22=`automated_verified`
   （T09 另含人工 J1），TV1-T21=`automated_verified`（首个 Rendering 纵切——renderweave-rendering
   首个 artifact、TemplateClosureAuthority/Evaluator stage 1–8/seal、CapabilityState 加密落盘、
   RenderNodeContract 向量语料 Java primary、端到端 assembly 证明）；TV1-T13 已完成 AssetResolver、加密
@@ -4815,3 +4815,23 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
 - 本票没有 append formal records、注册/认证 Profile、运行独立 native deployment/rehearsal、调用 provider、读取
   API Key、处理真实数据/生产或取得 J1/A3/READY。Repository `full` 的既有 Rust checks 不改变
   `BUILD_NOT_AUTHORIZED`、`NOT_REGISTERED`、`NOT_CERTIFIED`；下一步必须按冻结 DAG 另行发行 records。
+
+## 129. TV1-T129 执行卡
+
+- 决策：T128 已满足 `EXEC::DOMAIN_SERVICES::1.0` 的 class-local preissuance gate；本票只发行其 assigned 4 axes / 12
+  capacity records，不跨级发行 Design/Input、Rendering 或 Renderer 的其余 513 个 candidate。
+- Append discipline：旧 Case/Oracle registry 的 46 条 SPEC_REGISTRY bytes 必须逐字节保持为前缀；新增 suffix 必须与
+  525 candidate corpus 中 executionClass=Domain Services 的 12 Case 及其 12 Oracle byte-identical、顺序一致。issuer
+  只接受 exact prestate 或完整 poststate，拒绝 partial/duplicate/drift。
+- Replay：T128 的 Java guard executor 与 PostgreSQL transactional executor 必须 fresh 通过；另增 Node/Python 两个不
+  共享 semantic helper 的 post-issuance registry verifier，验证 formal prefix/suffix、canonical/schema、coverage、
+  probe/operator、identity/signature/supersession/no-orphan 与 manifest closure。
+- 中央闭包：同批刷新 execution-class catalog、bootstrap order、acceptance manifest、SPEC registry target/executors/A2
+  evidence 与 template-static expectations；Domain class 完成后标记 12/12 `EXECUTABLE_A2_REPLAYED`，Phase 2 保持
+  `CAPACITY_BOUNDARY`，全局 executable capacity 仅为 12/525。
+- 允许影响：T129 tracker/map/plan、formal Case/Oracle append、Domain issuance target/materializer/verifiers/evidence、
+  conformance class/bootstrap/acceptance 与 Spec Registry target/replay/writer、专用 gate 和必要 evidence。
+- 禁止影响：产品 API/OpenAPI/migration/Web/Template/Rendering 语义、其他 class records、Renderer/Profile/native
+  build、provider/API Key/真实数据/生产/J1/A3/READY，以及用户既有 dirty work。
+- TDD/gates：missing issuer/post-verifier RED → deterministic expected poststate → exact append → Node/Python post replay →
+  fresh `domain-services` → `template-static`/`asset`/`fast` → sequential `server` → Goal `full` → resolution `fast`。

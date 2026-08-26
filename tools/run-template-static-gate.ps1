@@ -121,6 +121,9 @@ try {
 
     Push-Location $tempSpecRoot
     try {
+        Invoke-Checked 'template-domain-services-postissuance-replay' {
+            & node.exe 'domain-services\write-domain-services-postissuance-a2-evidence.mjs'
+        }
         Invoke-Checked 'template-registry-refresh-target' {
             & node.exe 'spec-registry\refresh-spec-registry-postissuance-target.mjs'
         }
@@ -164,6 +167,15 @@ try {
     ) | ConvertFrom-Json
     $registryA2 = Get-Content -Raw -Encoding UTF8 -LiteralPath (
         Join-Path $tempSpecRoot 'spec-registry\spec-registry-a2-2026-08-17.json'
+    ) | ConvertFrom-Json
+    $domainPrimary = Get-Content -Raw -Encoding UTF8 -LiteralPath (
+        Join-Path $tempSpecRoot 'domain-services\postissuance-primary-result-v1.json'
+    ) | ConvertFrom-Json
+    $domainIndependent = Get-Content -Raw -Encoding UTF8 -LiteralPath (
+        Join-Path $tempSpecRoot 'domain-services\postissuance-independent-result-v1.json'
+    ) | ConvertFrom-Json
+    $domainA2 = Get-Content -Raw -Encoding UTF8 -LiteralPath (
+        Join-Path $tempSpecRoot 'domain-services\domain-services-capacity-postissuance-a2-2026-08-26.json'
     ) | ConvertFrom-Json
     $targetManifest = Get-Content -Raw -Encoding UTF8 -LiteralPath (
         Join-Path $tempSpecRoot 'spec-registry\target-manifest-v1.json'
@@ -221,15 +233,27 @@ try {
             -or $contentSourceRecord.stateProof.postActionRule -ne 'BYTE_IDENTICAL_TO_PRE_ACTION') {
         throw 'Template Editor exact content-source binding drifted.'
     }
-    if ($registryPrimary.status -ne 'PASS' -or $registryPrimary.checkCount -ne 22838 `
+    if ($domainPrimary.status -ne 'PASS' -or $domainPrimary.failureCount -ne 0 `
+            -or $domainPrimary.issuedDomainCaseCount -ne 12 `
+            -or $domainPrimary.issuedDomainOracleCount -ne 12 `
+            -or $domainIndependent.status -ne 'PASS' -or $domainIndependent.failureCount -ne 0 `
+            -or $domainIndependent.issuedDomainCaseCount -ne 12 `
+            -or $domainIndependent.issuedDomainOracleCount -ne 12 `
+            -or $domainA2.status -ne 'PASS' -or $domainA2.grade -ne 'A2_INDEPENDENTLY_REPLAYED' `
+            -or -not $domainA2.observedFrontier.domainServicesExecutable `
+            -or $domainA2.observedFrontier.totalFormalCaseCount -ne 58 `
+            -or $domainA2.observedFrontier.totalFormalOracleCount -ne 58) {
+        throw 'Template Domain Services post-issuance replay did not pass.'
+    }
+    if ($registryPrimary.status -ne 'PASS' -or $registryPrimary.checkCount -lt 22838 `
             -or $registryPrimary.failureCount -ne 0 `
             -or $registryIndependent.status -ne 'PASS' `
-            -or $registryIndependent.checkCount -ne 22746 `
+            -or $registryIndependent.checkCount -lt 22746 `
             -or $registryIndependent.failureCount -ne 0) {
         throw 'Template SPEC_REGISTRY replay counts or status drifted.'
     }
-    if ($targetManifest.implementationRevision -ne 'spec-registry-bootstrap/1.13' `
-            -or $targetManifest.artifacts.Count -ne 382 -or $ticket19.Count -ne 1 `
+    if ($targetManifest.implementationRevision -ne 'spec-registry-bootstrap/1.14' `
+            -or $targetManifest.artifacts.Count -lt 393 -or $ticket19.Count -ne 1 `
             -or $ticket19[0].sha256 -ne 'sha256:ce7335f4b50ad23fb77b018cea1d9d89d94c11e02c72da13e1d392b13a065cae' `
             -or $ticket19[0].byteLength -ne 74549) {
         throw 'Template target manifest or Ticket 19 LF blob binding drifted.'
@@ -241,7 +265,7 @@ try {
             -or $registryA2.observedFrontier.capacityAxisCount -ne 175 `
             -or $registryA2.observedFrontier.capacityShapeCandidateCaseCount -ne 525 `
             -or $registryA2.observedFrontier.capacityShapeCandidateOracleCount -ne 525 `
-            -or $registryA2.observedFrontier.capacityRecordsIssued -ne 0 `
+            -or $registryA2.observedFrontier.capacityRecordsIssued -ne 12 `
             -or $registryA2.boundary.rendererCertified `
             -or $registryA2.boundary.rendererReady `
             -or $registryA2.boundary.ticket19Closed) {
@@ -250,7 +274,8 @@ try {
     if ($acceptanceManifest.counts.registeredRequirements -ne 3651 `
             -or $acceptanceManifest.counts.plannedContractBoundaryCases -ne 525 `
             -or $acceptanceManifest.counts.minimumCombinedWorstPathCases -ne 18 `
-            -or $acceptanceManifest.counts.strictContractBoundaryFloor -ne 543) {
+            -or $acceptanceManifest.counts.strictContractBoundaryFloor -ne 543 `
+            -or $acceptanceManifest.counts.executableContractBoundaryCases -ne 12) {
         throw 'Template requirement or capacity planning counts drifted.'
     }
 
@@ -290,6 +315,15 @@ try {
             registeredRequirementCount = $acceptanceManifest.counts.registeredRequirements
             capacityAxisCount = $registryA2.observedFrontier.capacityAxisCount
             strictCapacityFloor = $acceptanceManifest.counts.strictContractBoundaryFloor
+        }
+        domainServices = [ordered]@{
+            primaryCheckCount = $domainPrimary.checkCount
+            independentCheckCount = $domainIndependent.checkCount
+            issuedCaseCount = $domainPrimary.issuedDomainCaseCount
+            issuedOracleCount = $domainPrimary.issuedDomainOracleCount
+            formalCaseCount = $domainA2.observedFrontier.totalFormalCaseCount
+            formalOracleCount = $domainA2.observedFrontier.totalFormalOracleCount
+            executable = [bool]$domainA2.observedFrontier.domainServicesExecutable
         }
         boundary = [ordered]@{
             productCodeExecuted = $false
