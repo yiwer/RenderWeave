@@ -1,6 +1,7 @@
 package cn.hbads.renderweave.template.internal;
 
 import cn.hbads.renderweave.template.api.DesignDslAuthority;
+import cn.hbads.renderweave.template.api.DesignInputExpressionCapacityAuthority;
 
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
@@ -17,6 +18,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Objects;
 import java.util.Set;
 import java.util.regex.Pattern;
 
@@ -43,8 +45,18 @@ final class CanonicalDesignDslAuthority implements DesignDslAuthority {
     );
     private static final Pattern RGBA = Pattern.compile("^#[0-9A-F]{8}$");
 
-    private final StrictJsonParser parser = new StrictJsonParser();
-    private final CanonicalJsonWriter writer = new CanonicalJsonWriter();
+    private final StrictJsonParser parser;
+    private final CanonicalJsonWriter writer;
+
+    CanonicalDesignDslAuthority() {
+        this(CanonicalDesignInputExpressionCapacityAuthority.INSTANCE);
+    }
+
+    CanonicalDesignDslAuthority(DesignInputExpressionCapacityAuthority capacity) {
+        var requiredCapacity = Objects.requireNonNull(capacity, "capacity");
+        this.parser = new StrictJsonParser(requiredCapacity);
+        this.writer = new CanonicalJsonWriter(requiredCapacity);
+    }
 
     @Override
     public Admission admit(byte[] rawUtf8) {

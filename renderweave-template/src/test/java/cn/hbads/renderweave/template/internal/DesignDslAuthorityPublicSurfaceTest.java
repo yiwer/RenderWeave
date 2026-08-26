@@ -1,6 +1,7 @@
 package cn.hbads.renderweave.template.internal;
 
 import cn.hbads.renderweave.template.api.DesignDslAuthority;
+import cn.hbads.renderweave.template.api.DesignInputExpressionCapacityAuthority;
 import com.tngtech.archunit.core.domain.JavaModifier;
 import com.tngtech.archunit.core.importer.ClassFileImporter;
 import com.tngtech.archunit.core.importer.ImportOption;
@@ -20,7 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class DesignDslAuthorityPublicSurfaceTest {
 
     @Test
-    void exposesOnlyTheTicketThreeAndTicketSixTopLevelContracts() {
+    void exposesOnlyTheClosedTemplateTopLevelContracts() {
         var production = new ClassFileImporter()
                 .withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS)
                 .importPackages("cn.hbads.renderweave.template");
@@ -32,6 +33,7 @@ class DesignDslAuthorityPublicSurfaceTest {
 
         assertEquals(Set.of(
                 DesignDslAuthority.class.getName(),
+                DesignInputExpressionCapacityAuthority.class.getName(),
                 "cn.hbads.renderweave.template.api.TemplateApplication",
                 "cn.hbads.renderweave.template.api.TemplateDependencyProjection",
                 "cn.hbads.renderweave.template.api.AssetReferenceAuthority",

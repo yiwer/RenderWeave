@@ -2,6 +2,7 @@ package cn.hbads.renderweave.template.internal;
 
 import cn.hbads.renderweave.schema.api.StaticSchemaAuthority;
 import cn.hbads.renderweave.template.api.AssetReferenceAuthority;
+import cn.hbads.renderweave.template.api.DesignInputExpressionCapacityAuthority;
 import cn.hbads.renderweave.template.api.TemplateApplication;
 import cn.hbads.renderweave.template.api.TemplateClosureAuthority;
 import cn.hbads.renderweave.template.api.TemplateReadinessAuthority;
@@ -81,6 +82,11 @@ public final class TemplateModule {
     /** Template-owned DesignDSL admission authority (assembly seam for consumers). */
     public static cn.hbads.renderweave.template.api.DesignDslAuthority designDslAuthority() {
         return new CanonicalDesignDslAuthority();
+    }
+
+    /** Closed Design/Input/Expression capacity profile; callers own exact-path measurement. */
+    public static DesignInputExpressionCapacityAuthority designInputExpressionCapacityAuthority() {
+        return CanonicalDesignInputExpressionCapacityAuthority.INSTANCE;
     }
 
     /** System-level readiness recheck consumed by the app STALE consumer. */

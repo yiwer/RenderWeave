@@ -88,7 +88,8 @@ class TemplateApplicationPublicSurfaceTest {
         assertTrue(Modifier.isFinal(TemplateModule.class.getModifiers()));
         assertEquals(
                 Set.of("application", "assetReferenceAuthority", "closureAuthority",
-                        "designDslAuthority", "designSemanticAuthority", "readinessAuthority"),
+                        "designDslAuthority", "designSemanticAuthority", "readinessAuthority",
+                        "designInputExpressionCapacityAuthority"),
                 methodNames(TemplateModule.class)
         );
         var application = TemplateModule.class.getDeclaredMethod(

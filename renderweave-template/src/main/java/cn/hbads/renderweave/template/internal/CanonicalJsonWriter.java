@@ -1,14 +1,15 @@
 package cn.hbads.renderweave.template.internal;
 
+import cn.hbads.renderweave.template.api.DesignInputExpressionCapacityAuthority;
+
 import java.io.ByteArrayOutputStream;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.Objects;
 
 final class CanonicalJsonWriter {
-
-    static final int MAX_CANONICAL_BYTES = 16 * 1024 * 1024;
 
     private static final Comparator<String> UTF8_ORDER = (left, right) -> {
         var leftBytes = left.getBytes(StandardCharsets.UTF_8);
@@ -27,11 +28,21 @@ final class CanonicalJsonWriter {
     };
     private static final byte[] ZERO_CHUNK = "0".repeat(4_096).getBytes(StandardCharsets.US_ASCII);
 
+    private final DesignInputExpressionCapacityAuthority capacity;
+
+    CanonicalJsonWriter() {
+        this(CanonicalDesignInputExpressionCapacityAuthority.INSTANCE);
+    }
+
+    CanonicalJsonWriter(DesignInputExpressionCapacityAuthority capacity) {
+        this.capacity = Objects.requireNonNull(capacity, "capacity");
+    }
+
     byte[] write(JsonValue value) throws CanonicalLimitException {
-        var counter = new CountingSink(MAX_CANONICAL_BYTES);
+        var counter = new CountingSink(capacity);
         write(value, counter);
 
-        var output = new ByteArrayOutputStream(counter.count());
+        var output = new ByteArrayOutputStream(counter.acceptedCount());
         write(value, new OutputSink(output));
         return output.toByteArray();
     }
@@ -165,23 +176,32 @@ final class CanonicalJsonWriter {
     }
 
     private static final class CountingSink implements Sink {
-        private final int maximum;
-        private int count;
+        private final DesignInputExpressionCapacityAuthority capacity;
+        private long count;
 
-        private CountingSink(int maximum) {
-            this.maximum = maximum;
+        private CountingSink(DesignInputExpressionCapacityAuthority capacity) {
+            this.capacity = capacity;
         }
 
         @Override
-        public void bytes(byte[] value, int offset, int length) throws CanonicalLimitException {
-            if (length > maximum - count) {
-                throw new CanonicalLimitException();
-            }
-            count += length;
+        public void bytes(byte[] value, int offset, int length) {
+            count = Math.addExact(count, length);
         }
 
-        private int count() {
-            return count;
+        @Override
+        public void zeros(long zeroCount) {
+            count = Math.addExact(count, zeroCount);
+        }
+
+        private int acceptedCount() throws CanonicalLimitException {
+            var decision = capacity.evaluate(new DesignInputExpressionCapacityAuthority.Observation(
+                    "designDslParser.canonicalBytes",
+                    Long.toString(count)
+            ));
+            if (!(decision instanceof DesignInputExpressionCapacityAuthority.Accepted)) {
+                throw new CanonicalLimitException();
+            }
+            return Math.toIntExact(count);
         }
     }
 
