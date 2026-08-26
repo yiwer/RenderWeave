@@ -124,8 +124,10 @@
     "proposedProbeCount": 0,
     "candidateProfileBindingAssertionCount": 109,
     "candidateProfileBoundCandidateCount": 82,
-    "formalCaseCount": 46,
-    "formalOracleCount": 46
+    "formalCaseCount": 58,
+    "formalOracleCount": 58,
+    "formalEditorCaseCount": 0,
+    "formalEditorOracleCount": 0
   },
   "byJourney": [
     {

@@ -6,15 +6,15 @@
   "targetId": "SPEC_TARGET::REGISTRY::1.0",
   "targetManifest": {
     "path": "spec-registry/target-manifest-v1.json",
-    "sha256": "sha256:33713ad84d566a8ddaa21d4f0e930bb8a3f5e29e049c29a1b85733036c5b0147",
-    "byteLength": 77305
+    "sha256": "sha256:64019fa9b8c91d999032ce0fb6fbe689ef2d242d65307e0e81566321a32901fc",
+    "byteLength": 80323
   },
-  "implementationRevision": "spec-registry-bootstrap/1.13",
+  "implementationRevision": "spec-registry-bootstrap/1.14",
   "runtime": "CPython 3.12.x",
   "entrypoint": {
     "path": "spec-registry/validate-spec-registry-independent.py",
-    "sha256": "sha256:cb295837d3486148d7668a01d70637d2ad19427e0ee959b27706b600c1e50b2b",
-    "byteLength": 40758
+    "sha256": "sha256:9f3edf35879e883066c2522107b6455ce2af2dcab1ca26cbe47829b933c518a8",
+    "byteLength": 43413
   },
   "command": "python spec-registry/validate-spec-registry-independent.py --target spec-registry/target-manifest-v1.json",
   "sharedSemanticLibrary": null,

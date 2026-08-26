@@ -64,7 +64,7 @@
     }
   },
   "conformanceRegistries": {
-    "status": "spec-registry-issued-a2-replayed-all-six-class-fixture-generators-static-a2-editor-admission-interface-static-a2-capacity-shapes-static-a2-record-issuance-blocked",
+    "status": "spec-registry-and-domain-services-issued-a2-replayed-12-of-525-capacity-records-executable-other-class-product-gates-pending",
     "canonicalProfile": {
       "path": "conformance-canonical-profile-v1.json",
       "profileId": "renderweave-conformance-c14n/1.0",
@@ -80,16 +80,16 @@
     },
     "executionClassCatalog": {
       "path": "conformance-execution-classes-v1.json",
-      "sha256": "a984d9327dd880f1c4b10d4dc4351fa102d75d8167df08464281516ffbdecfbd",
+      "sha256": "f7963e4fb555e87ab59f55bc2afce559b7b7b3de6b90edc1369415b0cd7a6968",
       "classCount": 6,
-      "executorManifestStatus": "SPEC_REGISTRY_FROZEN_OTHER_CLASSES_PENDING",
-      "targetManifestStatus": "SPEC_REGISTRY_FROZEN_OTHER_CLASSES_PENDING"
+      "executorManifestStatus": "SPEC_REGISTRY_AND_DOMAIN_SERVICES_FROZEN_OTHER_CLASSES_PENDING",
+      "targetManifestStatus": "SPEC_REGISTRY_AND_DOMAIN_SERVICES_FROZEN_OTHER_CLASSES_PENDING"
     },
     "bootstrapOrder": {
       "path": "conformance-bootstrap-order-v1.json",
-      "sha256": "d3487a85839282f64050606bad17ff87b801a71e456524c63f1dd257dd152825",
+      "sha256": "fd112f7b9f91fa42b7317b282cd77155381ce2b6b4260200ea71d9f6b3f04b78",
       "currentPhase": "CAPACITY_BOUNDARY",
-      "status": "capacity-boundary-all-six-class-fixtures-static-a2-editor-admission-interface-static-a2-product-execution-gates-pending"
+      "status": "domain-services-12-capacity-records-issued-a2-other-class-product-gates-pending"
     },
     "probeProfile": {
       "path": "conformance-probe-profile-v1.json",
@@ -141,7 +141,7 @@
       "status": "mapping-frozen-shape-candidates-static-replayed-all-assigned-class-fixtures-referenceable-product-gates-pending"
     },
     "capacityBoundaryMaterialization": {
-      "status": "A2_STATIC_SHAPE_CANDIDATES_READY_RECORD_ISSUANCE_BLOCKED",
+      "status": "DOMAIN_SERVICES_12_ISSUED_A2_OTHER_CAPACITY_CLASSES_BLOCKED",
       "manifest": {
         "path": "capacity-boundary/materialization-manifest-v1.json",
         "sha256": "0e7a5b8d1b2b8e9b816dc4434456b0c0c0868a9aff8c4dfa5c1dc60092669252"
@@ -169,13 +169,13 @@
         "failureCount": 0
       },
       "evidence": "capacity-boundary/capacity-boundary-static-a2-2026-08-17.json",
-      "formalCapacityCaseCount": 0,
-      "formalCapacityOracleCount": 0,
-      "productExecutionEvidence": false,
+      "formalCapacityCaseCount": 12,
+      "formalCapacityOracleCount": 12,
+      "productExecutionEvidence": true,
       "recordIssuanceAllowed": false
     },
     "domainServicesFixtureBootstrap": {
-      "status": "FIXTURE_GENERATOR_A2_STATIC_REPLAYED_PRODUCT_TARGET_PENDING",
+      "status": "EXECUTABLE_A2_REPLAYED",
       "executionClass": "EXEC::DOMAIN_SERVICES::1.0",
       "capacityAxisCount": 4,
       "capacityFixtureCount": 12,
@@ -213,15 +213,35 @@
         "failureCount": 0
       },
       "evidence": "domain-services/domain-services-fixture-static-a2-2026-08-17.json",
-      "remainingBlockers": [
-        "EXACT_TARGET_MANIFEST_PENDING",
-        "REQUIRED_EXECUTOR_MANIFESTS_PENDING",
-        "INDEPENDENT_EXECUTION_REPLAY_PENDING"
+      "remainingBlockers": [],
+      "productExecutionEvidence": true,
+      "formalCapacityRecordCount": 12,
+      "recordIssuanceAllowed": true,
+      "executable": true,
+      "exactProductTarget": {
+        "path": "domain-services/execution-class-target-v1.json",
+        "sha256": "sha256:d2b785bcf454c62f0508dc74d195e3875f550df74a949844408fe005c1e2bcfb",
+        "byteLength": 7197
+      },
+      "executorManifests": [
+        {
+          "path": "domain-services/java-domain-authority-executor-manifest-v1.json",
+          "sha256": "sha256:1fcaae74c1bc2f4eaecc6e9aaf436fddaa15d32cc449c5b05b79a4b33fb0dafb",
+          "byteLength": 1397
+        },
+        {
+          "path": "domain-services/transactional-integration-replayer-manifest-v1.json",
+          "sha256": "sha256:1553d1b48ac677f2562d4ad8f1dd03ab519966bb4a0f75c04198e845e751604c",
+          "byteLength": 1518
+        }
       ],
-      "productExecutionEvidence": false,
-      "formalCapacityRecordCount": 0,
-      "recordIssuanceAllowed": false,
-      "executable": false
+      "recordIssuanceTarget": {
+        "path": "domain-services/capacity-record-issuance-target-v1.json",
+        "sha256": "sha256:44c1d878848ab87fc4e4485c4b6142f1710204f39b64578c0a95102a7b0288e2",
+        "byteLength": 11104
+      },
+      "assignedActiveCorpusDigest": "sha256:5a236de3cf36155df7244b049b045cefda55960cf16efe8212c3981e5463844f",
+      "postIssuanceEvidence": "domain-services/domain-services-capacity-postissuance-a2-2026-08-26.json"
     },
     "designInputExpressionFixtureBootstrap": {
       "status": "FIXTURE_GENERATOR_A2_STATIC_REPLAYED_PRODUCT_TARGET_PENDING",
@@ -703,30 +723,30 @@
         "path": "spec-registry/coverage-v1.json",
         "sha256": "cee064438155142b69dfe076ac7395f85bfef380024ee8ac9de73420197dba57"
       },
-      "implementationRevision": "spec-registry-bootstrap/1.13",
+      "implementationRevision": "spec-registry-bootstrap/1.14",
       "targetManifest": {
         "path": "spec-registry/target-manifest-v1.json",
-        "sha256": "33713ad84d566a8ddaa21d4f0e930bb8a3f5e29e049c29a1b85733036c5b0147",
-        "byteLength": 77305,
-        "artifactCount": 382
+        "sha256": "64019fa9b8c91d999032ce0fb6fbe689ef2d242d65307e0e81566321a32901fc",
+        "byteLength": 80323,
+        "artifactCount": 393
       },
       "executorManifests": [
         {
           "role": "primary-registry-validator",
           "path": "spec-registry/primary-executor-manifest-v1.json",
-          "sha256": "2352c86a57290e14cadd7bbbc5eb5c151c2d7df6353f8a945f86e5747d206490",
+          "sha256": "7085bd2ab755ef0df03fc1d72ded35283e63d30d13e034ffed3e90ad46efca57",
           "byteLength": 950
         },
         {
           "role": "independent-schema-and-graph-replayer",
           "path": "spec-registry/independent-executor-manifest-v1.json",
-          "sha256": "06ec868eb4495dd25f7761ca06a400e5c1f7a60b9edfc003f0224d6c584bd928",
+          "sha256": "921f639edc10e30b47f2e9e37306101178335d389a7707014aa786130819abbd",
           "byteLength": 973
         }
       ],
       "evidence": "spec-registry/spec-registry-a2-2026-08-17.json",
-      "primaryReplayCheckCount": 22838,
-      "independentReplayCheckCount": 22746,
+      "primaryReplayCheckCount": 22974,
+      "independentReplayCheckCount": 22882,
       "targetAndExecutorHashesBoundByEvidence": true
     },
     "caseRegistry": {
@@ -734,8 +754,8 @@
       "recordSchema": "conformance-case-record-schema-v1.json",
       "recordSchemaSha256": "e5d3b07f88776f821f5971e7b591205b1a93bef522021fe71e6dad8db8405038",
       "format": "UTF-8 JSON Lines without BOM; one immutable case record per nonblank line",
-      "recordCount": 46,
-      "sha256": "ebe58e84977ee84befe89f8c126f37fbec7076cd7725b29f1b7609448fe7ef16",
+      "recordCount": 58,
+      "sha256": "bba2e350cc29c5fc8faae7f4bdb47c8bd0e2e60a3dd78d6f64d9d355b2440add",
       "appendOnly": true,
       "idPatterns": [
         "CAP::<limitId>::<below|at|above>",
@@ -764,8 +784,8 @@
       "recordSchema": "conformance-oracle-record-schema-v1.json",
       "recordSchemaSha256": "950de19b858ebe1b2a1ce2de613199f338ceb2fb980e7300eb1b75eff424b936",
       "format": "UTF-8 JSON Lines without BOM; one immutable oracle record per nonblank line",
-      "recordCount": 46,
-      "sha256": "3825b9fb40c1b43c484da3ebdf29429ed749e622012212ca79f9cea5b9cb9339",
+      "recordCount": 58,
+      "sha256": "a0f513b0d305d00b1797f32db38488b92e5775fa8c19a3fcb00d4e2394e3d2db",
       "appendOnly": true,
       "idPattern": "ORC::<one of the ten exact Oracle families>::<six-digit-ordinal>",
       "assertionIdPattern": "A<three-digit-oracle-local-ordinal>",
@@ -847,8 +867,8 @@
     ],
     "caseIdPattern": "CAP::<limitId>::<variant>",
     "plannedGeneratedBoundaryCaseCount": 525,
-    "executableBoundaryCaseCount": 0,
-    "materializationStatus": "mapping-frozen-shape-candidates-static-a2-replayed-all-four-capacity-assigned-class-fixtures-referenceable-product-gates-and-formal-record-issuance-pending",
+    "executableBoundaryCaseCount": 12,
+    "materializationStatus": "domain-services-12-issued-a2-other-capacity-class-product-gates-and-formal-issuance-pending",
     "isolationRule": "Each generated case targets exactly one limitId; every other contract cell retains explicit safe margin.",
     "comparatorAssignmentStatus": "planning-frozen",
     "requiredOracleAssertions": [
@@ -872,126 +892,180 @@
       {
         "caseId": "CAP::COMBINED::001",
         "title": "RenderInput admission and bounded problem truncation",
-        "groups": ["renderInput", "problems"],
+        "groups": [
+          "renderInput",
+          "problems"
+        ],
         "objective": "Exercise global request limits before grouping while semantic collection reaches the reserved marker boundary.",
         "expectedTerminal": "bounded validation failure ending with PROBLEM_LIMIT_REACHED and no Evaluation"
       },
       {
         "caseId": "CAP::COMBINED::002",
         "title": "Design structure, Expression, and canonical bytes",
-        "groups": ["designDslParser", "designDslSemantics", "expression"],
+        "groups": [
+          "designDslParser",
+          "designDslSemantics",
+          "expression"
+        ],
         "objective": "Reach jointly valid authored structure and expression boundaries while the pre-dependency canonical counting sink remains at its exact limit.",
         "expectedTerminal": "dependency-free READY Save success with exactly one appended immutable revision"
       },
       {
         "caseId": "CAP::COMBINED::003",
         "title": "Closure with authored Assets and static capabilities",
-        "groups": ["closureAndExpansion", "assetsAndFetch", "capabilityRuntime"],
+        "groups": [
+          "closureAndExpansion",
+          "assetsAndFetch",
+          "capabilityRuntime"
+        ],
         "objective": "Freeze the maximum valid closure together with static Asset atoms and capability sources before runtime state.",
         "expectedTerminal": "successful closure admission with no hidden deduplication of authored units"
       },
       {
         "caseId": "CAP::COMBINED::004",
         "title": "Repeat frames, materialized nodes, and operations",
-        "groups": ["closureAndExpansion"],
+        "groups": [
+          "closureAndExpansion"
+        ],
         "objective": "Combine Repeat collection, nesting, loop-frame, occurrence, node, generated-entry, and logical-operation boundaries without truncation.",
         "expectedTerminal": "successful materialization at all selected exact limits"
       },
       {
         "caseId": "CAP::COMBINED::005",
         "title": "Template invocations, viewports, and occurrences",
-        "groups": ["closureAndExpansion", "renderDocument"],
+        "groups": [
+          "closureAndExpansion",
+          "renderDocument"
+        ],
         "objective": "Combine actual TemplateUse invocation depth/count, composition viewports, and final occurrence/document structure.",
         "expectedTerminal": "successful RenderDocument seal with continuous opaque occurrence ordinals"
       },
       {
         "caseId": "CAP::COMBINED::006",
         "title": "RenderDocument, manifest, and diagnostic sidecar seal",
-        "groups": ["renderDocument", "diagnostics", "assetsAndFetch"],
+        "groups": [
+          "renderDocument",
+          "diagnostics",
+          "assetsAndFetch"
+        ],
         "objective": "Reach document, one-to-one manifest, and complete sidecar boundaries in the same atomic pre-seal writer.",
         "expectedTerminal": "successful atomic seal with no partial builder or sidecar exposure"
       },
       {
         "caseId": "CAP::COMBINED::007",
         "title": "Asset occurrence and exact-content aggregates",
-        "groups": ["assetsAndFetch"],
+        "groups": [
+          "assetsAndFetch"
+        ],
         "objective": "Combine authored and resolved occurrences, unique logical/exact content, raw bytes, pixels, fonts, manifest, and URL budgets.",
         "expectedTerminal": "successful ordered resolution with cache-independent accounting"
       },
       {
         "caseId": "CAP::COMBINED::008",
         "title": "Capability state and demand aggregates",
-        "groups": ["capabilityRuntime"],
+        "groups": [
+          "capabilityRuntime"
+        ],
         "objective": "Combine static sources, state bytes, logical total/kind demands, call-position bytes, result digest bytes, and retry bounds.",
         "expectedTerminal": "successful deterministic CapabilityState and result digest at exact limits"
       },
       {
         "caseId": "CAP::COMBINED::009",
         "title": "Surface and request working set",
-        "groups": ["rendererSurfaceAndOutput", "assetsAndFetch"],
+        "groups": [
+          "rendererSurfaceAndOutput",
+          "assetsAndFetch"
+        ],
         "objective": "Combine maximum legal surface with raw/decoded cache, decoder/encoder scratch, encoded buffer, and live RAM reservation.",
         "expectedTerminal": "accepted execution and successful output without a hidden lower memory ceiling"
       },
       {
         "caseId": "CAP::COMBINED::010",
         "title": "Font parsing and shaping aggregates",
-        "groups": ["layoutFontAndRaster", "assetsAndFetch"],
+        "groups": [
+          "layoutFontAndRaster",
+          "assetsAndFetch"
+        ],
         "objective": "Combine unique fonts, tables, outlines, graphemes, glyph attempts/finals, lines, and font byte budgets.",
         "expectedTerminal": "successful exact shaping with no system fallback"
       },
       {
         "caseId": "CAP::COMBINED::011",
         "title": "Layout operations and paint structure",
-        "groups": ["layoutFontAndRaster", "renderDocument"],
+        "groups": [
+          "layoutFontAndRaster",
+          "renderDocument"
+        ],
         "objective": "Combine measure, remeasure, layout operations, generated structure, paint items, and clip depth.",
         "expectedTerminal": "successful layout at exact limits with deterministic order"
       },
       {
         "caseId": "CAP::COMBINED::012",
         "title": "Raster overdraw and code modules",
-        "groups": ["rendererSurfaceAndOutput", "layoutFontAndRaster"],
+        "groups": [
+          "rendererSurfaceAndOutput",
+          "layoutFontAndRaster"
+        ],
         "objective": "Combine legal surface pixels, painted pixel visits, paint chunks, QR/Barcode module cells, and final transforms.",
         "expectedTerminal": "successful exact raster with no approximation or partial paint"
       },
       {
         "caseId": "CAP::COMBINED::013",
         "title": "Encoded image, trace, multipart, and ephemeral bytes",
-        "groups": ["rendererSurfaceAndOutput", "diagnostics"],
+        "groups": [
+          "rendererSurfaceAndOutput",
+          "diagnostics"
+        ],
         "objective": "Reach image, trace, framing, multipart total, encoder scratch, and request ephemeral boundaries together.",
         "expectedTerminal": "successful atomic two-part response with exact digests"
       },
       {
         "caseId": "CAP::COMBINED::014",
         "title": "Fetch retry, lease, and resource deadline",
-        "groups": ["assetsAndFetch", "deadlineAndRetention"],
+        "groups": [
+          "assetsAndFetch",
+          "deadlineAndRetention"
+        ],
         "objective": "Use one retryable first-attempt failure, fixed backoff, a successful second attempt, exact byte accounting, and a lease valid through deadline plus margin.",
         "expectedTerminal": "successful resource preparation without lease renewal or deadline reset"
       },
       {
         "caseId": "CAP::COMBINED::015",
         "title": "Same-command registry join and replay",
-        "groups": ["referenceDeployment", "deadlineAndRetention"],
+        "groups": [
+          "referenceDeployment",
+          "deadlineAndRetention"
+        ],
         "objective": "Submit concurrent and post-seal copies of one requestId and canonical digest.",
         "expectedTerminal": "one execution and byte-identical joined or replayed terminal responses"
       },
       {
         "caseId": "CAP::COMBINED::016",
         "title": "Registry identity conflict",
-        "groups": ["deadlineAndRetention"],
+        "groups": [
+          "deadlineAndRetention"
+        ],
         "objective": "Reuse one requestId with a changed digest or deadline while the original reservation exists.",
         "expectedTerminal": "RENDER_REQUEST_CONFLICT for the changed command and no second execution"
       },
       {
         "caseId": "CAP::COMBINED::017",
         "title": "Queue-full BUSY and accepted queue timeout",
-        "groups": ["referenceDeployment", "rendererSurfaceAndOutput", "deadlineAndRetention"],
+        "groups": [
+          "referenceDeployment",
+          "rendererSurfaceAndOutput",
+          "deadlineAndRetention"
+        ],
         "objective": "Fill one active slot and four FIFO positions, observe pre-accept BUSY for another command, then withhold a slot from an already accepted queued command for five seconds.",
         "expectedTerminal": "nonterminal RENDER_ENGINE_BUSY before acceptance and terminal RENDER_DEADLINE_EXCEEDED after acceptance"
       },
       {
         "caseId": "CAP::COMBINED::018",
         "title": "Cancel, seal, cleanup, and sealed replay",
-        "groups": ["deadlineAndRetention", "diagnostics"],
+        "groups": [
+          "deadlineAndRetention",
+          "diagnostics"
+        ],
         "objective": "Linearize cancel immediately before seal for one request and immediately after seal for another, then replay only the sealed response within the fixed retention window.",
         "expectedTerminal": "pre-seal RENDER_CANCELLED with zero output; post-seal success remains byte-identical; raw artifacts are not retained"
       }
@@ -1080,12 +1154,14 @@
     "plannedContractBoundaryCases": 525,
     "staticShapeCandidateContractBoundaryCases": 525,
     "staticShapeCandidateCapacityOracles": 525,
-    "executableContractBoundaryCases": 0,
+    "executableContractBoundaryCases": 12,
     "minimumCombinedWorstPathCases": 18,
     "strictContractBoundaryFloor": 543,
     "editorAtomicScenarioCandidates": 108,
     "nonCapacityAtomicCases": null,
-    "fullAutomatedCorpus": "46 executable SPEC_REGISTRY cases plus planned 543 contract-boundary cases plus 108 non-issued Editor atomic scenario candidates plus still-unmapped nonCapacityAtomicCases and any additional combined cases required by newly discovered incompatible endpoints; the complete corpus remains non-executable"
+    "fullAutomatedCorpus": "46 executable SPEC_REGISTRY cases plus 12 executable DOMAIN_SERVICES capacity cases; the remaining 513 isolated capacity, 18 combined, 108 non-issued Editor candidates, and still-unmapped nonCapacityAtomicCases remain non-executable",
+    "issuedCapacityBoundaryCases": 12,
+    "issuedCapacityBoundaryOracles": 12
   },
   "executionMatrix": {
     "catalog": "conformance-execution-classes-v1.json",

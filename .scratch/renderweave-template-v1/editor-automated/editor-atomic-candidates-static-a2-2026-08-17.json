@@ -18,8 +18,8 @@
     },
     "audit": {
       "path": "editor-automated/atomic-candidate-readiness-audit-v1.json",
-      "sha256": "sha256:97834621cd815a7fa6536934bccd1d1d4d87badfda1251225a4defa15714156c",
-      "byteLength": 11138
+      "sha256": "sha256:6baf2ae558f1a15fa79b9dad5a684e8aaefa5a7a4cfa119617300f658ebc188d",
+      "byteLength": 11204
     },
     "sourceAssignment": {
       "path": "editor-automated/non-capacity-assignment-v1.json",
@@ -103,37 +103,37 @@
     },
     "formalCases": {
       "path": "conformance-cases-v1.jsonl",
-      "sha256": "sha256:ebe58e84977ee84befe89f8c126f37fbec7076cd7725b29f1b7609448fe7ef16",
-      "byteLength": 146309
+      "sha256": "sha256:bba2e350cc29c5fc8faae7f4bdb47c8bd0e2e60a3dd78d6f64d9d355b2440add",
+      "byteLength": 187511
     },
     "formalOracles": {
       "path": "conformance-oracles-v1.jsonl",
-      "sha256": "sha256:3825b9fb40c1b43c484da3ebdf29429ed749e622012212ca79f9cea5b9cb9339",
-      "byteLength": 63191
+      "sha256": "sha256:a0f513b0d305d00b1797f32db38488b92e5775fa8c19a3fcb00d4e2394e3d2db",
+      "byteLength": 76967
     }
   },
   "implementations": {
     "primaryGeneratorAndValidator": {
       "path": "editor-automated/generate-editor-atomic-candidates.mjs",
-      "sha256": "sha256:7c07b84598373185383d610044a5ca56547d00447af9d75ffd1693beeac373bc",
-      "byteLength": 163567
+      "sha256": "sha256:47d2b49197a9dc1af84badbae315e9dce577509c9b035c15b3ce788173c146a0",
+      "byteLength": 164204
     },
     "independentValidator": {
       "path": "editor-automated/validate_editor_atomic_candidates_independent.py",
-      "sha256": "sha256:97db2020562f7f9f123a6cb639ad47806dd6ebac08b300b37c7e9486ec8a4c61",
-      "byteLength": 71063
+      "sha256": "sha256:f9031f13c68b19446391903ec04c8f92b4c4a5d8885e61335e975751a361c9c8",
+      "byteLength": 71622
     }
   },
   "results": {
     "primary": {
       "path": "editor-automated/atomic-candidate-primary-result-v1.json",
-      "sha256": "sha256:77d0fd4e5e21a4a276262ed1db4b3b61d006a323f0a84c41fc71a05acb47a273",
-      "byteLength": 20512
+      "sha256": "sha256:e1d6f3f8705b60c446623b4ad9b4247cfef101cf05a427b18723012a2c034158",
+      "byteLength": 20689
     },
     "independent": {
       "path": "editor-automated/atomic-candidate-independent-result-v1.json",
-      "sha256": "sha256:9cdf842b9391141d423331ad51c2fc7da1b5ac7214e3fa63dd890ebeeb7493db",
-      "byteLength": 6082
+      "sha256": "sha256:3a8bc629de867aed225034342d8f4976b84e27ab1b35b62c428524f923e47c94",
+      "byteLength": 6155
     }
   },
   "observed": {
@@ -167,10 +167,12 @@
     "candidateProfileProbeUsageCount": 9,
     "candidateProfileBindingAssertionCount": 109,
     "candidateProfileBoundCandidateCount": 82,
-    "primaryCheckCount": 37,
-    "independentCheckCount": 21141,
-    "formalCaseCount": 46,
-    "formalOracleCount": 46
+    "primaryCheckCount": 38,
+    "independentCheckCount": 21165,
+    "formalCaseCount": 58,
+    "formalOracleCount": 58,
+    "formalEditorCaseCount": 0,
+    "formalEditorOracleCount": 0
   },
   "negativeTerminals": [
     {
@@ -208,8 +210,9 @@
   ],
   "sealedBoundaries": {
     "planningCandidatesOnly": true,
-    "formalCaseOrOracleIssued": false,
-    "conformanceJsonlAppended": false,
+    "editorFormalCaseOrOracleIssued": false,
+    "editorConformanceJsonlAppended": false,
+    "globalDomainServicesCapacityRecordsPresent": true,
     "currentProbeProfileMutated": false,
     "candidateProbeProfileComplete": true,
     "candidateProbeProfileIssued": false,
@@ -237,5 +240,5 @@
     "j1Executed": false,
     "rendererOrEditorReadyClaimed": false
   },
-  "interpretation": "A2 independently replays the static split, 108 immutable semantic fixture artifacts and formal input identities, 33 exact terminal adjudications, 37 immutable fault artifacts plus 71 exact NONE identities, 108 exact terminal-vector artifacts, 81 exact literals, two exact no-working-copy absences, and one Editor-owned dirty-guard source record over two exact canonical DesignDSL artifacts. That source binds one working-copy digest expectation while 46 first-layer source slots, 57 content-derived expectations, and all 62 UI observations remain fail-closed. This fixture proves only specification bytes and expected atomic-rejection state preservation; no product action, product adapter, browser behavior, formal issuance, J1, or readiness is proved."
+  "interpretation": "A2 independently replays the static split, 108 immutable semantic fixture artifacts and formal input identities, 33 exact terminal adjudications, 37 immutable fault artifacts plus 71 exact NONE identities, 108 exact terminal-vector artifacts, 81 exact literals, two exact no-working-copy absences, and one Editor-owned dirty-guard source record over two exact canonical DesignDSL artifacts. That source binds one working-copy digest expectation while 46 first-layer source slots, 57 content-derived expectations, and all 62 UI observations remain fail-closed. This fixture proves only specification bytes and expected atomic-rejection state preservation; no product action, product adapter, browser behavior, Editor formal issuance, J1, or readiness is proved."
 }

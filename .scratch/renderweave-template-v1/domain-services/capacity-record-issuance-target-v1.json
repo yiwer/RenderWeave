@@ -1,0 +1,252 @@
+{
+  "artifactVersion": "renderweave-domain-services-capacity-issuance-target/1.0",
+  "targetId": "DOMAIN_SERVICES_ISSUANCE::CAPACITY::1.0",
+  "status": "FROZEN_APPEND_ONLY_ISSUANCE_TARGET",
+  "implementationRevision": "adfd0da82c257111a871d97284e7697b2cf92bf7",
+  "executionClass": "EXEC::DOMAIN_SERVICES::1.0",
+  "predecessorProductTarget": {
+    "path": ".scratch/renderweave-template-v1/domain-services/execution-class-target-v1.json",
+    "sha256": "sha256:d2b785bcf454c62f0508dc74d195e3875f550df74a949844408fe005c1e2bcfb",
+    "byteLength": 7197
+  },
+  "requiredExecutorManifests": [
+    {
+      "path": ".scratch/renderweave-template-v1/domain-services/java-domain-authority-executor-manifest-v1.json",
+      "sha256": "sha256:1fcaae74c1bc2f4eaecc6e9aaf436fddaa15d32cc449c5b05b79a4b33fb0dafb",
+      "byteLength": 1397
+    },
+    {
+      "path": ".scratch/renderweave-template-v1/domain-services/transactional-integration-replayer-manifest-v1.json",
+      "sha256": "sha256:1553d1b48ac677f2562d4ad8f1dd03ab519966bb4a0f75c04198e845e751604c",
+      "byteLength": 1518
+    }
+  ],
+  "artifacts": [
+    {
+      "path": ".scratch/renderweave-template-v1/domain-services/execution-class-target-v1.json",
+      "sha256": "sha256:d2b785bcf454c62f0508dc74d195e3875f550df74a949844408fe005c1e2bcfb",
+      "byteLength": 7197
+    },
+    {
+      "path": ".scratch/renderweave-template-v1/domain-services/java-domain-authority-executor-manifest-v1.json",
+      "sha256": "sha256:1fcaae74c1bc2f4eaecc6e9aaf436fddaa15d32cc449c5b05b79a4b33fb0dafb",
+      "byteLength": 1397
+    },
+    {
+      "path": ".scratch/renderweave-template-v1/domain-services/transactional-integration-replayer-manifest-v1.json",
+      "sha256": "sha256:1553d1b48ac677f2562d4ad8f1dd03ab519966bb4a0f75c04198e845e751604c",
+      "byteLength": 1518
+    },
+    {
+      "path": ".scratch/renderweave-template-v1/domain-services/observation-adapter-v1.json",
+      "sha256": "sha256:4bda561d8628461b783796e38acb9066e840c307479603e39afa6c241393ea06",
+      "byteLength": 6006
+    },
+    {
+      "path": ".scratch/renderweave-template-v1/capacity-boundary/materialization-manifest-v1.json",
+      "sha256": "sha256:0e7a5b8d1b2b8e9b816dc4434456b0c0c0868a9aff8c4dfa5c1dc60092669252",
+      "byteLength": 5211
+    },
+    {
+      "path": ".scratch/renderweave-template-v1/capacity-boundary/primary-result-v1.json",
+      "sha256": "sha256:55c5b9f411fbb8a3404e0a8556d70d64be40afab3d2d65838e4e8160cd17c873",
+      "byteLength": 743
+    },
+    {
+      "path": ".scratch/renderweave-template-v1/capacity-boundary/independent-result-v1.json",
+      "sha256": "sha256:c7855e2f8a834ab9dde8991e7fe6ddd4e862cf46c78177a60d1c80284b305158",
+      "byteLength": 747
+    },
+    {
+      "path": ".scratch/renderweave-template-v1/capacity-boundary/capacity-boundary-static-a2-2026-08-17.json",
+      "sha256": "sha256:af4d8e6cfca5515e70ac8eec1784480e371bc5bb7893cfe02aefaa7210120fc7",
+      "byteLength": 8593
+    },
+    {
+      "path": ".scratch/renderweave-template-v1/conformance-case-record-schema-v1.json",
+      "sha256": "sha256:e5d3b07f88776f821f5971e7b591205b1a93bef522021fe71e6dad8db8405038",
+      "byteLength": 8385
+    },
+    {
+      "path": ".scratch/renderweave-template-v1/conformance-oracle-record-schema-v1.json",
+      "sha256": "sha256:950de19b858ebe1b2a1ce2de613199f338ceb2fb980e7300eb1b75eff424b936",
+      "byteLength": 3612
+    },
+    {
+      "path": ".scratch/renderweave-template-v1/conformance-canonical-profile-v1.json",
+      "sha256": "sha256:3611feeb88f8e92cb1fb47e36db2ce53a4f44335acff7b62c9986b67815299c8",
+      "byteLength": 4602
+    },
+    {
+      "path": ".scratch/renderweave-template-v1/conformance-probe-profile-v1.json",
+      "sha256": "sha256:f800eb1e6e138215c26c7761ed80e0fc9cf77fc3ce051be4e3c5ba530cd6053d",
+      "byteLength": 51328
+    },
+    {
+      "path": ".scratch/renderweave-template-v1/conformance-manifest-snapshot-policy-v1.json",
+      "sha256": "sha256:60b2dde31826ba766b7a8fe5e3ea6aa98ef1162e216069d739e475581490b327",
+      "byteLength": 6380
+    },
+    {
+      "path": ".scratch/renderweave-template-v1/domain-services/materialize-domain-services-capacity-issuance.py",
+      "sha256": "sha256:1a06297fc51cd3eeb65b0a3ce2e4649b6bc8a0c4d99bf8466615270cc8d52130",
+      "byteLength": 22666
+    },
+    {
+      "path": ".scratch/renderweave-template-v1/domain-services/validate-domain-services-postissuance-primary.mjs",
+      "sha256": "sha256:787a9ad4bb8f5f11c5c8caf799333e322d24efe46d4ad88064d522e13252231b",
+      "byteLength": 13006
+    },
+    {
+      "path": ".scratch/renderweave-template-v1/domain-services/validate_domain_services_postissuance_independent.py",
+      "sha256": "sha256:2c2f63378fb77f6aa0a9033019ad80c959175bcac44ed284a1df2c78407fccc5",
+      "byteLength": 15685
+    },
+    {
+      "path": ".scratch/renderweave-template-v1/domain-services/write-domain-services-postissuance-a2-evidence.mjs",
+      "sha256": "sha256:727a330f4e4d73caf9d7118507aa11585d52265f790c2c82f9a310b03c778b94",
+      "byteLength": 5371
+    },
+    {
+      "path": ".scratch/renderweave-template-v1/spec-registry/refresh-spec-registry-postissuance-target.mjs",
+      "sha256": "sha256:18ddba3e5e309022bbd7933425e0dc3db281190cbe5480683d537f321a65c75f",
+      "byteLength": 7961
+    },
+    {
+      "path": ".scratch/renderweave-template-v1/spec-registry/validate-spec-registry-primary.mjs",
+      "sha256": "sha256:ee04bb953d2e6cf369439111beb01971e04d8111f5eaf9f817f17c7e78037882",
+      "byteLength": 44091
+    },
+    {
+      "path": ".scratch/renderweave-template-v1/spec-registry/validate-spec-registry-independent.py",
+      "sha256": "sha256:9f3edf35879e883066c2522107b6455ce2af2dcab1ca26cbe47829b933c518a8",
+      "byteLength": 43413
+    },
+    {
+      "path": ".scratch/renderweave-template-v1/spec-registry/write-spec-registry-a2-evidence.mjs",
+      "sha256": "sha256:a66626952c0069b907bef1c1ccff2009df28eaf2028fb1f5e923c8faedb0e939",
+      "byteLength": 12560
+    },
+    {
+      "path": "tools/run-domain-services-record-issuance-gate.ps1",
+      "sha256": "sha256:a21efac80baa42435d5aff0e5b817866e63b85506ebe8492921c72da40e030d4",
+      "byteLength": 1398
+    },
+    {
+      "path": "tools/run-template-static-gate.ps1",
+      "sha256": "sha256:e7bee961e1eac3be8cde29e9881f4b45f0db1e59f6a0af8c1dd1ac268cb32f88",
+      "byteLength": 19217
+    }
+  ],
+  "prestate": {
+    "formalCases": {
+      "path": ".scratch/renderweave-template-v1/conformance-cases-v1.jsonl",
+      "sha256": "sha256:ebe58e84977ee84befe89f8c126f37fbec7076cd7725b29f1b7609448fe7ef16",
+      "byteLength": 146309,
+      "recordCount": 46
+    },
+    "formalOracles": {
+      "path": ".scratch/renderweave-template-v1/conformance-oracles-v1.jsonl",
+      "sha256": "sha256:3825b9fb40c1b43c484da3ebdf29429ed749e622012212ca79f9cea5b9cb9339",
+      "byteLength": 63191,
+      "recordCount": 46
+    },
+    "executionClassCatalog": {
+      "path": ".scratch/renderweave-template-v1/conformance-execution-classes-v1.json",
+      "sha256": "sha256:a984d9327dd880f1c4b10d4dc4351fa102d75d8167df08464281516ffbdecfbd",
+      "byteLength": 9456
+    },
+    "bootstrapOrder": {
+      "path": ".scratch/renderweave-template-v1/conformance-bootstrap-order-v1.json",
+      "sha256": "sha256:d3487a85839282f64050606bad17ff87b801a71e456524c63f1dd257dd152825",
+      "byteLength": 10047
+    },
+    "acceptanceManifest": {
+      "path": ".scratch/renderweave-template-v1/acceptance-manifest-v1.json",
+      "sha256": "sha256:8c553b9c089101f5b9b595b1483dce6b2d20fb564c8d67cdf170720367164066",
+      "byteLength": 54373
+    },
+    "specRegistryTarget": {
+      "path": ".scratch/renderweave-template-v1/spec-registry/target-manifest-v1.json",
+      "sha256": "sha256:33713ad84d566a8ddaa21d4f0e930bb8a3f5e29e049c29a1b85733036c5b0147",
+      "byteLength": 77305
+    }
+  },
+  "assignedCorpus": {
+    "sourceCases": {
+      "path": ".scratch/renderweave-template-v1/capacity-boundary/candidate/conformance-cases-v1.jsonl",
+      "sha256": "sha256:30ee645c8dd472cfaf66550f26dd9234371d3f797d34c90df9de16de0569d284",
+      "byteLength": 1773865
+    },
+    "sourceOracles": {
+      "path": ".scratch/renderweave-template-v1/capacity-boundary/candidate/conformance-oracles-v1.jsonl",
+      "sha256": "sha256:271ce23304e246f7a03ceee25385888de49620607ce8a5cc597429026f8833c2",
+      "byteLength": 603573
+    },
+    "caseCount": 12,
+    "oracleCount": 12,
+    "caseIds": [
+      "CAP::assetsAndFetch.acceptedImageBytesPerContent::below",
+      "CAP::assetsAndFetch.acceptedImageBytesPerContent::at",
+      "CAP::assetsAndFetch.acceptedImageBytesPerContent::above",
+      "CAP::assetsAndFetch.acceptedImageEdgePixelsPerContent::below",
+      "CAP::assetsAndFetch.acceptedImageEdgePixelsPerContent::at",
+      "CAP::assetsAndFetch.acceptedImageEdgePixelsPerContent::above",
+      "CAP::assetsAndFetch.acceptedImagePixelsPerContent::below",
+      "CAP::assetsAndFetch.acceptedImagePixelsPerContent::at",
+      "CAP::assetsAndFetch.acceptedImagePixelsPerContent::above",
+      "CAP::assetsAndFetch.acceptedFontBytesPerContent::below",
+      "CAP::assetsAndFetch.acceptedFontBytesPerContent::at",
+      "CAP::assetsAndFetch.acceptedFontBytesPerContent::above"
+    ],
+    "oracleIds": [
+      "ORC::CAPACITY::000340",
+      "ORC::CAPACITY::000341",
+      "ORC::CAPACITY::000342",
+      "ORC::CAPACITY::000343",
+      "ORC::CAPACITY::000344",
+      "ORC::CAPACITY::000345",
+      "ORC::CAPACITY::000346",
+      "ORC::CAPACITY::000347",
+      "ORC::CAPACITY::000348",
+      "ORC::CAPACITY::000349",
+      "ORC::CAPACITY::000350",
+      "ORC::CAPACITY::000351"
+    ],
+    "caseBytesSha256": "sha256:a00a6490c58bf4fc83e8ccb0ca4052e7a085264f4bb6c8f8ebaff5042d5a4770",
+    "oracleBytesSha256": "sha256:585951bd695692b3ea07ee36b2d19e630920653e9863d047e340fc536a99b586",
+    "assignedCorpusDigest": "sha256:5a236de3cf36155df7244b049b045cefda55960cf16efe8212c3981e5463844f"
+  },
+  "poststate": {
+    "formalCases": {
+      "path": ".scratch/renderweave-template-v1/conformance-cases-v1.jsonl",
+      "sha256": "sha256:bba2e350cc29c5fc8faae7f4bdb47c8bd0e2e60a3dd78d6f64d9d355b2440add",
+      "byteLength": 187511,
+      "recordCount": 58,
+      "preservedPrefixSha256": "sha256:ebe58e84977ee84befe89f8c126f37fbec7076cd7725b29f1b7609448fe7ef16"
+    },
+    "formalOracles": {
+      "path": ".scratch/renderweave-template-v1/conformance-oracles-v1.jsonl",
+      "sha256": "sha256:a0f513b0d305d00b1797f32db38488b92e5775fa8c19a3fcb00d4e2394e3d2db",
+      "byteLength": 76967,
+      "recordCount": 58,
+      "preservedPrefixSha256": "sha256:3825b9fb40c1b43c484da3ebdf29429ed749e622012212ca79f9cea5b9cb9339"
+    }
+  },
+  "issuanceRules": {
+    "appendOnly": true,
+    "existingRecordMutationAllowed": false,
+    "partialAppendAllowed": false,
+    "candidateTransportOrderPreserved": true,
+    "otherExecutionClassRecordsIssued": 0
+  },
+  "boundary": {
+    "issuedCapacityCaseCount": 12,
+    "issuedCapacityOracleCount": 12,
+    "totalCapacityCandidateCount": 525,
+    "combinedCapacityRecordsIssued": 0,
+    "rendererReady": false,
+    "ticket19Closed": false,
+    "externalProviderAttempts": 0
+  }
+}

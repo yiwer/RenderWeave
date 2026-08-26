@@ -6,17 +6,25 @@
   "mode": "TARGET_REPLAY",
   "targetManifest": {
     "path": "spec-registry/target-manifest-v1.json",
-    "sha256": "sha256:33713ad84d566a8ddaa21d4f0e930bb8a3f5e29e049c29a1b85733036c5b0147",
-    "byteLength": 77305
+    "sha256": "sha256:64019fa9b8c91d999032ce0fb6fbe689ef2d242d65307e0e81566321a32901fc",
+    "byteLength": 80323
   },
   "status": "PASS",
-  "checkCount": 22746,
+  "checkCount": 22882,
   "failureCount": 0,
   "failures": [],
-  "implementationRevision": "spec-registry-bootstrap/1.13",
+  "formalRegistry": {
+    "status": "ISSUED_APPEND_ONLY_PREFIX",
+    "caseCount": 58,
+    "oracleCount": 58,
+    "caseSha256": "sha256:bba2e350cc29c5fc8faae7f4bdb47c8bd0e2e60a3dd78d6f64d9d355b2440add",
+    "oracleSha256": "sha256:a0f513b0d305d00b1797f32db38488b92e5775fa8c19a3fcb00d4e2394e3d2db",
+    "preservedSpecPrefix": true
+  },
+  "implementationRevision": "spec-registry-bootstrap/1.14",
   "executorManifest": {
     "path": "spec-registry/independent-executor-manifest-v1.json",
-    "sha256": "sha256:06ec868eb4495dd25f7761ca06a400e5c1f7a60b9edfc003f0224d6c584bd928",
+    "sha256": "sha256:921f639edc10e30b47f2e9e37306101178335d389a7707014aa786130819abbd",
     "byteLength": 973
   }
 }

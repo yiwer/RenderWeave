@@ -36,6 +36,14 @@ if (Test-Path -LiteralPath $summaryPath) {
 $sourceSpecRoot = (Resolve-Path (
         Join-Path $repoRoot '.scratch\renderweave-template-v1'
     )).Path
+$repoGitDirOutput = @(& git.exe -C $repoRoot rev-parse --absolute-git-dir)
+if ($LASTEXITCODE -ne 0 -or $repoGitDirOutput.Count -eq 0) {
+    throw 'Template replay cannot resolve the source repository object database.'
+}
+$repoGitDir = [System.IO.Path]::GetFullPath($repoGitDirOutput[-1].Trim())
+if (-not (Test-Path -LiteralPath $repoGitDir -PathType Container)) {
+    throw 'Template replay source repository object database is unavailable.'
+}
 $tempBase = [System.IO.Path]::GetFullPath([System.IO.Path]::GetTempPath()).TrimEnd($separator)
 $tempRepoRoot = [System.IO.Path]::GetFullPath(
     (Join-Path $tempBase ('renderweave-template-static-' + [Guid]::NewGuid().ToString('N')))
@@ -119,6 +127,10 @@ try {
         Pop-Location
     }
 
+    $previousGitDir = [Environment]::GetEnvironmentVariable('GIT_DIR', 'Process')
+    $previousGitWorkTree = [Environment]::GetEnvironmentVariable('GIT_WORK_TREE', 'Process')
+    [Environment]::SetEnvironmentVariable('GIT_DIR', $repoGitDir, 'Process')
+    [Environment]::SetEnvironmentVariable('GIT_WORK_TREE', $null, 'Process')
     Push-Location $tempSpecRoot
     try {
         Invoke-Checked 'template-domain-services-postissuance-replay' {
@@ -141,6 +153,8 @@ try {
     }
     finally {
         Pop-Location
+        [Environment]::SetEnvironmentVariable('GIT_DIR', $previousGitDir, 'Process')
+        [Environment]::SetEnvironmentVariable('GIT_WORK_TREE', $previousGitWorkTree, 'Process')
     }
 
     $replayedManifest = @(Get-TreeManifest -Root $tempSpecRoot)

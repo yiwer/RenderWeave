@@ -1,6 +1,6 @@
 {
   "artifactVersion": "renderweave-conformance-bootstrap-order/1.0",
-  "status": "CAPACITY_BOUNDARY_ALL_SIX_CLASS_FIXTURES_STATIC_A2_EDITOR_ADMISSION_INTERFACE_STATIC_A2_PRODUCT_EXECUTION_GATES_PENDING",
+  "status": "DOMAIN_SERVICES_12_CAPACITY_RECORDS_ISSUED_A2_OTHER_CLASS_PRODUCT_GATES_PENDING",
   "authority": "Ticket19 conformance bootstrap and record-issuance order",
   "executionClassCatalog": "conformance-execution-classes-v1.json",
   "steps": [
@@ -38,12 +38,37 @@
       ],
       "safeBaselineFixtureStatus": "FROZEN_DUAL_VALIDATED_STATIC_ONLY",
       "generatorImplementationStatus": "FROZEN_DUAL_REPLAYED_STATIC_ONLY",
-      "observationAdapterStatus": "FROZEN_CONTRACT_TARGET_PENDING",
-      "executorManifestStatus": "PENDING",
-      "targetManifestStatus": "PENDING",
-      "assignedCorpusStatus": "12_CAPACITY_SHAPE_CANDIDATES_STATIC_ONLY_FORMAL_RECORDS_PENDING",
+      "observationAdapterStatus": "FROZEN",
+      "executorManifestStatus": "FROZEN",
+      "targetManifestStatus": "FROZEN",
+      "assignedCorpusStatus": "ISSUED_12_CASES_12_ORACLES",
       "staticFixtureEvidence": "domain-services/domain-services-fixture-static-a2-2026-08-17.json",
-      "executable": false
+      "executable": true,
+      "independentReplayStatus": "A2_PREISSUANCE_AND_POSTISSUANCE_REPLAYED",
+      "activeCorpusDigest": "sha256:5a236de3cf36155df7244b049b045cefda55960cf16efe8212c3981e5463844f",
+      "targetManifest": {
+        "path": "domain-services/execution-class-target-v1.json",
+        "sha256": "sha256:d2b785bcf454c62f0508dc74d195e3875f550df74a949844408fe005c1e2bcfb",
+        "byteLength": 7197
+      },
+      "executorManifests": [
+        {
+          "path": "domain-services/java-domain-authority-executor-manifest-v1.json",
+          "sha256": "sha256:1fcaae74c1bc2f4eaecc6e9aaf436fddaa15d32cc449c5b05b79a4b33fb0dafb",
+          "byteLength": 1397
+        },
+        {
+          "path": "domain-services/transactional-integration-replayer-manifest-v1.json",
+          "sha256": "sha256:1553d1b48ac677f2562d4ad8f1dd03ab519966bb4a0f75c04198e845e751604c",
+          "byteLength": 1518
+        }
+      ],
+      "recordIssuanceTarget": {
+        "path": "domain-services/capacity-record-issuance-target-v1.json",
+        "sha256": "sha256:44c1d878848ab87fc4e4485c4b6142f1710204f39b64578c0a95102a7b0288e2",
+        "byteLength": 11104
+      },
+      "replayEvidence": "domain-services/domain-services-capacity-postissuance-a2-2026-08-26.json"
     },
     {
       "ordinal": 3,
@@ -188,9 +213,9 @@
       ],
       "shapeCandidateStatus": "A2_STATIC_MATERIALIZED_525_CASES_525_ORACLES",
       "shapeCandidateEvidence": "capacity-boundary/capacity-boundary-static-a2-2026-08-17.json",
-      "formalIssuedCaseCount": 0,
-      "formalIssuedOracleCount": 0,
-      "executionGateStatus": "ALL_FOUR_ASSIGNED_CLASS_FIXTURE_GENERATOR_GATES_PASSED_PRODUCT_TARGET_AND_REPLAY_PENDING_ALL_FOUR_CLASSES_NOT_EXECUTABLE",
+      "formalIssuedCaseCount": 12,
+      "formalIssuedOracleCount": 12,
+      "executionGateStatus": "DOMAIN_SERVICES_12_ISSUED_AND_EXECUTABLE_OTHER_THREE_ASSIGNED_CLASSES_PRODUCT_GATES_PENDING",
       "jsonlMutationAllowed": "only after Phase 1 passes and every execution class assigned at least one capacity axis has its required generator target"
     },
     {
@@ -219,9 +244,9 @@
     }
   ],
   "currentPhase": "CAPACITY_BOUNDARY",
-  "currentPhaseStatus": "ALL_FOUR_ASSIGNED_CLASS_FIXTURES_STATIC_A2_READY_PRODUCT_EXECUTION_AND_RECORD_ISSUANCE_BLOCKED",
-  "caseRegistryRecordCount": 46,
-  "oracleRegistryRecordCount": 46,
-  "issuedRegistryInvariant": "The first 46 Case and 46 Oracle records are the byte-identical SPEC_REGISTRY candidates that passed both preissuance executors; every future mutation is append-only supersession or later-phase issuance.",
+  "currentPhaseStatus": "DOMAIN_SERVICES_EXECUTABLE_12_OF_525_ISSUED_OTHER_ASSIGNED_CLASSES_BLOCKED",
+  "caseRegistryRecordCount": 58,
+  "oracleRegistryRecordCount": 58,
+  "issuedRegistryInvariant": "The first 46 Case and 46 Oracle records remain the byte-identical SPEC_REGISTRY candidates; the next 12 Case and 12 Oracle records are the byte-identical DOMAIN_SERVICES assigned capacity suffix.",
   "j1Rule": "Editor J1 is neither an execution-class bootstrap step nor a substitute for automated coverage."
 }

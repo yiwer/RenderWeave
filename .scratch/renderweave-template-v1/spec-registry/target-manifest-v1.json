@@ -1,8 +1,8 @@
 {
   "artifactVersion": "renderweave-spec-registry-target-manifest/1.0",
   "targetId": "SPEC_TARGET::REGISTRY::1.0",
-  "status": "ISSUED_EXACT_TARGET",
-  "implementationRevision": "spec-registry-bootstrap/1.13",
+  "status": "ISSUED_APPEND_ONLY_EXACT_TARGET",
+  "implementationRevision": "spec-registry-bootstrap/1.14",
   "executionClass": "EXEC::SPEC_REGISTRY::1.0",
   "canonicalProfile": "renderweave-conformance-c14n/1.0",
   "probeProfile": "renderweave-conformance-probes/1.0",
@@ -25,8 +25,8 @@
     },
     {
       "path": "conformance-bootstrap-order-v1.json",
-      "sha256": "sha256:d3487a85839282f64050606bad17ff87b801a71e456524c63f1dd257dd152825",
-      "byteLength": 10047
+      "sha256": "sha256:fd112f7b9f91fa42b7317b282cd77155381ce2b6b4260200ea71d9f6b3f04b78",
+      "byteLength": 11128
     },
     {
       "path": "conformance-canonical-profile-v1.json",
@@ -50,8 +50,8 @@
     },
     {
       "path": "conformance-execution-classes-v1.json",
-      "sha256": "sha256:a984d9327dd880f1c4b10d4dc4351fa102d75d8167df08464281516ffbdecfbd",
-      "byteLength": 9456
+      "sha256": "sha256:f7963e4fb555e87ab59f55bc2afce559b7b7b3de6b90edc1369415b0cd7a6968",
+      "byteLength": 10701
     },
     {
       "path": "conformance-generator-manifests-v1.json",
@@ -149,6 +149,61 @@
       "byteLength": 19435
     },
     {
+      "path": "domain-services/capacity-record-issuance-target-v1.json",
+      "sha256": "sha256:44c1d878848ab87fc4e4485c4b6142f1710204f39b64578c0a95102a7b0288e2",
+      "byteLength": 11104
+    },
+    {
+      "path": "domain-services/domain-services-capacity-postissuance-a2-2026-08-26.json",
+      "sha256": "sha256:25300d96c9e48c10de420a50601b69ad2127f0ca2e0d843a78617a0b2f830c27",
+      "byteLength": 4274
+    },
+    {
+      "path": "domain-services/execution-class-target-v1.json",
+      "sha256": "sha256:d2b785bcf454c62f0508dc74d195e3875f550df74a949844408fe005c1e2bcfb",
+      "byteLength": 7197
+    },
+    {
+      "path": "domain-services/java-domain-authority-executor-manifest-v1.json",
+      "sha256": "sha256:1fcaae74c1bc2f4eaecc6e9aaf436fddaa15d32cc449c5b05b79a4b33fb0dafb",
+      "byteLength": 1397
+    },
+    {
+      "path": "domain-services/materialize-domain-services-capacity-issuance.py",
+      "sha256": "sha256:1a06297fc51cd3eeb65b0a3ce2e4649b6bc8a0c4d99bf8466615270cc8d52130",
+      "byteLength": 22666
+    },
+    {
+      "path": "domain-services/postissuance-independent-result-v1.json",
+      "sha256": "sha256:5412c3b155a3075c40bb82c7ab9404a9b4b22b3dadd11b29a8099ad8cd12bd81",
+      "byteLength": 979
+    },
+    {
+      "path": "domain-services/postissuance-primary-result-v1.json",
+      "sha256": "sha256:2197f4ece5b1a3ec4379aae4172632c1f08e7e6f26a7eb5013958745900a4037",
+      "byteLength": 964
+    },
+    {
+      "path": "domain-services/transactional-integration-replayer-manifest-v1.json",
+      "sha256": "sha256:1553d1b48ac677f2562d4ad8f1dd03ab519966bb4a0f75c04198e845e751604c",
+      "byteLength": 1518
+    },
+    {
+      "path": "domain-services/validate-domain-services-postissuance-primary.mjs",
+      "sha256": "sha256:787a9ad4bb8f5f11c5c8caf799333e322d24efe46d4ad88064d522e13252231b",
+      "byteLength": 13006
+    },
+    {
+      "path": "domain-services/validate_domain_services_postissuance_independent.py",
+      "sha256": "sha256:2c2f63378fb77f6aa0a9033019ad80c959175bcac44ed284a1df2c78407fccc5",
+      "byteLength": 15685
+    },
+    {
+      "path": "domain-services/write-domain-services-postissuance-a2-evidence.mjs",
+      "sha256": "sha256:727a330f4e4d73caf9d7118507aa11585d52265f790c2c82f9a310b03c778b94",
+      "byteLength": 5371
+    },
+    {
       "path": "editor-automated/admission-independent-result-v1.json",
       "sha256": "sha256:d8be9ad80d80dee430cab5841bf4eeb0dda873e7a81a8bd7dc374324c4b4beab",
       "byteLength": 1264
@@ -165,18 +220,18 @@
     },
     {
       "path": "editor-automated/atomic-candidate-independent-result-v1.json",
-      "sha256": "sha256:9cdf842b9391141d423331ad51c2fc7da1b5ac7214e3fa63dd890ebeeb7493db",
-      "byteLength": 6082
+      "sha256": "sha256:3a8bc629de867aed225034342d8f4976b84e27ab1b35b62c428524f923e47c94",
+      "byteLength": 6155
     },
     {
       "path": "editor-automated/atomic-candidate-primary-result-v1.json",
-      "sha256": "sha256:77d0fd4e5e21a4a276262ed1db4b3b61d006a323f0a84c41fc71a05acb47a273",
-      "byteLength": 20512
+      "sha256": "sha256:e1d6f3f8705b60c446623b4ad9b4247cfef101cf05a427b18723012a2c034158",
+      "byteLength": 20689
     },
     {
       "path": "editor-automated/atomic-candidate-readiness-audit-v1.json",
-      "sha256": "sha256:97834621cd815a7fa6536934bccd1d1d4d87badfda1251225a4defa15714156c",
-      "byteLength": 11138
+      "sha256": "sha256:6baf2ae558f1a15fa79b9dad5a684e8aaefa5a7a4cfa119617300f658ebc188d",
+      "byteLength": 11204
     },
     {
       "path": "editor-automated/atomic-scenario-candidates-v1.json",
@@ -210,8 +265,8 @@
     },
     {
       "path": "editor-automated/editor-atomic-candidates-static-a2-2026-08-17.json",
-      "sha256": "sha256:34958ee81fb889520b7372ca4b98c41bff182348b9d8a667a54a86e54e942370",
-      "byteLength": 10654
+      "sha256": "sha256:9ce39ddb03ee36e26adf872ab6833f4715a0738b855f812ac630aee5e3c01f63",
+      "byteLength": 10795
     },
     {
       "path": "editor-automated/editor-automation-admission-static-a2-2026-08-17.json",
@@ -425,8 +480,8 @@
     },
     {
       "path": "editor-automated/generate-editor-atomic-candidates.mjs",
-      "sha256": "sha256:7c07b84598373185383d610044a5ca56547d00447af9d75ffd1693beeac373bc",
-      "byteLength": 163567
+      "sha256": "sha256:47d2b49197a9dc1af84badbae315e9dce577509c9b035c15b3ce788173c146a0",
+      "byteLength": 164204
     },
     {
       "path": "editor-automated/generate-editor-automation-admission.mjs",
@@ -1600,8 +1655,8 @@
     },
     {
       "path": "editor-automated/validate_editor_atomic_candidates_independent.py",
-      "sha256": "sha256:97db2020562f7f9f123a6cb639ad47806dd6ebac08b300b37c7e9486ec8a4c61",
-      "byteLength": 71063
+      "sha256": "sha256:f9031f13c68b19446391903ec04c8f92b4c4a5d8885e61335e975751a361c9c8",
+      "byteLength": 71622
     },
     {
       "path": "editor-automated/validate_editor_automation_admission_independent.py",
@@ -1615,8 +1670,8 @@
     },
     {
       "path": "editor-automated/write-editor-atomic-candidate-evidence.mjs",
-      "sha256": "sha256:c6695f00abb10672fa3b89acabf427fb5e943d3a48615fdee37514bf2a2b501d",
-      "byteLength": 10104
+      "sha256": "sha256:1c383612d2a80b61ab41dc33f7695ecc9aaad0a50a59e4ab9f0489c6e6580913",
+      "byteLength": 10390
     },
     {
       "path": "editor-automated/write-editor-automation-admission-evidence.mjs",
@@ -1910,8 +1965,8 @@
     },
     {
       "path": "spec-registry/refresh-spec-registry-postissuance-target.mjs",
-      "sha256": "sha256:fe156c84ecc64b56037c0cef1fe89a2455ef0a532595643d4ea8291487398632",
-      "byteLength": 7141
+      "sha256": "sha256:18ddba3e5e309022bbd7933425e0dc3db281190cbe5480683d537f321a65c75f",
+      "byteLength": 7961
     },
     {
       "path": "spec-registry/scenario-catalog-v1.json",
@@ -1932,15 +1987,28 @@
     },
     "formalCases": {
       "path": "conformance-cases-v1.jsonl",
-      "expectedSha256": "sha256:ebe58e84977ee84befe89f8c126f37fbec7076cd7725b29f1b7609448fe7ef16",
-      "observedSha256": "sha256:ebe58e84977ee84befe89f8c126f37fbec7076cd7725b29f1b7609448fe7ef16"
+      "expectedSha256": "sha256:bba2e350cc29c5fc8faae7f4bdb47c8bd0e2e60a3dd78d6f64d9d355b2440add",
+      "observedSha256": "sha256:bba2e350cc29c5fc8faae7f4bdb47c8bd0e2e60a3dd78d6f64d9d355b2440add"
     },
     "formalOracles": {
       "path": "conformance-oracles-v1.jsonl",
-      "expectedSha256": "sha256:3825b9fb40c1b43c484da3ebdf29429ed749e622012212ca79f9cea5b9cb9339",
-      "observedSha256": "sha256:3825b9fb40c1b43c484da3ebdf29429ed749e622012212ca79f9cea5b9cb9339"
+      "expectedSha256": "sha256:a0f513b0d305d00b1797f32db38488b92e5775fa8c19a3fcb00d4e2394e3d2db",
+      "observedSha256": "sha256:a0f513b0d305d00b1797f32db38488b92e5775fa8c19a3fcb00d4e2394e3d2db"
     },
-    "formalStatus": "ISSUED_BYTE_IDENTICAL"
+    "formalStatus": "ISSUED_APPEND_ONLY_PREFIX",
+    "appendOnlyIssuance": {
+      "target": {
+        "path": "domain-services/capacity-record-issuance-target-v1.json",
+        "sha256": "sha256:44c1d878848ab87fc4e4485c4b6142f1710204f39b64578c0a95102a7b0288e2",
+        "byteLength": 11104
+      },
+      "preservedCasePrefixSha256": "sha256:ebe58e84977ee84befe89f8c126f37fbec7076cd7725b29f1b7609448fe7ef16",
+      "preservedOraclePrefixSha256": "sha256:3825b9fb40c1b43c484da3ebdf29429ed749e622012212ca79f9cea5b9cb9339",
+      "appendedExecutionClass": "EXEC::DOMAIN_SERVICES::1.0",
+      "appendedCaseCount": 12,
+      "appendedOracleCount": 12,
+      "assignedCorpusDigest": "sha256:5a236de3cf36155df7244b049b045cefda55960cf16efe8212c3981e5463844f"
+    }
   },
   "networkReadsAllowed": false,
   "productMutationAllowed": false

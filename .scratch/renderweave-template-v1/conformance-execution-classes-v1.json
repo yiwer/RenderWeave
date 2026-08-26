@@ -1,6 +1,6 @@
 {
   "artifactVersion": "renderweave-conformance-execution-classes/1.0",
-  "status": "SPEC_REGISTRY_EXECUTABLE_ALL_CLASS_FIXTURES_STATIC_A2_EDITOR_ADMISSION_INTERFACE_STATIC_A2_CAPACITY_SHAPES_STATIC_A2_PRODUCT_MANIFESTS_PENDING",
+  "status": "SPEC_REGISTRY_AND_DOMAIN_SERVICES_EXECUTABLE_OTHER_CLASS_PRODUCT_MANIFESTS_PENDING",
   "authority": "Ticket19 execution-boundary catalog; only a class entry with an exact target, every required executor role, assigned corpus, adapter, and replay status may claim executable",
   "assignmentRule": "Every case declares exactly one most-downstream executionClass; concrete executor, target, implementation revision, run, and evidence grade remain manifest facts outside case identity.",
   "classes": [
@@ -36,7 +36,7 @@
         "transactional-integration-replayer"
       ],
       "targetKind": "exact domain-service implementation and PostgreSQL integration target",
-      "status": "FIXTURE_GENERATOR_STATIC_A2_PRODUCT_TARGET_PENDING",
+      "status": "EXECUTABLE_A2_REPLAYED",
       "fixtureGeneratorTarget": {
         "path": "domain-services/generator-target-manifest-v1.json",
         "sha256": "sha256:3f6d2df37c776262e328f5159b2ff38bb89c9882d60a82a67c48a42efb487dd9"
@@ -46,10 +46,36 @@
         "sha256": "sha256:4bda561d8628461b783796e38acb9066e840c307479603e39afa6c241393ea06"
       },
       "fixtureGeneratorEvidence": "domain-services/domain-services-fixture-static-a2-2026-08-17.json",
-      "exactProductTargetManifestStatus": "PENDING",
-      "executorManifestStatus": "PENDING",
-      "independentProductReplayStatus": "PENDING",
-      "executable": false
+      "exactProductTargetManifestStatus": "FROZEN",
+      "executorManifestStatus": "FROZEN",
+      "independentProductReplayStatus": "A2_PREISSUANCE_AND_POSTISSUANCE_REPLAYED",
+      "executable": true,
+      "exactProductTargetManifest": {
+        "path": "domain-services/execution-class-target-v1.json",
+        "sha256": "sha256:d2b785bcf454c62f0508dc74d195e3875f550df74a949844408fe005c1e2bcfb",
+        "byteLength": 7197
+      },
+      "executorManifests": [
+        {
+          "path": "domain-services/java-domain-authority-executor-manifest-v1.json",
+          "sha256": "sha256:1fcaae74c1bc2f4eaecc6e9aaf436fddaa15d32cc449c5b05b79a4b33fb0dafb",
+          "byteLength": 1397
+        },
+        {
+          "path": "domain-services/transactional-integration-replayer-manifest-v1.json",
+          "sha256": "sha256:1553d1b48ac677f2562d4ad8f1dd03ab519966bb4a0f75c04198e845e751604c",
+          "byteLength": 1518
+        }
+      ],
+      "recordIssuanceTarget": {
+        "path": "domain-services/capacity-record-issuance-target-v1.json",
+        "sha256": "sha256:44c1d878848ab87fc4e4485c4b6142f1710204f39b64578c0a95102a7b0288e2",
+        "byteLength": 11104
+      },
+      "assignedActiveCorpusDigest": "sha256:5a236de3cf36155df7244b049b045cefda55960cf16efe8212c3981e5463844f",
+      "caseRecordCount": 12,
+      "oracleRecordCount": 12,
+      "replayEvidence": "domain-services/domain-services-capacity-postissuance-a2-2026-08-26.json"
     },
     {
       "executionClass": "EXEC::DESIGN_INPUT_EXPRESSION::1.0",
@@ -167,18 +193,18 @@
   ],
   "classCount": 6,
   "capacityBoundaryMaterialization": {
-    "status": "STATIC_A2_SHAPE_CANDIDATES_READY_RECORD_ISSUANCE_BLOCKED",
+    "status": "STATIC_A2_SHAPES_DOMAIN_SERVICES_12_ISSUED_OTHER_CLASS_PRODUCT_GATES_PENDING",
     "axisCount": 175,
     "candidateCaseCount": 525,
     "candidateOracleCount": 525,
     "assignedExecutionClassCount": 4,
     "evidence": "capacity-boundary/capacity-boundary-static-a2-2026-08-17.json",
-    "formalCapacityCaseCount": 0,
-    "formalCapacityOracleCount": 0,
+    "formalCapacityCaseCount": 12,
+    "formalCapacityOracleCount": 12,
     "recordIssuanceAllowed": false,
-    "executionEvidence": false
+    "executionEvidence": true
   },
-  "executorManifestStatus": "SPEC_REGISTRY_FROZEN_OTHER_CLASSES_PENDING",
-  "targetManifestStatus": "SPEC_REGISTRY_FROZEN_OTHER_CLASSES_PENDING",
+  "executorManifestStatus": "SPEC_REGISTRY_AND_DOMAIN_SERVICES_FROZEN_OTHER_CLASSES_PENDING",
+  "targetManifestStatus": "SPEC_REGISTRY_AND_DOMAIN_SERVICES_FROZEN_OTHER_CLASSES_PENDING",
   "recordsMayClaimExecutableWithoutRequiredManifest": false
 }

@@ -116,8 +116,11 @@ function artifact(relativePath) {
   return { path: relativePath, sha256: sha(bytes), byteLength: bytes.length };
 }
 
-function countJsonl(relativePath) {
-  return readFileSync(resolve(SPEC, relativePath), "utf8").split(/\r?\n/).filter(Boolean).length;
+function readJsonl(relativePath) {
+  return readFileSync(resolve(SPEC, relativePath), "utf8")
+    .split(/\r?\n/)
+    .filter(Boolean)
+    .map((line) => JSON.parse(line));
 }
 
 function r(ticket, section, ordinal) {
@@ -1811,6 +1814,8 @@ function buildAudit(candidates) {
   const assignment = readJson(`${ROOT}/non-capacity-assignment-v1.json`);
   const currentProbeProfile = readJson("conformance-probe-profile-v1.json");
   const candidateProbeProfile = readJson(CANDIDATE_PROBE_PROFILE_PATH);
+  const formalCases = readJsonl("conformance-cases-v1.jsonl");
+  const formalOracles = readJsonl("conformance-oracles-v1.jsonl");
   const currentEditorProbeIds = new Set(currentProbeProfile.probes.filter((probe) => probe.executionClasses.includes(EXECUTION_CLASS)).map((probe) => probe.probeId));
   const candidateEditorProbeIds = new Set(candidateProbeProfile.probes.filter((probe) => probe.executionClasses.includes(EXECUTION_CLASS)).map((probe) => probe.probeId));
   const plannedCoverage = [...new Set(candidates.flatMap((candidate) => candidate.coveragePlan.map((edge) => edge.requirementId)))].sort();
@@ -1902,8 +1907,10 @@ function buildAudit(candidates) {
       proposedProbeCount: 0,
       candidateProfileBindingAssertionCount,
       candidateProfileBoundCandidateCount: candidates.filter((candidate) => candidate.assertionPlan.some((assertion) => assertion.probeBinding.status === "CANDIDATE_PROFILE_NOT_ISSUED")).length,
-      formalCaseCount: countJsonl("conformance-cases-v1.jsonl"),
-      formalOracleCount: countJsonl("conformance-oracles-v1.jsonl")
+      formalCaseCount: formalCases.length,
+      formalOracleCount: formalOracles.length,
+      formalEditorCaseCount: formalCases.filter((record) => record.executionClass === EXECUTION_CLASS).length,
+      formalEditorOracleCount: formalOracles.filter((record) => record.oracleId?.startsWith("ORC::EDITOR_AUTOMATED::")).length
     },
     byJourney,
     requirementClosure: {
@@ -2163,7 +2170,8 @@ function validate(contractValue, candidatesValue, auditValue) {
     const candidateProbe = candidate.assertionPlan.some((assertion) => assertion.probeBinding.status === "CANDIDATE_PROFILE_NOT_ISSUED");
     return (!pendingExpectation || candidate.blockers.includes(BLOCKERS.expected)) && (!candidateProbe || candidate.blockers.includes(BLOCKERS.probe));
   }), null);
-  check("formal JSONL counts remain unchanged at 46 each", auditValue.counts.formalCaseCount === 46 && auditValue.counts.formalOracleCount === 46, { cases: auditValue.counts.formalCaseCount, oracles: auditValue.counts.formalOracleCount });
+  check("global formal JSONL counts include the issued Domain Services suffix", auditValue.counts.formalCaseCount === 58 && auditValue.counts.formalOracleCount === 58, { cases: auditValue.counts.formalCaseCount, oracles: auditValue.counts.formalOracleCount });
+  check("Editor formal namespaces remain empty", auditValue.counts.formalEditorCaseCount === 0 && auditValue.counts.formalEditorOracleCount === 0, { cases: auditValue.counts.formalEditorCaseCount, oracles: auditValue.counts.formalEditorOracleCount });
   check("zero-execution boundary is fully false", Object.values(auditValue.zeroExecutionBoundary).every((value) => value === false), auditValue.zeroExecutionBoundary);
   check("formal issuance remains forbidden", auditValue.decision.formalRecordIssuanceAllowed === false, auditValue.decision);
   check("all fixture, target, terminal, and fault catalogs remain planning-only", terminalAdjudication.zeroExecutionBoundary.productTerminalObserved === false

@@ -897,8 +897,10 @@ def main() -> None:
         "proposedProbeCount": 0,
         "candidateProfileBindingAssertionCount": 109,
         "candidateProfileBoundCandidateCount": 82,
-        "formalCaseCount": 46,
-        "formalOracleCount": 46,
+        "formalCaseCount": 58,
+        "formalOracleCount": 58,
+        "formalEditorCaseCount": 0,
+        "formalEditorOracleCount": 0,
     }, "audit counts")
     check(audit["requirementClosure"]["exactSeedUnionMatch"] is True, "audit requirement closure")
     check(audit["requirementClosure"]["missingRequirementIds"] == [], "no missing requirements")
@@ -930,8 +932,10 @@ def main() -> None:
 
     formal_cases = jsonl_records("conformance-cases-v1.jsonl")
     formal_oracles = jsonl_records("conformance-oracles-v1.jsonl")
-    check(len(formal_cases) == 46, "formal Case count unchanged")
-    check(len(formal_oracles) == 46, "formal Oracle count unchanged")
+    editor_formal_cases = [record for record in formal_cases if record.get("executionClass") == EXECUTION_CLASS]
+    editor_formal_oracles = [record for record in formal_oracles if record.get("oracleId", "").startswith("ORC::EDITOR_AUTOMATED::")]
+    check(len(formal_cases) == 58 and len(formal_oracles) == 58, "global formal registries include issued Domain Services suffix")
+    check(not editor_formal_cases and not editor_formal_oracles, "Editor formal namespaces remain empty")
     formal_ids = {record["caseId"] for record in formal_cases} | {record["oracleId"] for record in formal_oracles}
     check(not (seen_ids & formal_ids), "candidate IDs absent from formal registry")
 
@@ -1000,8 +1004,10 @@ def main() -> None:
             "faultNoneBindingCount": fault_catalog["counts"]["noneCandidateCount"],
             "formalCaseCount": len(formal_cases),
             "formalOracleCount": len(formal_oracles),
+            "formalEditorCaseCount": len(editor_formal_cases),
+            "formalEditorOracleCount": len(editor_formal_oracles),
         },
-        "boundary": "Independent static replay only; no browser, product build, product code, network, formal registry append, J1, or READY claim.",
+        "boundary": "Independent static replay only; no browser, product build, product code, network, Editor formal registry append, J1, or READY claim.",
     }
     (SPEC / RESULT_PATH).write_bytes(encoded(result))
     print(json.dumps({"status": result["status"], "checkCount": result["checkCount"], **result["observed"]}, ensure_ascii=False, indent=2))

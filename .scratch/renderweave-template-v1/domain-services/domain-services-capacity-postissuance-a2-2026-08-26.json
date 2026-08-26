@@ -1,0 +1,115 @@
+{
+  "evidenceVersion": "renderweave-domain-services-capacity-postissuance-a2/1.0",
+  "evidenceId": "DOMAIN_SERVICES_CAPACITY_POSTISSUANCE_A2::2026-08-26::000001",
+  "status": "PASS",
+  "grade": "A2_INDEPENDENTLY_REPLAYED",
+  "executionClass": "EXEC::DOMAIN_SERVICES::1.0",
+  "implementationRevision": "adfd0da82c257111a871d97284e7697b2cf92bf7",
+  "issuanceTarget": {
+    "path": "domain-services/capacity-record-issuance-target-v1.json",
+    "sha256": "sha256:44c1d878848ab87fc4e4485c4b6142f1710204f39b64578c0a95102a7b0288e2",
+    "byteLength": 11104
+  },
+  "productExecutionClosure": {
+    "target": {
+      "path": "domain-services/execution-class-target-v1.json",
+      "sha256": "sha256:d2b785bcf454c62f0508dc74d195e3875f550df74a949844408fe005c1e2bcfb",
+      "byteLength": 7197
+    },
+    "executorManifests": [
+      {
+        "path": "domain-services/java-domain-authority-executor-manifest-v1.json",
+        "sha256": "sha256:1fcaae74c1bc2f4eaecc6e9aaf436fddaa15d32cc449c5b05b79a4b33fb0dafb",
+        "byteLength": 1397
+      },
+      {
+        "path": "domain-services/transactional-integration-replayer-manifest-v1.json",
+        "sha256": "sha256:1553d1b48ac677f2562d4ad8f1dd03ab519966bb4a0f75c04198e845e751604c",
+        "byteLength": 1518
+      }
+    ],
+    "assignedCorpusDigest": "sha256:5a236de3cf36155df7244b049b045cefda55960cf16efe8212c3981e5463844f",
+    "preissuanceReplayRequiredAndPassed": true,
+    "freshProductGateRequiredForResolution": true
+  },
+  "registryBindings": {
+    "formalCases": {
+      "path": "conformance-cases-v1.jsonl",
+      "sha256": "sha256:bba2e350cc29c5fc8faae7f4bdb47c8bd0e2e60a3dd78d6f64d9d355b2440add",
+      "byteLength": 187511,
+      "recordCount": 58,
+      "exactPreservedPrefixSha256": "sha256:ebe58e84977ee84befe89f8c126f37fbec7076cd7725b29f1b7609448fe7ef16",
+      "appendedRecordCount": 12
+    },
+    "formalOracles": {
+      "path": "conformance-oracles-v1.jsonl",
+      "sha256": "sha256:a0f513b0d305d00b1797f32db38488b92e5775fa8c19a3fcb00d4e2394e3d2db",
+      "byteLength": 76967,
+      "recordCount": 58,
+      "exactPreservedPrefixSha256": "sha256:3825b9fb40c1b43c484da3ebdf29429ed749e622012212ca79f9cea5b9cb9339",
+      "appendedRecordCount": 12
+    },
+    "executionClassCatalog": {
+      "path": "conformance-execution-classes-v1.json",
+      "sha256": "sha256:f7963e4fb555e87ab59f55bc2afce559b7b7b3de6b90edc1369415b0cd7a6968",
+      "byteLength": 10701
+    },
+    "bootstrapOrder": {
+      "path": "conformance-bootstrap-order-v1.json",
+      "sha256": "sha256:fd112f7b9f91fa42b7317b282cd77155381ce2b6b4260200ea71d9f6b3f04b78",
+      "byteLength": 11128
+    }
+  },
+  "replay": {
+    "primary": {
+      "result": {
+        "path": "domain-services/postissuance-primary-result-v1.json",
+        "sha256": "sha256:2197f4ece5b1a3ec4379aae4172632c1f08e7e6f26a7eb5013958745900a4037",
+        "byteLength": 964
+      },
+      "status": "PASS",
+      "checkCount": 421,
+      "failureCount": 0,
+      "runtime": "v24.12.0"
+    },
+    "independent": {
+      "result": {
+        "path": "domain-services/postissuance-independent-result-v1.json",
+        "sha256": "sha256:5412c3b155a3075c40bb82c7ab9404a9b4b22b3dadd11b29a8099ad8cd12bd81",
+        "byteLength": 979
+      },
+      "status": "PASS",
+      "checkCount": 421,
+      "failureCount": 0,
+      "runtime": "Python 3.13.13"
+    },
+    "sharedSemanticLibrary": null,
+    "differentRuntimeAndParserImplementations": true
+  },
+  "observedFrontier": {
+    "issuedSpecRegistryCaseCount": 46,
+    "issuedSpecRegistryOracleCount": 46,
+    "issuedDomainServicesCapacityCaseCount": 12,
+    "issuedDomainServicesCapacityOracleCount": 12,
+    "totalFormalCaseCount": 58,
+    "totalFormalOracleCount": 58,
+    "totalCapacityCandidateCount": 525,
+    "remainingUnissuedCapacityCaseCount": 513,
+    "currentPhase": "CAPACITY_BOUNDARY",
+    "domainServicesExecutable": true
+  },
+  "sideEffects": {
+    "historicalFormalRecordsMutated": 0,
+    "productApiChanges": 0,
+    "externalProviderAttempts": 0,
+    "externalNetworkAttempts": 0
+  },
+  "boundary": {
+    "allCapacityRecordsIssued": false,
+    "combinedCapacityRecordsIssued": 0,
+    "fullAutomatedCorpusExecutable": false,
+    "rendererCertified": false,
+    "rendererReady": false,
+    "ticket19Closed": false
+  }
+}

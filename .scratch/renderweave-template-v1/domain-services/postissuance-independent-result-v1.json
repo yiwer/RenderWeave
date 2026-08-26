@@ -1,0 +1,27 @@
+{
+  "reportVersion": "renderweave-domain-services-postissuance-independent/1",
+  "engine": "python-independent-registry-replayer",
+  "runtime": "Python 3.13.13",
+  "status": "PASS",
+  "checkCount": 421,
+  "failureCount": 0,
+  "failures": [],
+  "targetManifest": {
+    "path": ".scratch/renderweave-template-v1/domain-services/capacity-record-issuance-target-v1.json",
+    "sha256": "sha256:44c1d878848ab87fc4e4485c4b6142f1710204f39b64578c0a95102a7b0288e2",
+    "byteLength": 11104
+  },
+  "implementationRevision": "adfd0da82c257111a871d97284e7697b2cf92bf7",
+  "executionClass": "EXEC::DOMAIN_SERVICES::1.0",
+  "formalCaseCount": 58,
+  "formalOracleCount": 58,
+  "issuedDomainCaseCount": 12,
+  "issuedDomainOracleCount": 12,
+  "assignedCorpusDigest": "sha256:5a236de3cf36155df7244b049b045cefda55960cf16efe8212c3981e5463844f",
+  "boundary": {
+    "productMutationPerformed": false,
+    "externalNetworkAllowed": false,
+    "rendererReady": false,
+    "ticket19Closed": false
+  }
+}
