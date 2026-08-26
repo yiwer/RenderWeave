@@ -7,7 +7,8 @@ type Decimal = { unscaled: bigint; scale: number };
 
 const EXECUTION_CLASS = "EXEC::DESIGN_INPUT_EXPRESSION::1.0";
 const TARGET_VERSION = "renderweave-design-input-expression-capacity-component-target/1.0";
-const TARGET_ID = "DESIGN_INPUT_EXPRESSION_TARGET::CAPACITY_AUTHORITY_PARTIAL_WIRING::5.0";
+const TARGET_ID = "DESIGN_INPUT_EXPRESSION_TARGET::CAPACITY_AUTHORITY_PARTIAL_WIRING::6.0";
+const IMPLEMENTATION_REVISION = "91da8d56be811139835a845f5d5313682cf4a6d9";
 const REPORT_VERSION = "renderweave-design-input-expression-capacity-independent/1";
 const INTEGER = /^-?(?:0|[1-9][0-9]*)$/;
 const DECIMAL = /^-?(?:0|[1-9][0-9]*)(?:\.[0-9]+)?$/;
@@ -23,15 +24,13 @@ const FORBIDDEN_FIXTURE_KEYS = new Set([
   "default",
   "script",
 ]);
-const EXPRESSION_DEFINITION_WIRED_IDS = [
-  "expression.sourceUtf8BytesPerExpression",
-  "expression.sourceUtf8BytesTotal",
-  "expression.inputsPerExpression",
-  "expression.inputsTotal",
-  "expression.mappingCasesPerDefinition",
-  "expression.mappingCasesTotal",
-  "expression.definitionGraphEdges",
-  "expression.definitionChainDepth",
+const EXPRESSION_AST_WIRED_IDS = [
+  "expression.astNodesPerExpression",
+  "expression.astNodesTotal",
+];
+const RETIRED_RENDERING_OWNED_EXPRESSION_ARTIFACTS = [
+  "renderweave-rendering/src/main/java/cn/hbads/renderweave/rendering/internal/ExpressionAst.java",
+  "renderweave-rendering/src/main/java/cn/hbads/renderweave/rendering/internal/ExpressionParser.java",
 ];
 
 function requiredOption(name: string): string {
@@ -174,13 +173,14 @@ function main(): void {
   const target = JSON.parse(targetBytes.toString("utf8"));
   requireEqual(target.artifactVersion, TARGET_VERSION, "target version");
   requireEqual(target.targetId, TARGET_ID, "target id");
+  requireEqual(target.implementationRevision, IMPLEMENTATION_REVISION, "implementation revision");
   requireEqual(target.executionClass, EXECUTION_CLASS, "target execution class");
   requireEqual(target.guardContractId,
     "renderweave-design-input-expression-capacity-guard/1.0", "guard contract");
   requireEqual(target.scalarReplay.axisCount, 65, "target scalar axis count");
   requireEqual(target.scalarReplay.caseCount, 195, "target scalar case count");
-  requireEqual(target.productWiring.wiredAxisCount, 46, "wired product axes");
-  requireEqual(target.productWiring.remainingAxisCount, 19, "remaining product axes");
+  requireEqual(target.productWiring.wiredAxisCount, 48, "wired product axes");
+  requireEqual(target.productWiring.remainingAxisCount, 17, "remaining product axes");
   requireEqual(target.boundary.preissuanceReady, false, "target preissuance boundary");
   requireEqual(target.boundary.recordIssuanceAllowed, false, "target issuance boundary");
   requireEqual(target.boundary.executionClassExecutable, false, "target executable boundary");
@@ -195,24 +195,30 @@ function main(): void {
   requireEqual(target.predecessorTarget.mutationAllowed, false,
     "predecessor target mutation boundary");
   const predecessorWired = predecessor.productWiring.wiredLimitIds as string[];
-  requireEqual(predecessor.productWiring.problemReservationProof,
-    "cn.hbads.renderweave.template.internal.TemplateProblemCapacityReservationTest",
-    "predecessor problem reservation proof");
-  requireEqual(predecessor.productWiring.problemReservationProofAxisCount, 5,
-    "predecessor problem reservation proof axis count");
-  const expectedWired = [...predecessorWired, ...EXPRESSION_DEFINITION_WIRED_IDS].sort();
+  requireEqual(predecessor.productWiring.expressionDefinitionReservationProof,
+    "cn.hbads.renderweave.template.internal.ExpressionDefinitionCapacityReservationTest",
+    "predecessor Expression Definition reservation proof");
+  requireEqual(predecessor.productWiring.expressionDefinitionReservationProofAxisCount, 8,
+    "predecessor Expression Definition reservation proof axis count");
+  const expectedWired = [...predecessorWired, ...EXPRESSION_AST_WIRED_IDS].sort();
   const targetWired = target.productWiring.wiredLimitIds as string[];
-  requireEqual(new Set(targetWired).size, 46, "unique wired product axes");
+  requireEqual(new Set(targetWired).size, 48, "unique wired product axes");
   requireEqual([...targetWired].sort(), expectedWired, "monotonic wired product axes");
   requireEqual(target.productWiring.remainingGroups, [
-    { group: "expression", axisCount: 9, status: "PRODUCT_RESERVATION_POINTS_PENDING" },
+    { group: "expression", axisCount: 7, status: "PRODUCT_RESERVATION_POINTS_PENDING" },
     { group: "geometry", axisCount: 10, status: "PRODUCT_RESERVATION_POINTS_PENDING" },
   ], "remaining product groups");
   requireEqual(target.productWiring.expressionDefinitionReservationProof,
     "cn.hbads.renderweave.template.internal.ExpressionDefinitionCapacityReservationTest",
     "Expression Definition reservation proof");
-  requireEqual(target.productWiring.expressionDefinitionReservationProofAxisCount, 8,
+  requireEqual(target.productWiring.expressionDefinitionReservationProofAxisCount, 10,
     "Expression Definition reservation proof axis count");
+  requireEqual(target.productWiring.expressionAstConsumptionProof,
+    "cn.hbads.renderweave.rendering.internal.ExpressionEngineTest",
+    "Expression AST Rendering consumption proof");
+  requireEqual(target.productWiring.retiredRenderingOwnedExpressionArtifacts,
+    RETIRED_RENDERING_OWNED_EXPRESSION_ARTIFACTS,
+    "retired Rendering-owned Expression artifacts");
 
   let checkCount = 20;
   for (const artifact of target.artifacts as JsonObject[]) {
@@ -221,6 +227,12 @@ function main(): void {
     requireEqual(sha256(bytes), artifact.sha256, `artifact hash ${artifact.path}`);
     requireEqual(bytes.length, artifact.byteLength, `artifact length ${artifact.path}`);
     checkCount += 2;
+  }
+  for (const retiredPath of target.productWiring
+    .retiredRenderingOwnedExpressionArtifacts as string[]) {
+    requireCondition(!existsSync(resolve(repo, retiredPath)),
+      `retired Rendering-owned Expression artifact still exists: ${retiredPath}`);
+    checkCount += 1;
   }
 
   const primaryBytes = readFileSync(primaryPath);
@@ -235,8 +247,8 @@ function main(): void {
   requireEqual(primary.caseCount, 195, "primary case count");
   requireEqual(primary.passed, 195, "primary passed count");
   requireEqual(primary.failed, 0, "primary failure count");
-  requireEqual(primary.boundary.wiredProductAxisCount, 46, "primary wired axes");
-  requireEqual(primary.boundary.remainingProductAxisCount, 19, "primary remaining axes");
+  requireEqual(primary.boundary.wiredProductAxisCount, 48, "primary wired axes");
+  requireEqual(primary.boundary.remainingProductAxisCount, 17, "primary remaining axes");
   requireEqual(primary.boundary.preissuanceReady, false, "primary preissuance boundary");
   requireEqual(primary.boundary.recordIssuanceAllowed, false, "primary issuance boundary");
   requireEqual(primary.boundary.executionClassExecutable, false, "primary executable boundary");
@@ -321,7 +333,7 @@ function main(): void {
     assurance: "A2_COMPONENT_SCALAR_REPLAY_PARTIAL_PRODUCT_WIRING",
     executionClass: EXECUTION_CLASS,
     targetManifest: {
-      path: ".scratch/renderweave-template-v1/design-input-expression/capacity-component-target-v5.json",
+      path: ".scratch/renderweave-template-v1/design-input-expression/capacity-component-target-v6.json",
       sha256: sha256(targetBytes),
       byteLength: targetBytes.length,
     },
@@ -336,8 +348,8 @@ function main(): void {
     observationDigest: sha256(Buffer.from(JSON.stringify(normalizedObservations), "utf8")),
     boundary: {
       scalarGuardOnly: true,
-      wiredProductAxisCount: 46,
-      remainingProductAxisCount: 19,
+      wiredProductAxisCount: 48,
+      remainingProductAxisCount: 17,
       productReservationProofComplete: false,
       preissuanceReady: false,
       formalRecordsIssued: 0,
@@ -347,7 +359,7 @@ function main(): void {
   };
   writeFileSync(reportPath, `${JSON.stringify(report, null, 2)}\n`, { flag: "wx" });
   process.stdout.write(
-    `DESIGN_INPUT_EXPRESSION independent replay: ${observedCases.size}/195 PASS, 46/65 wired\n`,
+    `DESIGN_INPUT_EXPRESSION independent replay: ${observedCases.size}/195 PASS, 48/65 wired\n`,
   );
 }
 

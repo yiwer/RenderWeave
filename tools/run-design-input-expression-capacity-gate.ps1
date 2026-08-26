@@ -30,7 +30,7 @@ if (-not $resolvedEvidenceDir.StartsWith(
 }
 
 $target = Join-Path $repoRoot `
-    '.scratch\renderweave-template-v1\design-input-expression\capacity-component-target-v5.json'
+    '.scratch\renderweave-template-v1\design-input-expression\capacity-component-target-v6.json'
 $primaryReport = Join-Path $resolvedEvidenceDir `
     'design-input-expression-capacity-primary.json'
 $independentReport = Join-Path $resolvedEvidenceDir `
@@ -65,7 +65,7 @@ $env:RENDERWEAVE_LIVE_UPLOAD_ENABLED = 'false'
 Push-Location $repoRoot
 try {
     & mvn.cmd -B -ntp -pl renderweave-app -am `
-        '-Dtest=cn.hbads.renderweave.template.internal.DesignInputExpressionCapacityConformanceTest,cn.hbads.renderweave.template.internal.DesignDslCapacityReservationTest,cn.hbads.renderweave.template.internal.DesignDslSemanticCapacityReservationTest,cn.hbads.renderweave.template.internal.ExpressionDefinitionCapacityReservationTest,cn.hbads.renderweave.template.internal.TemplateProblemCapacityReservationTest,cn.hbads.renderweave.rendering.internal.RenderInputCapacityReservationTest,cn.hbads.renderweave.app.rendering.RenderingControllerCapacityReservationTest,cn.hbads.renderweave.app.rendering.RenderingApplicationConfigurationTest,cn.hbads.renderweave.app.template.TemplateApplicationConfigurationTest' `
+        '-Dtest=cn.hbads.renderweave.template.internal.DesignInputExpressionCapacityConformanceTest,cn.hbads.renderweave.template.internal.DesignDslCapacityReservationTest,cn.hbads.renderweave.template.internal.DesignDslSemanticCapacityReservationTest,cn.hbads.renderweave.template.internal.ExpressionDefinitionCapacityReservationTest,cn.hbads.renderweave.template.internal.TemplateProblemCapacityReservationTest,cn.hbads.renderweave.rendering.internal.ExpressionEngineTest,cn.hbads.renderweave.rendering.internal.RenderInputCapacityReservationTest,cn.hbads.renderweave.app.rendering.RenderingControllerCapacityReservationTest,cn.hbads.renderweave.app.rendering.RenderingApplicationConfigurationTest,cn.hbads.renderweave.app.template.TemplateApplicationConfigurationTest' `
         '-Dsurefire.failIfNoSpecifiedTests=false' `
         "-Drenderweave.designInputExpression.target=$target" `
         "-Drenderweave.designInputExpression.primaryReport=$primaryReport" `
@@ -105,14 +105,14 @@ try {
             -or $result.caseCount -ne 195 `
             -or $result.passed -ne 195 `
             -or $result.failed -ne 0 `
-            -or $result.boundary.wiredProductAxisCount -ne 46 `
-            -or $result.boundary.remainingProductAxisCount -ne 19 `
+            -or $result.boundary.wiredProductAxisCount -ne 48 `
+            -or $result.boundary.remainingProductAxisCount -ne 17 `
             -or $result.boundary.preissuanceReady `
             -or $result.boundary.recordIssuanceAllowed `
             -or $result.boundary.executionClassExecutable) {
         throw 'Design/Input/Expression independent report boundary drifted.'
     }
-    Write-Host 'DESIGN_INPUT_EXPRESSION component gate: 195/195 scalar PASS, 46/65 wired'
+    Write-Host 'DESIGN_INPUT_EXPRESSION component gate: 195/195 scalar PASS, 48/65 wired'
 }
 finally {
     Pop-Location
