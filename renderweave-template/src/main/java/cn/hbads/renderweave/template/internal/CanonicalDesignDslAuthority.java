@@ -47,6 +47,7 @@ final class CanonicalDesignDslAuthority implements DesignDslAuthority {
 
     private final StrictJsonParser parser;
     private final CanonicalJsonWriter writer;
+    private final DesignInputExpressionCapacityAuthority capacity;
 
     CanonicalDesignDslAuthority() {
         this(CanonicalDesignInputExpressionCapacityAuthority.INSTANCE);
@@ -54,6 +55,7 @@ final class CanonicalDesignDslAuthority implements DesignDslAuthority {
 
     CanonicalDesignDslAuthority(DesignInputExpressionCapacityAuthority capacity) {
         var requiredCapacity = Objects.requireNonNull(capacity, "capacity");
+        this.capacity = requiredCapacity;
         this.parser = new StrictJsonParser(requiredCapacity);
         this.writer = new CanonicalJsonWriter(requiredCapacity);
     }
@@ -81,6 +83,14 @@ final class CanonicalDesignDslAuthority implements DesignDslAuthority {
         rejectNull(parsed, "");
         var root = object(parsed, "");
         rejectUnknown(root, ROOT_MEMBERS, "");
+        exactVersion(root, "dslVersion", "renderweave-design/1.0", "/dslVersion");
+        exactVersion(
+                root,
+                "expressionProfile",
+                "renderweave-expression/1.0",
+                "/expressionProfile"
+        );
+        new DesignSemanticCapacityPreflight(capacity).verify(root);
         // Best-effort pre-pass: collect authored Repeat loopIds so Definition loop
         // domains / loopIndex sources can resolve before tree validation runs.
         var loopIds = new java.util.HashSet<String>();
@@ -94,13 +104,6 @@ final class CanonicalDesignDslAuthority implements DesignDslAuthority {
         var seenBindingIds = new java.util.HashSet<String>();
         // useId namespace is Template-wide across all templateUse nodes.
         var seenUseIds = new java.util.HashSet<String>();
-        exactVersion(root, "dslVersion", "renderweave-design/1.0", "/dslVersion");
-        exactVersion(
-                root,
-                "expressionProfile",
-                "renderweave-expression/1.0",
-                "/expressionProfile"
-        );
         var displayName = metadata(root, "displayName", 128, false, "/displayName");
         var definitions = array(required(root, "definitions", "/definitions"), "/definitions");
         var definitionsResult = validateDefinitions(definitions, loopIds);

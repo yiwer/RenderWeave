@@ -7,7 +7,7 @@ type Decimal = { unscaled: bigint; scale: number };
 
 const EXECUTION_CLASS = "EXEC::DESIGN_INPUT_EXPRESSION::1.0";
 const TARGET_VERSION = "renderweave-design-input-expression-capacity-component-target/1.0";
-const TARGET_ID = "DESIGN_INPUT_EXPRESSION_TARGET::CAPACITY_AUTHORITY_PARTIAL_WIRING::1.0";
+const TARGET_ID = "DESIGN_INPUT_EXPRESSION_TARGET::CAPACITY_AUTHORITY_PARTIAL_WIRING::2.0";
 const REPORT_VERSION = "renderweave-design-input-expression-capacity-independent/1";
 const INTEGER = /^-?(?:0|[1-9][0-9]*)$/;
 const DECIMAL = /^-?(?:0|[1-9][0-9]*)(?:\.[0-9]+)?$/;
@@ -169,8 +169,8 @@ function main(): void {
     "renderweave-design-input-expression-capacity-guard/1.0", "guard contract");
   requireEqual(target.scalarReplay.axisCount, 65, "target scalar axis count");
   requireEqual(target.scalarReplay.caseCount, 195, "target scalar case count");
-  requireEqual(target.productWiring.wiredAxisCount, 9, "wired product axes");
-  requireEqual(target.productWiring.remainingAxisCount, 56, "remaining product axes");
+  requireEqual(target.productWiring.wiredAxisCount, 24, "wired product axes");
+  requireEqual(target.productWiring.remainingAxisCount, 41, "remaining product axes");
   requireEqual(target.boundary.preissuanceReady, false, "target preissuance boundary");
   requireEqual(target.boundary.recordIssuanceAllowed, false, "target issuance boundary");
   requireEqual(target.boundary.executionClassExecutable, false, "target executable boundary");
@@ -196,8 +196,8 @@ function main(): void {
   requireEqual(primary.caseCount, 195, "primary case count");
   requireEqual(primary.passed, 195, "primary passed count");
   requireEqual(primary.failed, 0, "primary failure count");
-  requireEqual(primary.boundary.wiredProductAxisCount, 9, "primary wired axes");
-  requireEqual(primary.boundary.remainingProductAxisCount, 56, "primary remaining axes");
+  requireEqual(primary.boundary.wiredProductAxisCount, 24, "primary wired axes");
+  requireEqual(primary.boundary.remainingProductAxisCount, 41, "primary remaining axes");
   requireEqual(primary.boundary.preissuanceReady, false, "primary preissuance boundary");
   requireEqual(primary.boundary.recordIssuanceAllowed, false, "primary issuance boundary");
   requireEqual(primary.boundary.executionClassExecutable, false, "primary executable boundary");
@@ -282,7 +282,7 @@ function main(): void {
     assurance: "A2_COMPONENT_SCALAR_REPLAY_PARTIAL_PRODUCT_WIRING",
     executionClass: EXECUTION_CLASS,
     targetManifest: {
-      path: ".scratch/renderweave-template-v1/design-input-expression/capacity-component-target-v1.json",
+      path: ".scratch/renderweave-template-v1/design-input-expression/capacity-component-target-v2.json",
       sha256: sha256(targetBytes),
       byteLength: targetBytes.length,
     },
@@ -297,8 +297,8 @@ function main(): void {
     observationDigest: sha256(Buffer.from(JSON.stringify(normalizedObservations), "utf8")),
     boundary: {
       scalarGuardOnly: true,
-      wiredProductAxisCount: 9,
-      remainingProductAxisCount: 56,
+      wiredProductAxisCount: 24,
+      remainingProductAxisCount: 41,
       productReservationProofComplete: false,
       preissuanceReady: false,
       formalRecordsIssued: 0,
@@ -308,7 +308,7 @@ function main(): void {
   };
   writeFileSync(reportPath, `${JSON.stringify(report, null, 2)}\n`, { flag: "wx" });
   process.stdout.write(
-    `DESIGN_INPUT_EXPRESSION independent replay: ${observedCases.size}/195 PASS, 9/65 wired\n`,
+    `DESIGN_INPUT_EXPRESSION independent replay: ${observedCases.size}/195 PASS, 24/65 wired\n`,
   );
 }
 

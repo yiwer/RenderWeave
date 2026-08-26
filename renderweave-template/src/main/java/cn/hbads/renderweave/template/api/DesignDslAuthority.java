@@ -69,7 +69,22 @@ public interface DesignDslAuthority {
         TOTAL_VALUES_AND_CONTAINERS("designDslParser.totalValuesAndContainers"),
         STRING_UTF8_BYTES("designDslParser.stringUtf8Bytes"),
         MEMBER_NAME_UTF8_BYTES("designDslParser.memberNameUtf8Bytes"),
-        NUMBER_TOKEN_BYTES("designDslParser.numberTokenBytes");
+        NUMBER_TOKEN_BYTES("designDslParser.numberTokenBytes"),
+        SEMANTIC_AUTHORED_NODES("designDslSemantics.authoredNodes"),
+        SEMANTIC_AUTHORED_TREE_DEPTH("designDslSemantics.authoredTreeDepth"),
+        SEMANTIC_CHILDREN_PER_CONTAINER("designDslSemantics.childrenPerContainer"),
+        SEMANTIC_DEFINITIONS("designDslSemantics.definitions"),
+        SEMANTIC_BINDINGS_TOTAL("designDslSemantics.bindingsTotal"),
+        SEMANTIC_BINDINGS_PER_NODE("designDslSemantics.bindingsPerNode"),
+        SEMANTIC_RUNS_PER_TEXT_NODE("designDslSemantics.runsPerTextNode"),
+        SEMANTIC_RUNS_TOTAL("designDslSemantics.runsTotal"),
+        SEMANTIC_GRID_TRACKS_PER_AXIS("designDslSemantics.gridTracksPerAxis"),
+        SEMANTIC_VECTOR_ENTRIES_PER_NODE("designDslSemantics.vectorEntriesPerNode"),
+        SEMANTIC_VECTOR_ENTRIES_TOTAL("designDslSemantics.vectorEntriesTotal"),
+        SEMANTIC_FILLS_PER_TEMPLATE_USE("designDslSemantics.fillsPerTemplateUse"),
+        SEMANTIC_LITERAL_LIST_ITEMS_PER_LIST("designDslSemantics.literalListItemsPerList"),
+        SEMANTIC_LITERAL_LIST_ITEMS_TOTAL("designDslSemantics.literalListItemsTotal"),
+        SEMANTIC_AUTHORED_RUN_TEXT_SCALARS("designDslSemantics.authoredRunTextScalars");
 
         private final String id;
 

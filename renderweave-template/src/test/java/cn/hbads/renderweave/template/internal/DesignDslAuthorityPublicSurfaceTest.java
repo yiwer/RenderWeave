@@ -117,7 +117,22 @@ class DesignDslAuthorityPublicSurfaceTest {
                         "designDslParser.totalValuesAndContainers",
                         "designDslParser.stringUtf8Bytes",
                         "designDslParser.memberNameUtf8Bytes",
-                        "designDslParser.numberTokenBytes"
+                        "designDslParser.numberTokenBytes",
+                        "designDslSemantics.authoredNodes",
+                        "designDslSemantics.authoredTreeDepth",
+                        "designDslSemantics.childrenPerContainer",
+                        "designDslSemantics.definitions",
+                        "designDslSemantics.bindingsTotal",
+                        "designDslSemantics.bindingsPerNode",
+                        "designDslSemantics.runsPerTextNode",
+                        "designDslSemantics.runsTotal",
+                        "designDslSemantics.gridTracksPerAxis",
+                        "designDslSemantics.vectorEntriesPerNode",
+                        "designDslSemantics.vectorEntriesTotal",
+                        "designDslSemantics.fillsPerTemplateUse",
+                        "designDslSemantics.literalListItemsPerList",
+                        "designDslSemantics.literalListItemsTotal",
+                        "designDslSemantics.authoredRunTextScalars"
                 },
                 Arrays.stream(DesignDslAuthority.Limit.values())
                         .map(DesignDslAuthority.Limit::id)
