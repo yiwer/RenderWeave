@@ -33,19 +33,49 @@ final class ExpressionParser {
 
     private final String source;
     private final AstNodeReservation astNodes;
+    private final AdmittedDecimalReservation admittedDecimals;
+    private final ExplicitRoundingScaleReservation explicitRoundingScales;
     private int position;
     private long nodeCount;
     private ParseFailure failure;
 
-    private ExpressionParser(String source, AstNodeReservation astNodes) {
+    private ExpressionParser(
+            String source,
+            AstNodeReservation astNodes,
+            AdmittedDecimalReservation admittedDecimals,
+            ExplicitRoundingScaleReservation explicitRoundingScales
+    ) {
         this.source = source;
         this.astNodes = astNodes;
+        this.admittedDecimals = admittedDecimals;
+        this.explicitRoundingScales = explicitRoundingScales;
     }
 
     static ParseResult parse(byte[] sourceUtf8, AstNodeReservation astNodes)
             throws DesignDslFailureException {
+        return parse(
+                sourceUtf8,
+                astNodes,
+                ignored -> {
+                    // Canonical semantic interpretation only reparses bytes already admitted.
+                },
+                ignored -> {
+                    // Canonical semantic interpretation only reparses bytes already admitted.
+                }
+        );
+    }
+
+    static ParseResult parse(
+            byte[] sourceUtf8,
+            AstNodeReservation astNodes,
+            AdmittedDecimalReservation admittedDecimals,
+            ExplicitRoundingScaleReservation explicitRoundingScales
+    ) throws DesignDslFailureException {
         var parser = new ExpressionParser(
-                new String(sourceUtf8, StandardCharsets.UTF_8), astNodes);
+                new String(sourceUtf8, StandardCharsets.UTF_8),
+                astNodes,
+                admittedDecimals,
+                explicitRoundingScales);
         try {
             var expression = parser.parseExpression();
             if (parser.failure != null) {
@@ -88,6 +118,11 @@ final class ExpressionParser {
     }
 
     private ExpressionAst decimalLiteral(BigDecimal value) {
+        try {
+            admittedDecimals.reserve(value);
+        } catch (DesignDslFailureException rejected) {
+            throw new AstReservationRejected(rejected);
+        }
         reserveNode();
         return new ExpressionAst.DecimalLiteral(value);
     }
@@ -123,13 +158,58 @@ final class ExpressionParser {
             ExpressionAst.Function function,
             List<ExpressionAst> arguments
     ) {
+        reserveExplicitRoundingScales(function, arguments);
         reserveNode();
         return new ExpressionAst.Call(function, arguments);
+    }
+
+    private void reserveExplicitRoundingScales(
+            ExpressionAst.Function function,
+            List<ExpressionAst> arguments
+    ) {
+        switch (function) {
+            case DIVIDE -> reserveExplicitRoundingScale(arguments, 2);
+            case ROUND -> reserveExplicitRoundingScale(arguments, 1);
+            case FORMAT_DECIMAL -> {
+                reserveExplicitRoundingScale(arguments, 1);
+                reserveExplicitRoundingScale(arguments, 2);
+            }
+            default -> {
+                // This function has no authored rounding scale.
+            }
+        }
+    }
+
+    private void reserveExplicitRoundingScale(List<ExpressionAst> arguments, int index) {
+        if (index >= arguments.size()
+                || !(arguments.get(index) instanceof ExpressionAst.DecimalLiteral literal)) {
+            return;
+        }
+        var normalized = literal.value().signum() == 0
+                ? BigDecimal.ZERO : literal.value().stripTrailingZeros();
+        if (normalized.signum() < 0 || normalized.scale() > 0) {
+            return;
+        }
+        try {
+            explicitRoundingScales.reserve(normalized);
+        } catch (DesignDslFailureException rejected) {
+            throw new AstReservationRejected(rejected);
+        }
     }
 
     @FunctionalInterface
     interface AstNodeReservation {
         void reserve(long perExpressionCandidate) throws DesignDslFailureException;
+    }
+
+    @FunctionalInterface
+    interface AdmittedDecimalReservation {
+        void reserve(BigDecimal value) throws DesignDslFailureException;
+    }
+
+    @FunctionalInterface
+    interface ExplicitRoundingScaleReservation {
+        void reserve(BigDecimal value) throws DesignDslFailureException;
     }
 
     private static final class AstReservationRejected extends RuntimeException {

@@ -1,5 +1,7 @@
 package cn.hbads.renderweave.rendering.internal;
 
+import cn.hbads.renderweave.template.api.DesignDslAuthority;
+import cn.hbads.renderweave.template.api.DesignInputExpressionCapacityAuthority;
 import cn.hbads.renderweave.template.api.DesignSemanticAuthority.ExpressionAst;
 
 import java.math.BigDecimal;
@@ -12,12 +14,9 @@ import java.util.Objects;
  * renderweave-expression/1.0 求值：普通参数从左到右；{@code && || if coalesce} 惰性；
  * Expression input 惰性并在单次 Expression evaluation 内 memoize；未选择分支不求值。
  * ABSENT 只有 {@code exists/coalesce/if} 处理，其余 demand 产生 ERROR；ERROR first-fail 传播。
- * decimal 任意精度 exact；中间值受 expression 预算组约束（256 位精度、±128 scale）。
+ * decimal 任意精度 exact；中间值与可观察结果均由注入的 expression 容量 authority 约束。
  */
 final class ExpressionEvaluator {
-
-    static final int MAX_INTERMEDIATE_PRECISION_DIGITS = 256;
-    static final int MAX_INTERMEDIATE_SCALE = 128;
 
     sealed interface EvalOutcome permits EvalValue, EvalAbsent, EvalError {
     }
@@ -61,16 +60,27 @@ final class ExpressionEvaluator {
     }
 
     private final InputSupplier inputs;
+    private final DesignInputExpressionCapacityAuthority capacity;
     private final Map<String, EvalOutcome> memo = new HashMap<>();
 
-    private ExpressionEvaluator(InputSupplier inputs) {
+    private ExpressionEvaluator(
+            InputSupplier inputs,
+            DesignInputExpressionCapacityAuthority capacity
+    ) {
         this.inputs = inputs;
+        this.capacity = capacity;
     }
 
-    static EvalOutcome evaluate(ExpressionAst ast, InputSupplier inputs) {
+    static EvalOutcome evaluate(
+            ExpressionAst ast,
+            InputSupplier inputs,
+            DesignInputExpressionCapacityAuthority capacity
+    ) {
         Objects.requireNonNull(ast, "ast");
         Objects.requireNonNull(inputs, "inputs");
-        return new ExpressionEvaluator(inputs).eval(ast);
+        Objects.requireNonNull(capacity, "capacity");
+        var evaluator = new ExpressionEvaluator(inputs, capacity);
+        return evaluator.checkedObservableDecimal(evaluator.eval(ast));
     }
 
     private EvalOutcome eval(ExpressionAst node) {
@@ -114,7 +124,7 @@ final class ExpressionEvaluator {
             return typeFault();
         }
         if (value instanceof DesignValue.Decimal decimal) {
-            return checkedDecimal(decimal.value().negate());
+            return checkedIntermediateDecimal(decimal.value().negate());
         }
         return typeFault();
     }
@@ -228,12 +238,11 @@ final class ExpressionEvaluator {
                 }
                 var value = ((EvalValue) outcome).value();
                 if (value instanceof DesignValue.Text text) {
-                    yield new EvalValue(new DesignValue.Decimal(BigDecimal.valueOf(
-                            text.value().codePointCount(0, text.value().length()))));
+                    yield checkedIntermediateDecimal(BigDecimal.valueOf(
+                            text.value().codePointCount(0, text.value().length())));
                 }
                 if (value instanceof DesignValue.ListValue list) {
-                    yield new EvalValue(new DesignValue.Decimal(
-                            BigDecimal.valueOf(list.items().size())));
+                    yield checkedIntermediateDecimal(BigDecimal.valueOf(list.items().size()));
                 }
                 yield typeFault();
             }
@@ -260,7 +269,7 @@ final class ExpressionEvaluator {
         }
         int scale = literalInt(call.arguments().get(2));
         var mode = roundingMode(call.arguments().get(3));
-        return checkedDecimal(((EvalValue) numerator).valueDecimal()
+        return checkedIntermediateDecimal(((EvalValue) numerator).valueDecimal()
                 .divide(divisor, scale, mode));
     }
 
@@ -271,7 +280,8 @@ final class ExpressionEvaluator {
         }
         int scale = literalInt(call.arguments().get(1));
         var mode = roundingMode(call.arguments().get(2));
-        return checkedDecimal(((EvalValue) operand).valueDecimal().setScale(scale, mode));
+        return checkedIntermediateDecimal(
+                ((EvalValue) operand).valueDecimal().setScale(scale, mode));
     }
 
     private EvalOutcome formatDecimal(ExpressionAst.Call call) {
@@ -283,6 +293,10 @@ final class ExpressionEvaluator {
         int max = literalInt(call.arguments().get(2));
         var mode = roundingMode(call.arguments().get(3));
         var rounded = ((EvalValue) operand).valueDecimal().setScale(max, mode);
+        var checked = checkedIntermediateDecimal(rounded);
+        if (checked instanceof EvalError) {
+            return checked;
+        }
         var plain = rounded.toPlainString();
         int dot = plain.indexOf('.');
         if (dot < 0) {
@@ -393,25 +407,69 @@ final class ExpressionEvaluator {
             case '-' -> a.value().subtract(b.value());
             default -> a.value().multiply(b.value());
         };
-        return checkedDecimal(result);
+        return checkedIntermediateDecimal(result);
     }
 
     private static EvalOutcome comparisonResult(boolean flag) {
         return new EvalValue(new DesignValue.Bool(flag));
     }
 
-    private static EvalOutcome checkedDecimal(BigDecimal result) {
-        if (result.precision() > MAX_INTERMEDIATE_PRECISION_DIGITS) {
-            return new EvalError(new RuntimeFailure(
-                    RuntimeFailureKind.DECIMAL_LIMIT_EXCEEDED,
-                    "expression.intermediateDecimalPrecisionDigits"));
+    private EvalOutcome checkedIntermediateDecimal(BigDecimal result) {
+        var failure = reserveDecimal(
+                result,
+                DesignDslAuthority.Limit.EXPRESSION_INTERMEDIATE_DECIMAL_PRECISION_DIGITS,
+                DesignDslAuthority.Limit.EXPRESSION_INTERMEDIATE_DECIMAL_SCALE_MIN,
+                DesignDslAuthority.Limit.EXPRESSION_INTERMEDIATE_DECIMAL_SCALE_MAX);
+        return failure == null ? new EvalValue(new DesignValue.Decimal(result)) : failure;
+    }
+
+    private EvalOutcome checkedObservableDecimal(EvalOutcome outcome) {
+        if (!(outcome instanceof EvalValue value)
+                || !(value.value() instanceof DesignValue.Decimal decimal)) {
+            return outcome;
         }
-        if (result.scale() > MAX_INTERMEDIATE_SCALE || result.scale() < -MAX_INTERMEDIATE_SCALE) {
-            return new EvalError(new RuntimeFailure(
-                    RuntimeFailureKind.DECIMAL_LIMIT_EXCEEDED,
-                    "expression.intermediateDecimalScaleMax"));
+        var failure = reserveDecimal(
+                decimal.value(),
+                DesignDslAuthority.Limit.EXPRESSION_ADMITTED_DECIMAL_PRECISION_DIGITS,
+                DesignDslAuthority.Limit.EXPRESSION_ADMITTED_DECIMAL_SCALE_MIN,
+                DesignDslAuthority.Limit.EXPRESSION_ADMITTED_DECIMAL_SCALE_MAX);
+        return failure == null ? outcome : failure;
+    }
+
+    private EvalError reserveDecimal(
+            BigDecimal value,
+            DesignDslAuthority.Limit precisionLimit,
+            DesignDslAuthority.Limit scaleMinLimit,
+            DesignDslAuthority.Limit scaleMaxLimit
+    ) {
+        var normalized = value.signum() == 0 ? BigDecimal.ZERO : value.stripTrailingZeros();
+        var failure = reserve(precisionLimit, Integer.toString(normalized.precision()));
+        if (failure != null) {
+            return failure;
         }
-        return new EvalValue(new DesignValue.Decimal(result));
+        failure = reserve(scaleMinLimit, Integer.toString(normalized.scale()));
+        if (failure != null) {
+            return failure;
+        }
+        return reserve(scaleMaxLimit, Integer.toString(normalized.scale()));
+    }
+
+    private EvalError reserve(DesignDslAuthority.Limit limit, String observedValue) {
+        DesignInputExpressionCapacityAuthority.Decision decision;
+        try {
+            decision = capacity.evaluate(
+                    new DesignInputExpressionCapacityAuthority.Observation(
+                            limit.id(), observedValue));
+        } catch (RuntimeException unavailable) {
+            return decimalLimitExceeded(limit);
+        }
+        return decision instanceof DesignInputExpressionCapacityAuthority.Accepted
+                ? null : decimalLimitExceeded(limit);
+    }
+
+    private static EvalError decimalLimitExceeded(DesignDslAuthority.Limit limit) {
+        return new EvalError(new RuntimeFailure(
+                RuntimeFailureKind.DECIMAL_LIMIT_EXCEEDED, limit.id()));
     }
 
     private static EvalOutcome absentDemanded() {

@@ -2,7 +2,6 @@ package cn.hbads.renderweave.rendering.internal;
 
 import cn.hbads.renderweave.template.api.DesignSemanticAuthority.ExpressionAst;
 
-import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -326,10 +325,6 @@ final class ExpressionAnalyzer {
             failures.add(new StaticFailure(
                     StaticFailureKind.COMPILE_TIME_LITERAL_REQUIRED, name));
             return;
-        }
-        if (literal.value().compareTo(BigDecimal.valueOf(64)) > 0) {
-            failures.add(new StaticFailure(
-                    StaticFailureKind.COMPILE_TIME_LITERAL_REQUIRED, name + ".scale"));
         }
     }
 

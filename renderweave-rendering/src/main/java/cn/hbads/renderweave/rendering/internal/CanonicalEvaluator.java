@@ -128,6 +128,7 @@ final class CanonicalEvaluator implements Evaluator {
                 closure,
                 semantics,
                 dslAuthority,
+                capacityAuthority,
                 assets,
                 runtime.provider(),
                 admitted.input(),

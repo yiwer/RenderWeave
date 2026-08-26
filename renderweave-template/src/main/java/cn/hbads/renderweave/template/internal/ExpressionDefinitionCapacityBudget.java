@@ -3,6 +3,7 @@ package cn.hbads.renderweave.template.internal;
 import cn.hbads.renderweave.template.api.DesignDslAuthority;
 import cn.hbads.renderweave.template.api.DesignInputExpressionCapacityAuthority;
 
+import java.math.BigDecimal;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -86,6 +87,24 @@ final class ExpressionDefinitionCapacityBudget {
         reserve(DesignDslAuthority.Limit.EXPRESSION_DEFINITION_CHAIN_DEPTH, depth, pointer);
     }
 
+    void reserveAdmittedDecimal(BigDecimal value, String pointer)
+            throws DesignDslFailureException {
+        var normalized = value.signum() == 0 ? BigDecimal.ZERO : value.stripTrailingZeros();
+        reserve(DesignDslAuthority.Limit.EXPRESSION_ADMITTED_DECIMAL_PRECISION_DIGITS,
+                normalized.precision(), pointer);
+        reserve(DesignDslAuthority.Limit.EXPRESSION_ADMITTED_DECIMAL_SCALE_MIN,
+                normalized.scale(), pointer);
+        reserve(DesignDslAuthority.Limit.EXPRESSION_ADMITTED_DECIMAL_SCALE_MAX,
+                normalized.scale(), pointer);
+    }
+
+    void reserveExplicitRoundingScale(BigDecimal value, String pointer)
+            throws DesignDslFailureException {
+        var normalized = value.signum() == 0 ? BigDecimal.ZERO : value.stripTrailingZeros();
+        reserve(DesignDslAuthority.Limit.EXPRESSION_EXPLICIT_ROUNDING_SCALE_MAX,
+                normalized.toPlainString(), pointer);
+    }
+
     private long add(
             long current,
             long increment,
@@ -105,10 +124,18 @@ final class ExpressionDefinitionCapacityBudget {
             long observedValue,
             String pointer
     ) throws DesignDslFailureException {
+        reserve(limit, Long.toString(observedValue), pointer);
+    }
+
+    private void reserve(
+            DesignDslAuthority.Limit limit,
+            String observedValue,
+            String pointer
+    ) throws DesignDslFailureException {
         DesignInputExpressionCapacityAuthority.Decision decision;
         try {
             decision = capacity.evaluate(new DesignInputExpressionCapacityAuthority.Observation(
-                    limit.id(), Long.toString(observedValue)));
+                    limit.id(), observedValue));
         } catch (RuntimeException unavailable) {
             reject(limit, pointer);
             throw new IllegalStateException("unreachable expression capacity rejection");

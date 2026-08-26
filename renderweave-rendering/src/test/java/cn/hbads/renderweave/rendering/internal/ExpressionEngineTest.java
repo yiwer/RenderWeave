@@ -293,7 +293,7 @@ class ExpressionEngineTest {
         var outcome = ExpressionEvaluator.evaluate(ast, alias -> {
             calls.incrementAndGet();
             return new ExpressionEvaluator.EvalValue(new DesignValue.Decimal(BigDecimal.TWO));
-        });
+        }, TemplateModule.designInputExpressionCapacityAuthority());
         assertEquals(0, new BigDecimal("4").compareTo(decimal(outcome)));
         assertEquals(1, calls.get());
     }
@@ -371,7 +371,7 @@ class ExpressionEngineTest {
             var value = supplied.get(alias);
             assertTrue(value != null, "supplier must cover alias " + alias);
             return value;
-        });
+        }, TemplateModule.designInputExpressionCapacityAuthority());
     }
 
     private static DesignValue value(ExpressionEvaluator.EvalOutcome outcome) {

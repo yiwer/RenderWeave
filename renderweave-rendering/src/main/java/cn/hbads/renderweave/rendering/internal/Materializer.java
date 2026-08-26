@@ -11,6 +11,7 @@ import cn.hbads.renderweave.rendering.internal.ExpressionEvaluator.EvalOutcome;
 import cn.hbads.renderweave.rendering.internal.ExpressionEvaluator.EvalValue;
 import cn.hbads.renderweave.rendering.spi.AssetResolutionPort;
 import cn.hbads.renderweave.template.api.DesignDslAuthority;
+import cn.hbads.renderweave.template.api.DesignInputExpressionCapacityAuthority;
 import cn.hbads.renderweave.template.api.DesignSemanticAuthority;
 import cn.hbads.renderweave.template.api.DesignSemanticAuthority.ArrayNode;
 import cn.hbads.renderweave.template.api.DesignSemanticAuthority.Bool;
@@ -95,6 +96,7 @@ final class Materializer {
     private final ClosureSnapshot closure;
     private final DesignSemanticAuthority semantics;
     private final DesignDslAuthority dslAuthority;
+    private final DesignInputExpressionCapacityAuthority capacityAuthority;
     private final AssetResolutionPort assets;
     private final DefinitionEngine.CapabilityProvider capabilities;
     private final RenderRequestId renderRequestId;
@@ -117,6 +119,7 @@ final class Materializer {
             ClosureSnapshot closure,
             DesignSemanticAuthority semantics,
             DesignDslAuthority dslAuthority,
+            DesignInputExpressionCapacityAuthority capacityAuthority,
             AssetResolutionPort assets,
             DefinitionEngine.CapabilityProvider capabilities,
             RenderRequestId renderRequestId,
@@ -127,6 +130,7 @@ final class Materializer {
         this.closure = closure;
         this.semantics = semantics;
         this.dslAuthority = dslAuthority;
+        this.capacityAuthority = Objects.requireNonNull(capacityAuthority, "capacityAuthority");
         this.assets = assets;
         this.capabilities = capabilities;
         this.renderRequestId = renderRequestId;
@@ -139,6 +143,7 @@ final class Materializer {
             ClosureSnapshot closure,
             DesignSemanticAuthority semantics,
             DesignDslAuthority dslAuthority,
+            DesignInputExpressionCapacityAuthority capacityAuthority,
             AssetResolutionPort assets,
             DefinitionEngine.CapabilityProvider capabilities,
             AdmittedRenderInput admittedInput,
@@ -148,7 +153,7 @@ final class Materializer {
     ) {
         Objects.requireNonNull(closure, "closure");
         var materializer = new Materializer(
-                closure, semantics, dslAuthority, assets, capabilities,
+                closure, semantics, dslAuthority, capacityAuthority, assets, capabilities,
                 renderRequestId, audience, deadlineEpochMilli,
                 closure.ownerScope().value());
 
@@ -1147,10 +1152,11 @@ final class Materializer {
             if (interpreted == null
                     || !(interpreted.document().members().get("definitions")
                     instanceof ArrayNode definitions)) {
-                return new DefinitionEngine(List.of(), Map.of());
+                return new DefinitionEngine(List.of(), Map.of(), capacityAuthority);
             }
             return new DefinitionEngine(
-                    definitions.items(), interpreted.expressionsByDefinitionId());
+                    definitions.items(), interpreted.expressionsByDefinitionId(),
+                    capacityAuthority);
         });
     }
 

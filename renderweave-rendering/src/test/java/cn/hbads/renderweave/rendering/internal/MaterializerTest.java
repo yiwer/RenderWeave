@@ -13,12 +13,14 @@ import cn.hbads.renderweave.schema.definition.StaticSchemaRef;
 import cn.hbads.renderweave.schema.identity.SchemaKey;
 import cn.hbads.renderweave.schema.identity.VersionTag;
 import cn.hbads.renderweave.template.api.DesignDslAuthority;
+import cn.hbads.renderweave.template.api.DesignInputExpressionCapacityAuthority;
 import cn.hbads.renderweave.template.internal.TemplateModule;
 import cn.hbads.renderweave.template.api.TemplateClosureAuthority.ClosureSnapshot;
 import cn.hbads.renderweave.template.api.TemplateClosureAuthority.TemplateSnapshot;
 import org.junit.jupiter.api.Test;
 
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -177,6 +179,7 @@ class MaterializerTest {
                 closure,
                 TemplateModule.designSemanticAuthority(),
                 DESIGNS,
+                TemplateModule.designInputExpressionCapacityAuthority(),
                 null,
                 absentCapability(),
                 admitted(Map.of()),
@@ -227,6 +230,25 @@ class MaterializerTest {
                 new ScriptedAssetPort(true));
         var failed = assertInstanceOf(Materializer.MaterializationFailed.class, outcome);
         assertEquals(EvaluationStage.MATERIALIZATION, failed.stage());
+    }
+
+    @Test
+    void injectedCapacityAuthorityReachesExpressionEvaluation() {
+        var authority = new RecordingCapacityAuthority();
+
+        var outcome = materialize(
+                decimalExpressionBindingDocument(),
+                Map.of(),
+                new ScriptedAssetPort(true),
+                authority);
+
+        assertInstanceOf(Materializer.Materialized.class, outcome);
+        assertTrue(authority.observations.stream().anyMatch(observation ->
+                "expression.intermediateDecimalPrecisionDigits"
+                        .equals(observation.limitId())));
+        assertTrue(authority.observations.stream().anyMatch(observation ->
+                "expression.admittedDecimalPrecisionDigits"
+                        .equals(observation.limitId())));
     }
 
     // ------------------------------------------------------------------
@@ -341,6 +363,25 @@ class MaterializerTest {
                 + "\"letterSpacingPt\":0}]}]}}";
     }
 
+    private static String decimalExpressionBindingDocument() {
+        return "{\"dslVersion\":\"renderweave-design/1.0\","
+                + "\"expressionProfile\":\"renderweave-expression/1.0\","
+                + "\"displayName\":\"R\",\"definitions\":["
+                + "{\"definitionId\":\"" + DEFINITION_ID + "\",\"kind\":\"expression\","
+                + "\"displayName\":\"Opacity\",\"domain\":\"invocation\","
+                + "\"output\":\"decimal\",\"inputs\":[],\"source\":\"0.1 + 0.2\"}"
+                + "],\"designRoot\":{\"nodeId\":\"00000000-0000-4000-8000-000000000001\","
+                + "\"kind\":\"canvas\",\"widthMm\":210,\"heightMm\":297,\"bindings\":[],"
+                + "\"children\":[{\"nodeId\":\"00000000-0000-4000-8000-000000000072\","
+                + "\"kind\":\"rect\","
+                + "\"bindings\":[{\"bindingId\":\"00000000-0000-4000-8000-0000000000e2\","
+                + "\"targetPropertyRef\":{\"rootPropertyId\":\"opacity\",\"selectors\":[]},"
+                + "\"source\":{\"kind\":\"definition\",\"definitionId\":\""
+                + DEFINITION_ID + "\"}}],"
+                + "\"opacity\":1,\"placement\":" + absolute() + ","
+                + "\"fill\":{\"color\":\"#FF000000\"}}]}}";
+    }
+
     private static String conditional(boolean flag) {
         return "{\"nodeId\":\"00000000-0000-4000-8000-000000000081\",\"kind\":\"conditional\","
                 + "\"bindings\":[],\"condition\":{\"kind\":\"literal\","
@@ -411,6 +452,19 @@ class MaterializerTest {
 
     private static Materializer.MaterializationOutcome materialize(
             String document, Map<String, DesignValue> customs, AssetResolutionPort port) {
+        return materialize(
+                document,
+                customs,
+                port,
+                TemplateModule.designInputExpressionCapacityAuthority());
+    }
+
+    private static Materializer.MaterializationOutcome materialize(
+            String document,
+            Map<String, DesignValue> customs,
+            AssetResolutionPort port,
+            DesignInputExpressionCapacityAuthority capacityAuthority
+    ) {
         var snapshot = snapshot(ROOT_ID, canonical(document));
         var closure = new ClosureSnapshot(
                 new cn.hbads.renderweave.template.api.TemplateClosureAuthority.OwnerScope("owner-a"),
@@ -422,12 +476,24 @@ class MaterializerTest {
                 closure,
                 TemplateModule.designSemanticAuthority(),
                 DESIGNS,
+                capacityAuthority,
                 port,
                 absentCapability(),
                 admitted(customs),
                 new RenderRequestId("00000000-0000-4000-8000-000000000001"),
                 new AssetResolutionPort.RendererAudience("test-audience"),
                 1_000L);
+    }
+
+    private static final class RecordingCapacityAuthority
+            implements DesignInputExpressionCapacityAuthority {
+        private final List<Observation> observations = new ArrayList<>();
+
+        @Override
+        public Decision evaluate(Observation observation) {
+            observations.add(observation);
+            return TemplateModule.designInputExpressionCapacityAuthority().evaluate(observation);
+        }
     }
 
     private static void assertResolutionProblem(

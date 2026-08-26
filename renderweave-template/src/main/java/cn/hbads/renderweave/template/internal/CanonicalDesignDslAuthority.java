@@ -420,7 +420,10 @@ final class CanonicalDesignDslAuthority implements DesignDslAuthority {
         );
         var parsed = ExpressionParser.parse(
                 sourceUtf8,
-                candidate -> expressionCapacity.reserveAstNode(candidate, pointer + "/source")
+                candidate -> expressionCapacity.reserveAstNode(candidate, pointer + "/source"),
+                value -> expressionCapacity.reserveAdmittedDecimal(value, pointer + "/source"),
+                value -> expressionCapacity.reserveExplicitRoundingScale(
+                        value, pointer + "/source")
         );
         if (parsed instanceof ExpressionParser.ParseRejected) {
             throw failure(FailureCode.DESIGN_VALUE_INVALID, pointer + "/source");

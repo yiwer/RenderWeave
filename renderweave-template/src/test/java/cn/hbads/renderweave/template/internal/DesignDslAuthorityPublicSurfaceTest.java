@@ -142,7 +142,14 @@ class DesignDslAuthorityPublicSurfaceTest {
                         "expression.astNodesPerExpression",
                         "expression.astNodesTotal",
                         "expression.definitionGraphEdges",
-                        "expression.definitionChainDepth"
+                        "expression.definitionChainDepth",
+                        "expression.admittedDecimalPrecisionDigits",
+                        "expression.admittedDecimalScaleMin",
+                        "expression.admittedDecimalScaleMax",
+                        "expression.intermediateDecimalPrecisionDigits",
+                        "expression.intermediateDecimalScaleMin",
+                        "expression.intermediateDecimalScaleMax",
+                        "expression.explicitRoundingScaleMax"
                 },
                 Arrays.stream(DesignDslAuthority.Limit.values())
                         .map(DesignDslAuthority.Limit::id)

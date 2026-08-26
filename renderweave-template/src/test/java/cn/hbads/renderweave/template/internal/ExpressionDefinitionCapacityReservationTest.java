@@ -80,7 +80,7 @@ class ExpressionDefinitionCapacityReservationTest {
 
         var observedLimits = new LinkedHashSet<String>();
         for (var observation : recording.observations) {
-            if (observation.limitId().startsWith("expression.")) {
+            if (EXPRESSION_DEFINITION_LIMITS.contains(observation.limitId())) {
                 observedLimits.add(observation.limitId());
             }
         }

@@ -13,6 +13,7 @@ import cn.hbads.renderweave.template.api.DesignSemanticAuthority.NumberToken;
 import cn.hbads.renderweave.template.api.DesignSemanticAuthority.ObjectNode;
 import cn.hbads.renderweave.template.api.DesignSemanticAuthority.Text;
 import cn.hbads.renderweave.template.api.DesignSemanticAuthority.ExpressionAst;
+import cn.hbads.renderweave.template.api.DesignInputExpressionCapacityAuthority;
 
 import java.math.BigDecimal;
 import java.util.HashMap;
@@ -63,13 +64,16 @@ final class DefinitionEngine {
     private final Map<String, EvalOutcome> invocationMemo = new HashMap<>();
     private final Map<String, EvalOutcome> frameMemo = new HashMap<>();
     private final Map<String, ExpressionAst> parsedExpressions;
+    private final DesignInputExpressionCapacityAuthority capacityAuthority;
 
     DefinitionEngine(
             List<DesignNodeValue> definitionsWire,
-            Map<String, ExpressionAst> parsedExpressions
+            Map<String, ExpressionAst> parsedExpressions,
+            DesignInputExpressionCapacityAuthority capacityAuthority
     ) {
         this.definitionWires = new HashMap<>();
         this.parsedExpressions = Map.copyOf(parsedExpressions);
+        this.capacityAuthority = Objects.requireNonNull(capacityAuthority, "capacityAuthority");
         for (var wire : definitionsWire) {
             if (wire instanceof ObjectNode definition
                     && definition.members().get("definitionId") instanceof Text id
@@ -524,7 +528,7 @@ final class DefinitionEngine {
             var inputSource = inputWires.get(alias);
             return inputSource == null ? dependencyError()
                     : resolveSource(inputSource, scope, frameKey);
-        });
+        }, capacityAuthority);
     }
 
     private ExpressionAnalyzer.InputDeclaration declareInput(

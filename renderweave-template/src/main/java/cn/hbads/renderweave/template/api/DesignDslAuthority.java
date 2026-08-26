@@ -96,7 +96,18 @@ public interface DesignDslAuthority {
         EXPRESSION_AST_NODES_PER_EXPRESSION("expression.astNodesPerExpression"),
         EXPRESSION_AST_NODES_TOTAL("expression.astNodesTotal"),
         EXPRESSION_DEFINITION_GRAPH_EDGES("expression.definitionGraphEdges"),
-        EXPRESSION_DEFINITION_CHAIN_DEPTH("expression.definitionChainDepth");
+        EXPRESSION_DEFINITION_CHAIN_DEPTH("expression.definitionChainDepth"),
+        EXPRESSION_ADMITTED_DECIMAL_PRECISION_DIGITS(
+                "expression.admittedDecimalPrecisionDigits"),
+        EXPRESSION_ADMITTED_DECIMAL_SCALE_MIN("expression.admittedDecimalScaleMin"),
+        EXPRESSION_ADMITTED_DECIMAL_SCALE_MAX("expression.admittedDecimalScaleMax"),
+        EXPRESSION_INTERMEDIATE_DECIMAL_PRECISION_DIGITS(
+                "expression.intermediateDecimalPrecisionDigits"),
+        EXPRESSION_INTERMEDIATE_DECIMAL_SCALE_MIN(
+                "expression.intermediateDecimalScaleMin"),
+        EXPRESSION_INTERMEDIATE_DECIMAL_SCALE_MAX(
+                "expression.intermediateDecimalScaleMax"),
+        EXPRESSION_EXPLICIT_ROUNDING_SCALE_MAX("expression.explicitRoundingScaleMax");
 
         private final String id;
 
