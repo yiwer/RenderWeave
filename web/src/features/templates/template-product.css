@@ -8,6 +8,11 @@
   min-width: 0;
 }
 
+.template-list-toolbar .resource-search input::placeholder {
+  color: var(--color-body);
+  opacity: 1;
+}
+
 .template-card-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
