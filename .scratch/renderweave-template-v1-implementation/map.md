@@ -674,6 +674,11 @@ Label: wayfinder:map
   `d73f5650`；Asset 97/97、Java/Python 12/12、正式 `asset`/`fast`/顺序 `server`/发布级 `full` 均绿，formal
   Case/Oracle records 保持 0。标量目标不分配大 payload，也不证明完整 upload/PostgreSQL/Renderer；Profile、独立
   native build/rehearsal、provider/API Key/真实数据/生产、J1/A3/READY 均未推进。
+- [物化 Domain Services 类级事务执行目标与独立 replay](issues/128-domain-services-transactional-execution-class-replay.md) —
+  **in progress / claimed by Codex `/root`**；冻结 bootstrap 要求的第二角色不是 formal record writer，而是精确
+  PostgreSQL transaction replayer。本票把 T127 capacity component 与真实 `PostgresAssetPersistence` 原子提交/
+  幂等零写/duplicate-key 整事务回滚绑定为一个 preissuance class target；只在双角色与独立 closure 全绿后解锁
+  下一票 append，当前 formal Domain Case/Oracle 仍为 0。
 - [验证 Product Editor 状态、恢复与权威预览架构](issues/09-validate-product-editor-architecture.md) —
   throwaway 逻辑原型（`/prototype/editor-state-model`，不进产品 route）把冻结编辑器规则编码为确定性
   fixture 状态机：10 个引导走查场景 37/37 断言 + 自由操作冒烟 + 键盘焦点检查全部通过（Playwright A1，
@@ -815,7 +820,9 @@ Label: wayfinder:map
   失败撤下、Local recovery、import+三模式+dirty guard、a11y+问题定位投影）；各切片在自身前置满足后按
   single-writer 登记，Editor 产品 route 在 E1–E9 真实存在前不开放。Asset picker/catalog UI 随 Editor
   实施票同批。
-- 正式 Case/Oracle、execution-class product target、Profile 发行、Editor J1、Renderer 双物理 Linux CPU-family 认证与最终生命周期升级，必须以届时真实产品 artifact 和 executor 为输入另行切票；Ticket 19 保持 open。
+- T128 正在补齐第一个 capacity class 的 exact product target、两个 executor manifests 与 PostgreSQL 独立 replay；
+  正式 Case/Oracle append、其余 execution-class target、Profile 发行、Editor J1、Renderer 双物理 Linux CPU-family
+  认证与最终生命周期升级仍须以届时真实产品 artifact 和 executor 为输入另行切票；Ticket 19 保持 open。
 
 ## Out of scope
 
