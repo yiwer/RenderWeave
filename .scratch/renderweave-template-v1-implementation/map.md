@@ -857,7 +857,10 @@ Label: wayfinder:map
   authority、195/195 component replay 与首批九个产品 reservation point；T131 随后把 `designDslSemantics` 十五轴
   接入同一 authority 并冻结 v2 target；T132 完成 `renderInput` 九轴并冻结 v3；T133 完成 `problems` 五轴共享
   bounded collector 并冻结 v4；T134 又完成 Expression source/input/Mapping/Definition graph 八轴并冻结 v5。
-  当前只剩 Expression AST 2 + decimal 7 与 geometry 10，共 19 个产品轴。195 个
+  T135 已完成 Expression AST 两轴：Template-owned 同一 grammar parser 在 AST node allocation 前调用共享
+  capacity authority，Rendering 消费同一 immutable AST 派生值，重复 parser/AST 与硬编码阈值已删除；不可变 v6
+  target 与发布级 17-step replay 全绿，当前 wired 48/65、remaining 17。剩余 frontier 为 decimal 7 与 geometry 10，
+  下一张 single-writer 票应认领其中一个可独立验证的产品纵切。195 个
   capacity candidates 在全部真实接线、两个 required executor manifests 与独立产品 replay 完成前仍不得发行。其余
   execution-class target、Profile 发行、Editor J1、Renderer 双物理 Linux CPU-family
   认证与最终生命周期升级仍须以届时真实产品 artifact 和 executor 为输入另行切票；Ticket 19 保持 open。

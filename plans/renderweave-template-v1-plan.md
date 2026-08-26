@@ -1,10 +1,10 @@
 # RenderWeave Template v1 Implementation Plan
 
-- 当前 frontier（2026-08-26）：TV1-T01–T134 均已 `resolved`；冻结 DAG 的 ordinal 3
-  `EXEC::DESIGN_INPUT_EXPRESSION::1.0` 仍是唯一未阻塞 frontier。component target v5 已达 wired 46/65、
-  remaining 19；下一张 single-writer 票应从 Expression AST 2、decimal 7 或 geometry 10 中认领一个可独立验证的产品纵切。
+- 当前 frontier（2026-08-26）：TV1-T01–T135 均已 `resolved`；冻结 DAG 的 ordinal 3
+  `EXEC::DESIGN_INPUT_EXPRESSION::1.0` 仍是唯一未阻塞 frontier。component target v6 已达 wired 48/65、
+  remaining 17；下一张 single-writer 票应从 decimal 7 或 geometry 10 中认领一个可独立验证的产品纵切。
   两个 class required executor manifests、独立产品 replay 与 195 条 formal issuance 继续 pending。
-- 状态：`in_progress`；TV1-T134=`automated_verified`；TV1-T133=`automated_verified`；TV1-T132=`automated_verified`；TV1-T131=`automated_verified`；TV1-T130=`automated_verified`；TV1-T129=`automated_verified`；TV1-T128=`automated_verified`；TV1-T127=`automated_verified`；TV1-T01/T02/T03/T04/T05/T06/T07/T08/T09/T10/T10b/T11/T12a/T12b/T13/T14/T14b/T15/T16/T17/T18/T19/T20/T22=`automated_verified`
+- 状态：`in_progress`；TV1-T135=`automated_verified`；TV1-T134=`automated_verified`；TV1-T133=`automated_verified`；TV1-T132=`automated_verified`；TV1-T131=`automated_verified`；TV1-T130=`automated_verified`；TV1-T129=`automated_verified`；TV1-T128=`automated_verified`；TV1-T127=`automated_verified`；TV1-T01/T02/T03/T04/T05/T06/T07/T08/T09/T10/T10b/T11/T12a/T12b/T13/T14/T14b/T15/T16/T17/T18/T19/T20/T22=`automated_verified`
   （T09 另含人工 J1），TV1-T21=`automated_verified`（首个 Rendering 纵切——renderweave-rendering
   首个 artifact、TemplateClosureAuthority/Evaluator stage 1–8/seal、CapabilityState 加密落盘、
   RenderNodeContract 向量语料 Java primary、端到端 assembly 证明）；TV1-T13 已完成 AssetResolver、加密
@@ -5028,3 +5028,41 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
 - Boundary：Expression AST 2 + decimal 7、geometry 10、两个 required executor manifests、独立产品 replay 与 195
   formal records 仍 pending；未升级 lifecycle，未运行独立 native build/真实数据/生产或取得 J1/A3/READY，provider
   attempts/API Key reads/reservations/cost 为 0，`BUILD_NOT_AUTHORIZED` 保持。
+
+## 135. TV1-T135 执行卡
+
+- 状态：`automated_verified`；Blocked by T134（resolved）。
+- 决策：只接线 `expression.astNodesPerExpression` 与 `expression.astNodesTotal`；decimal 七轴和 geometry 十轴继续
+  pending。TDD seam 沿用已冻结的 `DesignDslAuthority.admit(rawUtf8)`，不新增第二条 admission Interface。
+- 深 module：把 exact Expression grammar parser 与 immutable AST 派生值收进 Template-owned
+  `DesignSemanticAuthority`；admission 与 Rendering 消费同一实现，删除 Rendering 的重复 parser/AST 与硬编码 AST
+  limit。`Interpreted` 一次交付 canonical Design semantic tree 与 definitionId→AST map。
+- Reservation：`ExpressionDefinitionCapacityBudget` 保持单次 DesignDSL request-local；每个 parser node 在 allocation 前
+  先验证 per-expression candidate，再验证全 DSL candidate，两者 Accepted 后才提交计数。未使用/静态不可达
+  Expression 同样按 authored definition 顺序解析并计数；authority reject/invalid/throw 与 checked overflow 均在
+  exact source pointer 零写退出。
+- TDD/target：真实 admission recording/rejecting RED → 最小 parser ownership/AST reservation GREEN → Expression engine
+  与 canonical 211-vector regression；实现后新建不可变 v6 target，声明 wired 48/65、remaining 17，v1–v5 bytes
+  不变。
+- Gates：focused Template/Rendering → component → `template` → `fast` → sequential `server` → Goal `full` →
+  resolution `fast`；Maven 串行、精确 staging，formal registry 保持 58/58。
+- 禁止影响：decimal/geometry 其余 17 轴、class manifests/195 formal records、其他 execution class、Renderer/Profile/
+  独立 native build、provider/API Key/真实数据/生产/J1/A3/READY、用户 360 项 dirty work 与 stash；
+  `BUILD_NOT_AUTHORIZED` 保持。
+- Results：实现 revision `91da8d56be811139835a845f5d5313682cf4a6d9` 已完成 Template-owned parser/immutable
+  AST、逐 node 原子 reservation 与 Rendering 单一 AST 消费 seam；focused 17/17、Expression engine 28/28、
+  Template 114/114、Rendering 131/131 与 canonical Java/Python 211/211 全绿。
+- Target/component：target revision `93ba7a30dfd1000dafc6a600a30f816d2c27a0d0` 冻结 v6（29,157 bytes，
+  SHA-256 `5927679899d4c0b2c12159a7c61734b7cd6882190aa2812d00ef1dd21c8d878c`），v1–v5 bytes 不变；
+  `.sdlc/evidence/20260826-225802-design-input-expression-capacity/` 为 195/195、2,684 independent checks、
+  53 个 bound artifacts 零 mismatch，wired 48/65、remaining 17，formal registry 58/58，recordsIssued=0。
+- Gates：`template` `.sdlc/evidence/20260826-225949-template/`、`fast`
+  `.sdlc/evidence/20260826-230044-fast/`、顺序 `server` `.sdlc/evidence/20260826-230121-server/` 全绿；发布级
+  `full` `.sdlc/evidence/20260826-231827-full/` 为 17/17 steps、1,575.495 秒，clean reactor 全绿，Node 24 Web
+  32 files / 251 tests、runtime/R0/R1/P0、Chromium 25 passed + 1 controlled skip、Draft 与 inference replay E2E
+  均通过。
+- Resolution：收口文件写入后的 `fast` `.sdlc/evidence/20260826-234734-fast/` 通过（8/8 package reactor +
+  Web typecheck）。
+- Boundary：decimal 7、geometry 10、两个 required executor manifests、独立产品 replay 与 195 formal records 仍
+  pending；未升级 lifecycle，未运行独立 native build/真实数据/生产或取得 J1/A3/READY，provider attempts/API Key
+  reads/reservations/cost 为 0，`BUILD_NOT_AUTHORIZED` 保持。用户 360 项 dirty work 与 stash 未被本票改写。
