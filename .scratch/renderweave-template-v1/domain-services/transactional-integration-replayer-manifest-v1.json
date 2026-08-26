@@ -1,0 +1,27 @@
+{
+  "artifactVersion": "renderweave-domain-services-executor-manifest/1.0",
+  "executorId": "DOMAIN_SERVICES_EXECUTOR::POSTGRESQL_TRANSACTION_REPLAYER::1.0",
+  "role": "transactional-integration-replayer",
+  "executionClass": "EXEC::DOMAIN_SERVICES::1.0",
+  "targetId": "DOMAIN_SERVICES_TARGET::ASSET_AND_POSTGRESQL::1.0",
+  "targetManifest": {
+    "path": ".scratch/renderweave-template-v1/domain-services/execution-class-target-v1.json",
+    "sha256": "sha256:d2b785bcf454c62f0508dc74d195e3875f550df74a949844408fe005c1e2bcfb",
+    "byteLength": 7197
+  },
+  "implementationRevision": "b791fccb3c6d3bdfcff31d45ed5ae170fd9d982f",
+  "runtime": "Java 21 + PostgreSQL 16 Testcontainers",
+  "entrypoint": {
+    "path": "renderweave-app/src/test/java/cn/hbads/renderweave/app/asset/DomainServicesTransactionalConformanceTest.java",
+    "sha256": "sha256:20f876a2ab257f30b3d6603694c1f75ed503eab1140660e8ca596c4b3fb2bceb",
+    "byteLength": 13838
+  },
+  "command": "mvn -B -ntp -pl renderweave-app -am -Dtest=cn.hbads.renderweave.app.asset.DomainServicesTransactionalConformanceTest -Drenderweave.domainServices.executionClassTarget=<target> -Drenderweave.domainServices.transactionalReport=<evidence> test",
+  "postgresqlImage": {
+    "reference": "postgres:16-alpine",
+    "digest": "sha256:4e6e670bb069649261c9c18031f0aded7bb249a5b6664ddec29c013a89310d50"
+  },
+  "sharedSemanticLibrary": null,
+  "networkReadsAllowed": "LOCAL_TESTCONTAINERS_DOCKER_ONLY",
+  "productMutationAllowed": "EPHEMERAL_POSTGRESQL_CONTAINER_ONLY"
+}

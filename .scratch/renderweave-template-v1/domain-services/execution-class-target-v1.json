@@ -1,0 +1,171 @@
+{
+  "artifactVersion": "renderweave-domain-services-execution-class-target/1.0",
+  "targetId": "DOMAIN_SERVICES_TARGET::ASSET_AND_POSTGRESQL::1.0",
+  "status": "FROZEN_PREISSUANCE_EXACT_TARGET",
+  "implementationRevision": "b791fccb3c6d3bdfcff31d45ed5ae170fd9d982f",
+  "executionClass": "EXEC::DOMAIN_SERVICES::1.0",
+  "requiredExecutorRoles": [
+    "java-domain-authority",
+    "transactional-integration-replayer"
+  ],
+  "componentTargets": [
+    {
+      "path": ".scratch/renderweave-template-v1/domain-services/product-execution-target-v1.json",
+      "sha256": "sha256:11ea54c739e65482fdae7c7da9500dcb7f8a899624d9f98ac96c34265ed7ad6d",
+      "byteLength": 8330
+    }
+  ],
+  "artifacts": [
+    {
+      "role": "capacityComponentTarget",
+      "path": ".scratch/renderweave-template-v1/domain-services/product-execution-target-v1.json",
+      "sha256": "sha256:11ea54c739e65482fdae7c7da9500dcb7f8a899624d9f98ac96c34265ed7ad6d",
+      "byteLength": 8330
+    },
+    {
+      "role": "observationAdapter",
+      "path": ".scratch/renderweave-template-v1/domain-services/observation-adapter-v1.json",
+      "sha256": "sha256:4bda561d8628461b783796e38acb9066e840c307479603e39afa6c241393ea06",
+      "byteLength": 6006
+    },
+    {
+      "role": "capacityCoverage",
+      "path": ".scratch/renderweave-template-v1/conformance-capacity-coverage-v1.json",
+      "sha256": "sha256:d9662c79464f0fe726ff9067068d9317565e4f4d1caa13b04cf5c0b2e0e60582",
+      "byteLength": 318460
+    },
+    {
+      "role": "capacityCandidateCases",
+      "path": ".scratch/renderweave-template-v1/capacity-boundary/candidate/conformance-cases-v1.jsonl",
+      "sha256": "sha256:30ee645c8dd472cfaf66550f26dd9234371d3f797d34c90df9de16de0569d284",
+      "byteLength": 1773865
+    },
+    {
+      "role": "capacityCandidateOracles",
+      "path": ".scratch/renderweave-template-v1/capacity-boundary/candidate/conformance-oracles-v1.jsonl",
+      "sha256": "sha256:271ce23304e246f7a03ceee25385888de49620607ce8a5cc597429026f8833c2",
+      "byteLength": 603573
+    },
+    {
+      "role": "domainApplication",
+      "path": "renderweave-asset/src/main/java/cn/hbads/renderweave/asset/internal/CanonicalAssetApplication.java",
+      "sha256": "sha256:74b125aeee88472e34818681a9805064305c8e3ebc810a236607b2febfb3c672",
+      "byteLength": 47401
+    },
+    {
+      "role": "persistenceSeam",
+      "path": "renderweave-asset/src/main/java/cn/hbads/renderweave/asset/spi/AssetPersistence.java",
+      "sha256": "sha256:a90ba4452705b2dc95f2233ca83ae90d5f0d7220406c21a55511d4d460f209c8",
+      "byteLength": 25027
+    },
+    {
+      "role": "postgresqlAdapter",
+      "path": "renderweave-app/src/main/java/cn/hbads/renderweave/app/asset/PostgresAssetPersistence.java",
+      "sha256": "sha256:972a8678649ca4451f3a1f0ac557ff664f9910d014e19edfa21c133db01e5160",
+      "byteLength": 53613
+    },
+    {
+      "role": "aggregateMigration",
+      "path": "renderweave-app/src/main/resources/db/migration/V028__asset_aggregate_and_content.sql",
+      "sha256": "sha256:3f4b52cc36b957c94f43e756d925948608708bbe7e2640b336e66174677f9785",
+      "byteLength": 2303
+    },
+    {
+      "role": "auditMigration",
+      "path": "renderweave-app/src/main/resources/db/migration/V029__asset_audit_events.sql",
+      "sha256": "sha256:e88682f54018ae4adf0dada300d3929a4df21e82e549893513c36693077ee562",
+      "byteLength": 1193
+    },
+    {
+      "role": "javaDomainExecutor",
+      "path": "renderweave-asset/src/test/java/cn/hbads/renderweave/asset/internal/DomainServicesCapacityConformanceTest.java",
+      "sha256": "sha256:b6deacc222c21342b23adacefff5d25bb7be4b92bf5ed95ad007737a85d68388",
+      "byteLength": 11384
+    },
+    {
+      "role": "transactionalExecutor",
+      "path": "renderweave-app/src/test/java/cn/hbads/renderweave/app/asset/DomainServicesTransactionalConformanceTest.java",
+      "sha256": "sha256:20f876a2ab257f30b3d6603694c1f75ed503eab1140660e8ca596c4b3fb2bceb",
+      "byteLength": 13838
+    },
+    {
+      "role": "capacityIndependentReplay",
+      "path": "tools/verify-domain-services-capacity.py",
+      "sha256": "sha256:d4ebcc3770fbb7af3c2a87ec85f2ff5504166b2b646d28aa78f1452bbffbff2d",
+      "byteLength": 26551
+    },
+    {
+      "role": "executionClassIndependentReplay",
+      "path": "tools/verify-domain-services-execution-class.py",
+      "sha256": "sha256:6d598203eaec66371f58c7a7d2f191fa346c0875d597e77050d810943c49511a",
+      "byteLength": 20521
+    },
+    {
+      "role": "executionGate",
+      "path": "tools/run-domain-services-gate.ps1",
+      "sha256": "sha256:f93e8684594cf780a33efb317460bf9b2211b97fc448a448a7eb979e9529e03c",
+      "byteLength": 6471
+    },
+    {
+      "role": "targetMaterializer",
+      "path": ".scratch/renderweave-template-v1/domain-services/materialize-execution-class-target.py",
+      "sha256": "sha256:ef9f646576573b216cf8c166b9f4fd38cb38928ab1f69202d0a462bbe39709e0",
+      "byteLength": 11068
+    }
+  ],
+  "assignedCorpus": {
+    "sourceCases": {
+      "path": ".scratch/renderweave-template-v1/capacity-boundary/candidate/conformance-cases-v1.jsonl",
+      "sha256": "sha256:30ee645c8dd472cfaf66550f26dd9234371d3f797d34c90df9de16de0569d284",
+      "byteLength": 1773865
+    },
+    "sourceOracles": {
+      "path": ".scratch/renderweave-template-v1/capacity-boundary/candidate/conformance-oracles-v1.jsonl",
+      "sha256": "sha256:271ce23304e246f7a03ceee25385888de49620607ce8a5cc597429026f8833c2",
+      "byteLength": 603573
+    },
+    "assignedCaseCount": 12,
+    "assignedOracleCount": 12,
+    "assignedCasesSha256": "sha256:a00a6490c58bf4fc83e8ccb0ca4052e7a085264f4bb6c8f8ebaff5042d5a4770",
+    "assignedOraclesSha256": "sha256:585951bd695692b3ea07ee36b2d19e630920653e9863d047e340fc536a99b586",
+    "assignedCorpusDigest": "sha256:5a236de3cf36155df7244b049b045cefda55960cf16efe8212c3981e5463844f"
+  },
+  "postgresqlIntegration": {
+    "imageReference": "postgres:16-alpine",
+    "imageDigest": "sha256:4e6e670bb069649261c9c18031f0aded7bb249a5b6664ddec29c013a89310d50",
+    "majorVersion": "16",
+    "adapter": "cn.hbads.renderweave.app.asset.PostgresAssetPersistence",
+    "transactionScenarios": [
+      "DOMAIN_TX::COMMIT_CREATE",
+      "DOMAIN_TX::IDEMPOTENCY_READS",
+      "DOMAIN_TX::DUPLICATE_KEY_ROLLBACK"
+    ],
+    "databaseSubstitutionAllowed": false
+  },
+  "formalRegistryBoundary": {
+    "cases": {
+      "path": ".scratch/renderweave-template-v1/conformance-cases-v1.jsonl",
+      "sha256": "sha256:ebe58e84977ee84befe89f8c126f37fbec7076cd7725b29f1b7609448fe7ef16",
+      "byteLength": 146309,
+      "recordCount": 46
+    },
+    "oracles": {
+      "path": ".scratch/renderweave-template-v1/conformance-oracles-v1.jsonl",
+      "sha256": "sha256:3825b9fb40c1b43c484da3ebdf29429ed749e622012212ca79f9cea5b9cb9339",
+      "byteLength": 63191,
+      "recordCount": 46
+    },
+    "issuedDomainCaseCount": 0,
+    "issuedDomainOracleCount": 0,
+    "appendPerformed": false
+  },
+  "boundary": {
+    "productApiSurfaceCreated": false,
+    "nativeRendererInvoked": false,
+    "externalProviderAttemptsAllowed": false,
+    "formalRecordsIssued": false,
+    "preissuanceReplayRequired": true,
+    "recordIssuanceAllowed": false,
+    "executionClassExecutable": false
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "artifactVersion": "renderweave-domain-services-executor-manifest/1.0",
+  "executorId": "DOMAIN_SERVICES_EXECUTOR::JAVA_DOMAIN_AUTHORITY::1.0",
+  "role": "java-domain-authority",
+  "executionClass": "EXEC::DOMAIN_SERVICES::1.0",
+  "targetId": "DOMAIN_SERVICES_TARGET::ASSET_AND_POSTGRESQL::1.0",
+  "targetManifest": {
+    "path": ".scratch/renderweave-template-v1/domain-services/execution-class-target-v1.json",
+    "sha256": "sha256:d2b785bcf454c62f0508dc74d195e3875f550df74a949844408fe005c1e2bcfb",
+    "byteLength": 7197
+  },
+  "implementationRevision": "b791fccb3c6d3bdfcff31d45ed5ae170fd9d982f",
+  "runtime": "Java 21",
+  "entrypoint": {
+    "path": "renderweave-asset/src/test/java/cn/hbads/renderweave/asset/internal/DomainServicesCapacityConformanceTest.java",
+    "sha256": "sha256:b6deacc222c21342b23adacefff5d25bb7be4b92bf5ed95ad007737a85d68388",
+    "byteLength": 11384
+  },
+  "command": "mvn -B -ntp -pl renderweave-asset -am -Drenderweave.domainServices.primaryReport=<evidence> -Drenderweave.domainServices.target=<capacity-target> test",
+  "componentTarget": {
+    "path": ".scratch/renderweave-template-v1/domain-services/product-execution-target-v1.json",
+    "sha256": "sha256:11ea54c739e65482fdae7c7da9500dcb7f8a899624d9f98ac96c34265ed7ad6d",
+    "byteLength": 8330
+  },
+  "sharedSemanticLibrary": null,
+  "networkReadsAllowed": false,
+  "productMutationAllowed": false
+}
