@@ -84,7 +84,17 @@ public interface DesignDslAuthority {
         SEMANTIC_FILLS_PER_TEMPLATE_USE("designDslSemantics.fillsPerTemplateUse"),
         SEMANTIC_LITERAL_LIST_ITEMS_PER_LIST("designDslSemantics.literalListItemsPerList"),
         SEMANTIC_LITERAL_LIST_ITEMS_TOTAL("designDslSemantics.literalListItemsTotal"),
-        SEMANTIC_AUTHORED_RUN_TEXT_SCALARS("designDslSemantics.authoredRunTextScalars");
+        SEMANTIC_AUTHORED_RUN_TEXT_SCALARS("designDslSemantics.authoredRunTextScalars"),
+        EXPRESSION_SOURCE_UTF8_BYTES_PER_EXPRESSION(
+                "expression.sourceUtf8BytesPerExpression"),
+        EXPRESSION_SOURCE_UTF8_BYTES_TOTAL("expression.sourceUtf8BytesTotal"),
+        EXPRESSION_INPUTS_PER_EXPRESSION("expression.inputsPerExpression"),
+        EXPRESSION_INPUTS_TOTAL("expression.inputsTotal"),
+        EXPRESSION_MAPPING_CASES_PER_DEFINITION(
+                "expression.mappingCasesPerDefinition"),
+        EXPRESSION_MAPPING_CASES_TOTAL("expression.mappingCasesTotal"),
+        EXPRESSION_DEFINITION_GRAPH_EDGES("expression.definitionGraphEdges"),
+        EXPRESSION_DEFINITION_CHAIN_DEPTH("expression.definitionChainDepth");
 
         private final String id;
 

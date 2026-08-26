@@ -132,7 +132,15 @@ class DesignDslAuthorityPublicSurfaceTest {
                         "designDslSemantics.fillsPerTemplateUse",
                         "designDslSemantics.literalListItemsPerList",
                         "designDslSemantics.literalListItemsTotal",
-                        "designDslSemantics.authoredRunTextScalars"
+                        "designDslSemantics.authoredRunTextScalars",
+                        "expression.sourceUtf8BytesPerExpression",
+                        "expression.sourceUtf8BytesTotal",
+                        "expression.inputsPerExpression",
+                        "expression.inputsTotal",
+                        "expression.mappingCasesPerDefinition",
+                        "expression.mappingCasesTotal",
+                        "expression.definitionGraphEdges",
+                        "expression.definitionChainDepth"
                 },
                 Arrays.stream(DesignDslAuthority.Limit.values())
                         .map(DesignDslAuthority.Limit::id)

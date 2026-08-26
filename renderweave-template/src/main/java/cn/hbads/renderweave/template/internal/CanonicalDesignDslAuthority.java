@@ -91,6 +91,7 @@ final class CanonicalDesignDslAuthority implements DesignDslAuthority {
                 "/expressionProfile"
         );
         new DesignSemanticCapacityPreflight(capacity).verify(root);
+        var expressionCapacity = new ExpressionDefinitionCapacityBudget(capacity);
         // Best-effort pre-pass: collect authored Repeat loopIds so Definition loop
         // domains / loopIndex sources can resolve before tree validation runs.
         var loopIds = new java.util.HashSet<String>();
@@ -106,7 +107,7 @@ final class CanonicalDesignDslAuthority implements DesignDslAuthority {
         var seenUseIds = new java.util.HashSet<String>();
         var displayName = metadata(root, "displayName", 128, false, "/displayName");
         var definitions = array(required(root, "definitions", "/definitions"), "/definitions");
-        var definitionsResult = validateDefinitions(definitions, loopIds);
+        var definitionsResult = validateDefinitions(definitions, loopIds, expressionCapacity);
 
         var canvas = object(required(root, "designRoot", "/designRoot"), "/designRoot");
         rejectUnknown(canvas, CANVAS_MEMBERS, "/designRoot");
@@ -201,6 +202,10 @@ final class CanonicalDesignDslAuthority implements DesignDslAuthority {
     ) {
     }
 
+    /** Structurally valid Definition DAG facts, measured in authored reference edges. */
+    private record DefinitionGraphFacts(long edgeCount, long chainDepth) {
+    }
+
     /**
      * Validate the top-level definitions[] closed union and return the canonical array
      * sorted by definitionId (set sorting; ticket 08 §108) plus the declared output type
@@ -210,7 +215,8 @@ final class CanonicalDesignDslAuthority implements DesignDslAuthority {
      */
     private DefinitionsResult validateDefinitions(
             JsonValue.ArrayValue definitions,
-            Set<String> loopIds
+            Set<String> loopIds,
+            ExpressionDefinitionCapacityBudget expressionCapacity
     ) throws DesignDslFailureException {
         var seenIds = new HashSet<String>();
         var ids = new ArrayList<String>();
@@ -221,9 +227,11 @@ final class CanonicalDesignDslAuthority implements DesignDslAuthority {
             var pointer = "/definitions/" + index;
             var entry = object(definitions.items().get(index), pointer);
             normalized.add(validateDefinition(entry, pointer, seenIds, ids, edgesByDefinition,
-                    loopIds, outputTypes));
+                    loopIds, outputTypes, expressionCapacity));
         }
-        validateDefinitionGraph(ids, edgesByDefinition);
+        var graph = validateDefinitionGraph(ids, edgesByDefinition);
+        expressionCapacity.reserveDefinitionGraphEdges(graph.edgeCount(), "/definitions");
+        expressionCapacity.reserveDefinitionChainDepth(graph.chainDepth(), "/definitions");
         normalized.sort(Comparator.comparing(CanonicalDesignDslAuthority::definitionIdOf));
         return new DefinitionsResult(new JsonValue.ArrayValue(normalized), outputTypes);
     }
@@ -235,7 +243,8 @@ final class CanonicalDesignDslAuthority implements DesignDslAuthority {
             List<String> ids,
             List<List<DefinitionEdge>> edgesByDefinition,
             Set<String> loopIds,
-            Map<String, String> outputTypes
+            Map<String, String> outputTypes,
+            ExpressionDefinitionCapacityBudget expressionCapacity
     ) throws DesignDslFailureException {
         var kindToken = string(required(entry, "kind", pointer + "/kind"), pointer + "/kind");
         if (!DefinitionContractCatalog.DEFINITION_KINDS.contains(kindToken)) {
@@ -270,7 +279,7 @@ final class CanonicalDesignDslAuthority implements DesignDslAuthority {
                 ));
             }
             case "mapping" -> {
-                validateMappingDefinition(entry, pointer, edges, loopIds);
+                validateMappingDefinition(entry, pointer, edges, loopIds, expressionCapacity);
                 outputTypes.put(definitionId, validateValueType(
                         required(entry, "output", pointer + "/output"), pointer + "/output"
                 ));
@@ -278,7 +287,8 @@ final class CanonicalDesignDslAuthority implements DesignDslAuthority {
             case "expression" -> {
                 normalized.put(
                         "inputs",
-                        validateExpressionDefinition(entry, pointer, edges, loopIds)
+                        validateExpressionDefinition(
+                                entry, pointer, edges, loopIds, expressionCapacity)
                 );
                 outputTypes.put(definitionId, validateValueType(
                         required(entry, "output", pointer + "/output"), pointer + "/output"
@@ -313,7 +323,8 @@ final class CanonicalDesignDslAuthority implements DesignDslAuthority {
             JsonValue.ObjectValue entry,
             String pointer,
             List<DefinitionEdge> edges,
-            Set<String> loopIds
+            Set<String> loopIds,
+            ExpressionDefinitionCapacityBudget expressionCapacity
     ) throws DesignDslFailureException {
         validateDomain(required(entry, "domain", pointer + "/domain"), pointer + "/domain", loopIds);
         var output = validateValueType(required(entry, "output", pointer + "/output"),
@@ -324,6 +335,7 @@ final class CanonicalDesignDslAuthority implements DesignDslAuthority {
         if (cases.items().isEmpty()) {
             throw failure(FailureCode.DESIGN_VALUE_INVALID, pointer + "/cases");
         }
+        expressionCapacity.reserveMappingCases(cases.items().size(), pointer + "/cases");
         for (int index = 0; index < cases.items().size(); index++) {
             var casePointer = pointer + "/cases/" + index;
             var caseEntry = object(cases.items().get(index), casePointer);
@@ -378,11 +390,13 @@ final class CanonicalDesignDslAuthority implements DesignDslAuthority {
             JsonValue.ObjectValue entry,
             String pointer,
             List<DefinitionEdge> edges,
-            Set<String> loopIds
+            Set<String> loopIds,
+            ExpressionDefinitionCapacityBudget expressionCapacity
     ) throws DesignDslFailureException {
         validateDomain(required(entry, "domain", pointer + "/domain"), pointer + "/domain", loopIds);
         validateValueType(required(entry, "output", pointer + "/output"), pointer + "/output");
         var inputs = array(required(entry, "inputs", pointer + "/inputs"), pointer + "/inputs");
+        expressionCapacity.reserveInputs(inputs.items().size(), pointer + "/inputs");
         var aliases = new LinkedHashMap<String, String>();
         var normalizedInputs = new ArrayList<JsonValue>();
         for (int index = 0; index < inputs.items().size(); index++) {
@@ -399,6 +413,10 @@ final class CanonicalDesignDslAuthority implements DesignDslAuthority {
             normalizedInputs.add(input);
         }
         var source = string(required(entry, "source", pointer + "/source"), pointer + "/source");
+        expressionCapacity.reserveSourceUtf8Bytes(
+                source.getBytes(StandardCharsets.UTF_8).length,
+                pointer + "/source"
+        );
         var used = new HashSet<String>();
         scanExpressionInputUsage(source, used);
         for (var alias : aliases.keySet()) {
@@ -722,7 +740,7 @@ final class CanonicalDesignDslAuthority implements DesignDslAuthority {
      * Deterministic iterative DFS in authored order; the error points at the source
      * reference that closes a cycle or dangles.
      */
-    private void validateDefinitionGraph(
+    private DefinitionGraphFacts validateDefinitionGraph(
             List<String> ids,
             List<List<DefinitionEdge>> edgesByDefinition
     ) throws DesignDslFailureException {
@@ -731,6 +749,8 @@ final class CanonicalDesignDslAuthority implements DesignDslAuthority {
             indexById.put(ids.get(index), index);
         }
         var state = new int[ids.size()];
+        var chainDepthByDefinition = new long[ids.size()];
+        long longestChainDepth = 0;
         for (int start = 0; start < ids.size(); start++) {
             if (state[start] != 0) {
                 continue;
@@ -745,6 +765,16 @@ final class CanonicalDesignDslAuthority implements DesignDslAuthority {
                 var edges = edgesByDefinition.get(node);
                 int cursor = cursors.pop();
                 if (cursor >= edges.size()) {
+                    long chainDepth = 0;
+                    for (var edge : edges) {
+                        int target = indexById.get(edge.targetId());
+                        chainDepth = Math.max(
+                                chainDepth,
+                                Math.addExact(1, chainDepthByDefinition[target])
+                        );
+                    }
+                    chainDepthByDefinition[node] = chainDepth;
+                    longestChainDepth = Math.max(longestChainDepth, chainDepth);
                     state[node] = 2;
                     path.pop();
                     continue;
@@ -765,6 +795,11 @@ final class CanonicalDesignDslAuthority implements DesignDslAuthority {
                 }
             }
         }
+        long edgeCount = 0;
+        for (var edges : edgesByDefinition) {
+            edgeCount = Math.addExact(edgeCount, edges.size());
+        }
+        return new DefinitionGraphFacts(edgeCount, longestChainDepth);
     }
 
     private static String definitionIdOf(JsonValue value) {
