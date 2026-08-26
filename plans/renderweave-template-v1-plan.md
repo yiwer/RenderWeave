@@ -4703,3 +4703,22 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
 - TDD/gates：App/nav/editor-link RED → formal product journey RED → minimal GREEN/refactor；focused Node 24 → Web
   test/typecheck/lint/build → `web` → `fast` → Goal `full` → resolution `fast`。Maven串行、精确 staging；最高只报
   `automated_verified`。
+
+### TV1-T126 resolution evidence
+
+- 生命周期：`resolved / automated_verified`。实现 revision `21b74eb290b016d08c00f216fd31fe1f6c10f0d2` 已正式挂载
+  `/templates`、`/templates/new`、`/templates/:templateId`，补齐一级导航及 Editor 全状态返回目录链接；未导入
+  `/prototype`、产品 fixture 或 fallback。
+- RED/GREEN：unit RED 5 failed / 18 passed、formal product Playwright RED 2 failed；minimal GREEN 后 focused
+  3 files / 23 tests、T126 formal Playwright 2/2。主工作区全量 Node 24 Web 为 32 files / 251 tests，正式 Playwright
+  全集 25 passed + 1 controlled skip。
+- clean A1：`web` `.sdlc/evidence/20260826-091058-web/`（128.310 秒，32 files / 250 tests）、Goal `full`
+  `.sdlc/evidence/20260826-091535-full/`（17/17，1550.511 秒）及 resolution `fast`
+  `.sdlc/evidence/20260826-094203-fast/`（3/3，11.911 秒）均为 exact revision 且 clean。affected `fast`
+  `.sdlc/evidence/20260826-091317-fast/`（3/3，33.387 秒）的 dirty metadata 仅是 OpenAPI 生成文件内容等价 LF
+  stat/index 噪声；空 diff、path-aware blob hash 与 HEAD 一致，refresh index 后 clean，无语义变化。
+- Goal `full` 覆盖 Template kernel 211/211、App 367、Inference 361、Template 81、Asset 90、Rendering 121、Web 250、
+  runtime/R0/R1/P0 与 25 passed + 1 controlled skip browser journeys；provider attempts 与 API Key reads 均为 0。
+- Browser skill 的 in-app 连接在 kernel asset 初始化阶段持续失败（`os error 3`），reset 后最小连接仍不可用；因此只报告
+  仓库 Playwright 正式 URL journey 的 A1 验收，不报告 visible/J1。Profile 仍 `NOT_REGISTERED` / `NOT_CERTIFIED`，
+  native stack 仍 `BUILD_NOT_AUTHORIZED`；daemon physical success、public cancel、生产/真实数据、J1/A3/READY 均未推进。

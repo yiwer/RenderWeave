@@ -1,8 +1,8 @@
 # 激活 Template 最终产品路由与浏览器验收
 
 Type: task
-Status: in_progress
-Claimed by: Codex `/root`（single-writer）
+Status: resolved / automated_verified
+Claimed by: —
 Blocked by: 09, 27, 28, 29, 30, 31, 32, 35, 36, 37, 114, 124, 125（均已 resolved）
 
 ## Question
@@ -30,3 +30,28 @@ Template 目录、创建页、真实 Editor E1–E9、公共 Authoritative Previ
    focused Node 24 → 全量 Web typecheck/lint/test/build → `web` → `fast` → Goal `full` → resolution `fast`。
    Profile registration/certification、daemon native success、public cancel、J1/A3/READY、生产/真实数据/provider/API Key
    均不在本票，native stack 继续 `BUILD_NOT_AUTHORIZED`。
+
+## Results
+
+- 最终产品路由已激活：`App` lazy-mount `/templates`、`/templates/new` 与 `/templates/:templateId`；一级导航在全部
+  Template 子路由保持 active，Editor structured/safe/loading/error chrome 均提供可访问的“返回模板目录”链接。
+  页面只复用既有 `features/templates` 与 `template-editor` 产品实现，没有导入 `/prototype`、产品 fixture 或 fallback。
+- TDD RED 如实捕获缺口：App/nav/editor-link 单元组为 5 failed / 18 passed，正式产品 Playwright journey 为 2 failed；
+  minimal GREEN 后 focused Vitest 为 3 files / 23 tests，T126 formal Playwright 为 2/2。主工作区 Node 24 全量 Web 为
+  32 files / 251 tests，typecheck/lint/build 全绿；正式 Playwright 全集为 25 passed + 1 controlled skip。
+- clean detached worktree 精确验证实现 revision `21b74eb290b016d08c00f216fd31fe1f6c10f0d2`：`web`
+  `.sdlc/evidence/20260826-091058-web/`（A1，128.310 秒，32 files / 250 tests）、Goal `full`
+  `.sdlc/evidence/20260826-091535-full/`（A1，17/17，1550.511 秒）与 resolution `fast`
+  `.sdlc/evidence/20260826-094203-fast/`（3/3，11.911 秒）全部通过，且 metadata 均为 clean/exact revision。
+  affected `fast` `.sdlc/evidence/20260826-091317-fast/` 亦为 3/3（33.387 秒）；其 `workingTreeDirty=true` 仅来自
+  OpenAPI 生成器把已跟踪 SDK 重写为内容等价 LF 后产生的 stat/index 噪声，`git diff` 为空、path-aware blob hash 与
+  HEAD 完全一致，refresh index 后 clean，未产生或提交语义差异。
+- Goal `full` 覆盖 Template Java/Python 211/211、App 367、Inference 361、Template 81、Asset 90、Rendering 121、
+  Node 24 Web 250、runtime canary、R0/R1/P0 零 provider attempts/API Key reads，以及正式产品、Draft 与 Inference
+  browser journeys；T126 两条正式 Template journey 均通过，axe serious/critical 零发现。
+- 尝试按 Browser skill 连接内置浏览器时，运行时在 kernel asset 初始化阶段持续返回
+  `failed to write kernel assets: 系统找不到指定的路径。 (os error 3)`；reset 后最小连接仍失败，故本票没有冒充
+  in-app visible inspection。仓库 Playwright 的正式 URL journey 提供本次 A1 浏览器验收，未升级为人工 J1。
+- 本票没有生产 fixture、Profile registration/certification、native daemon success/build、public cancel、外部副作用或
+  J1/A3/READY；Renderer physical Profile 仍 `NOT_REGISTERED` / `NOT_CERTIFIED`，native stack 仍
+  `BUILD_NOT_AUTHORIZED`。

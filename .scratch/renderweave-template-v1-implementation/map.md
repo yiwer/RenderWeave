@@ -662,10 +662,12 @@ Label: wayfinder:map
   `/templates` route、导航与产品浏览器验收留给下一独立激活票；Profile/daemon success、native build与 public
   Engine cancel 仍关闭。
 - [激活 Template 最终产品路由与浏览器验收](issues/126-activate-template-product-routes.md) —
-  **in_progress / claimed by Codex `/root`**；当前唯一 final-product frontier，一次性开放 `/templates` list/new/editor、
-  一级产品导航与 Editor 返回目录路径，并以只访问正式 URL 的浏览器 journey 验收真实页面和 E6 UI。测试 HTTP fixture
-  不进入产品 bundle、不证明 native Renderer success；`/prototype`、Profile registration/certification、J1/A3/READY
-  与外部副作用均不由本票偷渡。
+  **resolved / automated_verified**；已开放 `/templates` list/new/editor、一级产品导航与 Editor 返回目录路径，并以只访问
+  正式 URL 的 Playwright journey 验收真实页面、创建/打开闭环及 E6 Authoritative Preview。focused 23/23、正式 journey
+  2/2、clean Node 24 Web 250、`web`、affected/resolution `fast` 与 17-step Goal `full` 均绿；实现 revision
+  `21b74eb2`。内置 Browser 因 runtime kernel asset 路径错误未连接，不冒充 visible/J1 验收；测试 HTTP fixture 不进入产品
+  bundle、不证明 native Renderer success，`/prototype`、Profile registration/certification、J1/A3/READY 与外部副作用
+  均未推进。
 - [验证 Product Editor 状态、恢复与权威预览架构](issues/09-validate-product-editor-architecture.md) —
   throwaway 逻辑原型（`/prototype/editor-state-model`，不进产品 route）把冻结编辑器规则编码为确定性
   fixture 状态机：10 个引导走查场景 37/37 断言 + 自由操作冒烟 + 键盘焦点检查全部通过（Playwright A1，
