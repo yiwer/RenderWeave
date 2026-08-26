@@ -698,6 +698,12 @@ Label: wayfinder:map
   真实 reservation point 已接入同一 Template-owned authority。component target v3 已冻结并完成 Java/TypeScript
   195/195、2646-check 双重 replay，wired 由 24/65 推进至 33/65；problems/expression/geometry 32 轴与 class
   manifests/issuance/executable 继续 pending。
+- [接线 bounded problem collection 五轴产品容量](issues/133-wire-bounded-problem-capacity.md) —
+  **resolved / automated_verified**；Template-owned request-local incremental collector 已把 `problems.*` 五轴接到
+  T130 authority，并由 asset、Template closure 与 semantic validator 共享。实现 `f629cc48`、target `400959d3`；
+  Java/TypeScript 195/195、2662-check replay 与 Template 100/100 全绿，wired 38/65、remaining 27。`template`、
+  `fast`、顺序 `server`、17-step Goal `full` 与 resolution `fast` 均通过；expression 17、geometry 10、class
+  manifests/product replay/formal issuance 与 lifecycle 升级继续 pending。
 - [验证 Product Editor 状态、恢复与权威预览架构](issues/09-validate-product-editor-architecture.md) —
   throwaway 逻辑原型（`/prototype/editor-state-model`，不进产品 route）把冻结编辑器规则编码为确定性
   fixture 状态机：10 个引导走查场景 37/37 断言 + 自由操作冒烟 + 键盘焦点检查全部通过（Playwright A1，
@@ -842,8 +848,9 @@ Label: wayfinder:map
 - T129 已以旧 46/46 formal bytes 为不可变前缀发行精确 12+12 Domain Services suffix，并完成中央 catalog 与
   post-issuance 双重 replay；T130 随后完成 ordinal 3 `EXEC::DESIGN_INPUT_EXPRESSION::1.0` 的 65 轴唯一容量
   authority、195/195 component replay 与首批九个产品 reservation point；T131 随后把 `designDslSemantics` 十五轴
-  接入同一 authority 并冻结 v2 target；T132 随后完成 `renderInput` 九轴接线并冻结 v3 target。该 class 仍有
-  problems 5、expression 17、geometry 10，共 32 个后续产品轴；195 个
+  接入同一 authority 并冻结 v2 target；T132 随后完成 `renderInput` 九轴接线并冻结 v3 target；T133 现已 claim
+  `problems` 五轴的共享 bounded collector 接线。该 class 基线仍有 problems 5、expression 17、geometry 10，共 32 个
+  后续产品轴；T133 完成后将剩 expression 17、geometry 10，共 27 轴。195 个
   capacity candidates 在全部真实接线、两个 required executor manifests 与独立产品 replay 完成前仍不得发行。其余
   execution-class target、Profile 发行、Editor J1、Renderer 双物理 Linux CPU-family
   认证与最终生命周期升级仍须以届时真实产品 artifact 和 executor 为输入另行切票；Ticket 19 保持 open。

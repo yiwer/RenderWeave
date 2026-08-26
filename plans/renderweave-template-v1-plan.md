@@ -1,11 +1,10 @@
 # RenderWeave Template v1 Implementation Plan
 
-- 当前 frontier（2026-08-26）：TV1-T01–T132 均已 `resolved`；冻结 DAG 的 ordinal 3
-  `EXEC::DESIGN_INPUT_EXPRESSION::1.0` 仍是唯一未阻塞 frontier。TV1-T132 已把 `renderInput` 九轴接到 T130 共享
-  authority 并冻结 component target v3；当前 wired 33/65、remaining 32。problems 5、expression 17、geometry 10 的
-  产品 reservation source、两个 class required executor manifests、独立产品 replay 与 195 条 formal issuance 继续
-  pending，须由下一独立票 single-writer claim。
-- 状态：`in_progress`；TV1-T132=`automated_verified`；TV1-T131=`automated_verified`；TV1-T130=`automated_verified`；TV1-T129=`automated_verified`；TV1-T128=`automated_verified`；TV1-T127=`automated_verified`；TV1-T01/T02/T03/T04/T05/T06/T07/T08/T09/T10/T10b/T11/T12a/T12b/T13/T14/T14b/T15/T16/T17/T18/T19/T20/T22=`automated_verified`
+- 当前 frontier（2026-08-26）：TV1-T01–T133 均已 `resolved`；冻结 DAG 的 ordinal 3
+  `EXEC::DESIGN_INPUT_EXPRESSION::1.0` 仍是唯一未阻塞 frontier。component target v4 已达 wired 38/65、
+  remaining 27；下一张 single-writer 票应从 expression 17 或 geometry 10 中认领一个可独立验证的产品纵切。
+  两个 class required executor manifests、独立产品 replay 与 195 条 formal issuance 继续 pending。
+- 状态：`in_progress`；TV1-T133=`automated_verified`；TV1-T132=`automated_verified`；TV1-T131=`automated_verified`；TV1-T130=`automated_verified`；TV1-T129=`automated_verified`；TV1-T128=`automated_verified`；TV1-T127=`automated_verified`；TV1-T01/T02/T03/T04/T05/T06/T07/T08/T09/T10/T10b/T11/T12a/T12b/T13/T14/T14b/T15/T16/T17/T18/T19/T20/T22=`automated_verified`
   （T09 另含人工 J1），TV1-T21=`automated_verified`（首个 Rendering 纵切——renderweave-rendering
   首个 artifact、TemplateClosureAuthority/Evaluator stage 1–8/seal、CapabilityState 加密落盘、
   RenderNodeContract 向量语料 Java primary、端到端 assembly 证明）；TV1-T13 已完成 AssetResolver、加密
@@ -4959,3 +4958,36 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
   `f3c29199ec510ec3f809b3f8263f5d2806cb0740` 未变；problems/expression/geometry 32 轴、两个 required executor
   manifests 与 195 formal records 仍 pending，未升级 executable，未运行独立 native build/真实数据/生产或取得
   J1/A3/READY，`BUILD_NOT_AUTHORIZED` 保持。
+
+## 133. TV1-T133 执行卡
+
+- 决策：只接线 `problems.itemsIncludingLimitMarker`、`problems.ordinaryItemsWhenTruncated`、
+  `problems.canonicalBytesPerItem`、`problems.canonicalBytesTotal` 与 `problems.limitMarkerReservedBytes` 五轴；深化
+  `TemplateProblemBudget` 为 Template-owned request-local deep collector，所有 decision 统一调用 T130 authority。
+- Reservation：首次使用前 exact 验证 1 KiB marker reserve；每个 ordinary append 前按 byte-first 顺序检查 canonical
+  item bytes、含 reserve 的 total bytes，再检查 candidate item count。第 201 项撤回第 200 个 ordinary 并形成 199 + marker；
+  byte terminal 立即 marker + stop，authority `Invalid` 同样 fail closed。
+- 产品路径：asset、Template closure 与 semantic validator 共用同一 collector；达到 terminal 后不再解析/递归/读取依赖。
+  保持自然 200 ordinary、canonical pointer/code 排序、marker-last、fingerprint、originating problem 与 confirmability 语义。
+- TDD/target：recording/rejecting product proof 逐纵切 RED→GREEN；实现提交后冻结不可变 v4 target，目标 wired 38/65、
+  remaining 27。v1/v2/v3 bytes 不变，不签发 class manifests/formal records，不升级 lifecycle。
+- Gates：focused Template → component → `template` → `fast` → sequential `server` → Goal `full` → resolution `fast`；
+  Maven 串行、精确 staging，formal registry 保持 58/58。
+- 禁止影响：expression/geometry 其余 27 轴、其他 execution class、Renderer/Profile/native build、provider/API Key/真实数据/
+  生产/J1/A3/READY、用户 360 项 dirty work 与 stash；`BUILD_NOT_AUTHORIZED` 保持。
+- Results：实现 revision `f629cc48bb07c2c8c45083267eb6740924989256` 已完成 shared incremental collector、
+  authority injection 与 9 项真实产品纵切 proof；Template 100/100 全绿。target revision
+  `400959d368c9c6f999bc0a474685759d324b072b` 冻结 v4（23987 bytes，SHA-256
+  `37ef6e8551c647ad644849172c755621b5a2eaeb06d96170c5469ccdc115fd3c`），v1/v2/v3 bytes 不变。
+- Component：`.sdlc/evidence/20260826-192843-design-input-expression-capacity/` 为 Java/TypeScript 195/195、
+  2662 independent checks、43 个 bound artifacts 零 mismatch，wired 38/65、remaining 27；formal registry 58/58，
+  class preissuance/issuance/executable 均 false。
+- Gates：`template` `.sdlc/evidence/20260826-193017-template/`、`fast`
+  `.sdlc/evidence/20260826-193109-fast/`、顺序 `server` `.sdlc/evidence/20260826-193208-server/` 全绿；发布级
+  `full` `.sdlc/evidence/20260826-194618-full/` 为 17/17 steps、1188.665 秒，Node 24 Web 32 files / 251 tests、
+  Chromium 25 passed + 1 controlled skip、inference replay 1/1。
+- Resolution：tracker 收口后的 `fast` `.sdlc/evidence/20260826-200855-fast/` 通过；正式 `/templates`、
+  `/templates/new` 与模板 API smoke 均为 HTTP 200，独立 Web/API smoke 容器保持运行。
+- Boundary：expression 17、geometry 10、两个 required executor manifests、独立产品 replay 与 195 formal records
+  仍 pending；未升级 lifecycle，未运行独立 native build/真实数据/生产或取得 J1/A3/READY，provider attempts/API Key
+  reads/reservations/cost 为 0，`BUILD_NOT_AUTHORIZED` 保持。
