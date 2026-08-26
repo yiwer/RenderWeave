@@ -1,0 +1,189 @@
+{
+  "artifactVersion": "renderweave-design-input-expression-capacity-component-target/1.0",
+  "targetId": "DESIGN_INPUT_EXPRESSION_TARGET::CAPACITY_AUTHORITY_PARTIAL_WIRING::1.0",
+  "status": "FROZEN_COMPONENT_REPLAY_TARGET_PARTIAL_PRODUCT_WIRING",
+  "implementationRevision": "3c583a4b01666a3122d1d11973f39cdcccb8eff5",
+  "executionClass": "EXEC::DESIGN_INPUT_EXPRESSION::1.0",
+  "guardContractId": "renderweave-design-input-expression-capacity-guard/1.0",
+  "moduleOwner": "renderweave-template",
+  "scalarReplay": {
+    "axisCount": 65,
+    "caseCount": 195,
+    "valueEncodings": [
+      "CANONICAL_INTEGER",
+      "CANONICAL_DECIMAL",
+      "ENUM_TOKEN"
+    ],
+    "comparators": [
+      "ENUM_EXACT",
+      "EXACT",
+      "MAX_INCLUSIVE",
+      "MIN_EXCLUSIVE",
+      "MIN_INCLUSIVE"
+    ],
+    "primaryRole": "java-semantic-authority",
+    "independentRole": "typescript-independent-authoring-replayer",
+    "sharedSemanticLibrary": null
+  },
+  "productWiring": {
+    "wiredAxisCount": 9,
+    "remainingAxisCount": 56,
+    "wiredLimitIds": [
+      "designDslParser.rawUtf8Bytes",
+      "designDslParser.canonicalBytes",
+      "designDslParser.jsonDepth",
+      "designDslParser.objectMembers",
+      "designDslParser.arrayItems",
+      "designDslParser.totalValuesAndContainers",
+      "designDslParser.stringUtf8Bytes",
+      "designDslParser.memberNameUtf8Bytes",
+      "designDslParser.numberTokenBytes"
+    ],
+    "remainingGroups": [
+      {
+        "group": "renderInput",
+        "axisCount": 9,
+        "status": "PRODUCT_RESERVATION_POINTS_PENDING"
+      },
+      {
+        "group": "problems",
+        "axisCount": 5,
+        "status": "PRODUCT_RESERVATION_POINTS_PENDING"
+      },
+      {
+        "group": "designDslSemantics",
+        "axisCount": 15,
+        "status": "PRODUCT_RESERVATION_POINTS_PENDING"
+      },
+      {
+        "group": "expression",
+        "axisCount": 17,
+        "status": "PRODUCT_RESERVATION_POINTS_PENDING"
+      },
+      {
+        "group": "geometry",
+        "axisCount": 10,
+        "status": "PRODUCT_RESERVATION_POINTS_PENDING"
+      }
+    ],
+    "parserReservationProof": "cn.hbads.renderweave.template.internal.DesignDslCapacityReservationTest#parserDerivesAllEightObservationsAtItsProductReservationPoints",
+    "canonicalReservationProof": "cn.hbads.renderweave.template.internal.DesignDslCapacityReservationTest#canonicalWriterDerivesFinalBytesBeforeAllocationAndUsesTheSameAuthority",
+    "canonicalVectorRegression": "cn.hbads.renderweave.template.internal.CanonicalKernelVectorTest",
+    "productReservationProofComplete": false
+  },
+  "artifacts": [
+    {
+      "role": "capacityInterface",
+      "path": "renderweave-template/src/main/java/cn/hbads/renderweave/template/api/DesignInputExpressionCapacityAuthority.java",
+      "sha256": "sha256:1069ff324d35d6a8f4a58265fb7030611efc91129b6cb19bcba94e396d57c337",
+      "byteLength": 1882
+    },
+    {
+      "role": "canonicalCapacityAuthority",
+      "path": "renderweave-template/src/main/java/cn/hbads/renderweave/template/internal/CanonicalDesignInputExpressionCapacityAuthority.java",
+      "sha256": "sha256:f71d272b84eb0e7460d19e62039e8ec892ef60d6965520dd541792bbc9661270",
+      "byteLength": 14072
+    },
+    {
+      "role": "parserConsumer",
+      "path": "renderweave-template/src/main/java/cn/hbads/renderweave/template/internal/StrictJsonParser.java",
+      "sha256": "sha256:326c8488c448ee168ff0bd8e9546811644db98330a9a92737c1027fbe4cf38f1",
+      "byteLength": 9333
+    },
+    {
+      "role": "canonicalWriterConsumer",
+      "path": "renderweave-template/src/main/java/cn/hbads/renderweave/template/internal/CanonicalJsonWriter.java",
+      "sha256": "sha256:3d0e33a39ba89fe48e9ca09135269aade5876c613c742fd733c1e1c9fb20bc01",
+      "byteLength": 8063
+    },
+    {
+      "role": "designDslAuthorityConsumer",
+      "path": "renderweave-template/src/main/java/cn/hbads/renderweave/template/internal/CanonicalDesignDslAuthority.java",
+      "sha256": "sha256:69ae91704f9a89b32d1e3d55901d5dca21a531d9411592c934371a47b0aeb115",
+      "byteLength": 120771
+    },
+    {
+      "role": "assemblyRoot",
+      "path": "renderweave-template/src/main/java/cn/hbads/renderweave/template/internal/TemplateModule.java",
+      "sha256": "sha256:a80a255e6abd0c432f8cf98f1263eea5f55be480fe830bd0754fdb26ee4a4dea",
+      "byteLength": 4672
+    },
+    {
+      "role": "capacityContractTest",
+      "path": "renderweave-template/src/test/java/cn/hbads/renderweave/template/internal/DesignInputExpressionCapacityAuthorityTest.java",
+      "sha256": "sha256:d58575351595e86088799ec70d486838500da60b12eea1f22754a646fd61413f",
+      "byteLength": 3471
+    },
+    {
+      "role": "productReservationProof",
+      "path": "renderweave-template/src/test/java/cn/hbads/renderweave/template/internal/DesignDslCapacityReservationTest.java",
+      "sha256": "sha256:bae0b18b3cc356f0aed00c147592effde9fe0a43c47fb1d0cfd2c1cdc90f99b0",
+      "byteLength": 4787
+    },
+    {
+      "role": "javaPrimaryExecutor",
+      "path": "renderweave-template/src/test/java/cn/hbads/renderweave/template/internal/DesignInputExpressionCapacityConformanceTest.java",
+      "sha256": "sha256:f871494fb92bfdefd3463e4161794e5906a756b6f7bbb9973026695538e2a360",
+      "byteLength": 12515
+    },
+    {
+      "role": "canonicalVectorRegression",
+      "path": "renderweave-template/src/test/java/cn/hbads/renderweave/template/internal/CanonicalKernelVectorTest.java",
+      "sha256": "sha256:6aec6f3f3f88698a4af7ff53dffb9a16d2fafc626433680deed5324c653dfae9",
+      "byteLength": 13330
+    },
+    {
+      "role": "typescriptIndependentReplayer",
+      "path": "tools/verify-design-input-expression-capacity.ts",
+      "sha256": "sha256:22bdc6205d03bab30f1ca80c472d8b7b5b9a53b788b4022aea156cdf6f0bd57c",
+      "byteLength": 13887
+    },
+    {
+      "role": "componentGate",
+      "path": "tools/run-design-input-expression-capacity-gate.ps1",
+      "sha256": "sha256:83555caf2c044304a835e4761e01cbe9a4408099742a766aba0b8924db4f914f",
+      "byteLength": 4995
+    },
+    {
+      "role": "capacityCoverage",
+      "path": ".scratch/renderweave-template-v1/conformance-capacity-coverage-v1.json",
+      "sha256": "sha256:d9662c79464f0fe726ff9067068d9317565e4f4d1caa13b04cf5c0b2e0e60582",
+      "byteLength": 318460
+    },
+    {
+      "role": "fixtureContract",
+      "path": ".scratch/renderweave-template-v1/design-input-expression/fixture-contract-v1.json",
+      "sha256": "sha256:ee7bb2dff80686dabdd9c5583d01d8b0159930fa75a0f70178aa92bbf125cc31",
+      "byteLength": 3808
+    },
+    {
+      "role": "observationAdapter",
+      "path": ".scratch/renderweave-template-v1/design-input-expression/observation-adapter-v1.json",
+      "sha256": "sha256:e46af856d38c1844d1c3b222479e25208c0f5297caabdfea16ccd779301d77e9",
+      "byteLength": 5368
+    },
+    {
+      "role": "fixtureGeneratorTarget",
+      "path": ".scratch/renderweave-template-v1/design-input-expression/generator-target-manifest-v1.json",
+      "sha256": "sha256:2de5c33e7f03c3c1354426882960200344e232ad12ec12d5eae20d80483760c8",
+      "byteLength": 47584
+    }
+  ],
+  "formalRegistryBoundary": {
+    "caseRecordCount": 58,
+    "caseRegistrySha256": "sha256:bba2e350cc29c5fc8faae7f4bdb47c8bd0e2e60a3dd78d6f64d9d355b2440add",
+    "oracleRecordCount": 58,
+    "oracleRegistrySha256": "sha256:a0f513b0d305d00b1797f32db38488b92e5775fa8c19a3fcb00d4e2394e3d2db"
+  },
+  "boundary": {
+    "componentReplayAllowed": true,
+    "exactExecutionClassTargetCreated": false,
+    "classRequiredExecutorManifestsIssued": false,
+    "preissuanceReady": false,
+    "formalRecordsIssued": 0,
+    "recordIssuanceAllowed": false,
+    "executionClassExecutable": false,
+    "nativeRendererInvoked": false,
+    "externalProviderAttemptsAllowed": false
+  }
+}
