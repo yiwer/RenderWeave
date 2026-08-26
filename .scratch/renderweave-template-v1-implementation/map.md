@@ -704,6 +704,13 @@ Label: wayfinder:map
   Java/TypeScript 195/195、2662-check replay 与 Template 100/100 全绿，wired 38/65、remaining 27。`template`、
   `fast`、顺序 `server`、17-step Goal `full` 与 resolution `fast` 均通过；expression 17、geometry 10、class
   manifests/product replay/formal issuance 与 lifecycle 升级继续 pending。
+- [接线 Expression Definition 静态结构八轴产品容量](issues/134-wire-expression-definition-capacity.md) —
+  **resolved / automated_verified**；request-local `ExpressionDefinitionCapacityBudget` 已把 source UTF-8 bytes、inputs、
+  Mapping cases、Definition graph edges 与最长 chain depth 八轴接到真实 DesignDSL admission。实现 `f068e695`、
+  target `8b92d961`；Java/TypeScript 195/195、2666-check replay、Template 108/108 与 canonical 211/211 全绿，wired
+  46/65、remaining 19。Template 搜索 placeholder 对比度在 full gate 中被发现并由 `0192af74` 修复；最终 17-step
+  Goal `full` 与 resolution `fast` 全绿。Expression AST 2 + decimal 7、geometry 10、class manifests/product replay/
+  formal issuance 与 lifecycle 升级继续 pending。
 - [验证 Product Editor 状态、恢复与权威预览架构](issues/09-validate-product-editor-architecture.md) —
   throwaway 逻辑原型（`/prototype/editor-state-model`，不进产品 route）把冻结编辑器规则编码为确定性
   fixture 状态机：10 个引导走查场景 37/37 断言 + 自由操作冒烟 + 键盘焦点检查全部通过（Playwright A1，
@@ -848,9 +855,9 @@ Label: wayfinder:map
 - T129 已以旧 46/46 formal bytes 为不可变前缀发行精确 12+12 Domain Services suffix，并完成中央 catalog 与
   post-issuance 双重 replay；T130 随后完成 ordinal 3 `EXEC::DESIGN_INPUT_EXPRESSION::1.0` 的 65 轴唯一容量
   authority、195/195 component replay 与首批九个产品 reservation point；T131 随后把 `designDslSemantics` 十五轴
-  接入同一 authority 并冻结 v2 target；T132 随后完成 `renderInput` 九轴接线并冻结 v3 target；T133 现已 claim
-  `problems` 五轴的共享 bounded collector 接线。该 class 基线仍有 problems 5、expression 17、geometry 10，共 32 个
-  后续产品轴；T133 完成后将剩 expression 17、geometry 10，共 27 轴。195 个
+  接入同一 authority 并冻结 v2 target；T132 完成 `renderInput` 九轴并冻结 v3；T133 完成 `problems` 五轴共享
+  bounded collector 并冻结 v4；T134 又完成 Expression source/input/Mapping/Definition graph 八轴并冻结 v5。
+  当前只剩 Expression AST 2 + decimal 7 与 geometry 10，共 19 个产品轴。195 个
   capacity candidates 在全部真实接线、两个 required executor manifests 与独立产品 replay 完成前仍不得发行。其余
   execution-class target、Profile 发行、Editor J1、Renderer 双物理 Linux CPU-family
   认证与最终生命周期升级仍须以届时真实产品 artifact 和 executor 为输入另行切票；Ticket 19 保持 open。
