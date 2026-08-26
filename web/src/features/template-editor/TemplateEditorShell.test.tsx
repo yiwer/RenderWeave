@@ -40,6 +40,8 @@ describe('Template Editor E1/E2 Product shell', () => {
     expect(screen.getByText('revision 7')).toBeTruthy();
     expect(screen.getByText('READY')).toBeTruthy();
     expect(screen.getByRole('tree', { name: 'DesignDSL 结构' })).toBeTruthy();
+    expect(screen.getByRole('link', { name: '返回模板目录' }).getAttribute('href'))
+      .toBe('/templates');
 
     fireEvent.click(screen.getByRole('treeitem', { name: /底色/ }));
     expect(screen.getByRole('heading', { name: '底色' })).toBeTruthy();

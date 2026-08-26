@@ -1449,6 +1449,15 @@ function StructuredShell({
   );
 }
 
+function TemplateCatalogLink() {
+  return (
+    <a className="te-product-mark" href="/templates" aria-label="返回模板目录">
+      <span className="weave-mark" aria-hidden="true">RW</span>
+      <span>RenderWeave</span>
+    </a>
+  );
+}
+
 function EditorFrame({
   rootRef,
   baseline,
@@ -1472,10 +1481,7 @@ function EditorFrame({
     <div className="template-editor-root" ref={rootRef}>
       <a className="skip-link" href="#main-content">跳到主要内容</a>
       <header className="te-chrome">
-        <div className="te-product-mark">
-          <span className="weave-mark" aria-hidden="true">RW</span>
-          <span>RenderWeave</span>
-        </div>
+        <TemplateCatalogLink />
         <div className="te-document-identity">
           <h1>{documentName ?? templateDisplayName(baseline)}</h1>
           <span title={baseline.templateId}>{shortIdentity(baseline.templateId)}</span>
@@ -2691,10 +2697,7 @@ function RawRepairShell({
     <div className="template-editor-root">
       <a className="skip-link" href="#main-content">跳到主要内容</a>
       <header className="te-chrome te-raw-chrome">
-        <div className="te-product-mark">
-          <span className="weave-mark" aria-hidden="true">RW</span>
-          <span>RenderWeave</span>
-        </div>
+        <TemplateCatalogLink />
         <div className="te-document-identity">
           <h1>本地修复缓冲</h1>
           <span>未建立服务器 baseline</span>
@@ -2741,7 +2744,7 @@ function OpeningSkeleton() {
     <div className="template-editor-root te-opening" aria-busy="true">
       <a className="skip-link" href="#main-content">跳到主要内容</a>
       <header className="te-chrome">
-        <div className="te-product-mark"><span className="weave-mark" aria-hidden="true">RW</span><span>RenderWeave</span></div>
+        <TemplateCatalogLink />
       </header>
       <main id="main-content" className="te-opening-main">
         <LoaderCircle className="te-loading-icon" aria-hidden="true" size={22} />
@@ -2758,7 +2761,7 @@ function OpeningError({ message, onRetry }: { message: string; onRetry: () => vo
     <div className="template-editor-root te-opening">
       <a className="skip-link" href="#main-content">跳到主要内容</a>
       <header className="te-chrome">
-        <div className="te-product-mark"><span className="weave-mark" aria-hidden="true">RW</span><span>RenderWeave</span></div>
+        <TemplateCatalogLink />
       </header>
       <main id="main-content" className="te-opening-main">
         <AlertTriangle aria-hidden="true" size={24} />

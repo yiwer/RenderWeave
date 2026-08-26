@@ -55,9 +55,21 @@
   gap: var(--space-sm);
   padding-inline-end: var(--space-lg);
   border-inline-end: 1px solid var(--color-hairline);
+  color: inherit;
   font-family: var(--font-display);
   font-size: var(--text-lg);
   font-weight: 750;
+  text-decoration: none;
+}
+
+.te-product-mark:hover {
+  color: var(--color-accent-ink);
+}
+
+.te-product-mark:focus-visible {
+  border-radius: var(--radius-sm);
+  outline: 2px solid var(--color-focus);
+  outline-offset: 3px;
 }
 
 .te-product-mark .weave-mark {

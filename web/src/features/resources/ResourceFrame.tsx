@@ -4,6 +4,7 @@ import {
   ChevronRight,
   Database,
   FileCheck2,
+  LayoutTemplate,
   Layers3,
 } from 'lucide-react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
@@ -84,6 +85,11 @@ export function ResourceRail() {
         <FileCheck2 aria-hidden="true" size={17} />样本验证器
       </NavLink>
       <div className="rail-divider" />
+      <div className="rail-section-label">内容设计</div>
+      <NavLink className={({ isActive }) => `rail-link ${isActive ? 'active' : ''}`} to="/templates">
+        <LayoutTemplate aria-hidden="true" size={17} />模板设计
+      </NavLink>
+      <div className="rail-divider" />
       <div className="rail-section-label">智能辅助</div>
       <NavLink
         className={({ isActive }) => `rail-link ${isActive || inferenceActive ? 'active' : ''}`}
@@ -95,12 +101,12 @@ export function ResourceRail() {
       <div className="rail-divider" />
       <div className="rail-context-card system-contract-card">
         <span>接口版本</span>
-        <strong>0.12.0</strong>
+        <strong>0.17.0</strong>
         <small><Database aria-hidden="true" size={12} /> PostgreSQL · strict DSL</small>
       </div>
       <div className="rail-note">
         <strong>当前 v1 范围</strong>
-        <span>Draft、StaticSchema、RootDocument 验证与可审核的 Candidate；不展示 Template/Render。</span>
+        <span>Draft、StaticSchema、Template 与权威渲染、RootDocument 验证及可审核的 Candidate。</span>
       </div>
     </nav>
   );

@@ -44,6 +44,15 @@ const InferenceMonitorPage = lazyRoute(async () => ({
 const CandidateReviewPage = lazyRoute(async () => ({
   default: (await import('../features/inference/CandidateReviewPage')).CandidateReviewPage,
 }));
+const TemplateListPage = lazyRoute(async () => ({
+  default: (await import('../features/templates/TemplateProductPages')).TemplateListPage,
+}));
+const TemplateCreatePage = lazyRoute(async () => ({
+  default: (await import('../features/templates/TemplateProductPages')).TemplateCreatePage,
+}));
+const TemplateEditorPage = lazyRoute(async () => ({
+  default: (await import('../features/templates/TemplateProductPages')).TemplateEditorPage,
+}));
 
 export function App() {
   return (
@@ -60,6 +69,9 @@ export function App() {
         <Route path="/inference/samples" element={<InferenceReplayPage />} />
         <Route path="/inference-runs/:runId/monitor" element={<InferenceMonitorPage />} />
         <Route path="/inference-runs/:runId/review" element={<CandidateReviewPage />} />
+        <Route path="/templates" element={<TemplateListPage />} />
+        <Route path="/templates/new" element={<TemplateCreatePage />} />
+        <Route path="/templates/:templateId" element={<TemplateEditorPage />} />
         <Route path="/prototype/schema-studio" element={<SchemaStudioPrototype />} />
         <Route path="/prototype/template-designer" element={<TemplateDesignerPrototype />} />
         <Route path="/prototype/editor-state-model" element={<EditorStateModelPrototype />} />

@@ -4682,3 +4682,24 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
   `.sdlc/evidence/20260826-084623-fast/` 在 `tsc` 启动前失败，`npm ci` 后同 gate 绿色，不构成产品失败。
 - 生命周期：T125=`resolved / automated_verified`。正式 `/templates` App route/nav、产品浏览器验收、Profile registration/
   certification、daemon native success、J1/A3/READY 与所有外部副作用均未推进；下一 frontier 是独立产品激活票。
+
+## 126. TV1-T126 执行卡
+
+- 决策：T125 commits `0d2f28f7`/`809cb441` 已合入并 push `main`，Template 目录/创建 substrate、Editor E1–E9 与
+  public Authoritative Preview seam 已真实闭合；当前唯一未阻塞最终产品 frontier 是正式 route/nav 与浏览器验收，
+  不是 `/prototype`、未认证 daemon success 或新的功能纵切。
+- Interface/seam：沿既有 `lazyRoute` 在 `App` 精确挂载 `/templates`、`/templates/new`、
+  `/templates/:templateId`；`ResourceRail` 增加对全部 Template 子路由 active 的稳定入口，Editor structured/safe/
+  loading/error chrome 提供显式返回目录链接。route identity 仍 opaque，产品页只消费既有 API/deep modules。
+- 浏览器验收：Playwright 只访问正式产品 URL；在测试 HTTP boundary 提供 closed、合同精确的 catalog/create/
+  current/recheck/preview 响应，走通 list → create/open → trusted Editor → authoritative preview → 返回目录，并检查
+  1024/1280/1440、键盘可达、safe metadata 与 axe serious/critical 零发现。fixture 不进入 production bundle，
+  不升级为 physical Renderer/Profile 证据。
+- 允许影响：T126 tracker/map/plan、`web/src/app` routes/tests、`ResourceFrame` navigation/tests、Template Editor chrome
+  link/CSS/tests、正式 product Playwright spec 与必要 gate/evidence；不修改用户 Image-Only dirty work或根 `styles.css`。
+- 禁止影响：Java/OpenAPI/generated SDK/migration、Template/Rendering 语义、Profile registration/certification、daemon
+  native success/build、public cancel/LayoutTrace、prototype、产品 fixture/fake raster/fallback、provider/API Key/真实数据/
+  生产/J1/A3/READY。
+- TDD/gates：App/nav/editor-link RED → formal product journey RED → minimal GREEN/refactor；focused Node 24 → Web
+  test/typecheck/lint/build → `web` → `fast` → Goal `full` → resolution `fast`。Maven串行、精确 staging；最高只报
+  `automated_verified`。
