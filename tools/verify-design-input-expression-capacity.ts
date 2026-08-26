@@ -7,7 +7,7 @@ type Decimal = { unscaled: bigint; scale: number };
 
 const EXECUTION_CLASS = "EXEC::DESIGN_INPUT_EXPRESSION::1.0";
 const TARGET_VERSION = "renderweave-design-input-expression-capacity-component-target/1.0";
-const TARGET_ID = "DESIGN_INPUT_EXPRESSION_TARGET::CAPACITY_AUTHORITY_PARTIAL_WIRING::2.0";
+const TARGET_ID = "DESIGN_INPUT_EXPRESSION_TARGET::CAPACITY_AUTHORITY_PARTIAL_WIRING::3.0";
 const REPORT_VERSION = "renderweave-design-input-expression-capacity-independent/1";
 const INTEGER = /^-?(?:0|[1-9][0-9]*)$/;
 const DECIMAL = /^-?(?:0|[1-9][0-9]*)(?:\.[0-9]+)?$/;
@@ -23,6 +23,17 @@ const FORBIDDEN_FIXTURE_KEYS = new Set([
   "default",
   "script",
 ]);
+const RENDER_INPUT_WIRED_IDS = [
+  "renderInput.contentEncoding",
+  "renderInput.utf8Bytes",
+  "renderInput.jsonDepth",
+  "renderInput.objectMembers",
+  "renderInput.arrayItems",
+  "renderInput.totalValuesAndContainers",
+  "renderInput.stringUtf8Bytes",
+  "renderInput.numberTokenBytes",
+  "renderInput.customValueEntries",
+];
 
 function requiredOption(name: string): string {
   const index = process.argv.indexOf(name);
@@ -169,13 +180,33 @@ function main(): void {
     "renderweave-design-input-expression-capacity-guard/1.0", "guard contract");
   requireEqual(target.scalarReplay.axisCount, 65, "target scalar axis count");
   requireEqual(target.scalarReplay.caseCount, 195, "target scalar case count");
-  requireEqual(target.productWiring.wiredAxisCount, 24, "wired product axes");
-  requireEqual(target.productWiring.remainingAxisCount, 41, "remaining product axes");
+  requireEqual(target.productWiring.wiredAxisCount, 33, "wired product axes");
+  requireEqual(target.productWiring.remainingAxisCount, 32, "remaining product axes");
   requireEqual(target.boundary.preissuanceReady, false, "target preissuance boundary");
   requireEqual(target.boundary.recordIssuanceAllowed, false, "target issuance boundary");
   requireEqual(target.boundary.executionClassExecutable, false, "target executable boundary");
 
-  let checkCount = 12;
+  const predecessorPath = resolve(repo, target.predecessorTarget.path);
+  const predecessorBytes = readFileSync(predecessorPath);
+  const predecessor = JSON.parse(predecessorBytes.toString("utf8"));
+  requireEqual(sha256(predecessorBytes), target.predecessorTarget.sha256,
+    "predecessor target hash");
+  requireEqual(predecessorBytes.length, target.predecessorTarget.byteLength,
+    "predecessor target length");
+  requireEqual(target.predecessorTarget.mutationAllowed, false,
+    "predecessor target mutation boundary");
+  const predecessorWired = predecessor.productWiring.wiredLimitIds as string[];
+  const expectedWired = [...predecessorWired, ...RENDER_INPUT_WIRED_IDS].sort();
+  const targetWired = target.productWiring.wiredLimitIds as string[];
+  requireEqual(new Set(targetWired).size, 33, "unique wired product axes");
+  requireEqual([...targetWired].sort(), expectedWired, "monotonic wired product axes");
+  requireEqual(target.productWiring.remainingGroups, [
+    { group: "problems", axisCount: 5, status: "PRODUCT_RESERVATION_POINTS_PENDING" },
+    { group: "expression", axisCount: 17, status: "PRODUCT_RESERVATION_POINTS_PENDING" },
+    { group: "geometry", axisCount: 10, status: "PRODUCT_RESERVATION_POINTS_PENDING" },
+  ], "remaining product groups");
+
+  let checkCount = 18;
   for (const artifact of target.artifacts as JsonObject[]) {
     const artifactPath = resolve(repo, artifact.path);
     const bytes = readFileSync(artifactPath);
@@ -196,8 +227,8 @@ function main(): void {
   requireEqual(primary.caseCount, 195, "primary case count");
   requireEqual(primary.passed, 195, "primary passed count");
   requireEqual(primary.failed, 0, "primary failure count");
-  requireEqual(primary.boundary.wiredProductAxisCount, 24, "primary wired axes");
-  requireEqual(primary.boundary.remainingProductAxisCount, 41, "primary remaining axes");
+  requireEqual(primary.boundary.wiredProductAxisCount, 33, "primary wired axes");
+  requireEqual(primary.boundary.remainingProductAxisCount, 32, "primary remaining axes");
   requireEqual(primary.boundary.preissuanceReady, false, "primary preissuance boundary");
   requireEqual(primary.boundary.recordIssuanceAllowed, false, "primary issuance boundary");
   requireEqual(primary.boundary.executionClassExecutable, false, "primary executable boundary");
@@ -282,7 +313,7 @@ function main(): void {
     assurance: "A2_COMPONENT_SCALAR_REPLAY_PARTIAL_PRODUCT_WIRING",
     executionClass: EXECUTION_CLASS,
     targetManifest: {
-      path: ".scratch/renderweave-template-v1/design-input-expression/capacity-component-target-v2.json",
+      path: ".scratch/renderweave-template-v1/design-input-expression/capacity-component-target-v3.json",
       sha256: sha256(targetBytes),
       byteLength: targetBytes.length,
     },
@@ -297,8 +328,8 @@ function main(): void {
     observationDigest: sha256(Buffer.from(JSON.stringify(normalizedObservations), "utf8")),
     boundary: {
       scalarGuardOnly: true,
-      wiredProductAxisCount: 24,
-      remainingProductAxisCount: 41,
+      wiredProductAxisCount: 33,
+      remainingProductAxisCount: 32,
       productReservationProofComplete: false,
       preissuanceReady: false,
       formalRecordsIssued: 0,
@@ -308,7 +339,7 @@ function main(): void {
   };
   writeFileSync(reportPath, `${JSON.stringify(report, null, 2)}\n`, { flag: "wx" });
   process.stdout.write(
-    `DESIGN_INPUT_EXPRESSION independent replay: ${observedCases.size}/195 PASS, 24/65 wired\n`,
+    `DESIGN_INPUT_EXPRESSION independent replay: ${observedCases.size}/195 PASS, 33/65 wired\n`,
   );
 }
 
