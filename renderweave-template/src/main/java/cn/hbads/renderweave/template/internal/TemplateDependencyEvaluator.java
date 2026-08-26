@@ -2,6 +2,7 @@ package cn.hbads.renderweave.template.internal;
 
 import cn.hbads.renderweave.schema.api.StaticSchemaAuthority;
 import cn.hbads.renderweave.schema.definition.StaticSchemaRef;
+import cn.hbads.renderweave.template.api.DesignInputExpressionCapacityAuthority;
 import cn.hbads.renderweave.template.api.DesignDslAuthority;
 import cn.hbads.renderweave.template.api.TemplateApplication;
 import cn.hbads.renderweave.template.api.TemplateDependencyProjection;
@@ -9,7 +10,6 @@ import cn.hbads.renderweave.template.spi.DependencyResolution;
 import cn.hbads.renderweave.template.spi.OwnerScopeAuthority;
 import cn.hbads.renderweave.template.spi.TemplateDependencySnapshot;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -25,17 +25,33 @@ final class TemplateDependencyEvaluator {
 
     private final DependencyResolution resolution;
     private final TemplateSemanticDependencyValidator semantics;
+    private final DesignInputExpressionCapacityAuthority capacity;
 
     TemplateDependencyEvaluator(
             DependencyResolution resolution,
             StaticSchemaAuthority schemas,
             DesignDslAuthority designs
     ) {
+        this(
+                resolution,
+                schemas,
+                designs,
+                CanonicalDesignInputExpressionCapacityAuthority.INSTANCE
+        );
+    }
+
+    TemplateDependencyEvaluator(
+            DependencyResolution resolution,
+            StaticSchemaAuthority schemas,
+            DesignDslAuthority designs,
+            DesignInputExpressionCapacityAuthority capacity
+    ) {
         this.resolution = Objects.requireNonNull(resolution, "resolution");
         this.semantics = new TemplateSemanticDependencyValidator(
                 Objects.requireNonNull(schemas, "schemas"),
                 Objects.requireNonNull(designs, "designs")
         );
+        this.capacity = Objects.requireNonNull(capacity, "capacity");
     }
 
     static final class Unavailable extends RuntimeException {
@@ -88,7 +104,7 @@ final class TemplateDependencyEvaluator {
         if (!context.problemLimitReached) {
             context.evaluateSemantics(canonicalDesignDslUtf8, rootSchema);
         }
-        var report = TemplateProblemBudget.bounded(context.problems);
+        var report = context.problems.report();
         var classification = report.truncated() || context.hard
                 ? Classification.HARD_ERROR
                 : report.problems().isEmpty()
@@ -107,15 +123,14 @@ final class TemplateDependencyEvaluator {
     private final class EvaluationContext {
         private final String selfTemplateId;
         private final OwnerScopeAuthority.OwnerScope ownerScope;
-        private final List<TemplateApplication.ValidationProblem> problems = new ArrayList<>();
+        private final TemplateProblemBudget problems = new TemplateProblemBudget(capacity);
         private final Map<String, TemplateDependencySnapshot.AssetFact> assetFacts =
                 new HashMap<>();
         private final Map<String, TemplateDependencySnapshot.TemplateFact> templateFacts =
                 new HashMap<>();
         private final Set<String> expanded = new HashSet<>();
         private boolean hard;
-        private boolean problemLimitReached;
-        private int problemBytes;
+        private boolean problemLimitReached = problems.stopped();
         private int edgeCount;
 
         private EvaluationContext(
@@ -256,11 +271,16 @@ final class TemplateDependencyEvaluator {
             }
             final TemplateSemanticDependencyValidator.Validation validation;
             try {
-                validation = semantics.validate(canonicalDesignDslUtf8, rootSchema, states);
+                validation = semantics.validate(
+                        canonicalDesignDslUtf8,
+                        rootSchema,
+                        states,
+                        problems
+                );
             } catch (TemplateSemanticDependencyValidator.Unavailable unavailable) {
                 throw new Unavailable();
             }
-            problems.addAll(validation.problems());
+            problemLimitReached = problems.stopped();
             hard |= validation.hard();
         }
 
@@ -278,24 +298,13 @@ final class TemplateDependencyEvaluator {
                 TemplateApplication.ProblemCategory category,
                 String pointer
         ) {
-            if (problems.size() <= TemplateProblemBudget.MAX_ITEMS) {
-                var problem = new TemplateApplication.ValidationProblem(
-                        code,
-                        category,
-                        TemplateApplication.ProblemSeverity.ERROR,
-                        pointer,
-                        List.of()
-                );
-                problems.add(problem);
-                var canonicalSize = TemplateProblemBudget.canonicalSize(problem);
-                problemLimitReached = problems.size() > TemplateProblemBudget.MAX_ITEMS
-                        || canonicalSize > TemplateProblemBudget.MAX_ITEM_BYTES
-                        || problemBytes + canonicalSize
-                        > TemplateProblemBudget.MAX_ORDINARY_BYTES;
-                if (!problemLimitReached) {
-                    problemBytes += canonicalSize;
-                }
-            }
+            problemLimitReached = !problems.add(new TemplateApplication.ValidationProblem(
+                    code,
+                    category,
+                    TemplateApplication.ProblemSeverity.ERROR,
+                    pointer,
+                    List.of()
+            ));
         }
     }
 }

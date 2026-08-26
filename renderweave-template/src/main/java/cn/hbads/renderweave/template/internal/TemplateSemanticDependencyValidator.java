@@ -31,7 +31,6 @@ import java.util.Set;
  * JSON Schema validator.
  */
 final class TemplateSemanticDependencyValidator {
-    private static final int MAX_DISCOVERED_PROBLEMS = TemplateProblemBudget.MAX_ITEMS + 1;
     private static final StaticSchemaRef SYSTEM_EMPTY = new StaticSchemaRef(
             SchemaKey.systemProvided("system-empty"), VersionTag.of("v1"));
 
@@ -67,10 +66,28 @@ final class TemplateSemanticDependencyValidator {
             StaticSchemaRef rootSchema,
             Map<String, DependencyResolution.TemplateState> templates
     ) {
+        return validate(
+                canonicalDesignDslUtf8,
+                rootSchema,
+                templates,
+                new TemplateProblemBudget()
+        );
+    }
+
+    Validation validate(
+            byte[] canonicalDesignDslUtf8,
+            StaticSchemaRef rootSchema,
+            Map<String, DependencyResolution.TemplateState> templates,
+            TemplateProblemBudget problems
+    ) {
         Objects.requireNonNull(canonicalDesignDslUtf8, "canonicalDesignDslUtf8");
         Objects.requireNonNull(rootSchema, "rootSchema");
         Objects.requireNonNull(templates, "templates");
-        var context = new ValidationContext(rootSchema, templates);
+        var context = new ValidationContext(
+                rootSchema,
+                templates,
+                Objects.requireNonNull(problems, "problems")
+        );
         final JsonValue.ObjectValue document;
         try {
             var parsed = parser.parse(canonicalDesignDslUtf8);
@@ -95,16 +112,19 @@ final class TemplateSemanticDependencyValidator {
         private final Set<String> invalidChildDesigns = new HashSet<>();
         private final Map<String, DefinitionInfo> definitions = new LinkedHashMap<>();
         private final Map<String, Scope> loopScopes = new HashMap<>();
-        private final List<TemplateApplication.ValidationProblem> problems = new ArrayList<>();
+        private final TemplateProblemBudget problems;
         private boolean hard;
         private boolean stopped;
 
         private ValidationContext(
                 StaticSchemaRef rootSchema,
-                Map<String, DependencyResolution.TemplateState> templates
+                Map<String, DependencyResolution.TemplateState> templates,
+                TemplateProblemBudget problems
         ) {
             this.rootSchema = rootSchema;
             this.templates = Map.copyOf(templates);
+            this.problems = problems;
+            this.stopped = problems.stopped();
         }
 
         private void validate(JsonValue.ObjectValue document) {
@@ -834,26 +854,21 @@ final class TemplateSemanticDependencyValidator {
             if (stopped) {
                 return;
             }
-            problems.add(new TemplateApplication.ValidationProblem(
+            if (!problems.add(new TemplateApplication.ValidationProblem(
                     code,
                     category,
                     TemplateApplication.ProblemSeverity.ERROR,
                     pointer,
                     List.of()
-            ));
-            if (problems.size() >= MAX_DISCOVERED_PROBLEMS) {
+            ))) {
                 hard = true;
                 stopped = true;
             }
         }
 
         private Validation result() {
-            var sorted = new ArrayList<>(problems);
-            sorted.sort((left, right) -> {
-                var pointer = compareUtf8(left.canonicalPointer(), right.canonicalPointer());
-                return pointer != 0 ? pointer : compareUtf8(left.code(), right.code());
-            });
-            return new Validation(sorted, hard);
+            var report = problems.report();
+            return new Validation(report.problems(), hard || report.truncated());
         }
     }
 

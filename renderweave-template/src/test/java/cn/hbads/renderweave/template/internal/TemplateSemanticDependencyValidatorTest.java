@@ -377,9 +377,9 @@ class TemplateSemanticDependencyValidatorTest {
     }
 
     @Test
-    void semanticProblemDiscoveryIsDeterministicAndHandsOverflowToTheSharedBudget() {
+    void semanticProblemDiscoveryStopsInsideTheSharedBudgetWithOneFinalMarker() {
         var children = new StringBuilder("[");
-        for (int index = 0; index <= TemplateProblemBudget.MAX_ITEMS; index++) {
+        for (int index = 0; index <= 200; index++) {
             if (index > 0) {
                 children.append(',');
             }
@@ -402,12 +402,9 @@ class TemplateSemanticDependencyValidatorTest {
 
         assertEquals(first, second);
         assertTrue(first.hard());
-        assertEquals(TemplateProblemBudget.MAX_ITEMS + 1, first.problems().size());
-        var bounded = TemplateProblemBudget.bounded(first.problems());
-        assertTrue(bounded.truncated());
-        assertEquals(TemplateProblemBudget.MAX_ITEMS, bounded.problems().size());
-        assertEquals("PROBLEM_LIMIT_REACHED", bounded.problems().getLast().code());
-        assertEquals(List.of("ITEMS"), bounded.problems().getLast().messageArgs());
+        assertEquals(200, first.problems().size());
+        assertEquals("PROBLEM_LIMIT_REACHED", first.problems().getLast().code());
+        assertEquals(List.of("ITEMS"), first.problems().getLast().messageArgs());
     }
 
     private TemplateSemanticDependencyValidator validator() {

@@ -1,5 +1,6 @@
 package cn.hbads.renderweave.template.internal;
 
+import cn.hbads.renderweave.template.api.DesignInputExpressionCapacityAuthority;
 import cn.hbads.renderweave.template.api.TemplateApplication;
 
 import java.nio.charset.StandardCharsets;
@@ -10,52 +11,115 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HexFormat;
 import java.util.List;
+import java.util.Objects;
 
 /** Shared bounded, canonical Template problem collection contract. */
 final class TemplateProblemBudget {
-    static final int MAX_ITEMS = 200;
-    static final int MAX_ITEM_BYTES = 4096;
-    static final int MAX_TOTAL_BYTES = 262_144;
-    static final int MARKER_RESERVE_BYTES = 1024;
-    static final int MAX_ORDINARY_BYTES = MAX_TOTAL_BYTES - MARKER_RESERVE_BYTES;
+    private static final int MARKER_RESERVE_BYTES = 1024;
     private static final byte[] DOMAIN =
             "renderweave-template-problem-fingerprint/1\0".getBytes(StandardCharsets.UTF_8);
 
-    private TemplateProblemBudget() {
+    private final DesignInputExpressionCapacityAuthority capacity;
+    private final List<TemplateApplication.ValidationProblem> ordinary = new ArrayList<>();
+    private long ordinaryBytes;
+    private boolean truncated;
+    private String markerReason;
+
+    TemplateProblemBudget() {
+        this(CanonicalDesignInputExpressionCapacityAuthority.INSTANCE);
+    }
+
+    TemplateProblemBudget(DesignInputExpressionCapacityAuthority capacity) {
+        this.capacity = Objects.requireNonNull(capacity, "capacity");
+        if (!accepted("problems.limitMarkerReservedBytes", MARKER_RESERVE_BYTES)) {
+            stop("BYTES");
+        }
     }
 
     static TemplateApplication.ValidationReport bounded(
             List<TemplateApplication.ValidationProblem> input
     ) {
+        return bounded(input, CanonicalDesignInputExpressionCapacityAuthority.INSTANCE);
+    }
+
+    static TemplateApplication.ValidationReport bounded(
+            List<TemplateApplication.ValidationProblem> input,
+            DesignInputExpressionCapacityAuthority capacity
+    ) {
         var sorted = new ArrayList<>(List.copyOf(input));
         sorted.sort(problemComparator());
-        var itemTruncated = sorted.size() > MAX_ITEMS;
-        var ordinaryLimit = itemTruncated ? MAX_ITEMS - 1 : MAX_ITEMS;
-        var selected = new ArrayList<TemplateApplication.ValidationProblem>();
-        var ordinaryBytes = 0;
-        var byteTruncated = false;
+        var budget = new TemplateProblemBudget(capacity);
         for (var problem : sorted) {
-            if (selected.size() >= ordinaryLimit) {
+            if (!budget.add(problem)) {
                 break;
             }
-            var bytes = canonicalBytes(problem);
-            if (bytes.length > MAX_ITEM_BYTES
-                    || ordinaryBytes + bytes.length > MAX_ORDINARY_BYTES) {
-                byteTruncated = true;
-                break;
-            }
-            selected.add(problem);
-            ordinaryBytes += bytes.length;
         }
-        var truncated = itemTruncated || byteTruncated || selected.size() < sorted.size();
+        return budget.report();
+    }
+
+    boolean add(TemplateApplication.ValidationProblem problem) {
+        Objects.requireNonNull(problem, "problem");
         if (truncated) {
-            selected.add(marker(byteTruncated ? "BYTES" : "ITEMS"));
+            return false;
+        }
+        var bytes = canonicalBytes(problem);
+        if (!accepted("problems.canonicalBytesPerItem", bytes.length)
+                || !accepted(
+                "problems.canonicalBytesTotal",
+                ordinaryBytes + bytes.length + MARKER_RESERVE_BYTES
+        )) {
+            return stop("BYTES");
+        }
+        if (!accepted("problems.itemsIncludingLimitMarker", ordinary.size() + 1L)) {
+            if (!ordinary.isEmpty()) {
+                var removed = ordinary.removeLast();
+                ordinaryBytes -= canonicalSize(removed);
+            }
+            accepted("problems.ordinaryItemsWhenTruncated", ordinary.size());
+            return stop("ITEMS");
+        }
+        ordinary.add(problem);
+        ordinaryBytes += bytes.length;
+        return true;
+    }
+
+    boolean stopped() {
+        return truncated;
+    }
+
+    TemplateApplication.ValidationReport report() {
+        var selected = new ArrayList<>(ordinary);
+        selected.sort(problemComparator());
+        if (truncated) {
+            selected.add(marker(markerReason));
         }
         return new TemplateApplication.ValidationReport(
                 selected,
                 truncated,
                 fingerprint(selected)
         );
+    }
+
+    private boolean stop(String reason) {
+        truncated = true;
+        markerReason = reason;
+        while (!ordinary.isEmpty()
+                && !accepted("problems.itemsIncludingLimitMarker", ordinary.size() + 1L)) {
+            var removed = ordinary.removeLast();
+            ordinaryBytes -= canonicalSize(removed);
+        }
+        return false;
+    }
+
+    private boolean accepted(String limitId, long observedValue) {
+        try {
+            return capacity.evaluate(new DesignInputExpressionCapacityAuthority.Observation(
+                    limitId,
+                    Long.toString(observedValue)
+            )) instanceof DesignInputExpressionCapacityAuthority.Accepted;
+        } catch (RuntimeException unavailable) {
+            return false;
+        }
     }
 
     private static TemplateApplication.ValidationProblem marker(String reason) {
