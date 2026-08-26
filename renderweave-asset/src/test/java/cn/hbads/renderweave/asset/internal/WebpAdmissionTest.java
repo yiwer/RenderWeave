@@ -128,6 +128,24 @@ class WebpAdmissionTest {
     }
 
     @Test
+    void rejectsOversizedCanvasThroughTheSharedCapacityGuardBeforeFrameDecode() {
+        byte[] raw = insertVp8xAndExif(fixture("lossy.webp"), exifTiffOrientation(6));
+        raw[24] = 0x20;
+        raw[25] = 0x4E;
+        raw[26] = 0x00; // canvas width minus one = 20,000
+
+        var rejected = assertInstanceOf(
+                AssetAcceptanceAuthority.Rejected.class,
+                AUTHORITY.admit(raw, AssetKind.IMAGE)
+        );
+        assertEquals(FailureCode.ASSET_CONTENT_LIMIT_EXCEEDED, rejected.code());
+        assertEquals(FailureStage.ASSET_STRUCTURE, rejected.stage());
+        assertEquals("/VP8X", rejected.pointer());
+        assertEquals(AssetAcceptanceAuthority.Limit.IMAGE_EDGE_PIXELS,
+                rejected.limit().orElseThrow());
+    }
+
+    @Test
     void appliesExifOrientationFromExifChunk() {
         byte[] raw = insertVp8xAndExif(fixture("lossy.webp"), exifTiffOrientation(6));
         var outcome = AUTHORITY.admit(raw, AssetKind.IMAGE);

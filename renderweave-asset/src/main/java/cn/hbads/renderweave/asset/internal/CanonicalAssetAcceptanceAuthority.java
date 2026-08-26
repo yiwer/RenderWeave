@@ -10,9 +10,6 @@ import java.util.Optional;
 
 final class CanonicalAssetAcceptanceAuthority implements AssetAcceptanceAuthority {
 
-    static final int IMAGE_RAW_BYTE_LIMIT = 64 * 1024 * 1024;
-    static final int FONT_RAW_BYTE_LIMIT = 32 * 1024 * 1024;
-
     @Override
     public Acceptance admit(byte[] rawBytes, AssetKind kind) {
         Objects.requireNonNull(rawBytes, "rawBytes");
@@ -25,13 +22,13 @@ final class CanonicalAssetAcceptanceAuthority implements AssetAcceptanceAuthorit
                     Optional.empty()
             );
         }
-        int rawByteLimit = kind == AssetKind.IMAGE ? IMAGE_RAW_BYTE_LIMIT : FONT_RAW_BYTE_LIMIT;
-        if (rawBytes.length > rawByteLimit) {
+        var capacityLimit = AssetContentCapacityGuard.rawBytesExceeded(kind, rawBytes.length);
+        if (capacityLimit.isPresent()) {
             return new Rejected(
                     FailureCode.ASSET_CONTENT_LIMIT_EXCEEDED,
                     FailureStage.ASSET_STRUCTURE,
                     "/",
-                    Optional.of(Limit.RAW_BYTES)
+                    capacityLimit
             );
         }
         if (kind == AssetKind.IMAGE) {

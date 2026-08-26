@@ -20,9 +20,6 @@ import java.util.Optional;
 
 final class WebpAdmission {
 
-    private static final int MAX_EDGE_PIXELS = 20_000;
-    private static final long MAX_TOTAL_PIXELS = 100_000_000L;
-
     private WebpAdmission() {
     }
 
@@ -149,23 +146,15 @@ final class WebpAdmission {
                     sawVp8x = true;
                     long canvasWidth = leU24(raw, position + 12) + 1;
                     long canvasHeight = leU24(raw, position + 15) + 1;
-                    if (canvasWidth > MAX_EDGE_PIXELS || canvasHeight > MAX_EDGE_PIXELS) {
+                    var capacityLimit = AssetContentCapacityGuard.imageDimensionsExceeded(
+                            canvasWidth, canvasHeight);
+                    if (capacityLimit.isPresent()) {
                         return Scan.rejected(
                                 rejected(
                                         FailureCode.ASSET_CONTENT_LIMIT_EXCEEDED,
                                         FailureStage.ASSET_STRUCTURE,
                                         "/VP8X",
-                                        Limit.IMAGE_EDGE_PIXELS
-                                )
-                        );
-                    }
-                    if (canvasWidth * canvasHeight > MAX_TOTAL_PIXELS) {
-                        return Scan.rejected(
-                                rejected(
-                                        FailureCode.ASSET_CONTENT_LIMIT_EXCEEDED,
-                                        FailureStage.ASSET_STRUCTURE,
-                                        "/VP8X",
-                                        Limit.IMAGE_TOTAL_PIXELS
+                                        capacityLimit.orElseThrow()
                                 )
                         );
                     }
@@ -269,23 +258,15 @@ final class WebpAdmission {
                         width = frameWidth;
                         height = frameHeight;
                     }
-                    if (frameWidth > MAX_EDGE_PIXELS || frameHeight > MAX_EDGE_PIXELS) {
+                    var capacityLimit = AssetContentCapacityGuard.imageDimensionsExceeded(
+                            frameWidth, frameHeight);
+                    if (capacityLimit.isPresent()) {
                         return Scan.rejected(
                                 rejected(
                                         FailureCode.ASSET_CONTENT_LIMIT_EXCEEDED,
                                         FailureStage.ASSET_STRUCTURE,
                                         "/" + fourCc.trim(),
-                                        Limit.IMAGE_EDGE_PIXELS
-                                )
-                        );
-                    }
-                    if ((long) frameWidth * frameHeight > MAX_TOTAL_PIXELS) {
-                        return Scan.rejected(
-                                rejected(
-                                        FailureCode.ASSET_CONTENT_LIMIT_EXCEEDED,
-                                        FailureStage.ASSET_STRUCTURE,
-                                        "/" + fourCc.trim(),
-                                        Limit.IMAGE_TOTAL_PIXELS
+                                        capacityLimit.orElseThrow()
                                 )
                         );
                     }

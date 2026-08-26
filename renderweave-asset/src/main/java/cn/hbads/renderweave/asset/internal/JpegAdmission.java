@@ -23,9 +23,6 @@ import java.util.Optional;
 
 final class JpegAdmission {
 
-    private static final int MAX_EDGE_PIXELS = 20_000;
-    private static final long MAX_TOTAL_PIXELS = 100_000_000L;
-
     private static final int SOF0 = 0xC0;
     private static final int SOF2 = 0xC2;
     private static final int DHT = 0xC4;
@@ -324,23 +321,14 @@ final class JpegAdmission {
                     rejected(FailureCode.ASSET_CONTENT_INVALID, FailureStage.ASSET_STRUCTURE, "/sof")
             );
         }
-        if (width > MAX_EDGE_PIXELS || height > MAX_EDGE_PIXELS) {
+        var capacityLimit = AssetContentCapacityGuard.imageDimensionsExceeded(width, height);
+        if (capacityLimit.isPresent()) {
             return Scan.rejected(
                     rejected(
                             FailureCode.ASSET_CONTENT_LIMIT_EXCEEDED,
                             FailureStage.ASSET_STRUCTURE,
                             "/sof",
-                            Limit.IMAGE_EDGE_PIXELS
-                    )
-            );
-        }
-        if ((long) width * height > MAX_TOTAL_PIXELS) {
-            return Scan.rejected(
-                    rejected(
-                            FailureCode.ASSET_CONTENT_LIMIT_EXCEEDED,
-                            FailureStage.ASSET_STRUCTURE,
-                            "/sof",
-                            Limit.IMAGE_TOTAL_PIXELS
+                            capacityLimit.orElseThrow()
                     )
             );
         }

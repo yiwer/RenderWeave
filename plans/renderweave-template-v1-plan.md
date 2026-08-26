@@ -1,5 +1,10 @@
 # RenderWeave Template v1 Implementation Plan
 
+- 当前 frontier（2026-08-26）：TV1-T01–T126 的 129 张 implementation issue 全部 `resolved`；T126 已激活最终产品
+  `/templates` list/new/editor 与正式 URL 浏览器闭环。整体 lifecycle 仍为 `in_progress`，因为 Ticket 19 formal
+  conformance、Certified Renderer/Profile 与 release gates 未闭合。按冻结 bootstrap 顺序，TV1-T127 正在物化
+  `EXEC::DOMAIN_SERVICES::1.0` 的真实容量 guard/executor/independent replay target；不需要 native build/J1，且本票
+  不发行 formal records。
 - 状态：`in_progress`；TV1-T01/T02/T03/T04/T05/T06/T07/T08/T09/T10/T10b/T11/T12a/T12b/T13/T14/T14b/T15/T16/T17/T18/T19/T20/T22=`automated_verified`
   （T09 另含人工 J1），TV1-T21=`automated_verified`（首个 Rendering 纵切——renderweave-rendering
   首个 artifact、TemplateClosureAuthority/Evaluator stage 1–8/seal、CapabilityState 加密落盘、
@@ -390,7 +395,7 @@ flowchart LR
 | 64 | task | `resolved / automated_verified` | 23, 25, 26, 33, 34, 38, 39, 40, 41, 43, 44, 45, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63 | COLUMN Stack already-resolved width → direct Grid ContentBox → strict columns-first HUG rows；shared `/27` Rust/Python 134/134、401 checks；rows→columns/general constraint/tolerance 保持 fail closed |
 | 65 | task | `resolved / automated_verified` | 23, 25, 26, 34, 39, 40, 41, 44, 45, 57, 58, 59, 60, 64 | definite Grid FIXED→AUTO→multi-FRACTION，authored-order 前 n-1 weighted share + last remainder；shared `/28` Rust/Python 136/136、409 checks；跨多 AUTO deficit/Stack water filling/Profile tolerance 保持 fail closed |
 | 66 | task | `resolved / automated_verified` | 23, 25, 26, 34, 40, 41, 44, 45, 65 | stable-sorted Grid span constraint 对 covered AUTO tracks 做 authored-order average increase，前 n-1 equal share + last remainder；shared `/29` Rust/Python 139/139、419 checks；不做 convergence；Stack water filling/rows→columns/Profile tolerance 保持 fail closed |
-| 67 | task | `active / claimed` | 23, 25, 26, 33, 38, 43, 55, 56, 65, 66 | definite Stack 多 main-FILL 仅在 owning-axis 全无 min/max 时按 positive fillWeight 做 authored-order weighted share + last remainder；bound freeze/redistribution 与 residual tolerance 保持 fail closed |
+| 67 | task | `resolved / automated_verified` | 23, 25, 26, 33, 38, 43, 55, 56, 65, 66 | definite Stack 多 main-FILL 仅在 owning-axis 全无 min/max 时按 positive fillWeight 做 authored-order weighted share + last remainder；后续 bounded water-filling 子闭包已继续由 T68–T120 深化 |
 
 每次只 claim 一个 unblocked ticket；一票 resolved 后才由其 `Blocked by` 关系产生下一 frontier。未知实现切片留在
 map 的 `Not yet specified`，不为排满计划提前发明接口、migration 或 Profile identity。
@@ -4722,3 +4727,21 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
 - Browser skill 的 in-app 连接在 kernel asset 初始化阶段持续失败（`os error 3`），reset 后最小连接仍不可用；因此只报告
   仓库 Playwright 正式 URL journey 的 A1 验收，不报告 visible/J1。Profile 仍 `NOT_REGISTERED` / `NOT_CERTIFIED`，
   native stack 仍 `BUILD_NOT_AUTHORIZED`；daemon physical success、public cancel、生产/真实数据、J1/A3/READY 均未推进。
+
+## 127. TV1-T127 执行卡
+
+- 决策：T01–T126 的 129 张 implementation issue 已全部 resolved，最终产品 route 也已激活；冻结 conformance
+  bootstrap 的当前 phase 仍是 `CAPACITY_BOUNDARY`，第一个不可跳过且已具备产品 substrate 的 execution class 是
+  `EXEC::DOMAIN_SERVICES::1.0`。本票只物化真实执行目标，不跨级发行 records 或处理 Renderer certification。
+- Interface/seam：新增 package-private `AssetContentCapacityGuard` 作为 IMAGE/FONT raw bytes、IMAGE edge/total pixels
+  四个 MAX_INCLUSIVE 上限的唯一 owner；`CanonicalAssetAcceptanceAuthority` 与 PNG/JPEG/WebP admission 全部调用它。
+  public Asset API、错误合同、parser/decode first-error 与 persistence seam 不变。
+- Executor：Java test-scope closed executor 只消费 12 个 frozen fixture scalar，不读取 planned assertions，输出 exact
+  observation report；public-path integration 证明真实 bytes/descriptor 派生值调用相同 guard。Python stdlib 从 frozen
+  capacity mapping 独立重建预期并核对 report；target manifest 在 implementation commit 后绑定 source/fixture hashes。
+- 允许影响：T127 tracker/map/plan、Asset internal guard/consumers/tests、Domain Services executor/target manifests、独立
+  verifier、`asset` gate orchestration与必要 evidence；不修改用户现有 dirty work。
+- 禁止影响：formal Case/Oracle registry issuance、API/OpenAPI/migration/Web、Template/Rendering 语义、Renderer/Profile
+  registration/certification、native build、provider/API Key/真实数据/生产/J1/A3/READY。
+- TDD/gates：missing guard/executor RED → minimal GREEN → focused Asset/report → Python independent → `asset` → `fast` →
+  sequential `server` → Goal `full` → resolution `fast`。Maven串行、精确 staging；最高只报 `automated_verified`。

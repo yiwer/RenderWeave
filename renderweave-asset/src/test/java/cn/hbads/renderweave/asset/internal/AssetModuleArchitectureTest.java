@@ -4,6 +4,10 @@ import com.tngtech.archunit.core.importer.ClassFileImporter;
 import com.tngtech.archunit.core.importer.ImportOption;
 import org.junit.jupiter.api.Test;
 
+import java.util.Set;
+import java.util.stream.Collectors;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 
@@ -101,5 +105,22 @@ class AssetModuleArchitectureTest {
                 .should().resideInAnyPackage(API, SPI)
                 .allowEmptyShould(false)
                 .check(production);
+    }
+
+    @Test
+    void everyContentCapacityConsumerDependsOnTheSingleProductionGuard() {
+        String guard = AssetContentCapacityGuard.class.getName();
+        Set<String> directConsumers = production.stream()
+                .filter(javaClass -> javaClass.getDirectDependenciesFromSelf().stream()
+                        .anyMatch(dependency -> dependency.getTargetClass().getName().equals(guard)))
+                .map(javaClass -> javaClass.getName())
+                .collect(Collectors.toUnmodifiableSet());
+
+        assertEquals(Set.of(
+                CanonicalAssetAcceptanceAuthority.class.getName(),
+                PngAdmission.class.getName(),
+                JpegAdmission.class.getName(),
+                WebpAdmission.class.getName()
+        ), directConsumers);
     }
 }

@@ -668,6 +668,11 @@ Label: wayfinder:map
   `21b74eb2`。内置 Browser 因 runtime kernel asset 路径错误未连接，不冒充 visible/J1 验收；测试 HTTP fixture 不进入产品
   bundle、不证明 native Renderer success，`/prototype`、Profile registration/certification、J1/A3/READY 与外部副作用
   均未推进。
+- [物化 Domain Services 容量一致性产品执行目标](issues/127-domain-services-capacity-conformance-target.md) —
+  **in_progress / claimed by Codex `/root`**；129 张既有实施票 resolved 后，按冻结 bootstrap 顺序选择首个不需要
+  native/J1 的安全 frontier：把 Domain Services 的 4 个 Asset 容量轴、12 个 frozen fixture 绑定到唯一生产
+  capacity guard、closed Java executor、独立 Python replay 与 exact target manifest，并纳入 `asset/full`。本票不发行
+  formal Case/Oracle，不证明完整 upload/PostgreSQL/Renderer，也不推进 Profile、native build、J1/A3/READY。
 - [验证 Product Editor 状态、恢复与权威预览架构](issues/09-validate-product-editor-architecture.md) —
   throwaway 逻辑原型（`/prototype/editor-state-model`，不进产品 route）把冻结编辑器规则编码为确定性
   fixture 状态机：10 个引导走查场景 37/37 断言 + 自由操作冒烟 + 键盘焦点检查全部通过（Playwright A1，

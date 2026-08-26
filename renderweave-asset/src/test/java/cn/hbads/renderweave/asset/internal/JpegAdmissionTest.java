@@ -122,6 +122,24 @@ class JpegAdmissionTest {
     }
 
     @Test
+    void rejectsOversizedFrameThroughTheSharedCapacityGuardBeforeDecode() {
+        byte[] raw = fixture("grayscale-baseline.jpg");
+        int sof = findMarker(raw, 0xC0);
+        raw[sof + 7] = 0x4E;
+        raw[sof + 8] = 0x21; // width = 20,001
+
+        var rejected = assertInstanceOf(
+                AssetAcceptanceAuthority.Rejected.class,
+                AUTHORITY.admit(raw, AssetKind.IMAGE)
+        );
+        assertEquals(FailureCode.ASSET_CONTENT_LIMIT_EXCEEDED, rejected.code());
+        assertEquals(FailureStage.ASSET_STRUCTURE, rejected.stage());
+        assertEquals("/sof", rejected.pointer());
+        assertEquals(AssetAcceptanceAuthority.Limit.IMAGE_EDGE_PIXELS,
+                rejected.limit().orElseThrow());
+    }
+
+    @Test
     void rejectsFrameDataThatFailsFullDecode() {
         byte[] raw = fixture("grayscale-baseline.jpg");
         int sos = findMarker(raw, 0xDA);
