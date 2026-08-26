@@ -1,10 +1,11 @@
 # RenderWeave Template v1 Implementation Plan
 
-- 当前 frontier（2026-08-26）：TV1-T01–T130 均已 `resolved`；T130 已完成 65 轴共享容量 authority、Java/TypeScript
-  195/195 component replay 与 DesignDSL parser/canonical 九轴真实接线。冻结 DAG 的 ordinal 3
-  `EXEC::DESIGN_INPUT_EXPRESSION::1.0` 仍是唯一未阻塞 frontier；其余 56 个产品 reservation source、两个 class
-  required executor manifests、独立产品 replay 与 195 条 formal issuance 继续 pending，须由下一独立票 single-writer claim。
-- 状态：`in_progress`；TV1-T130=`automated_verified`；TV1-T129=`automated_verified`；TV1-T128=`automated_verified`；TV1-T127=`automated_verified`；TV1-T01/T02/T03/T04/T05/T06/T07/T08/T09/T10/T10b/T11/T12a/T12b/T13/T14/T14b/T15/T16/T17/T18/T19/T20/T22=`automated_verified`
+- 当前 frontier（2026-08-26）：TV1-T01–T131 均已 `resolved`；冻结 DAG 的 ordinal 3
+  `EXEC::DESIGN_INPUT_EXPRESSION::1.0` 仍是唯一未阻塞 frontier。TV1-T131 已把 `designDslSemantics` 十五轴接到 T130
+  共享 authority，并冻结 component target v2；当前 wired 24/65、remaining 41。renderInput 9、problems 5、expression
+  17、geometry 10 的产品 reservation source、两个 class required executor manifests、独立产品 replay 与 195 条 formal
+  issuance 继续 pending，须由下一独立票 single-writer claim。
+- 状态：`in_progress`；TV1-T131=`automated_verified`；TV1-T130=`automated_verified`；TV1-T129=`automated_verified`；TV1-T128=`automated_verified`；TV1-T127=`automated_verified`；TV1-T01/T02/T03/T04/T05/T06/T07/T08/T09/T10/T10b/T11/T12a/T12b/T13/T14/T14b/T15/T16/T17/T18/T19/T20/T22=`automated_verified`
   （T09 另含人工 J1），TV1-T21=`automated_verified`（首个 Rendering 纵切——renderweave-rendering
   首个 artifact、TemplateClosureAuthority/Evaluator stage 1–8/seal、CapabilityState 加密落盘、
   RenderNodeContract 向量语料 Java primary、端到端 assembly 证明）；TV1-T13 已完成 AssetResolver、加密
@@ -4895,3 +4896,35 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
 - Boundary：首次 server 的用户-owned AF_UNIX 测试低频 timeout 已留证并隔离复现，未篡改该 360 项 dirty work；完整
   server 重跑和 `full` 中同一用例均绿。备份 stash `f3c29199ec510ec3f809b3f8263f5d2806cb0740` 未变；未发行 195
   Design/Input/Expression records，未注册/认证 Profile 或取得 J1/A3/READY，`BUILD_NOT_AUTHORIZED` 保持。
+
+## 131. TV1-T131 执行卡
+
+- 决策：以 `CanonicalDesignDslAuthority` 内单一 request-local semantic budget 接线十五轴，所有 observation 都调用
+  T130 的 `DesignInputExpressionCapacityAuthority`；不复制任何 limit/comparator/terminal 数值，不创建十五个 guard。
+- Reservation：每个 authored node、direct children、definition、Binding、Text run、Grid axis track、vector entry、
+  TemplateUse fill 与 literal list item 在加入 normalization/递归前检查 candidate per-owner/total；run text 使用 Unicode
+  scalar count，checked long overflow 失败封闭。拒绝保持 `DESIGN_DSL_LIMIT_EXCEEDED / DESIGN_SEMANTIC_VALIDATION`。
+- Surface：只扩充 existing closed `DesignDslAuthority.Limit` enum 的十五个精确 locator；不新增方法/SPI/config 或
+  HTTP/OpenAPI/migration/Web 语义。v1 component target 不变，另建 v2 绑定 implementation revision 与 source hashes。
+- TDD/gates：missing recording observations RED → semantic budget GREEN → exact locator rejection → 211-vector byte-identical →
+  65-axis/195-case component replay → `template`/`template-static`/`fast` → sequential `server` → Goal `full` → resolution
+  `fast`。目标只声明 wired 24/65、remaining 41；不签发 class manifests/formal records，不升级 lifecycle。
+- 禁止影响：RenderInput/problem/Expression/geometry 其余 41 轴、其他 execution class、Renderer/Profile/native build、
+  provider/API Key/真实数据/生产/J1/A3/READY、用户既有 dirty work 与备份 stash。
+- Results：实现 revision `42260b99a7315ac2fceff3e9b6831bb2ee34aa5a` 新增单一 request-local semantic preflight，
+  十五轴 reservation 与 exact locator proof 全绿；DesignDSL canonical 211/211、Template 91 tests 保持 byte-identical/
+  全绿。target revision `31ea01718a8a2e9aca2c82c39c88d95357aab724` 冻结 v2（9967 bytes，SHA-256
+  `3f0a923d982da15b64ef999720947550da374889c41491a0bbc645b53dc4f45c`），v1 SHA-256 `049e78fb...`
+  保持不可变；component `.sdlc/evidence/20260826-162032-design-input-expression-capacity/` 为 195/195、2608 checks，
+  wired 24/65、remaining 41，formal registry 58/58。
+- Regression：首次 server 揭示旧 `MaterializerTest` 用单个 10000-item list 违反新接线的 4096 per-list 上限；兼容
+  revision `98974377315a3868ecfe77ab3e7daf74a6915bc2` 改用三个合法 list（4000 + 4000 + 2000），保持原有超过
+  20000 static-node 压力目标。focused 1/1、Materializer 11/11、顺序 `server`
+  `.sdlc/evidence/20260826-164117-server/` 全绿。
+- Gates：`template` `.sdlc/evidence/20260826-162133-template/`、`fast`
+  `.sdlc/evidence/20260826-162230-fast/` 与发布级 `full` `.sdlc/evidence/20260826-165919-full/` 全绿；`full` 为
+  17/17 steps、1500.69 秒，Application 445 tests、Node 24 Web 251 tests、Chromium 25 passed + 1 controlled skip，
+  inference replay 1/1。provider attempts/API Key reads/reservations/cost 均为 0。
+- Boundary：用户 360 项 dirty work 指纹 `4bddd1c955a4b4f55d984f3febd551742dd6f63c` 与 stash
+  `f3c29199ec510ec3f809b3f8263f5d2806cb0740` 未变；未签发 class manifests/195 records，未升级 executable，未运行
+  独立 native build/provider/真实数据/生产或取得 J1/A3/READY，`BUILD_NOT_AUTHORIZED` 保持。
