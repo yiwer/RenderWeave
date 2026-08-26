@@ -66,6 +66,7 @@ function gitBlob(revision, path) {
   const result = spawnSync("git", ["show", `${revision}:${path}`], {
     cwd: REPO,
     encoding: null,
+    maxBuffer: 16 * 1024 * 1024,
     windowsHide: true,
   });
   if (result.status !== 0) {
