@@ -1,11 +1,11 @@
 # RenderWeave Template v1 Implementation Plan
 
-- 当前 frontier（2026-08-26）：TV1-T01–T131 均已 `resolved`；冻结 DAG 的 ordinal 3
-  `EXEC::DESIGN_INPUT_EXPRESSION::1.0` 仍是唯一未阻塞 frontier。TV1-T131 已把 `designDslSemantics` 十五轴接到 T130
-  共享 authority，并冻结 component target v2；当前 wired 24/65、remaining 41。renderInput 9、problems 5、expression
-  17、geometry 10 的产品 reservation source、两个 class required executor manifests、独立产品 replay 与 195 条 formal
-  issuance 继续 pending，须由下一独立票 single-writer claim。
-- 状态：`in_progress`；TV1-T131=`automated_verified`；TV1-T130=`automated_verified`；TV1-T129=`automated_verified`；TV1-T128=`automated_verified`；TV1-T127=`automated_verified`；TV1-T01/T02/T03/T04/T05/T06/T07/T08/T09/T10/T10b/T11/T12a/T12b/T13/T14/T14b/T15/T16/T17/T18/T19/T20/T22=`automated_verified`
+- 当前 frontier（2026-08-26）：TV1-T01–T132 均已 `resolved`；冻结 DAG 的 ordinal 3
+  `EXEC::DESIGN_INPUT_EXPRESSION::1.0` 仍是唯一未阻塞 frontier。TV1-T132 已把 `renderInput` 九轴接到 T130 共享
+  authority 并冻结 component target v3；当前 wired 33/65、remaining 32。problems 5、expression 17、geometry 10 的
+  产品 reservation source、两个 class required executor manifests、独立产品 replay 与 195 条 formal issuance 继续
+  pending，须由下一独立票 single-writer claim。
+- 状态：`in_progress`；TV1-T132=`automated_verified`；TV1-T131=`automated_verified`；TV1-T130=`automated_verified`；TV1-T129=`automated_verified`；TV1-T128=`automated_verified`；TV1-T127=`automated_verified`；TV1-T01/T02/T03/T04/T05/T06/T07/T08/T09/T10/T10b/T11/T12a/T12b/T13/T14/T14b/T15/T16/T17/T18/T19/T20/T22=`automated_verified`
   （T09 另含人工 J1），TV1-T21=`automated_verified`（首个 Rendering 纵切——renderweave-rendering
   首个 artifact、TemplateClosureAuthority/Evaluator stage 1–8/seal、CapabilityState 加密落盘、
   RenderNodeContract 向量语料 Java primary、端到端 assembly 证明）；TV1-T13 已完成 AssetResolver、加密
@@ -4928,3 +4928,34 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
 - Boundary：用户 360 项 dirty work 指纹 `4bddd1c955a4b4f55d984f3febd551742dd6f63c` 与 stash
   `f3c29199ec510ec3f809b3f8263f5d2806cb0740` 未变；未签发 class manifests/195 records，未升级 executable，未运行
   独立 native build/provider/真实数据/生产或取得 J1/A3/READY，`BUILD_NOT_AUTHORIZED` 保持。
+
+## 132. TV1-T132 执行卡
+
+- 决策：Rendering 在 HTTP content encoding 与严格 RenderInput admission 的九个真实 reservation point 派生 observation，
+  统一调用 T130 `DesignInputExpressionCapacityAuthority`；阈值、比较器与 terminal 不再由 Rendering product path 复制。
+- 深 seam：Template configuration 暴露 canonical bean；App controller 与 Rendering evaluator 注入同一 authority；parser
+  以 authority-backed budget 保持 strict UTF-8/JSON、first-error 与 pre-allocation candidate reservation，其他内部 JSON
+  consumers 继续使用固定 budget。authority `Invalid` fail closed 为 `RENDER_INTERNAL_ERROR`。
+- TDD/target：recording/rejecting proof 先 RED，覆盖 contentEncoding、utf8Bytes、jsonDepth、objectMembers、arrayItems、
+  totalValuesAndContainers、stringUtf8Bytes、numberTokenBytes、customValueEntries；实现提交后新建不可变 v3 target，声明
+  wired 33/65、remaining 32，v1/v2 bytes 不变。
+- Gates：focused Rendering/App → component → `template` → `fast` → sequential `server` → Goal `full` → resolution
+  `fast`；Maven 串行、精确 staging，formal registry 保持 58/58。
+- 禁止影响：problems/expression/geometry 其余 32 轴、class manifests/195 formal records、其他 execution class、Renderer/
+  Profile/native build、provider/API Key/真实数据/生产/J1/A3/READY、用户 360 项 dirty work 与 stash；
+  `BUILD_NOT_AUTHORIZED` 保持。
+- Results：实现 revision `9d316fc419314e017812ca08b4548584723a75b2` 完成九轴共享 authority 接线与 12 项
+  reservation proof；target revision `4d4d091adcd39dc9a3280d12024858b54cfae24d` 冻结 v3（13923 bytes，SHA-256
+  `7f582b7b3efa340b87a2e5e36f3d944d861d362a20f87cca0c5eb6f156aa6d92`），v1/v2 bytes 不变。component
+  `.sdlc/evidence/20260826-175619-design-input-expression-capacity/` 为 Java/TypeScript 195/195、2646 checks，wired
+  33/65、remaining 32，formal registry 58/58，class preissuance/issuance/executable 均 false。
+- Gates：`template` `.sdlc/evidence/20260826-175817-template/`、`fast`
+  `.sdlc/evidence/20260826-175914-fast/`、顺序 `server` `.sdlc/evidence/20260826-180004-server/` 全绿；发布级
+  `full` `.sdlc/evidence/20260826-181806-full/` 为 17/17 steps、1744.369 秒，Node 24 Web 32 files / 251 tests、
+  Chromium 25 passed + 1 controlled skip、inference replay 1/1 全绿，provider attempts/API Key reads/reservations/cost 为 0。
+- Resolution：tracker 收口后 `fast` `.sdlc/evidence/20260826-184921-fast/` 通过（8/8 package reactor + Node 24
+  typecheck）。
+- Boundary：用户 360 项 dirty work 指纹 `4bddd1c955a4b4f55d984f3febd551742dd6f63c` 与 stash
+  `f3c29199ec510ec3f809b3f8263f5d2806cb0740` 未变；problems/expression/geometry 32 轴、两个 required executor
+  manifests 与 195 formal records 仍 pending，未升级 executable，未运行独立 native build/真实数据/生产或取得
+  J1/A3/READY，`BUILD_NOT_AUTHORIZED` 保持。
