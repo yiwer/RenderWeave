@@ -1,11 +1,10 @@
 # RenderWeave Template v1 Implementation Plan
 
-- 当前 frontier（2026-08-26）：TV1-T01–T126 的 129 张 implementation issue 全部 `resolved`；T126 已激活最终产品
-  `/templates` list/new/editor 与正式 URL 浏览器闭环。整体 lifecycle 仍为 `in_progress`，因为 Ticket 19 formal
-  conformance、Certified Renderer/Profile 与 release gates 未闭合。按冻结 bootstrap 顺序，TV1-T127 正在物化
-  `EXEC::DOMAIN_SERVICES::1.0` 的真实容量 guard/executor/independent replay target；不需要 native build/J1，且本票
-  不发行 formal records。
-- 状态：`in_progress`；TV1-T01/T02/T03/T04/T05/T06/T07/T08/T09/T10/T10b/T11/T12a/T12b/T13/T14/T14b/T15/T16/T17/T18/T19/T20/T22=`automated_verified`
+- 当前 frontier（2026-08-26）：TV1-T01–T127 均已 `resolved`；T127 已把 `EXEC::DOMAIN_SERVICES::1.0` 的 4 个
+  Asset 容量轴与 12 个 frozen fixture 绑定真实 guard/executor/independent replay target。整体 lifecycle 仍为
+  `in_progress`，因为 Ticket 19 formal conformance、Certified Renderer/Profile 与 release gates 未闭合；formal
+  Domain Services Case/Oracle records 仍为 0，下一 frontier 必须在本票推送后按冻结 DAG 重新计算并独立登记。
+- 状态：`in_progress`；TV1-T127=`automated_verified`；TV1-T01/T02/T03/T04/T05/T06/T07/T08/T09/T10/T10b/T11/T12a/T12b/T13/T14/T14b/T15/T16/T17/T18/T19/T20/T22=`automated_verified`
   （T09 另含人工 J1），TV1-T21=`automated_verified`（首个 Rendering 纵切——renderweave-rendering
   首个 artifact、TemplateClosureAuthority/Evaluator stage 1–8/seal、CapabilityState 加密落盘、
   RenderNodeContract 向量语料 Java primary、端到端 assembly 证明）；TV1-T13 已完成 AssetResolver、加密
@@ -4745,3 +4744,28 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
   registration/certification、native build、provider/API Key/真实数据/生产/J1/A3/READY。
 - TDD/gates：missing guard/executor RED → minimal GREEN → focused Asset/report → Python independent → `asset` → `fast` →
   sequential `server` → Goal `full` → resolution `fast`。Maven串行、精确 staging；最高只报 `automated_verified`。
+
+### TV1-T127 resolution evidence
+
+- 生命周期：`resolved / automated_verified`。实现 revision `96dcf3fdb847a59ec70265bb8f60f686b342ff82` 收敛
+  package-private `AssetContentCapacityGuard` 唯一 owner，并让 raw-byte 与 PNG/JPEG/WebP admission 消费同一 guard；
+  public API/错误合同/first-error/persistence 不变。门控 revision `d73f5650365d9da64c117d42cb3b7cac6a228281`
+  绑定 15 个 exact Git-blob artifact、12 个 fixture 与 consumer/test 清单；target byte-identical replay SHA-256 为
+  `11ea54c739e65482fdae7c7da9500dcb7f8a899624d9f98ac96c34265ed7ad6d`。
+- RED/GREEN：missing guard/executor RED；minimal GREEN 后 focused 44/44、refactor-relevant 24/24、Asset module
+  97/97。标量 executor 不分配 64 MiB/32 MiB payload；真实 raw byte、PNG、JPEG、WebP admission test 继续证明产品
+  调用链，未用 fixture 旁路冒充 upload、对象存储或数据库事务。
+- A1/A2：Java primary 12/12、Python stdlib independent 12/12，formal records=0。直接 runner
+  `.sdlc/evidence/20260826-103326-t127-asset-runner/` 与正式 `asset`
+  `.sdlc/evidence/20260826-103609-asset/` 均绿；独立 verifier 不读取 expected/oracle/planned assertion、不导入
+  Java helper、无 fallback。
+- clean gates：Node 24 依赖就绪后的 `fast` `.sdlc/evidence/20260826-103756-fast/`、顺序 `server`
+  `.sdlc/evidence/20260826-103818-server/` 与发布级 `full`
+  `.sdlc/evidence/20260826-105143-full/` 全绿。首次 `.sdlc/evidence/20260826-103703-fast/` 仅因隔离 worktree
+  尚无 `node_modules`/`tsc` 失败，安装 lockfile 精确依赖后由后续绿色证据取代。
+- `full` 覆盖 Template kernel 211/211、Spec Registry 双执行器、App 367、Inference 361、Template 81、Asset 97、
+  Rendering 121、Web 250、runtime/R0/R1/P0 与 25 passed + 1 controlled skip browser journeys；provider attempts、
+  API Key reads、reservations/cost 均为 0。T126 正式 Template product journey 2/2 继续通过。
+- formal Case/Oracle 发行仍为 0；Ticket 19、Profile registration/certification、Renderer physical exact-output、独立
+  native deployment/rehearsal、真实数据/生产、J1/A3/READY 均未推进。`full` 内既有 Rust repository checks 与临时
+  runtime canary 通过不改变 `BUILD_NOT_AUTHORIZED`、`NOT_REGISTERED`、`NOT_CERTIFIED` 边界。
