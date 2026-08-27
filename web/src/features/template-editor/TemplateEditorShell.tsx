@@ -16,6 +16,7 @@ import {
   RefreshCw,
   Save,
   ShieldCheck,
+  SquarePlus,
   Undo2,
   Unplug,
   Wrench,
@@ -46,6 +47,10 @@ import {
   undoStructuredCommand,
   updateStructuredReadiness,
 } from './template-editor-session';
+import {
+  insertTemplateNode,
+  type InsertableTemplateNodeKind,
+} from './template-node-authoring';
 import {
   BARE_DESIGN_DSL_MEDIA_TYPE,
   inspectTemplateImport,
@@ -384,6 +389,7 @@ function StructuredShell({
   });
   const [recoveryBase, setRecoveryBase] = useState<TemplateRecoveryBase>();
   const [importView, setImportView] = useState<StructuredImportView>({ state: 'idle' });
+  const [nodeAuthoringProblem, setNodeAuthoringProblem] = useState<string | null>(null);
   const mutationId = useRef(0);
   const mutationAbort = useRef<AbortController | null>(null);
   const recoveryEpoch = useRef(0);
@@ -469,6 +475,23 @@ function StructuredShell({
 
   const undo = () => acceptLocalChange(undoStructuredCommand(session));
   const redo = () => acceptLocalChange(redoStructuredCommand(session));
+  const insertNode = (kind: InsertableTemplateNodeKind) => {
+    if (localLocked) return;
+    const result = insertTemplateNode(session, {
+      kind,
+      selectedNodeId: effectiveSelectedNodeId,
+    });
+    if (result.state === 'rejected') {
+      setNodeAuthoringProblem(result.message);
+      setAnnouncement(`节点创建失败：${result.message}`);
+      return;
+    }
+    setNodeAuthoringProblem(null);
+    acceptLocalChange(result.session);
+    setSelectedNodeId(result.nodeId);
+    setEntry('structure');
+    setAnnouncement(`已添加矩形并选中；父节点 ${result.parentNodeId}。`);
+  };
 
   const persistRecoveryNow = async (
     targetSession: StructuredEditorSession,
@@ -1322,6 +1345,9 @@ function StructuredShell({
                 nodes={nodes}
                 selectedNodeId={effectiveSelectedNodeId}
                 onSelectNode={setSelectedNodeId}
+                nodeAuthoringProblem={nodeAuthoringProblem}
+                nodeAuthoringLocked={localLocked}
+                onInsertNode={insertNode}
                 importView={importView}
                 importLocked={importLocked}
                 canSaveBeforeImport={saveTransport !== undefined}
@@ -1375,7 +1401,11 @@ function StructuredShell({
               onCancel={cancelSaveOffer}
             />
           ) : null}
-          <CanvasProjection workingCopy={session.workingCopy} nodes={nodes} />
+          <CanvasProjection
+            workingCopy={session.workingCopy}
+            nodes={nodes}
+            selectedNodeId={effectiveSelectedNodeId}
+          />
           {preview.enabled ? (
             <TemplatePreviewPanel
               coordinator={preview}
@@ -1434,7 +1464,7 @@ function StructuredShell({
             <button
               type="button"
               aria-pressed={preview.panelOpen}
-              aria-controls="template-authoritative-preview-panel"
+              aria-controls={preview.panelOpen ? 'template-authoritative-preview-panel' : undefined}
               aria-label={preview.panelOpen ? '关闭权威预览' : '打开权威预览'}
               onClick={preview.panelOpen ? preview.close : preview.open}
             >
@@ -2064,6 +2094,9 @@ function EntryPanel({
   nodes,
   selectedNodeId,
   onSelectNode,
+  nodeAuthoringProblem,
+  nodeAuthoringLocked,
+  onInsertNode,
   importView,
   importLocked,
   canSaveBeforeImport,
@@ -2080,6 +2113,9 @@ function EntryPanel({
   nodes: EditorNodeProjection[];
   selectedNodeId: string;
   onSelectNode: (nodeId: string) => void;
+  nodeAuthoringProblem: string | null;
+  nodeAuthoringLocked: boolean;
+  onInsertNode: (kind: InsertableTemplateNodeKind) => void;
   importView: StructuredImportView;
   importLocked: boolean;
   canSaveBeforeImport: boolean;
@@ -2101,7 +2137,14 @@ function EntryPanel({
         />
       );
     case 'nodes':
-      return <NodeCatalogSummary nodes={nodes} />;
+      return (
+        <NodeCatalogSummary
+          nodes={nodes}
+          problem={nodeAuthoringProblem}
+          disabled={nodeAuthoringLocked}
+          onInsert={onInsertNode}
+        />
+      );
     case 'assets':
       return <AssetSummary designDsl={session.workingCopy.designDsl} />;
     case 'definitions':
@@ -2202,13 +2245,44 @@ function NodeTree({
   );
 }
 
-function NodeCatalogSummary({ nodes }: { nodes: EditorNodeProjection[] }) {
+function NodeCatalogSummary({
+  nodes,
+  problem,
+  disabled,
+  onInsert,
+}: {
+  nodes: EditorNodeProjection[];
+  problem: string | null;
+  disabled: boolean;
+  onInsert: (kind: InsertableTemplateNodeKind) => void;
+}) {
   const counts = new Map<string, number>();
   for (const node of nodes) counts.set(node.kind, (counts.get(node.kind) ?? 0) + 1);
   return (
     <>
-      <PanelHeading title="节点" detail={`${SUPPORTED_NODE_KIND_COUNT} 种 v1 wire`} />
-      <p className="te-panel-copy">本地投影识别 exact v1 closed Node kinds；E2 只改写 Template 名称，不创建或改写节点。</p>
+      <PanelHeading title="节点" detail="1 个可创建" />
+      <p className="te-panel-copy">
+        添加到当前容器；若当前选择是叶子节点，则使用最近的合法父级。placement 由父级 ContentModel 决定。
+      </p>
+      <div className="te-node-library" aria-label="可添加元素">
+        <button
+          type="button"
+          aria-label="添加矩形"
+          disabled={disabled}
+          onClick={() => onInsert('rect')}
+        >
+          <span className="te-node-library-icon"><SquarePlus aria-hidden="true" size={18} /></span>
+          <span className="te-node-library-copy">
+            <strong>矩形</strong>
+            <small>30 × 20 mm · 实色填充</small>
+          </span>
+          <span className="te-node-library-action">添加</span>
+        </button>
+      </div>
+      {problem ? <p className="te-node-authoring-alert" role="alert">{problem}</p> : null}
+      <p className="te-node-contract-note">
+        当前客户端识别 {SUPPORTED_NODE_KIND_COUNT} 种 v1 closed wire；这里只显示已经接通完整创建闭环的元素。
+      </p>
       <ul className="te-summary-list">
         {[...counts.entries()].map(([kind, count]) => (
           <li key={kind}><span>{kind}</span><strong>{count}</strong></li>
@@ -2455,9 +2529,11 @@ function PanelHeading({
 function CanvasProjection({
   workingCopy,
   nodes,
+  selectedNodeId,
 }: {
   workingCopy: CanonicalDesignWorkingCopy;
   nodes: EditorNodeProjection[];
+  selectedNodeId: string;
 }) {
   const canvas = objectOrNull(workingCopy.designDsl.designRoot);
   const width = positiveNumber(canvas?.widthMm) ?? 210;
@@ -2471,7 +2547,13 @@ function CanvasProjection({
         </div>
         <div className="te-node-silhouettes" aria-hidden="true">
           {nodes.slice(1, 13).map((node) => (
-            <span key={node.nodeId} data-kind={node.kind}>{node.displayName}</span>
+            <span
+              key={node.nodeId}
+              className={node.nodeId === selectedNodeId ? 'is-selected' : undefined}
+              data-kind={node.kind}
+            >
+              {node.displayName}
+            </span>
           ))}
         </div>
         {nodes.length > 13 ? <small className="te-node-overflow">另有 {nodes.length - 13} 个节点</small> : null}

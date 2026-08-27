@@ -1,10 +1,12 @@
 # RenderWeave Template v1 Implementation Plan
 
-- 当前 frontier（2026-08-26）：TV1-T01–T135 均已 `resolved`；冻结 DAG 的 ordinal 3
-  `EXEC::DESIGN_INPUT_EXPRESSION::1.0` 仍是唯一未阻塞 frontier。component target v6 已达 wired 48/65、
-  remaining 17；下一张 single-writer 票应从 decimal 7 或 geometry 10 中认领一个可独立验证的产品纵切。
-  两个 class required executor manifests、独立产品 replay 与 195 条 formal issuance 继续 pending。
-- 状态：`in_progress`；TV1-T135=`automated_verified`；TV1-T134=`automated_verified`；TV1-T133=`automated_verified`；TV1-T132=`automated_verified`；TV1-T131=`automated_verified`；TV1-T130=`automated_verified`；TV1-T129=`automated_verified`；TV1-T128=`automated_verified`；TV1-T127=`automated_verified`；TV1-T01/T02/T03/T04/T05/T06/T07/T08/T09/T10/T10b/T11/T12a/T12b/T13/T14/T14b/T15/T16/T17/T18/T19/T20/T22=`automated_verified`
+- 当前 frontier（2026-08-27）：TV1-T01–T135 均已 `resolved`。TV1-T136 已完成 decimal 七轴产品实现、不可变 v7
+  target 与 component/template/fast 验证，达到 wired 55/65、remaining geometry 10；其 `server/full/resolution fast`
+  因当前产品 smoke runtime 延后，状态保持 `implementation_complete / final_gate_pending` 并已释放 claim。人工 smoke
+  新发现正式 Editor 无法创建任何节点，故独立纠偏 TV1-T126a 成为当前 single-writer；其首个 Rect 纵切现已实现并通过
+  Node 24 Web 与实际 5173 自动化 smoke，等待用户 smoke 与延后的 `fast`。两个 class required executor manifests、
+  独立产品 replay 与 195 条 formal issuance 继续 pending。
+- 状态：`in_progress`；TV1-T126a=`implementation_complete/user_smoke_and_fast_pending`；TV1-T136=`implementation_complete/final_gate_pending`；TV1-T135=`automated_verified`；TV1-T134=`automated_verified`；TV1-T133=`automated_verified`；TV1-T132=`automated_verified`；TV1-T131=`automated_verified`；TV1-T130=`automated_verified`；TV1-T129=`automated_verified`；TV1-T128=`automated_verified`；TV1-T127=`automated_verified`；TV1-T01/T02/T03/T04/T05/T06/T07/T08/T09/T10/T10b/T11/T12a/T12b/T13/T14/T14b/T15/T16/T17/T18/T19/T20/T22=`automated_verified`
   （T09 另含人工 J1），TV1-T21=`automated_verified`（首个 Rendering 纵切——renderweave-rendering
   首个 artifact、TemplateClosureAuthority/Evaluator stage 1–8/seal、CapabilityState 加密落盘、
   RenderNodeContract 向量语料 Java primary、端到端 assembly 证明）；TV1-T13 已完成 AssetResolver、加密
@@ -5066,3 +5068,49 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
 - Boundary：decimal 7、geometry 10、两个 required executor manifests、独立产品 replay 与 195 formal records 仍
   pending；未升级 lifecycle，未运行独立 native build/真实数据/生产或取得 J1/A3/READY，provider attempts/API Key
   reads/reservations/cost 为 0，`BUILD_NOT_AUTHORIZED` 保持。用户 360 项 dirty work 与 stash 未被本票改写。
+
+## 136. TV1-T136 执行卡
+
+- 状态：`implementation_complete / final_gate_pending`；Blocked by T135（resolved）；claim 已释放，等待当前产品 smoke
+  结束后恢复顺序 `server`、Goal `full` 与 resolution `fast`。
+- 决策：完整接线 admitted precision/scale 三轴、intermediate precision/scale 三轴与 explicit rounding scale 一轴；
+  TDD seam 沿用 `DesignDslAuthority.admit(rawUtf8)` 与既有 Rendering evaluator/Expression consumption，不新增第二
+  comparator、HTTP/OpenAPI、migration 或配置面。
+- Admission：Template parser 对每个 authored decimal literal 去不可观察尾零后，在 AST literal allocation 前观察
+  admitted 三轴；`divide/round/formatDecimal` 的合法 scale literal 在 call allocation 前观察，`formatDecimal` 的 min/max
+  均计入。authority reject/invalid/throw 在 exact source pointer 以既有 closed DesignDSL envelope 零写退出。
+- Evaluation：同一 injected authority 沿 `CanonicalEvaluator → Materializer → DefinitionEngine → ExpressionEvaluator`
+  传递；每次 exact operation result 在进入 evaluator state 前观察 normalized intermediate 三轴，最终可观察 decimal
+  再观察 admitted 三轴。删除 Rendering 的 256/128/64 hardcoded comparator，scale-min/max 保留各自 exact limitId。
+- TDD/target：按 admitted/scale 与 intermediate/observable 两个纵切分别 RED→GREEN，再回归 Expression engine、
+  Template/Rendering 与 canonical 211 vectors；实现提交后冻结不可变 v7，目标 wired 55/65、remaining geometry 10，
+  v1–v6 bytes 不变。
+- Gates：focused Template/Rendering → component → `template` → `fast` → sequential `server` → Goal `full` →
+  resolution `fast`；Maven 串行、精确 staging，formal registry 保持 58/58、recordsIssued=0。
+- 禁止影响：geometry 十轴、class manifests/195 formal records、其他 execution class、Renderer/Profile/独立 native
+  build、provider/API Key/真实数据/生产/J1/A3/READY、用户 360 项 dirty work 与 stash；
+  `BUILD_NOT_AUTHORIZED` 保持。
+
+## 126a. TV1-T126a 执行卡
+
+- 状态：`implementation_complete / user_smoke_and_fast_pending`；Blocked by T09/T14/T14b/T16/T28/T29/T126（均
+  resolved）；single-writer 为 Codex `/root`。
+- 触发：2026-08-27 人工 smoke 在正式 `/templates/:templateId` 确认“节点”入口只有只读计数，用户不能添加任何元素；
+  这是最终产品功能缺口，不是原型预览误用。T126 只激活已存在路由与 journey，未交付新的 authoring vertical。
+- 决策：以 Rect 为首个真实 tracer，新增纯 `StructuredEditorSession + intent + UUID factory` authoring seam；选择选中容器
+  或最近合法祖先，按 ContentModel 写 ABSOLUTE/STACK/GRID/PACK placement 与合法 static baseline，并以 closed
+  `insert-node` command 进入同一 100 条 canonical history。
+- UI/价值：正式节点库提供可键盘激活的“添加矩形”；成功后自动选中并切到结构面板，tree、非权威 canvas、inspector、
+  dirty/save 与 recovery 全部读取同一 working copy。现有 save API 保存完整 canonical DesignDSL，formal Playwright
+  验证 PUT 与 reopen 节点保持。
+- TDD/gates：纯 authoring/history RED → 正式 DOM RED → formal save/reopen RED → minimal GREEN → focused Vitest →
+  Web test/typecheck/lint/build → `web` → `fast`；重建 smoke 前先通知用户，再恢复 T136 final gates。
+- 边界：本票不冒充全节点/属性设计器；后继扩展其余无外部 picker 依赖的节点、删除/重排和基础属性。Text/Image 等待
+  真实 Asset picker；不改 Java/OpenAPI/migration/Renderer/Profile，不运行 provider/API Key/真实数据/生产/J1/A3/READY。
+- 结果：纯 authoring/history、正式 DOM 与 formal save/reopen 三个 seam 均已 RED→GREEN；focused Vitest 3 files/40、
+  完整 Web 33 files/262、typecheck/lint、2160-module production build、formal Template E2E 3/3 与实际
+  `localhost:5173` create/save/reopen 1/1 均通过。正式 Node 24 `web` A1 证据为
+  `.sdlc/evidence/20260827-110418-web/`。真实目标 Template 已只读确认 `READABLE/READY/revision 0/canvas/0 children`；
+  浏览器 fixture 未写真实数据。Web 容器直接挂载绿色 `web/dist`，无需重启；`fast` 会重新打包 API 容器当前挂载 JAR，
+  故延后到用户 smoke 结束后，本票不提前报 `automated_verified`。内置 Browser 控制层因 runtime kernel asset 路径错误
+  未连接，实际 5173 由仓库 Playwright 复验，不冒充 visible/J1 验收。

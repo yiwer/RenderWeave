@@ -32,7 +32,13 @@ describe('Template Editor E6 Authoritative Preview', () => {
       previewObjectUrls={objectUrls}
     />);
 
-    fireEvent.click(screen.getByRole('button', { name: '打开权威预览' }));
+    const openPreview = screen.getByRole('button', { name: '打开权威预览' });
+    expect(openPreview.hasAttribute('aria-controls')).toBe(false);
+    fireEvent.click(openPreview);
+    expect(document.querySelector(
+      'button[aria-controls="template-authoritative-preview-panel"]',
+    )?.getAttribute('aria-label')).toBe('关闭权威预览');
+    expect(document.getElementById('template-authoritative-preview-panel')).toBeTruthy();
     expect(screen.getByRole('heading', { name: '权威预览' })).toBeTruthy();
     expect((screen.getByRole('textbox', { name: 'RenderInput JSON' }) as HTMLTextAreaElement).value)
       .toBe('{"rootDocument":{}}');

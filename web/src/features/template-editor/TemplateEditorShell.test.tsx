@@ -26,6 +26,34 @@ afterEach(() => {
 });
 
 describe('Template Editor E1/E2 Product shell', () => {
+  it('authors a Rect through the formal node library and synchronizes every working-copy projection', () => {
+    vi.spyOn(globalThis.crypto, 'randomUUID')
+      .mockReturnValue('11111111-1111-4111-8111-111111111111');
+    const session = createSessionFromBaseline(
+      structuredBaseline(),
+      { state: 'checked', value: 'READY' },
+    );
+    render(<TemplateEditorShell session={session} saveTransport={saveTransport({})} />);
+
+    fireEvent.click(screen.getByRole('button', { name: '节点' }));
+    const addRect = screen.getByRole('button', { name: '添加矩形' });
+    addRect.focus();
+    expect(document.activeElement).toBe(addRect);
+    fireEvent.click(addRect);
+
+    expect(screen.getByRole('button', { name: '结构' }).getAttribute('aria-current')).toBe('page');
+    expect(screen.getByRole('treeitem', { name: /矩形 2/ }).getAttribute('aria-selected')).toBe('true');
+    expect(screen.getByRole('heading', { name: '矩形 2' })).toBeTruthy();
+    expect(screen.getAllByText('矩形 2').length).toBeGreaterThanOrEqual(2);
+    expect(screen.getByText('Canonical 本地草稿')).toBeTruthy();
+    expect(screen.getByRole('button', { name: '保存 canonical 本地草稿' }).hasAttribute('disabled')).toBe(false);
+
+    fireEvent.click(screen.getByRole('button', { name: '撤销本地编辑' }));
+    expect(screen.queryByRole('treeitem', { name: /矩形 2/ })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: '重做本地编辑' }));
+    expect(screen.getByRole('treeitem', { name: /矩形 2/ }).getAttribute('aria-selected')).toBe('true');
+  });
+
   it('renders the approved Canvas Focus workbench with only real behavior', () => {
     const session = createSessionFromBaseline(
       structuredBaseline(),

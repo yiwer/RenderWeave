@@ -6,9 +6,6 @@ import { expect, test, type Page, type Route } from '@playwright/test';
 const TEMPLATE_ID = '9034a1da-5a76-469c-8de0-516eebf2c742';
 const OPERATION_ID = '123e4567-e89b-42d3-a456-426614174000';
 const CANONICAL_DESIGN = '{"definitions":[],"designRoot":{"bindings":[],"children":[],"heightMm":297,"kind":"canvas","nodeId":"123e4567-e89b-42d3-a456-426614174000","widthMm":210},"displayName":"API template","dslVersion":"renderweave-design/1.0","expressionProfile":"renderweave-expression/1.0"}';
-const CONTENT_HASH = `sha256:${createHash('sha256')
-  .update(`renderweave-design-content/1\0${CANONICAL_DESIGN}`)
-  .digest('hex')}`;
 const PNG = Buffer.from(
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Y9ZlZkAAAAASUVORK5CYII=',
   'base64',
@@ -73,10 +70,63 @@ test.describe('formal Template final product', () => {
     await expect(page.getByRole('heading', { name: '模板' })).toBeVisible();
     expect(browserErrors).toEqual([]);
   });
+
+  test('creates a Rect in the formal editor, saves its canonical wire and keeps it after reopen', async ({ page }) => {
+    const browserErrors = captureBrowserErrors(page);
+    const contract = await installTemplateHttpContract(page);
+    await page.setViewportSize({ width: 1280, height: 720 });
+    await page.goto(`/templates/${TEMPLATE_ID}`);
+
+    await page.getByRole('button', { name: '节点' }).click();
+    await page.getByRole('button', { name: '添加矩形' }).click();
+
+    await expect(page.getByRole('button', { name: '结构' })).toHaveAttribute('aria-current', 'page');
+    await expect(page.getByRole('treeitem', { name: /矩形 1/ })).toHaveAttribute('aria-selected', 'true');
+    await expect(page.getByRole('heading', { name: '矩形 1' })).toBeVisible();
+    await expect(page.getByText('Canonical 本地草稿')).toBeVisible();
+    await page.getByRole('button', { name: '保存 canonical 本地草稿' }).click();
+    await expect(page.getByText('revision 1')).toBeVisible();
+
+    expect(contract.saveRequests).toBe(1);
+    const saved = JSON.parse(contract.savedCanonical);
+    expect(saved.designRoot.children).toHaveLength(1);
+    expect(saved.designRoot.children[0]).toMatchObject({
+      kind: 'rect',
+      displayName: '矩形 1',
+      bindings: [],
+      placement: {
+        type: 'ABSOLUTE',
+        xMm: 10,
+        yMm: 10,
+        widthMode: 'FIXED',
+        widthMm: 30,
+        heightMode: 'FIXED',
+        heightMm: 20,
+      },
+      fill: { color: '#2563EBFF' },
+    });
+    expect(saved.designRoot.children[0].nodeId)
+      .toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);
+
+    await page.reload();
+    const rect = page.getByRole('treeitem', { name: /矩形 1/ });
+    await expect(rect).toBeVisible();
+    await rect.click();
+    await expect(page.getByRole('heading', { name: '矩形 1' })).toBeVisible();
+    await expect(page.getByText('Canonical current')).toBeVisible();
+    await expectNoSeriousOrCriticalAxe(page, '.template-editor-root');
+    expect(browserErrors).toEqual([]);
+  });
 });
 
 async function installTemplateHttpContract(page: Page) {
-  const observations = { createRequests: 0, previewRequests: 0 };
+  const observations = {
+    createRequests: 0,
+    previewRequests: 0,
+    saveRequests: 0,
+    savedCanonical: CANONICAL_DESIGN,
+    revision: 0,
+  };
   await page.route('**/api/v1/**', async (route) => {
     const request = route.request();
     const url = new URL(request.url());
@@ -128,16 +178,33 @@ async function installTemplateHttpContract(page: Page) {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: `{"templateId":"${TEMPLATE_ID}","disclosure":"READABLE","revision":0,"staticSchema":{"schemaKey":"system-empty","versionTag":"v1"},"contentHash":"${CONTENT_HASH}","readiness":"STALE","designDsl":${CANONICAL_DESIGN}}`,
+        body: currentTemplateBody(
+          observations.savedCanonical,
+          observations.revision,
+          observations.revision === 0 ? 'STALE' : 'READY',
+        ),
       });
       return;
     }
     if (method === 'POST' && url.pathname === `/api/v1/templates/${TEMPLATE_ID}/readiness-recheck`) {
       await json(route, {
         templateId: TEMPLATE_ID,
-        revision: 0,
-        contentHash: CONTENT_HASH,
+        revision: observations.revision,
+        contentHash: contentHashOf(observations.savedCanonical),
         readiness: 'READY',
+      });
+      return;
+    }
+    if (method === 'PUT' && url.pathname === `/api/v1/templates/${TEMPLATE_ID}`) {
+      expect(url.searchParams.get('expectedRevision')).toBe(String(observations.revision));
+      expect(request.headers()['content-type']).toBe('application/vnd.renderweave.design+json');
+      observations.saveRequests += 1;
+      observations.savedCanonical = request.postData() ?? '';
+      observations.revision += 1;
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: currentTemplateBody(observations.savedCanonical, observations.revision, 'READY'),
       });
       return;
     }
@@ -173,6 +240,23 @@ async function installTemplateHttpContract(page: Page) {
     await route.fulfill({ status: 501, contentType: 'text/plain', body: `${method} ${url.pathname}` });
   });
   return observations;
+}
+
+function contentHashOf(canonicalDesignDsl: string): string {
+  return `sha256:${createHash('sha256')
+    .update(`renderweave-design-content/1\0${canonicalDesignDsl}`)
+    .digest('hex')}`;
+}
+
+function currentTemplateBody(
+  canonicalDesignDsl: string,
+  revision: number,
+  readiness: 'READY' | 'STALE',
+): string {
+  return `{"templateId":"${TEMPLATE_ID}","disclosure":"READABLE","revision":${revision},`
+    + `"staticSchema":{"schemaKey":"system-empty","versionTag":"v1"},`
+    + `"contentHash":"${contentHashOf(canonicalDesignDsl)}","readiness":"${readiness}",`
+    + `"designDsl":${canonicalDesignDsl}}`;
 }
 
 async function json(route: Route, body: unknown) {

@@ -668,6 +668,12 @@ Label: wayfinder:map
   `21b74eb2`。内置 Browser 因 runtime kernel asset 路径错误未连接，不冒充 visible/J1 验收；测试 HTTP fixture 不进入产品
   bundle、不证明 native Renderer success，`/prototype`、Profile registration/certification、J1/A3/READY 与外部副作用
   均未推进。
+- [补齐正式 Template Editor 首个节点创作纵切](issues/126a-formal-editor-node-authoring.md) —
+  **implementation_complete / user_smoke_and_fast_pending / claimed by Codex `/root`**；2026-08-27 人工 smoke 发现正式
+  Editor 只能修改名称、不能创建任何节点。本票已以 Rect 贯通 Node library → 同一 EditorSession/history → 自动选择 →
+  tree/canvas/inspector → existing save/reopen；Node 24 Web 33 files/262 tests、2160-module build、formal E2E 3/3 与实际
+  5173 create/save/reopen 1/1 均绿，证据 `.sdlc/evidence/20260827-110418-web/`。用户 smoke 与会改写挂载 JAR 的
+  `fast` 延后，不复用 prototype 状态模型，不新增 API/migration，也不冒充全节点/全属性设计器。
 - [物化 Domain Services 容量一致性产品执行目标](issues/127-domain-services-capacity-conformance-target.md) —
   **resolved / automated_verified**；Domain Services 的 4 个 Asset 容量轴与 12 个 frozen fixture 已绑定唯一生产
   capacity guard、closed Java executor、独立 Python replay 与 exact target manifest。实现 `96dcf3fd`、门控
@@ -711,6 +717,14 @@ Label: wayfinder:map
   46/65、remaining 19。Template 搜索 placeholder 对比度在 full gate 中被发现并由 `0192af74` 修复；最终 17-step
   Goal `full` 与 resolution `fast` 全绿。Expression AST 2 + decimal 7、geometry 10、class manifests/product replay/
   formal issuance 与 lifecycle 升级继续 pending。
+- [接线 Expression AST 两轴产品容量](issues/135-wire-expression-ast-capacity.md) —
+  **resolved / automated_verified**；Template-owned parser 在 AST allocation 前把 per-expression/全 DSL 两轴接入唯一
+  capacity authority，Rendering 直接消费同一 immutable AST。v6 target、component、`template`/`fast`/顺序
+  `server`/17-step `full`/resolution `fast` 全绿，wired 48/65、remaining 17。
+- [接线 Expression decimal 七轴产品容量](issues/136-wire-expression-decimal-capacity.md) —
+  **implementation_complete / final_gate_pending / unclaimed**；真实 DesignDSL admission 与 Rendering evaluation 七轴接线、
+  不可变 v7 target、component 195/195、`template` 与 `fast` 已绿，wired 55/65、remaining geometry 10。顺序 `server`、
+  Goal `full` 与 resolution `fast` 因当前产品 smoke runtime 延后；smoke 后必须恢复，不提前报 automated_verified。
 - [验证 Product Editor 状态、恢复与权威预览架构](issues/09-validate-product-editor-architecture.md) —
   throwaway 逻辑原型（`/prototype/editor-state-model`，不进产品 route）把冻结编辑器规则编码为确定性
   fixture 状态机：10 个引导走查场景 37/37 断言 + 自由操作冒烟 + 键盘焦点检查全部通过（Playwright A1，
@@ -859,8 +873,10 @@ Label: wayfinder:map
   bounded collector 并冻结 v4；T134 又完成 Expression source/input/Mapping/Definition graph 八轴并冻结 v5。
   T135 已完成 Expression AST 两轴：Template-owned 同一 grammar parser 在 AST node allocation 前调用共享
   capacity authority，Rendering 消费同一 immutable AST 派生值，重复 parser/AST 与硬编码阈值已删除；不可变 v6
-  target 与发布级 17-step replay 全绿，当前 wired 48/65、remaining 17。剩余 frontier 为 decimal 7 与 geometry 10，
-  下一张 single-writer 票应认领其中一个可独立验证的产品纵切。195 个
+  target 与发布级 17-step replay 全绿，当前 wired 48/65、remaining 17。T136 已完成 decimal 七轴实现与 v7 target，
+  当前 wired 55/65、remaining geometry 10；最终 server/full 因产品 smoke 延后且 claim 已释放。人工 smoke 同时发现
+  正式 Editor 无节点创建能力；独立纠偏 TV1-T126a 已完成首个 Rect 纵切，当前等待用户 smoke 与延后的 `fast`，仍是
+  single-writer。195 个
   capacity candidates 在全部真实接线、两个 required executor manifests 与独立产品 replay 完成前仍不得发行。其余
   execution-class target、Profile 发行、Editor J1、Renderer 双物理 Linux CPU-family
   认证与最终生命周期升级仍须以届时真实产品 artifact 和 executor 为输入另行切票；Ticket 19 保持 open。

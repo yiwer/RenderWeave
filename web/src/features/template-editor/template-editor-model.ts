@@ -43,7 +43,14 @@ export interface SetTemplateDisplayNameCommand {
   after: string;
 }
 
-export type StructuredEditorCommand = SetTemplateDisplayNameCommand;
+export interface InsertNodeCommand {
+  kind: 'insert-node';
+  parentNodeId: string;
+  childIndex: number;
+  node: Readonly<Record<string, unknown>>;
+}
+
+export type StructuredEditorCommand = SetTemplateDisplayNameCommand | InsertNodeCommand;
 
 export interface StructuredEditorHistory {
   past: readonly StructuredEditorCommand[];
