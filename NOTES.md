@@ -4125,3 +4125,27 @@
   T161-specific A2/A3；J0 pending、J1 未批准。未重复 server/full；cap-024 继续 deferred；provider attempts/
   API Key reads/真实数据/Profile registration/push/tag/PR 均为 0。
 - 状态回填后的 resolution `fast` `.sdlc/evidence/20260829-073758-fast/` metadata 为 passed，3/3 steps 全绿。
+
+# 2026-08-29 Template-v1 T162 occurrence IMAGE pixels（resolved / automated_verified）
+
+- T161 已以 verified commit `3d0d87cb` 收口，worktree clean、ahead 152 且 DAG 无其他 current active claim；冻结
+  `RW-T19-S8-007` / cap-032 是下一个 unblocked frontier，现按 single-writer claim T162。
+- `assetsAndFetch.occurrenceImagePixels` 固定 MAX_INCLUSIVE `1000000000`、observed
+  `999999999/1000000000/1000000001`，ASSET_ADMISSION_AND_RESOLUTION / public ASSET_ADMISSION /
+  ASSET_BUDGET_EXCEEDED / ZERO_DOCUMENT_OUTPUT，reservation point 为下一 resolved Asset unit 与 external fetch 前。
+- 每个 IMAGE occurrence 按 orientation 后 `logicalWidthPx × logicalHeightPx` 收费；duplicate/cache hit 不减免，FONT
+  为零。顺序为 occurrence raw bytes → IMAGE pixels → unique exact count/raw bytes → resource entry。
+- claim 时 A0、J0；cap-024 继续 deferred；provider/API Key/真实数据/费用/Profile registration/push/tag/PR 均为 0。
+- guard/Materializer TDD 先得到 5 个缺失 catalog enum 的 compile RED；补唯一 guard 项后 guard 24/24 绿，
+  Materializer 精确保留 1 个 behavioral RED，证明尚未累计 logical IMAGE pixels。
+- `Materializer.resolveAtom` 现于 successful IMAGE fact 的 occurrence raw-byte reservation 后、unique exact-content
+  admission 前按 `logicalWidthPx × logicalHeightPx` reserve；FONT 零收费，IMAGE descriptor 缺失时 fail closed。
+  prefix `999999998` + 两个 duplicate exact-content `1×1` occurrence exact-at 成功；prefix `999999999` 时第二次
+  Resolver 仍执行但第二项 exact reject，且 unique-content/raw/resource-entry 下游 tracker 均只含首项。
+- focused guard 24 + Materializer 28 + Evaluator 68 + architecture 6 = 126/126；受影响 reactor Schema 20、
+  Validation 13、Template 84、Asset 92、Rendering 247 全绿，零 failure/error；`git diff --check` 通过。
+- A1 `render` `.sdlc/evidence/20260829-074507-render/`（2/2）与 `fast`
+  `.sdlc/evidence/20260829-074555-fast/`（3/3）metadata 均 `passed`。cap-032 fixture 只执行 production guard，故无
+  T162-specific A2/A3；J0 pending、J1 未批准。未重复 server/full；cap-024 继续 deferred；provider attempts/
+  API Key reads/真实数据/Profile registration/push/tag/PR 均为 0。
+- 状态回填后的 resolution `fast` `.sdlc/evidence/20260829-074728-fast/` metadata 为 `passed`，3/3 steps 全绿。

@@ -1,6 +1,7 @@
 package cn.hbads.renderweave.rendering.internal;
 
 import cn.hbads.renderweave.asset.api.AssetAcceptanceAuthority.AssetKind;
+import cn.hbads.renderweave.asset.api.AssetAcceptanceAuthority.ImageDescriptor;
 import cn.hbads.renderweave.rendering.api.EvaluationStage;
 import cn.hbads.renderweave.rendering.api.Evaluator.RenderRequestId;
 import cn.hbads.renderweave.rendering.api.RenderingProblem;
@@ -1136,6 +1137,10 @@ final class Materializer {
         if (occurrenceRawByteFailure != null) {
             return occurrenceRawByteFailure;
         }
+        var occurrenceImagePixelFailure = reserveOccurrenceImagePixels(kind, fact);
+        if (occurrenceImagePixelFailure != null) {
+            return occurrenceImagePixelFailure;
+        }
         var exactContentFailure = reserveExactContent(kind, fact);
         if (exactContentFailure != null) {
             return exactContentFailure;
@@ -1162,6 +1167,24 @@ final class Materializer {
                 memberName,
                 fact.technicalDescriptor()));
         return new ResolvedValue(new ObjectNode(Map.of("resourceId", new Text(resourceId.value()))));
+    }
+
+    private MaterializationFailed reserveOccurrenceImagePixels(
+            AssetKind kind,
+            AssetResolutionPort.ResolvedAssetFact fact
+    ) {
+        if (kind != AssetKind.IMAGE) {
+            return null;
+        }
+        if (!(fact.technicalDescriptor() instanceof ImageDescriptor image)) {
+            return failed(EvaluationStage.ASSET_RESOLUTION,
+                    ProblemCode.RENDER_INTERNAL_ERROR, null);
+        }
+        long logicalPixels = (long) image.logicalWidthPx() * image.logicalHeightPx();
+        return capacityFailure(requestCapacity.reserve(
+                RenderingPipelineCapacityGuard.Limit
+                        .ASSETS_AND_FETCH_OCCURRENCE_IMAGE_PIXELS,
+                logicalPixels));
     }
 
     private MaterializationFailed reserveExactContent(
