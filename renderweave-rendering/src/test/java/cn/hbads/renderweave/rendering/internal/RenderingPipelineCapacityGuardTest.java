@@ -228,4 +228,25 @@ class RenderingPipelineCapacityGuardTest {
         assertEquals("renderDocument.canonicalBytes",
                 problem.limitId().orElseThrow().value());
     }
+
+    @Test
+    void renderDocumentJsonDepthBoundaryUsesTheFrozenProductionGuardContract() {
+        var guard = new RenderingPipelineCapacityGuard();
+
+        assertTrue(guard.admit(
+                RenderingPipelineCapacityGuard.Limit.RENDER_DOCUMENT_JSON_DEPTH,
+                127).isEmpty());
+        assertTrue(guard.admit(
+                RenderingPipelineCapacityGuard.Limit.RENDER_DOCUMENT_JSON_DEPTH,
+                128).isEmpty());
+
+        var problem = guard.admit(
+                        RenderingPipelineCapacityGuard.Limit.RENDER_DOCUMENT_JSON_DEPTH,
+                        129)
+                .orElseThrow();
+        assertEquals(EvaluationStage.DOCUMENT_SEAL, problem.stage());
+        assertEquals(ProblemCode.RENDER_DOCUMENT_LIMIT_EXCEEDED, problem.code());
+        assertEquals("renderDocument.jsonDepth",
+                problem.limitId().orElseThrow().value());
+    }
 }

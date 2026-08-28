@@ -910,6 +910,11 @@ Label: wayfinder:map
   pre-write chunked UTF-8 writer 取代 Sealer 的整串/整数组分配后手写检查。frozen 305-byte at/above 产品 seam、
   focused 87/87、Rendering 211/211 与 render/fast metadata 全绿；仅完成 canonicalBytes，不提前宣称其余
   RenderDocument 容量轴。A1、无 ticket-specific A2、J0。
+- [T148 — RenderDocument strict JSON depth 预算](issues/148-render-document-json-depth-capacity.md)
+  — **resolved / automated_verified**；按 `RW-T19-S7-090` 与 cap-017 将 strict JSON container depth `127/128/129`
+  接入 T147 已建立的唯一 production canonical writer/guard；mixed object/array exact boundary、string punctuation 与
+  sibling non-accumulation 均绿。focused 91/91、Rendering 215/215 与 render/fast metadata 全绿；仅完成 jsonDepth，
+  不提前宣称其余 seal/Engine 容量轴。A1、无 ticket-specific A2、J0。
 
 - 改写或重解释现有 Schema/Inference v1 已提交历史，或在 dirty main 上直接实施 Template。
 - Workspace、组织/成员/分享/协作、跨 ownerScope 复制、通用 connector、任意 SQL/HTTP/文件/脚本、插件节点或运行时代码注册。

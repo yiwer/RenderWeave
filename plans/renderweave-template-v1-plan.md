@@ -5337,3 +5337,36 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
   J0 pending、J1 未批准。未重复 server/full，provider attempts/API Key reads/真实数据/Profile registration/
   push/tag/PR 均为 0。
 - 状态回填后的 resolution `fast` `.sdlc/evidence/20260829-052401-fast/` metadata 为 `passed`，3/3 steps 全绿。
+
+## 148. TV1-T148 执行卡
+
+- 状态：`resolved / automated_verified`；single writer: Codex；blocked by T21/T147（均 resolved）。
+- authority：`RW-T19-S7-090` / cap-017 固定 `renderDocument.jsonDepth` 为 MAX_INCLUSIVE `128`，observed
+  `127/128/129`，DOCUMENT_SEAL_COUNTING / public DOCUMENT_SEAL / RENDER_DOCUMENT_LIMIT_EXCEEDED /
+  ZERO_DOCUMENT_OUTPUT；reservation point 为 atomic canonical-byte/digest commit 与任何 Engine Command 前。
+- seam：strict JSON container root depth `1`，object/array entry `+1`，scalar/string 内容不计。由 T147 的
+  `CanonicalValue → RenderDocumentCanonicalWriter` 流程发送结构事件，writer 在 opening bytes 前经同一 request
+  tracker 观察 maximum；不新增 parser、post-hoc scan、外部 Interface/config/route。
+- TDD：guard 先 missing-enum compile RED；writer 再以 nested canonical object/array 的 `127/128/129` 捕获
+  behavioral RED，随后最小加入 maximum observation。focused guard/writer/Sealer/RenderDocument/Evaluator、受影响
+  reactor、render/fast；无 app wiring，不重复 server/full。
+- honesty：cap-017 target 不执行 Evaluator/Sealer，isolated guard 只证明同一 production catalog；writer seam 才证明
+  实际 structural counting 与 zero committed output，但不冒充正式 records/A2。staticNodes/childEdges/runs/
+  textScalars/vectorEntries 与 diagnostics 继续后续独立票。provider/API Key/真实数据/Profile registration/
+  push/tag/PR 均不推进；当前 A0、J0。
+
+### TV1-T148 resolution evidence
+
+- 正确引用参数的 guard test 先产生 3 个 missing-enum compile RED；此前一次 PowerShell 参数引用错误未进入编译，
+  不计证据。唯一 catalog 加入 jsonDepth 后 cap-017 三点 GREEN。writer test 再精确产生 1 个 behavioral RED：129 层
+  expected `CapacityExceeded`、actual committed bytes；127/128 已成功。
+- `CanonicalJson` object/array 现发送 container begin/end，普通 encoder 默认 no-op；production writer 在 opening bytes 前
+  以 request-local maximum 经同一 guard 判定。mixed object/array 127/128 成功、129 exact reject；string 内 `{[` 不计，
+  129 sibling containers 也不累计。
+- focused Evaluator 68 + writer 3 + RenderDocument 4 + guard 10 + Sealer 6 = 91/91；受影响 reactor Schema 20、
+  Validation 13、Template 84、Asset 92、Rendering 215 全绿，`git diff --check` 通过。
+- A1 `render` `.sdlc/evidence/20260829-053313-render/`（2/2）与 `fast`
+  `.sdlc/evidence/20260829-053400-fast/`（3/3）metadata 均 `passed`；既有 RenderDocument independent replay 83/83
+  仍 byte-identical。cap-017 不执行 Evaluator/Sealer，故无 T148-specific A2/A3；J0 pending、J1 未批准。未重复
+  server/full，provider attempts/API Key reads/真实数据/Profile registration/push/tag/PR 均为 0。
+- 状态回填后的 resolution `fast` `.sdlc/evidence/20260829-053518-fast/` metadata 为 `passed`，3/3 steps 全绿。

@@ -3804,3 +3804,26 @@
 - cap-016 不执行 Sealer 且无正式 product executor，故无 T147-specific A2/A3；J0 pending、J1 未批准。未重复
   server/full，provider attempts/API Key reads/真实数据/Profile registration/push/tag/PR 均为 0。
 - 状态回填后的 resolution `fast` `.sdlc/evidence/20260829-052401-fast/` metadata 为 passed，3/3 steps 全绿。
+
+# 2026-08-29 Template-v1 T148 RenderDocument strict JSON depth（resolved / automated_verified）
+
+- T147 已以 verified commit `b4663580` 收口，worktree clean、ahead 138 且 DAG 无其他 active claim；现按
+  single-writer 登记并 claim T148。
+- `RW-T19-S7-090` / cap-017 固定 `renderDocument.jsonDepth` MAX_INCLUSIVE `128`，observed `127/128/129`，
+  DOCUMENT_SEAL_COUNTING / public DOCUMENT_SEAL / RENDER_DOCUMENT_LIMIT_EXCEEDED / ZERO_DOCUMENT_OUTPUT。
+- 计数以 strict JSON root container depth `1`、每层 object/array `+1`；scalar 与 string 内容不计。T147 production
+  writer 将在 opening bytes 前经唯一 guard 观察 maximum，不新增 parser、post-hoc scan 或外部 seam。
+- cap-017 不执行 Evaluator/Sealer；guard 三点只作同 production catalog 隔离重放，另以 nested canonical value 在
+  production writer seam 证明 `127/128/129` 与 above 零 committed output。当前 A0、J0；provider/API Key/真实数据/
+  Profile registration/push/tag/PR 均不推进。
+- 正确引用参数的 guard test 产生 3 个 missing-enum compile RED；此前一次 PowerShell 参数引用错误未进入编译，不计
+  RED。最小 catalog 扩展后 guard 10/10 GREEN。writer 2 tests 再精确 1 个 behavioral RED：129 层未拒绝。
+- object/array 结构事件现由 production writer 在 opening bytes 前按 request-local maximum 计数；mixed 127/128 seal、
+  129 exact DOCUMENT_SEAL / RENDER_DOCUMENT_LIMIT_EXCEEDED / full limitId reject。string punctuation 不计，129 sibling
+  containers 不累计。
+- focused 91/91；受影响 reactor Schema 20、Validation 13、Template 84、Asset 92、Rendering 215 全绿，
+  `git diff --check` 通过。A1 `render` `.sdlc/evidence/20260829-053313-render/`（2/2）与 `fast`
+  `.sdlc/evidence/20260829-053400-fast/`（3/3）metadata 均 passed。
+- cap-017 不执行 Evaluator/Sealer，故无 T148-specific A2/A3；J0 pending、J1 未批准。未重复 server/full，provider
+  attempts/API Key reads/真实数据/Profile registration/push/tag/PR 均为 0。
+- 状态回填后的 resolution `fast` `.sdlc/evidence/20260829-053518-fast/` metadata 为 passed，3/3 steps 全绿。

@@ -20,6 +20,7 @@ final class RenderDocumentCanonicalWriter implements CanonicalJson.Utf8Sink {
     private byte[] currentChunk = new byte[CHUNK_BYTES];
     private int currentLength;
     private int totalLength;
+    private int jsonDepth;
 
     private RenderDocumentCanonicalWriter(
             RenderingPipelineCapacityGuard.RequestTracker capacity
@@ -51,6 +52,26 @@ final class RenderDocumentCanonicalWriter implements CanonicalJson.Utf8Sink {
             throw new IllegalStateException("UTF-8 byte count drift");
         }
         append(encoded);
+    }
+
+    @Override
+    public void beginContainer() {
+        var nextDepth = (long) jsonDepth + 1;
+        var problem = capacity.observeMaximum(
+                RenderingPipelineCapacityGuard.Limit.RENDER_DOCUMENT_JSON_DEPTH,
+                nextDepth);
+        if (problem.isPresent()) {
+            throw new CapacityExceeded(problem.orElseThrow());
+        }
+        jsonDepth++;
+    }
+
+    @Override
+    public void endContainer() {
+        if (jsonDepth == 0) {
+            throw new IllegalStateException("canonical JSON container depth underflow");
+        }
+        jsonDepth--;
     }
 
     private static int utf8Length(String value) {
@@ -93,6 +114,9 @@ final class RenderDocumentCanonicalWriter implements CanonicalJson.Utf8Sink {
     }
 
     private byte[] commit() {
+        if (jsonDepth != 0) {
+            throw new IllegalStateException("canonical JSON container depth is unbalanced");
+        }
         var canonical = new byte[totalLength];
         var offset = 0;
         for (var chunk : fullChunks) {

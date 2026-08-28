@@ -24,6 +24,12 @@ final class CanonicalJson {
     @FunctionalInterface
     interface Utf8Sink {
         void writeUtf8(String canonicalText);
+
+        default void beginContainer() {
+        }
+
+        default void endContainer() {
+        }
     }
 
     @FunctionalInterface
@@ -56,6 +62,7 @@ final class CanonicalJson {
                 .map(entry -> Map.entry(entry.getKey(), entry.getValue()))
                 .toList();
         return sink -> {
+            sink.beginContainer();
             sink.writeUtf8("{");
             for (int index = 0; index < entries.size(); index++) {
                 if (index > 0) {
@@ -67,12 +74,14 @@ final class CanonicalJson {
                 entry.getValue().writeTo(sink);
             }
             sink.writeUtf8("}");
+            sink.endContainer();
         };
     }
 
     static CanonicalValue arrayValue(List<CanonicalValue> items) {
         var values = List.copyOf(items);
         return sink -> {
+            sink.beginContainer();
             sink.writeUtf8("[");
             for (int index = 0; index < values.size(); index++) {
                 if (index > 0) {
@@ -81,6 +90,7 @@ final class CanonicalJson {
                 values.get(index).writeTo(sink);
             }
             sink.writeUtf8("]");
+            sink.endContainer();
         };
     }
 

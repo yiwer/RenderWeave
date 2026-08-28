@@ -43,6 +43,11 @@ final class RenderingPipelineCapacityGuard {
                 "renderDocument.canonicalBytes",
                 67_108_864,
                 ProblemCode.RENDER_DOCUMENT_LIMIT_EXCEEDED,
+                EvaluationStage.DOCUMENT_SEAL),
+        RENDER_DOCUMENT_JSON_DEPTH(
+                "renderDocument.jsonDepth",
+                128,
+                ProblemCode.RENDER_DOCUMENT_LIMIT_EXCEEDED,
                 EvaluationStage.DOCUMENT_SEAL);
 
         private final String id;
@@ -108,6 +113,19 @@ final class RenderingPipelineCapacityGuard {
             var problem = guard.admit(limit, next);
             if (problem.isEmpty()) {
                 observed.put(limit, next);
+            }
+            return problem;
+        }
+
+        Optional<RenderingProblem> observeMaximum(Limit limit, long observedValue) {
+            Objects.requireNonNull(limit, "limit");
+            if (observedValue < 0) {
+                throw new IllegalArgumentException("observedValue must be non-negative");
+            }
+            var maximum = Math.max(observed.getOrDefault(limit, 0L), observedValue);
+            var problem = guard.admit(limit, maximum);
+            if (problem.isEmpty()) {
+                observed.put(limit, maximum);
             }
             return problem;
         }
