@@ -160,16 +160,11 @@ class MaterializerTest {
                 1,
                 List.of(childSnapshot, rootSnapshot),
                 List.of());
-        var outcome = Materializer.materialize(
+        var outcome = admitThenMaterialize(
                 closure,
-                TemplateModule.designSemanticAuthority(),
-                DESIGNS,
                 null,
                 absentCapability(),
-                admitted(Map.of()),
-                new RenderRequestId("00000000-0000-4000-8000-000000000001"),
-                new AssetResolutionPort.RendererAudience("test-audience"),
-                1_000L);
+                admitted(Map.of()));
         var materialized = assertInstanceOf(Materializer.Materialized.class, outcome);
         var viewport = materialized.tree().root().children().get(0);
         assertEquals("compositionViewport", viewport.kind());
@@ -235,16 +230,11 @@ class MaterializerTest {
                 List.of(childSnapshot, rootSnapshot),
                 List.of());
 
-        var outcome = Materializer.materialize(
+        var outcome = admitThenMaterialize(
                 closure,
-                TemplateModule.designSemanticAuthority(),
-                DESIGNS,
                 null,
                 capability,
-                admitted(Map.of()),
-                new RenderRequestId("00000000-0000-4000-8000-000000000001"),
-                new AssetResolutionPort.RendererAudience("test-audience"),
-                1_000L);
+                admitted(Map.of()));
 
         assertInstanceOf(Materializer.Materialized.class, outcome);
         assertEquals(2, capability.positions.size());
@@ -528,7 +518,8 @@ class MaterializerTest {
     }
 
     private static AdmittedRenderInput admitted(Map<String, DesignValue> customs) {
-        return new AdmittedRenderInput(SCHEMA, new TypedObject(SCHEMA, Map.of()), customs);
+        return new AdmittedRenderInput(
+                SCHEMA, new TypedObject(SCHEMA, Map.of()), customs, Map.of());
     }
 
     private static Materializer.MaterializedTree materializeOk(
@@ -555,13 +546,32 @@ class MaterializerTest {
                 1,
                 List.of(snapshot),
                 List.of());
+        return admitThenMaterialize(
+                closure,
+                port,
+                capability,
+                admitted(customs));
+    }
+
+    private static Materializer.MaterializationOutcome admitThenMaterialize(
+            ClosureSnapshot closure,
+            AssetResolutionPort port,
+            DefinitionEngine.CapabilityProvider capability,
+            AdmittedRenderInput input
+    ) {
+        var admission = AssetAdmission.admit(
+                closure, TemplateModule.designSemanticAuthority(), port, input);
+        if (admission instanceof AssetAdmission.Rejected rejected) {
+            return new Materializer.MaterializationFailed(rejected.stage(), rejected.problem());
+        }
         return Materializer.materialize(
+                (AssetAdmission.Admitted) admission,
                 closure,
                 TemplateModule.designSemanticAuthority(),
                 DESIGNS,
                 port,
                 capability,
-                admitted(customs),
+                input,
                 new RenderRequestId("00000000-0000-4000-8000-000000000001"),
                 new AssetResolutionPort.RendererAudience("test-audience"),
                 1_000L);

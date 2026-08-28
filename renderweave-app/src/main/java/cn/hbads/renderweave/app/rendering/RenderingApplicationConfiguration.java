@@ -45,6 +45,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -126,8 +127,10 @@ class RenderingApplicationConfiguration {
     }
 
     @Bean
-    RenderingCapabilityRuntime renderingCapabilityRuntime() {
-        return new InMemoryRenderingCapabilityRuntime();
+    RenderingCapabilityRuntime renderingCapabilityRuntime(
+            @Qualifier("renderingClock") Clock renderingClock
+    ) {
+        return new InMemoryRenderingCapabilityRuntime(renderingClock, new SecureRandom());
     }
 
     @Bean
@@ -250,47 +253,136 @@ class RenderingApplicationConfiguration {
     }
 
     /**
-     * 每 Evaluation 建立单一 Clock snapshot + 单一 server-only nonce；Clock 投影与 Random
-     * 派生使用 api {@link CapabilityDerivation}（与 Rendering 内部同一 exact 合同）。
-     * CapabilityState 的持久化重放流（fingerprint replay/conflict）随 Engine 时代的
-     * resend 编排接入 CapabilityStateStore。
+     * 每 Evaluation 仅建立完整 closure 声明的 exact capability components；Clock 投影与
+     * Random 派生使用 api {@link CapabilityDerivation}（与 Rendering 内部同一 exact 合同）。
+     * opaque state 由 CapabilityStateStore 按 fingerprint 重放或拒绝冲突。
      */
     static final class InMemoryRenderingCapabilityRuntime implements RenderingCapabilityRuntime {
 
-        private final SecureRandom entropy = new SecureRandom();
+        private static final byte LEGACY_STATE_VERSION = 1;
+        private static final byte STATE_VERSION = 2;
+        private static final byte CLOCK_FLAG = 0x01;
+        private static final byte RANDOM_FLAG = 0x02;
+        private static final byte KNOWN_FLAGS = CLOCK_FLAG | RANDOM_FLAG;
+        private static final int NONCE_BYTES = 32;
 
-        @Override
-        public Established establish() {
-            var clockSecond = Instant.now(Clock.systemUTC()).getEpochSecond();
-            var nonce = new byte[32];
-            entropy.nextBytes(nonce);
-            return new Established(runtime(clockSecond, nonce), ByteBuffer.allocate(41)
-                    .put((byte) 1).putLong(clockSecond).put(nonce).array());
+        private final Clock clock;
+        private final SecureRandom entropy;
+
+        InMemoryRenderingCapabilityRuntime(Clock clock, SecureRandom entropy) {
+            this.clock = Objects.requireNonNull(clock, "clock");
+            this.entropy = Objects.requireNonNull(entropy, "entropy");
         }
 
         @Override
-        public Runtime restore(byte[] sealedState) {
-            if (sealedState == null || sealedState.length != 41 || sealedState[0] != 1) {
+        public Established establish(CapabilityRequirements requirements) {
+            Objects.requireNonNull(requirements, "requirements");
+            var flags = flags(requirements);
+            var state = ByteBuffer.allocate(stateLength(flags))
+                    .put(STATE_VERSION)
+                    .put(flags);
+            Long clockSecond = null;
+            byte[] nonce = null;
+            if ((flags & CLOCK_FLAG) != 0) {
+                clockSecond = clock.instant().getEpochSecond();
+                state.putLong(clockSecond);
+            }
+            if ((flags & RANDOM_FLAG) != 0) {
+                nonce = new byte[NONCE_BYTES];
+                entropy.nextBytes(nonce);
+                state.put(nonce);
+            }
+            return new Established(runtime(clockSecond, nonce), state.array());
+        }
+
+        @Override
+        public Runtime restore(CapabilityRequirements requirements, byte[] sealedState) {
+            Objects.requireNonNull(requirements, "requirements");
+            if (sealedState == null || sealedState.length == 0) {
                 throw new IllegalArgumentException("invalid capability state");
+            }
+            if (sealedState[0] == LEGACY_STATE_VERSION) {
+                return restoreLegacy(requirements, sealedState);
+            }
+            if (sealedState.length < 2 || sealedState[0] != STATE_VERSION) {
+                throw new IllegalArgumentException("invalid capability state");
+            }
+            var flags = sealedState[1];
+            if ((flags & ~KNOWN_FLAGS) != 0
+                    || flags != flags(requirements)
+                    || sealedState.length != stateLength(flags)) {
+                throw new IllegalArgumentException("capability state requirements mismatch");
+            }
+            var state = ByteBuffer.wrap(sealedState);
+            state.get();
+            state.get();
+            Long clockSecond = null;
+            byte[] nonce = null;
+            if ((flags & CLOCK_FLAG) != 0) {
+                clockSecond = state.getLong();
+            }
+            if ((flags & RANDOM_FLAG) != 0) {
+                nonce = new byte[NONCE_BYTES];
+                state.get(nonce);
+            }
+            return runtime(clockSecond, nonce);
+        }
+
+        private static Runtime restoreLegacy(
+                CapabilityRequirements requirements,
+                byte[] sealedState
+        ) {
+            if (!requirements.requires(CapabilityContract.CLOCK_1_0)
+                    || !requirements.requires(CapabilityContract.RANDOM_1_0)
+                    || sealedState.length != 1 + Long.BYTES + NONCE_BYTES) {
+                throw new IllegalArgumentException("legacy capability state requirements mismatch");
             }
             var state = ByteBuffer.wrap(sealedState);
             state.get();
             var clockSecond = state.getLong();
-            var nonce = new byte[32];
+            var nonce = new byte[NONCE_BYTES];
             state.get(nonce);
             return runtime(clockSecond, nonce);
         }
 
-        private static Runtime runtime(long clockSecond, byte[] nonce) {
+        private static byte flags(CapabilityRequirements requirements) {
+            byte flags = 0;
+            if (requirements.requires(CapabilityContract.CLOCK_1_0)) {
+                flags |= CLOCK_FLAG;
+            }
+            if (requirements.requires(CapabilityContract.RANDOM_1_0)) {
+                flags |= RANDOM_FLAG;
+            }
+            return flags;
+        }
+
+        private static int stateLength(byte flags) {
+            return 2
+                    + ((flags & CLOCK_FLAG) == 0 ? 0 : Long.BYTES)
+                    + ((flags & RANDOM_FLAG) == 0 ? 0 : NONCE_BYTES);
+        }
+
+        private static Runtime runtime(Long clockSecond, byte[] nonce) {
             return (capability, operation, callPosition) -> {
                 switch (capability + "/" + operation) {
-                    case "CLOCK/UTC_DATE":
+                    case "CLOCK/UTC_DATE": {
+                        if (clockSecond == null) {
+                            return new ProviderUnavailable();
+                        }
                         return new Supplied(new DateResult(DATE_FORMAT.format(
                                 Instant.ofEpochSecond(clockSecond))));
-                    case "CLOCK/UTC_TIME":
+                    }
+                    case "CLOCK/UTC_TIME": {
+                        if (clockSecond == null) {
+                            return new ProviderUnavailable();
+                        }
                         return new Supplied(new TimeResult(TIME_FORMAT.format(
                                 Instant.ofEpochSecond(clockSecond))));
+                    }
                     case "RANDOM/UNIFORM_DECIMAL_0_1": {
+                        if (nonce == null) {
+                            return new ProviderUnavailable();
+                        }
                         BigDecimal derived = CapabilityDerivation.uniformDecimal(
                                 nonce, callPosition);
                         if (derived == null) {
@@ -305,8 +397,8 @@ class RenderingApplicationConfiguration {
         }
 
         @Override
-        public String capabilityContracts() {
-            return "renderweave-capability-clock/1.0,renderweave-capability-random/1.0";
+        public Set<CapabilityContract> supportedContracts() {
+            return Set.of(CapabilityContract.CLOCK_1_0, CapabilityContract.RANDOM_1_0);
         }
     }
 

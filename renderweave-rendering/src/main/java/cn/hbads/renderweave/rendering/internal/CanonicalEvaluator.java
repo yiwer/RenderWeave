@@ -7,6 +7,8 @@ import cn.hbads.renderweave.rendering.api.RenderingProblem.LimitId;
 import cn.hbads.renderweave.rendering.api.RenderingProblem.ProblemCode;
 import cn.hbads.renderweave.rendering.spi.AssetResolutionPort;
 import cn.hbads.renderweave.rendering.spi.CapabilityStateStore;
+import cn.hbads.renderweave.rendering.spi.RenderingCapabilityRuntime;
+import cn.hbads.renderweave.rendering.spi.RenderingCapabilityRuntime.CapabilityRequirements;
 import cn.hbads.renderweave.template.api.DesignDslAuthority;
 import cn.hbads.renderweave.template.api.DesignSemanticAuthority;
 import cn.hbads.renderweave.template.api.TemplateClosureAuthority;
@@ -20,9 +22,9 @@ import java.util.Optional;
 /**
  * Rendering 唯一动态语义权威（ADR-0044 §2）：单一窄 {@code evaluate} 按 first-fail 串行
  * stage 1–8——REQUEST_ADMISSION envelope、TEMPLATE_CLOSURE 冻结、INPUT_ADMISSION typed view、
- * ASSET_ADMISSION/MATERIALIZATION/ASSET_RESOLUTION 物化、DOCUMENT_SEAL 原子封存。失败无
- * partial output；内部违约折叠 RENDER_INTERNAL_ERROR。Engine 执行（stage 9）随 Renderer
- * 实现票接线，本票 evaluate 终止于 SealedDocument。
+ * ASSET_ADMISSION、CAPABILITY_STATE、MATERIALIZATION/ASSET_RESOLUTION 物化、DOCUMENT_SEAL
+ * 原子封存。失败无 partial output；内部违约折叠 RENDER_INTERNAL_ERROR。Engine 执行（stage 9）
+ * 由 RenderingApplication 接线，本 evaluate 终止于 SealedDocument。
  */
 final class CanonicalEvaluator implements Evaluator {
 
@@ -30,7 +32,7 @@ final class CanonicalEvaluator implements Evaluator {
     private final DesignSemanticAuthority semantics;
     private final DesignDslAuthority dslAuthority;
     private final AssetResolutionPort assets;
-    private final cn.hbads.renderweave.rendering.spi.RenderingCapabilityRuntime capabilities;
+    private final RenderingCapabilityRuntime capabilities;
     private final CapabilityStateStore capabilityStates;
     private final String effectiveBudgetVector;
     private final ValidationTargetResolver validationResolver;
@@ -41,7 +43,7 @@ final class CanonicalEvaluator implements Evaluator {
             DesignSemanticAuthority semantics,
             DesignDslAuthority dslAuthority,
             AssetResolutionPort assets,
-            cn.hbads.renderweave.rendering.spi.RenderingCapabilityRuntime capabilities,
+            RenderingCapabilityRuntime capabilities,
             CapabilityStateStore capabilityStates,
             String effectiveBudgetVector,
             ValidationTargetResolver validationResolver,
@@ -119,6 +121,12 @@ final class CanonicalEvaluator implements Evaluator {
             return rejected(EvaluationStage.TEMPLATE_CLOSURE,
                     ProblemCode.RENDER_INTERNAL_ERROR, null);
         }
+        var declarationOutcome = CapabilityDeclarations.scan(closure, semantics);
+        if (declarationOutcome instanceof CapabilityDeclarations.DeclarationFault) {
+            return rejected(EvaluationStage.TEMPLATE_CLOSURE,
+                    ProblemCode.RENDER_INTERNAL_ERROR, null);
+        }
+        var declarations = (CapabilityDeclarations.Declared) declarationOutcome;
 
         var admission = InputAdmission.admit(
                 command.rawRenderInputUtf8(), rootSnapshot, validationResolver);
@@ -136,7 +144,14 @@ final class CanonicalEvaluator implements Evaluator {
                     ProblemCode.RENDER_INTERNAL_ERROR, null);
         }
 
-        var runtimeOutcome = capabilityRuntime(command, closure, admitted.input());
+        var assetAdmission = AssetAdmission.admit(
+                closure, semantics, assets, admitted.input());
+        if (assetAdmission instanceof AssetAdmission.Rejected rejected) {
+            return new EvaluationOutcome.Rejected(rejected.stage(), rejected.problem());
+        }
+        var admittedAssets = (AssetAdmission.Admitted) assetAdmission;
+
+        var runtimeOutcome = capabilityRuntime(command, closure, admitted.input(), declarations);
         if (runtimeOutcome instanceof CapabilityRuntimeRejected rejected) {
             return rejected(EvaluationStage.CAPABILITY_STATE, rejected.code(), null);
         }
@@ -144,6 +159,7 @@ final class CanonicalEvaluator implements Evaluator {
                 ((CapabilityRuntimeReady) runtimeOutcome).runtime());
         var audience = new AssetResolutionPort.RendererAudience(command.rendererProfile());
         var materialization = Materializer.materialize(
+                admittedAssets,
                 closure,
                 semantics,
                 dslAuthority,
@@ -188,19 +204,19 @@ final class CanonicalEvaluator implements Evaluator {
     private CapabilityRuntimeOutcome capabilityRuntime(
             EvaluationCommand command,
             TemplateClosureAuthority.ClosureSnapshot closure,
-            AdmittedRenderInput admittedInput
+            AdmittedRenderInput admittedInput,
+            CapabilityDeclarations.Declared declarations
     ) {
-        var declaredContracts = declaredCapabilityContracts(closure);
+        var declaredContracts = declarations.contracts();
         if (declaredContracts.isEmpty()) {
             return new CapabilityRuntimeReady((capability, operation, position) ->
-                    new cn.hbads.renderweave.rendering.spi.RenderingCapabilityRuntime.ProviderUnavailable());
+                    new RenderingCapabilityRuntime.ProviderUnavailable());
         }
-        var supportedContracts = capabilities.capabilityContracts();
-        for (var contract : declaredContracts.split(",")) {
-            if (!java.util.Arrays.asList(supportedContracts.split(",")).contains(contract)) {
-                return new CapabilityRuntimeRejected(ProblemCode.CAPABILITY_PROFILE_UNAVAILABLE);
-            }
+        var requirements = new CapabilityRequirements(declaredContracts);
+        if (!capabilities.supportedContracts().containsAll(requirements.contracts())) {
+            return new CapabilityRuntimeRejected(ProblemCode.CAPABILITY_PROFILE_UNAVAILABLE);
         }
+        var contractIdentity = declarations.canonicalContractIdentity();
         var fingerprint = CapabilityValues.evaluationFingerprint(
                 command.ownerScope().value(),
                 command.authorizationContextDigest(),
@@ -208,13 +224,13 @@ final class CanonicalEvaluator implements Evaluator {
                 AdmittedInputCanonicalizer.digest(admittedInput),
                 Sealer.RENDER_DSL_VERSION,
                 Sealer.LAYOUT_PROFILE,
-                declaredContracts,
+                contractIdentity,
                 "renderweave-asset-acceptance/1.0",
                 effectiveBudgetVector);
         var loaded = capabilityStates.load(command.renderRequestId(), fingerprint);
         if (loaded instanceof CapabilityStateStore.LoadOutcome.Loaded state) {
             try {
-                return new CapabilityRuntimeReady(capabilities.restore(state.sealedState()));
+                return new CapabilityRuntimeReady(capabilities.restore(requirements, state.sealedState()));
             } catch (RuntimeException invalid) {
                 return new CapabilityRuntimeRejected(ProblemCode.CAPABILITY_STATE_UNAVAILABLE);
             }
@@ -225,9 +241,9 @@ final class CanonicalEvaluator implements Evaluator {
         if (loaded instanceof CapabilityStateStore.LoadOutcome.LoadUnavailable) {
             return new CapabilityRuntimeRejected(ProblemCode.CAPABILITY_STATE_UNAVAILABLE);
         }
-        final cn.hbads.renderweave.rendering.spi.RenderingCapabilityRuntime.Established established;
+        final RenderingCapabilityRuntime.Established established;
         try {
-            established = capabilities.establish();
+            established = capabilities.establish(requirements);
         } catch (RuntimeException unavailable) {
             return new CapabilityRuntimeRejected(ProblemCode.CAPABILITY_STATE_UNAVAILABLE);
         }
@@ -248,7 +264,7 @@ final class CanonicalEvaluator implements Evaluator {
             var replay = capabilityStates.load(command.renderRequestId(), fingerprint);
             if (replay instanceof CapabilityStateStore.LoadOutcome.Loaded state) {
                 try {
-                    return new CapabilityRuntimeReady(capabilities.restore(state.sealedState()));
+                    return new CapabilityRuntimeReady(capabilities.restore(requirements, state.sealedState()));
                 } catch (RuntimeException invalid) {
                     return new CapabilityRuntimeRejected(ProblemCode.CAPABILITY_STATE_UNAVAILABLE);
                 }
@@ -257,27 +273,9 @@ final class CanonicalEvaluator implements Evaluator {
         return new CapabilityRuntimeRejected(ProblemCode.CAPABILITY_STATE_UNAVAILABLE);
     }
 
-    private static String declaredCapabilityContracts(
-            TemplateClosureAuthority.ClosureSnapshot closure) {
-        var clockDeclared = false;
-        var randomDeclared = false;
-        for (var snapshot : closure.snapshots()) {
-            var canonical = new String(snapshot.canonicalDesignDslUtf8(), java.nio.charset.StandardCharsets.UTF_8);
-            clockDeclared |= canonical.contains("\"capability\":\"CLOCK\"");
-            randomDeclared |= canonical.contains("\"capability\":\"RANDOM\"");
-        }
-        if (clockDeclared && randomDeclared) {
-            return "renderweave-capability-clock/1.0,renderweave-capability-random/1.0";
-        }
-        if (clockDeclared) {
-            return "renderweave-capability-clock/1.0";
-        }
-        return randomDeclared ? "renderweave-capability-random/1.0" : "";
-    }
-
     private sealed interface CapabilityRuntimeOutcome permits CapabilityRuntimeReady, CapabilityRuntimeRejected { }
     private record CapabilityRuntimeReady(
-            cn.hbads.renderweave.rendering.spi.RenderingCapabilityRuntime.Runtime runtime)
+            RenderingCapabilityRuntime.Runtime runtime)
             implements CapabilityRuntimeOutcome { }
     private record CapabilityRuntimeRejected(ProblemCode code) implements CapabilityRuntimeOutcome { }
 

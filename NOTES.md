@@ -3333,3 +3333,29 @@
   A2 ticket-specific 未签发，A3 未外部强制，J0；provider attempts/API Key reads/real data/Profile
   registration/push/tag/PR = 0。
 - 状态回填后的 resolution `fast` `.sdlc/evidence/20260828-185451-fast/` 3 steps 均 exit 0。
+
+# 2026-08-28 Template-v1 T129 Capability declaration/selective state（resolved / automated_verified）
+
+- T128 已以 verified commit `34c9b0c2` 收口且 worktree clean；tracker 无其他 claimed writer。复核冻结 Ticket 14
+  后确认首个 unblocked 缺口是 CapabilityState 未按 closure 声明选择组件：Evaluator 仍扫描 JSON substring，
+  runtime SPI 不接收 required set，生产 Adapter 因而总是同时读取 Clock 与 entropy。
+- 已按 single-writer 登记并 claim T129：以 Template-owned semantic values 建立 exact declaration catalog，深化
+  既有 runtime seam 并选择性建立/恢复 state，同时把 Asset 预准入提升到 state 之前；先从 Evaluator 与 Adapter
+  seam 做 RED。demand/position/digest
+  容量轴另票推进；不新增 route/migration/Profile，不运行 provider，不读取 API Key，不 push/tag/PR。当前 A0，J0。
+- 已完成 semantic `CapabilityDeclarations`、显式 stage 5 `AssetAdmission` 与 selective runtime/state v2：完整 closure
+  的 CLOCK/RANDOM exact 声明决定组件，无声明零 state work；CLOCK-only 不触碰 entropy、RANDOM-only 不读 Clock，
+  legacy both state 可精确恢复。Materializer 只接受 admitted token，不再重复预准入。
+- focused Rendering 143/143、app 17/17；A1 `render` `.sdlc/evidence/20260828-192928-render/`、`asset`
+  `.sdlc/evidence/20260828-193022-asset/`、`fast` `.sdlc/evidence/20260828-193042-fast/`、`web`
+  `.sdlc/evidence/20260828-193111-web/`、顺序 `server` `.sdlc/evidence/20260828-193158-server/`、最终 `full`
+  `.sdlc/evidence/20260828-204250-full/` 全绿；full 17/17，Playwright 23+1 controlled skip，inference replay 1/1，
+  runtime canary PostgreSQL ready / contract 0.16.0。
+- 浏览器门控曾因 Windows 默认 7 workers + Vite HMR 稳定触发 `ERR_NO_BUFFER_SPACE`；prototype audit 固定为
+  single worker 后 `.sdlc/evidence/20260828-201544-prototype-audit/` 全绿，最终 full 的 A/B/C 变体无 console/page
+  error。失败 metadata 保留；未停止用户进程、未修改系统网络。
+- A2 仅覆盖 full 内未变轴的独立重放，ticket-specific selective-state replay 未签发；A3 未外部强制，J0 pending、
+  J1 未批准。provider attempts/API Key reads/reservations/cost/真实数据/Profile/READY/push/tag/PR=0。
+  状态回填后的 resolution `fast` `.sdlc/evidence/20260828-210925-fast/` 3/3 steps 均通过。
+  external PUBLIC override caller `asset.read` 与 demand/position/digest/init-retry/Ticket 19 records 另票推进；
+  本票无 migration/OpenAPI 变更。

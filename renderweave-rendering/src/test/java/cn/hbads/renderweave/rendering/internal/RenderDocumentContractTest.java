@@ -397,6 +397,7 @@ class RenderDocumentContractTest {
                 SCHEMA,
                 new TypedObject(SCHEMA, Map.of("name",
                         Optional.of(new TypedValue.Text("alpha")))),
+                Map.of(),
                 Map.of());
     }
 }

@@ -137,6 +137,7 @@ final class InputAdmission {
                 winners.put(assignment.definitionId(), new IndexedAssignment(index, assignment.value()));
             }
             var effectiveCustoms = new LinkedHashMap<String, DesignValue>();
+            var externalCustomOverrides = new LinkedHashMap<String, DesignValue>();
             for (var definition : customs.values()) {
                 var winner = winners.get(definition.definitionId());
                 if (definition.exposure() != CustomDefinitionView.Exposure.PUBLIC || winner == null) {
@@ -151,9 +152,13 @@ final class InputAdmission {
                             "/customValues/" + winner.index() + "/value")));
                 }
                 effectiveCustoms.put(definition.definitionId(), success.value());
+                externalCustomOverrides.put(definition.definitionId(), success.value());
             }
             return new AdmissionAdmitted(new AdmittedRenderInput(
-                    rootSnapshot.staticSchema(), typedRoot, effectiveCustoms));
+                    rootSnapshot.staticSchema(),
+                    typedRoot,
+                    effectiveCustoms,
+                    externalCustomOverrides));
         } catch (InternalFault fault) {
             return internalError();
         }

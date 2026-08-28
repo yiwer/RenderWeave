@@ -71,7 +71,7 @@ class RenderSeamVectorTest {
                             SchemaKey.systemProvided(vector.get("schemaKey").asString()),
                             VersionTag.of(vector.get("versionTag").asString()));
                     var input = new AdmittedRenderInput(
-                            schema, new TypedObject(schema, Map.of()), Map.of());
+                            schema, new TypedObject(schema, Map.of()), Map.of(), Map.of());
                     var canonical = new String(
                             AdmittedInputCanonicalizer.canonical(input), StandardCharsets.UTF_8);
                     assertEquals(vector.get("expectedCanonical").asString(), canonical, id);

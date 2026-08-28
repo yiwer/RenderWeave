@@ -226,7 +226,7 @@ Template、Editor 或 Renderer READY。
 | AssetReferenceAuthority | Template Design 发布的 current-only AssetRef proof 与 reservation 合同，用于让 Template current 变更和 Asset 删除确认按 assetId 线性化。 | 不是共享表、跨上下文聚合、数据库外键或历史 Template revision 索引。 |
 | TemplateClosureAuthority | Template-owned render 专用只读 seam：一次 `freezeClosure` 把 root current 与 authored TemplateRef 闭包冻结为请求级一致 TemplateSnapshot 集合，含 exact parse/canonical/contentHash integrity 复核与漂移有界重试。 | 不是 authoring read、readiness 投影、delete 预检 proof（AssetReferenceAuthority）、持久化模型或可在 Evaluation 内重读的可变快照。 |
 | DesignSemanticAuthority | Template-owned seam：把已准入 canonical DesignDSL 解读为不可变语义值树供 Rendering 消费。 | 不是上传 bytes/数据库 serializer 文本/客户端 AST 的直通、第二次 admission 或可写回的解释器。 |
-| RenderingCapabilityRuntime | 按 Evaluation 建立单一 Clock snapshot 与单一 server-only nonce 的 capability 运行时 inbound seam；demand 记账与 result digest 留在 Rendering 内部。 | 不是可浏览 system map、跨请求 nonce 复用、调用者 seed 或可协商的 capability 目录。 |
+| RenderingCapabilityRuntime | 按完整 Template closure 的 exact capability 声明集合选择性建立运行时组件的 inbound seam；声明 CLOCK 时建立单一 snapshot，声明 RANDOM 时建立单一 server-only nonce，无 capability source 时不建立 state；demand 记账与 result digest 留在 Rendering 内部。 | 不是可浏览 system map、未声明组件的采样、跨请求 nonce 复用、调用者 seed 或可协商的 capability 目录。 |
 | Asset problem | Asset 命令、接纳或解析返回的 namespaced 稳定 code 与有界结构化字段。 | 不是可供客户端解析的自然语言、原始文件内容、完整请求或 actor-specific TemplateReadiness。 |
 
 ## 限界上下文与依赖

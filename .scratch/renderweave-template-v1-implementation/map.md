@@ -814,6 +814,11 @@ Label: wayfinder:map
   — **resolved / automated_verified**；已移除 T21 的 source-wire/frameKey 近似，以 declaration-frame
   ROOT/TEMPLATE_USE/REPEAT path 形成 exact canonical position，修正 invocation/loop memo、child isolation
   与 capability result digest 的 canonical object 嵌入；focused 27/27 及 render/fast/server/full 全绿。
+- [T129 — 物化 Capability 声明目录与按需 CapabilityState 组件](issues/129-capability-declaration-selective-state.md)
+  — **resolved / automated_verified**；已以 Template-owned semantic closure catalog 替代 canonical JSON
+  substring，显式 stage 5 `AssetAdmission` 先于 state，runtime 仅建立/恢复 exact 声明的 CLOCK/RANDOM 组件，
+  无 capability 时零 state work；focused 143/143 + 17/17 及 render/asset/fast/web/server/full 17/17 全绿。
+  external PUBLIC override caller `asset.read` 与 demand/position/digest 容量轴留给后续独立 frontier。
 
 - 改写或重解释现有 Schema/Inference v1 已提交历史，或在 dirty main 上直接实施 Template。
 - Workspace、组织/成员/分享/协作、跨 ownerScope 复制、通用 connector、任意 SQL/HTTP/文件/脚本、插件节点或运行时代码注册。

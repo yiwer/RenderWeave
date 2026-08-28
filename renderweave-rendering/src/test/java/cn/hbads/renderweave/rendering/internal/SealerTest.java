@@ -229,6 +229,7 @@ class SealerTest {
                 SCHEMA,
                 new TypedObject(SCHEMA, Map.of("name",
                         java.util.Optional.of(new TypedValue.Text("alpha")))),
+                Map.of(),
                 Map.of());
     }
 }

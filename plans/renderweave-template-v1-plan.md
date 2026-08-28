@@ -4708,3 +4708,37 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
 - A2 未签发 ticket-specific independent replay；A3 未外部强制；J0。Profile/A3/J1/READY、paid/live
   provider、真实数据、push/tag/PR 均未推进。
 - 状态回填后的 resolution `fast` `.sdlc/evidence/20260828-185451-fast/` 3 steps 均 exit 0。
+
+## 129. TV1-T129 执行卡
+
+- 状态：`resolved / automated_verified`；single writer: Codex；blocked by T21/T125/T128（均 resolved）。
+- 决策：T128 verified commit 后复算冻结 Ticket 14 §2/§7 与 T125 实现，确认当前 declaration discovery 仍以
+  canonical bytes substring 完成，且 `RenderingCapabilityRuntime.establish()` 无 required set，导致只声明
+  CLOCK 也采样 nonce、只声明 RANDOM 也读取 Clock；同时 authored/PUBLIC override Asset 预准入仍位于
+  `Materializer` 内，晚于 state 建立。两项共同违反同一 stage 5→6 边界，且不依赖外部授权，是当前安全 frontier。
+- seam：Rendering internal `CapabilityDeclarations` 从 Template-owned semantic value 形成 exact、稳定排序的
+  contract set；既有 runtime seam 接收该 closed set并只建立/恢复所需组件。app Adapter 继续独占时间/熵与
+  opaque sealed-state wire；Asset admission 提升为 Evaluator 显式 stage 5，Materializer 不再触发该外部预检。
+- TDD：先从 `Evaluator.evaluate` 与 runtime Adapter Interface 得到真实 RED，再逐个完成 no-capability、
+  Asset-failure-before-state、CLOCK-only、RANDOM-only、both、child closure、fault/mismatch/legacy restore；不以内部 call-order 测试替代
+  sealed outcome。
+- 完成信号：focused Rendering/app、`render`、`fast`、顺序 `server` 通过；根据受影响输入决定复用 T128 full
+  或重跑 full；verified 独立 commit。demand/position/digest budget、正式 Ticket 19 records、Profile/A3/J1/
+  READY/provider/push/tag/PR 均不推进。
+- 实施：`CapabilityDeclarations` 从完整 closure 的 Template semantic values 形成 exact contract set/source count；
+  `AssetAdmission` 按 authored 后 external override 顺序完成 exact kind stage 5 并向 Materializer 颁发 opaque token；
+  runtime/store 以 closed required set 选择性建立 CLOCK/RANDOM，v2 sealed state 兼容 legacy both v1，无声明时零 state work。
+- 验证：focused Rendering 143/143、app 17/17；A1 `render` `.sdlc/evidence/20260828-192928-render/`、
+  `asset` `.sdlc/evidence/20260828-193022-asset/`、`fast` `.sdlc/evidence/20260828-193042-fast/`、`web`
+  `.sdlc/evidence/20260828-193111-web/`、顺序 `server` `.sdlc/evidence/20260828-193158-server/`、最终 Goal
+  `full` `.sdlc/evidence/20260828-204250-full/` 均 passed；full 17/17 steps exit 0，runtime PostgreSQL ready /
+  contract 0.16.0，Playwright 23 passed + 1 controlled skip，最终 inference replay 1/1。
+- 门控可靠性：Windows 默认 7 Playwright workers 在 Vite HMR 下稳定触发 `ERR_NO_BUFFER_SPACE`；按诊断把
+  prototype audit 固定为单 worker，独立证据 `.sdlc/evidence/20260828-201544-prototype-audit/` 全绿，最终 full
+  A/B/C 变体 console/page errors=0；失败 metadata 保留，未修改系统网络或用户进程。
+- 证据等级：A1 为 focused 与分级 gate；A2 仅为 full 内未变静态/Renderer/R0/R1/P0 轴的独立重放，本票
+  selective-state Java 行为无 ticket-specific issued replay；A3 未外部强制，J0 pending、J1 未批准。
+  provider attempts/API Key reads/reservations/cost/真实数据/Profile/READY/push/tag/PR 均为 0。
+- 状态回填后的 resolution `fast` `.sdlc/evidence/20260828-210925-fast/` 3/3 steps 均 exit 0。
+- 残余：external PUBLIC override caller `asset.read` 尚未由当前 Asset seam 表达；capability demand/position/digest
+  容量、初始化重试预算与 Ticket 19 正式 records 另票推进。不新增 migration/OpenAPI 版本。

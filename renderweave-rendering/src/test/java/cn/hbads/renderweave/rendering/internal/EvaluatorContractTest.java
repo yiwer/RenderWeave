@@ -11,6 +11,7 @@ import cn.hbads.renderweave.rendering.api.RenderingProblem;
 import cn.hbads.renderweave.rendering.spi.AssetResolutionPort;
 import cn.hbads.renderweave.rendering.spi.CapabilityStateStore;
 import cn.hbads.renderweave.rendering.spi.RenderingCapabilityRuntime;
+import cn.hbads.renderweave.rendering.spi.RenderingCapabilityRuntime.CapabilityContract;
 import cn.hbads.renderweave.schema.definition.StaticSchemaRef;
 import cn.hbads.renderweave.schema.identity.SchemaKey;
 import cn.hbads.renderweave.schema.identity.VersionTag;
@@ -35,6 +36,7 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
@@ -46,6 +48,40 @@ class EvaluatorContractTest {
             SchemaKey.systemProvided("system-empty"), VersionTag.of("v1"));
     private static final String ROOT_ID = "00000000-0000-4000-8000-0000000000a1";
     private static final String AUTH_DIGEST = "sha256:" + "5".repeat(64);
+
+    @Test
+    void closureWithoutCapabilityDeclarationsDoesNoStateWork() {
+        var stateStore = new RecordingCapabilityStateStore();
+        var runtime = new RecordingCapabilityRuntime();
+        var evaluator = evaluator(closureWith(canvasWithRect()), resolver(), stateStore, runtime);
+
+        assertInstanceOf(EvaluationOutcome.SealedDocument.class,
+                evaluator.evaluate(command("{\"rootDocument\":{}}")));
+
+        assertEquals(0, runtime.establishCalls);
+        assertEquals(0, runtime.restoreCalls);
+        assertEquals(0, stateStore.loadCalls);
+        assertEquals(0, stateStore.saveCalls);
+    }
+
+    @Test
+    void unsupportedExactContractRejectsBeforeStateStoreWork() {
+        var stateStore = new RecordingCapabilityStateStore();
+        var runtime = new RequirementCheckingRuntime(
+                Set.of(CapabilityContract.CLOCK_1_0),
+                Set.of(CapabilityContract.RANDOM_1_0));
+        var evaluator = evaluator(
+                closureWith(withUnusedClock(canvasWithRect())), resolver(), stateStore, runtime);
+
+        var rejected = assertInstanceOf(EvaluationOutcome.Rejected.class,
+                evaluator.evaluate(command("{\"rootDocument\":{}}")));
+
+        assertEquals(EvaluationStage.CAPABILITY_STATE, rejected.stage());
+        assertEquals(RenderingProblem.ProblemCode.CAPABILITY_PROFILE_UNAVAILABLE,
+                rejected.problem().code());
+        assertEquals(0, stateStore.loadCalls);
+        assertEquals(0, stateStore.saveCalls);
+    }
 
     @Test
     void sameRequestAndFingerprintRestoresCommittedCapabilityStateWithoutResampling() {
@@ -62,6 +98,19 @@ class EvaluatorContractTest {
         assertEquals(1, runtime.restoreCalls);
         assertEquals(1, stateStore.saveCalls);
         assertEquals(2, stateStore.loadCalls);
+    }
+
+    @Test
+    void clockOnlyDeclarationEstablishesOnlyTheClockComponent() {
+        var evaluator = evaluator(
+                closureWith(withUnusedClock(canvasWithRect())),
+                resolver(),
+                new RecordingCapabilityStateStore(),
+                new RequirementCheckingRuntime(Set.of(
+                        RenderingCapabilityRuntime.CapabilityContract.CLOCK_1_0)));
+
+        assertInstanceOf(EvaluationOutcome.SealedDocument.class,
+                evaluator.evaluate(command("{\"rootDocument\":{}}")));
     }
 
     @Test
@@ -95,6 +144,42 @@ class EvaluatorContractTest {
 
         assertEquals(EvaluationStage.CAPABILITY_STATE, rejected.stage());
         assertEquals(RenderingProblem.ProblemCode.CAPABILITY_STATE_UNAVAILABLE,
+                rejected.problem().code());
+    }
+
+    @Test
+    void assetAdmissionFailurePrecedesCapabilityStateInitialization() {
+        var evaluator = new CanonicalEvaluator(
+                scriptedClosure(closureWith(withUnusedRandom(canvasWithImage()))),
+                TemplateModule.designSemanticAuthority(),
+                TemplateModule.designDslAuthority(),
+                new RejectingAssetPort(),
+                new RenderingCapabilityRuntime() {
+                    @Override
+                    public Established establish(CapabilityRequirements requirements) {
+                        throw new IllegalStateException("capability state must not be initialized");
+                    }
+
+                    @Override
+                    public Runtime restore(CapabilityRequirements requirements, byte[] sealedState) {
+                        throw new IllegalStateException("capability state must not be restored");
+                    }
+
+                    @Override
+                    public Set<CapabilityContract> supportedContracts() {
+                        return Set.of(CapabilityContract.RANDOM_1_0);
+                    }
+                },
+                new RecordingCapabilityStateStore(),
+                "{}",
+                resolver(),
+                Clock.fixed(Instant.ofEpochMilli(1_000L), ZoneOffset.UTC));
+
+        var rejected = assertInstanceOf(EvaluationOutcome.Rejected.class,
+                evaluator.evaluate(command("{\"rootDocument\":{}}")));
+
+        assertEquals(EvaluationStage.ASSET_ADMISSION, rejected.stage());
+        assertEquals(RenderingProblem.ProblemCode.ASSET_NOT_FOUND,
                 rejected.problem().code());
     }
 
@@ -334,23 +419,65 @@ class EvaluatorContractTest {
         private int restoreCalls;
 
         @Override
-        public Established establish() {
+        public Established establish(CapabilityRequirements requirements) {
             establishCalls++;
             return new Established(scriptedProvider(), new byte[]{1, 2, 3});
         }
 
         @Override
-        public Runtime restore(byte[] sealedState) {
+        public Runtime restore(CapabilityRequirements requirements, byte[] sealedState) {
             restoreCalls++;
             return scriptedProvider();
         }
 
         @Override
-        public String capabilityContracts() {
-            return "renderweave-capability-clock/1.0,renderweave-capability-random/1.0";
+        public Set<CapabilityContract> supportedContracts() {
+            return Set.of(CapabilityContract.CLOCK_1_0, CapabilityContract.RANDOM_1_0);
         }
 
         private static Runtime scriptedProvider() {
+            return (capability, operation, callPosition) -> new ProviderUnavailable();
+        }
+    }
+
+    private static final class RequirementCheckingRuntime implements RenderingCapabilityRuntime {
+        private final Set<CapabilityContract> expected;
+        private final Set<CapabilityContract> supported;
+
+        private RequirementCheckingRuntime(Set<CapabilityContract> expected) {
+            this(expected, Set.of(CapabilityContract.CLOCK_1_0, CapabilityContract.RANDOM_1_0));
+        }
+
+        private RequirementCheckingRuntime(
+                Set<CapabilityContract> expected,
+                Set<CapabilityContract> supported
+        ) {
+            this.expected = Set.copyOf(expected);
+            this.supported = Set.copyOf(supported);
+        }
+
+        @Override
+        public Established establish(CapabilityRequirements requirements) {
+            if (!requirements.contracts().equals(expected)) {
+                throw new IllegalStateException("unexpected capability requirements");
+            }
+            return new Established(provider(), new byte[]{1});
+        }
+
+        @Override
+        public Runtime restore(CapabilityRequirements requirements, byte[] sealedState) {
+            if (!requirements.contracts().equals(expected)) {
+                throw new IllegalStateException("unexpected capability requirements");
+            }
+            return provider();
+        }
+
+        @Override
+        public Set<CapabilityContract> supportedContracts() {
+            return supported;
+        }
+
+        private static Runtime provider() {
             return (capability, operation, callPosition) -> new ProviderUnavailable();
         }
     }
@@ -394,18 +521,18 @@ class EvaluatorContractTest {
     private static RenderingCapabilityRuntime scriptedRuntime() {
         return new RenderingCapabilityRuntime() {
             @Override
-            public Established establish() {
+            public Established establish(CapabilityRequirements requirements) {
                 return new Established(provider(), new byte[]{1});
             }
 
             @Override
-            public Runtime restore(byte[] sealedState) {
+            public Runtime restore(CapabilityRequirements requirements, byte[] sealedState) {
                 return provider();
             }
 
             @Override
-            public String capabilityContracts() {
-                return "renderweave-capability-clock/1.0,renderweave-capability-random/1.0";
+            public Set<CapabilityContract> supportedContracts() {
+                return Set.of(CapabilityContract.CLOCK_1_0, CapabilityContract.RANDOM_1_0);
             }
 
             private Runtime provider() {
@@ -462,13 +589,43 @@ class EvaluatorContractTest {
     }
 
     private static String canvasWithUnusedRandom() {
-        return canvasWithRect().replace("\"definitions\":[]", "\"definitions\":[{"
+        return withUnusedRandom(canvasWithRect());
+    }
+
+    private static String withUnusedClock(String designDocument) {
+        return designDocument.replace("\"definitions\":[]", "\"definitions\":[{"
+                + "\"definitionId\":\"00000000-0000-4000-8000-0000000000e2\","
+                + "\"kind\":\"expression\",\"displayName\":\"Today\","
+                + "\"domain\":\"invocation\",\"output\":\"date\","
+                + "\"inputs\":[{\"alias\":\"today\",\"source\":{\"kind\":\"capability\","
+                + "\"capability\":\"CLOCK\",\"operation\":\"UTC_DATE\"}}],"
+                + "\"source\":\"input.today\"}]");
+    }
+
+    private static String withUnusedRandom(String designDocument) {
+        return designDocument.replace("\"definitions\":[]", "\"definitions\":[{"
                 + "\"definitionId\":\"00000000-0000-4000-8000-0000000000e1\","
                 + "\"kind\":\"expression\",\"displayName\":\"Draw\","
                 + "\"domain\":\"invocation\",\"output\":\"text\","
                 + "\"inputs\":[{\"alias\":\"draw\",\"source\":{\"kind\":\"capability\","
                 + "\"capability\":\"RANDOM\",\"operation\":\"UNIFORM_DECIMAL_0_1\"}}],"
                 + "\"source\":\"if(input.draw < 0.5, 'A', 'B')\"}]");
+    }
+
+    private static final class RejectingAssetPort implements AssetResolutionPort {
+        @Override
+        public PrecheckOutcome precheckAdmission(
+                cn.hbads.renderweave.asset.api.AssetApplication.OwnerScope ownerScope,
+                cn.hbads.renderweave.asset.api.AssetApplication.AssetId assetId,
+                cn.hbads.renderweave.asset.api.AssetAcceptanceAuthority.AssetKind expectedKind
+        ) {
+            return new PrecheckOutcome.PrecheckRejected(AdmissionRejection.NOT_FOUND);
+        }
+
+        @Override
+        public ResolveOutcome resolve(ResolveRequest request) {
+            throw new IllegalStateException("resolution must not follow rejected admission");
+        }
     }
 
     private static final class CapturingAssetPort implements AssetResolutionPort {
