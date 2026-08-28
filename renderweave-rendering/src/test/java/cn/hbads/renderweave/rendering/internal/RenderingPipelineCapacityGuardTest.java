@@ -93,4 +93,25 @@ class RenderingPipelineCapacityGuardTest {
         assertEquals("closureAndExpansion.loopFramesTotal",
                 problem.limitId().orElseThrow().value());
     }
+
+    @Test
+    void renderOccurrencesBoundaryUsesTheFrozenProductionGuardContract() {
+        var guard = new RenderingPipelineCapacityGuard();
+
+        assertTrue(guard.admit(
+                RenderingPipelineCapacityGuard.Limit.RENDER_OCCURRENCES,
+                24_999).isEmpty());
+        assertTrue(guard.admit(
+                RenderingPipelineCapacityGuard.Limit.RENDER_OCCURRENCES,
+                25_000).isEmpty());
+
+        var problem = guard.admit(
+                        RenderingPipelineCapacityGuard.Limit.RENDER_OCCURRENCES,
+                        25_001)
+                .orElseThrow();
+        assertEquals(EvaluationStage.MATERIALIZATION, problem.stage());
+        assertEquals(ProblemCode.EVALUATION_BUDGET_EXCEEDED, problem.code());
+        assertEquals("closureAndExpansion.renderOccurrences",
+                problem.limitId().orElseThrow().value());
+    }
 }

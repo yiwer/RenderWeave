@@ -3676,3 +3676,26 @@
   未批准；logical-operation half 仍明确 deferred。未重复 server/full，provider attempts/API Key reads/真实数据/
   Profile registration/push/tag/PR 均为 0。
 - 状态回填后的 resolution `fast` `.sdlc/evidence/20260829-040209-fast/` metadata 为 passed，3/3 steps 全绿。
+
+# 2026-08-29 Template-v1 T143 request-total Render occurrences（resolved / automated_verified）
+
+- T142 已以 verified commit `5310d8ef` 收口，worktree clean、ahead 133 且 DAG 无其他 active claim；现按
+  single-writer 登记并 claim T143。
+- 机器 authority 固定 `closureAndExpansion.renderOccurrences` 为 MAX_INCLUSIVE `25000`，observed
+  `24999/25000/25001`，SERIAL_MATERIALIZATION / public MATERIALIZATION / EVALUATION_BUDGET_EXCEEDED /
+  ZERO_DOCUMENT_OUTPUT，primary requirement `RW-T19-S7-082`。
+- 当前生产 counter 已存在，但 limit 仍由 `Materializer.MAX_RENDER_OCCURRENCES` 与手写错误 code 重复拥有；本票
+  将其迁入唯一 internal guard。`materializedStaticNodes=20000` 在同一路径先支配，cap-012 也明确不执行 Evaluator/
+  Sealer，因此只在 exact production guard 隔离重放 24999/25000/25001，不引入测试绕过。
+- claim 时 A0、J0；不运行 provider、不读取 API Key、不发送真实数据，不 push/tag/PR。
+- TDD RED：仅加入 cap-012 test 后，编译在三个调用点明确失败于生产 enum 缺少 `RENDER_OCCURRENCES`。最小
+  GREEN 后唯一 guard 以 24999/25000 admit、25001 返回 exact MATERIALIZATION /
+  EVALUATION_BUDGET_EXCEEDED / `closureAndExpansion.renderOccurrences`；focused guard/Materializer 19/19。
+- `MAX_RENDER_OCCURRENCES` 与手写 wrong-code 分支已删除；生产 counter 经唯一 guard 投影，更低的
+  materializedStaticNodes first-fail 保持。受影响 reactor Schema 20、Validation 13、Template 84、Asset 92、
+  Rendering 198 全绿；`git diff --check` 通过。
+- A1 `render` `.sdlc/evidence/20260829-041009-render/`（2/2）与 `fast`
+  `.sdlc/evidence/20260829-041059-fast/`（3/3）metadata 均 passed。cap-012 candidate 无正式 product executor 且
+  明确不执行 Evaluator/Sealer，故无 T143-specific A2/A3；J0 pending、J1 未批准。未重复 server/full，provider
+  attempts/API Key reads/真实数据/Profile registration/push/tag/PR 均为 0。
+- 状态回填后的 resolution `fast` `.sdlc/evidence/20260829-041737-fast/` metadata 为 passed，3/3 steps 全绿。

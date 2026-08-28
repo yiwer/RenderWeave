@@ -39,7 +39,6 @@ import java.util.Optional;
  */
 final class Materializer {
 
-    static final int MAX_RENDER_OCCURRENCES = 25_000;
     static final int MAX_MATERIALIZED_NODES = 20_000;
     static final int MAX_SIDECAR_ITEMS = 25_000;
     static final int MAX_ACTUAL_RESOLVE_OCCURRENCES = 2_048;
@@ -698,12 +697,9 @@ final class Materializer {
                     "closureAndExpansion.materializedStaticNodes");
         }
         occurrences++;
-        if (occurrences > MAX_RENDER_OCCURRENCES) {
-            return failed(EvaluationStage.MATERIALIZATION,
-                    ProblemCode.RENDER_DOCUMENT_LIMIT_EXCEEDED,
-                    "closureAndExpansion.renderOccurrences");
-        }
-        return null;
+        return capacityFailure(CAPACITY_GUARD.admit(
+                RenderingPipelineCapacityGuard.Limit.RENDER_OCCURRENCES,
+                occurrences));
     }
 
     private MaterializationOutcome reserveTemplateInvocation(int invocationDepth) {

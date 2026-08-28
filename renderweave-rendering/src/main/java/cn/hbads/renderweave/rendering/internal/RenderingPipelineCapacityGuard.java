@@ -29,7 +29,9 @@ final class RenderingPipelineCapacityGuard {
         REPEAT_NESTING_DEPTH(
                 "closureAndExpansion.repeatNestingDepth", 8),
         LOOP_FRAMES_TOTAL(
-                "closureAndExpansion.loopFramesTotal", 10_000);
+                "closureAndExpansion.loopFramesTotal", 10_000),
+        RENDER_OCCURRENCES(
+                "closureAndExpansion.renderOccurrences", 25_000);
 
         private final String id;
         private final long maximumInclusive;

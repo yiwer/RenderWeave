@@ -5170,3 +5170,31 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
   未批准；`RW-T19-S7-079` logical-operation half 仍留给后续 exact axis。未重复 server/full，provider attempts/API
   Key reads/真实数据/Profile registration/push/tag/PR 均为 0。
 - 状态回填后的 resolution `fast` `.sdlc/evidence/20260829-040209-fast/` metadata 为 `passed`，3/3 steps 全绿。
+
+## 143. TV1-T143 执行卡
+
+- 状态：`resolved / automated_verified`；single writer: Codex；blocked by T21/T142（均 resolved）。
+- authority：`closureAndExpansion.renderOccurrences` 为 MAX_INCLUSIVE `25000`，observed `24999/25000/25001`，
+  contract stage SERIAL_MATERIALIZATION、public stage MATERIALIZATION、code EVALUATION_BUDGET_EXCEEDED、zero
+  boundary ZERO_DOCUMENT_OUTPUT；primary requirement `RW-T19-S7-082`。
+- 现状缺口：T23 已让最终真实/合成 static occurrence 经 `reserveMaterializedNode()` 预留，但该轴仍由
+  `MAX_RENDER_OCCURRENCES` 与手写比较重复拥有，并错误返回 RENDER_DOCUMENT_LIMIT_EXCEEDED。删除该 ad-hoc
+  authority，扩展唯一 package-internal `RenderingPipelineCapacityGuard`，生产 counter 只经 catalog 投影。
+- dominance：同一路径 `materializedStaticNodes=20000` 更低，产品 Evaluation 必须先按其独立轴失败。cap-012
+  target 明确 exact production guard required 且 evaluator/sealer 不执行；因此用真实 guard 隔离重放 24999/
+  25000/25001，不通过 test override、反射或跳过较低预算制造伪 full-pipeline case。
+- TDD：先加 isolated guard exact case 形成缺失 enum RED，再最小接线；focused guard/Materializer、受影响 reactor、
+  render/fast。无 app wiring/API/Web/migration/Profile 变化，不重复 full，server 留到周期性容量批次。
+- 禁止影响：materialized/generated/logical/document 等后续轴、正式 Ticket 19 records/product executor、provider/
+  API Key/真实数据/Profile registration/push/tag/PR；最高 `automated_verified`，当前 A1、J0。
+- TDD RED：cap-012 exact test 首次编译在三个调用点明确失败于生产 enum 缺少 `RENDER_OCCURRENCES`。最小接线后
+  唯一 guard 以 24999/25000 admit、25001 exact MATERIALIZATION / EVALUATION_BUDGET_EXCEEDED / full limitId；
+  focused guard/Materializer 19/19。
+- `MAX_RENDER_OCCURRENCES` 与手写 wrong-code 分支已删除；生产 `occurrences` counter 经唯一 guard 投影，更低的
+  materializedStaticNodes first-fail 不变。受影响 reactor Schema 20、Validation 13、Template 84、Asset 92、
+  Rendering 198 全绿；`git diff --check` 通过。
+- A1 `render` `.sdlc/evidence/20260829-041009-render/`（2/2）与 `fast`
+  `.sdlc/evidence/20260829-041059-fast/`（3/3）metadata 均 `passed`。cap-012 candidate 无 product executor 且
+  明确不执行 Evaluator/Sealer，故无 T143-specific A2/A3；J0 pending、J1 未批准。未重复 server/full，provider
+  attempts/API Key reads/真实数据/Profile registration/push/tag/PR 均为 0。
+- 状态回填后的 resolution `fast` `.sdlc/evidence/20260829-041737-fast/` metadata 为 `passed`，3/3 steps 全绿。
