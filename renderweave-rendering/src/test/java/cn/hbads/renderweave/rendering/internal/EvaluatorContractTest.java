@@ -324,6 +324,192 @@ class EvaluatorContractTest {
     }
 
     @Test
+    void transientInitializationFailureCanSucceedOnTheThirdFrozenAttempt() {
+        var stateStore = new RecordingCapabilityStateStore();
+        var runtime = new TransientEstablishRuntime(2);
+        var evaluator = evaluator(
+                closureWith(withUnusedClock(canvasWithRect())), resolver(), stateStore, runtime);
+
+        assertInstanceOf(EvaluationOutcome.SealedDocument.class,
+                evaluator.evaluate(command("{\"rootDocument\":{}}")));
+
+        assertEquals(3, runtime.establishCalls);
+        assertEquals(1, stateStore.saveCalls);
+    }
+
+    @Test
+    void deploymentInitializationAttemptLimitRejectsBeforeStartingAnotherAttempt() {
+        var stateStore = new RecordingCapabilityStateStore();
+        var runtime = new TransientEstablishRuntime(Integer.MAX_VALUE);
+        var evaluator = evaluator(
+                closureWith(withUnusedClock(canvasWithRect())),
+                resolver(),
+                stateStore,
+                runtime,
+                budgetVector(1, 8, 4, 4, 2_048, 16_777_216, 1_048_576,
+                        16_777_216, 2));
+
+        var rejected = assertInstanceOf(EvaluationOutcome.Rejected.class,
+                evaluator.evaluate(command("{\"rootDocument\":{}}")));
+
+        assertEquals(EvaluationStage.CAPABILITY_STATE, rejected.stage());
+        assertEquals(RenderingProblem.ProblemCode.CAPABILITY_STATE_UNAVAILABLE,
+                rejected.problem().code());
+        assertEquals("capabilityRuntime.initializationAttempts",
+                rejected.problem().limitId().orElseThrow().value());
+        assertEquals(2, runtime.establishCalls);
+        assertEquals(0, stateStore.saveCalls);
+    }
+
+    @Test
+    void unknownSaveThatCommittedIsQueriedAndRestoredWithoutResampling() {
+        var stateStore = new CommittedUnknownCapabilityStateStore();
+        var runtime = new RecordingCapabilityRuntime();
+        var evaluator = evaluator(
+                closureWith(withUnusedClock(canvasWithRect())), resolver(), stateStore, runtime);
+
+        assertInstanceOf(EvaluationOutcome.SealedDocument.class,
+                evaluator.evaluate(command("{\"rootDocument\":{}}")));
+
+        assertEquals(1, runtime.establishCalls);
+        assertEquals(1, runtime.restoreCalls);
+        assertEquals(1, stateStore.saveCalls);
+        assertEquals(2, stateStore.loadCalls);
+    }
+
+    @Test
+    void unknownSaveRetriesOnlyAfterTheRecordIsConfirmedMissing() {
+        var stateStore = new MissingUnknownThenStoredCapabilityStateStore();
+        var runtime = new RecordingCapabilityRuntime();
+        var evaluator = evaluator(
+                closureWith(withUnusedClock(canvasWithRect())), resolver(), stateStore, runtime);
+
+        assertInstanceOf(EvaluationOutcome.SealedDocument.class,
+                evaluator.evaluate(command("{\"rootDocument\":{}}")));
+
+        assertEquals(2, runtime.establishCalls);
+        assertEquals(0, runtime.restoreCalls);
+        assertEquals(2, stateStore.saveCalls);
+        assertEquals(2, stateStore.loadCalls);
+    }
+
+    @Test
+    void initializationThatReachesTheDeadlineDoesNotCommitState() {
+        var clock = new MutableClock(1_000L);
+        var stateStore = new RecordingCapabilityStateStore();
+        var runtime = new DeadlineAdvancingRuntime(clock, 2_000L);
+        var evaluator = evaluator(
+                closureWith(withUnusedClock(canvasWithRect())),
+                resolver(),
+                stateStore,
+                runtime,
+                DEFAULT_BUDGET_VECTOR,
+                clock);
+
+        var rejected = assertInstanceOf(EvaluationOutcome.Rejected.class,
+                evaluator.evaluate(command("{\"rootDocument\":{}}", 2_000L)));
+
+        assertEquals(EvaluationStage.CAPABILITY_STATE, rejected.stage());
+        assertEquals(RenderingProblem.ProblemCode.CAPABILITY_DEADLINE_EXCEEDED,
+                rejected.problem().code());
+        assertTrue(rejected.problem().limitId().isEmpty());
+        assertEquals(1, runtime.establishCalls);
+        assertEquals(0, stateStore.saveCalls);
+    }
+
+    @Test
+    void stateCommitThatReachesTheDeadlineDoesNotEnterTheRootFrame() {
+        var clock = new MutableClock(1_000L);
+        var stateStore = new DeadlineAdvancingCapabilityStateStore(clock, 2_000L);
+        var runtime = new RecordingCapabilityRuntime();
+        var evaluator = evaluator(
+                closureWith(withUnusedClock(canvasWithRect())),
+                resolver(),
+                stateStore,
+                runtime,
+                DEFAULT_BUDGET_VECTOR,
+                clock);
+
+        var rejected = assertInstanceOf(EvaluationOutcome.Rejected.class,
+                evaluator.evaluate(command("{\"rootDocument\":{}}", 2_000L)));
+
+        assertEquals(EvaluationStage.CAPABILITY_STATE, rejected.stage());
+        assertEquals(RenderingProblem.ProblemCode.CAPABILITY_DEADLINE_EXCEEDED,
+                rejected.problem().code());
+        assertEquals(1, runtime.establishCalls);
+        assertEquals(1, stateStore.saveCalls);
+    }
+
+    @Test
+    void stateExpiryIsFixedAcrossAConfirmedMissingRetry() {
+        var clock = new MutableClock(1_000L);
+        var stateStore = new ExpiryRecordingCapabilityStateStore(clock);
+        var evaluator = evaluator(
+                closureWith(withUnusedClock(canvasWithRect())),
+                resolver(),
+                stateStore,
+                new RecordingCapabilityRuntime(),
+                DEFAULT_BUDGET_VECTOR,
+                clock);
+
+        assertInstanceOf(EvaluationOutcome.SealedDocument.class,
+                evaluator.evaluate(command("{\"rootDocument\":{}}")));
+
+        assertEquals(2, stateStore.requests.size());
+        assertEquals(1L, stateStore.requests.get(0).issuedAtEpochSecond());
+        assertEquals(1L, stateStore.requests.get(1).issuedAtEpochSecond());
+        assertEquals(361L, stateStore.requests.get(0).expiresAtEpochSecond());
+        assertEquals(361L, stateStore.requests.get(1).expiresAtEpochSecond());
+    }
+
+    @Test
+    void loadedStateThatReachesTheDeadlineIsNotRestored() {
+        var clock = new MutableClock(1_000L);
+        var stateStore = new DeadlineLoadedCapabilityStateStore(clock, 2_000L);
+        var runtime = new RecordingCapabilityRuntime();
+        var evaluator = evaluator(
+                closureWith(withUnusedClock(canvasWithRect())),
+                resolver(),
+                stateStore,
+                runtime,
+                DEFAULT_BUDGET_VECTOR,
+                clock);
+
+        var rejected = assertInstanceOf(EvaluationOutcome.Rejected.class,
+                evaluator.evaluate(command("{\"rootDocument\":{}}", 2_000L)));
+
+        assertEquals(EvaluationStage.CAPABILITY_STATE, rejected.stage());
+        assertEquals(RenderingProblem.ProblemCode.CAPABILITY_DEADLINE_EXCEEDED,
+                rejected.problem().code());
+        assertEquals(0, runtime.establishCalls);
+        assertEquals(0, runtime.restoreCalls);
+    }
+
+    @Test
+    void unknownCommitResolvedAtTheDeadlineIsNotRestored() {
+        var clock = new MutableClock(1_000L);
+        var stateStore = new UnknownCommittedDeadlineStateStore(clock, 2_000L);
+        var runtime = new RecordingCapabilityRuntime();
+        var evaluator = evaluator(
+                closureWith(withUnusedClock(canvasWithRect())),
+                resolver(),
+                stateStore,
+                runtime,
+                DEFAULT_BUDGET_VECTOR,
+                clock);
+
+        var rejected = assertInstanceOf(EvaluationOutcome.Rejected.class,
+                evaluator.evaluate(command("{\"rootDocument\":{}}", 2_000L)));
+
+        assertEquals(EvaluationStage.CAPABILITY_STATE, rejected.stage());
+        assertEquals(RenderingProblem.ProblemCode.CAPABILITY_DEADLINE_EXCEEDED,
+                rejected.problem().code());
+        assertEquals(1, runtime.establishCalls);
+        assertEquals(0, runtime.restoreCalls);
+        assertEquals(2, stateStore.loadCalls);
+    }
+
+    @Test
     void clockOnlyDeclarationEstablishesOnlyTheClockComponent() {
         var evaluator = evaluator(
                 closureWith(withUnusedClock(canvasWithRect())),
@@ -763,6 +949,22 @@ class EvaluatorContractTest {
             CapabilityStateStore stateStore,
             RenderingCapabilityRuntime runtime,
             String effectiveBudgetVector) {
+        return evaluator(
+                closure,
+                resolver,
+                stateStore,
+                runtime,
+                effectiveBudgetVector,
+                Clock.fixed(Instant.ofEpochMilli(1_000L), ZoneOffset.UTC));
+    }
+
+    private static cn.hbads.renderweave.rendering.internal.CanonicalEvaluator evaluator(
+            ClosureSnapshot closure,
+            ValidationTargetResolver resolver,
+            CapabilityStateStore stateStore,
+            RenderingCapabilityRuntime runtime,
+            String effectiveBudgetVector,
+            Clock clock) {
         return new cn.hbads.renderweave.rendering.internal.CanonicalEvaluator(
                 scriptedClosure(closure),
                 TemplateModule.designSemanticAuthority(),
@@ -772,7 +974,7 @@ class EvaluatorContractTest {
                 stateStore,
                 effectiveBudgetVector,
                 resolver,
-                Clock.fixed(Instant.ofEpochMilli(1_000L), ZoneOffset.UTC));
+                clock);
     }
 
     private static String budgetVector(
@@ -785,6 +987,29 @@ class EvaluatorContractTest {
             long capabilityStateRecordBytes,
             long resultDigestStreamingBytes
     ) {
+        return budgetVector(
+                staticSources,
+                totalDemands,
+                clockDemands,
+                randomDemands,
+                positionBytesPerDemand,
+                positionBytesTotal,
+                capabilityStateRecordBytes,
+                resultDigestStreamingBytes,
+                3);
+    }
+
+    private static String budgetVector(
+            long staticSources,
+            long totalDemands,
+            long clockDemands,
+            long randomDemands,
+            long positionBytesPerDemand,
+            long positionBytesTotal,
+            long capabilityStateRecordBytes,
+            long resultDigestStreamingBytes,
+            long initializationAttempts
+    ) {
         return "{\"groups\":{\"capabilityRuntime\":{\"limits\":{"
                 + "\"staticCapabilitySources\":" + staticSources + ","
                 + "\"totalDemands\":" + totalDemands + ","
@@ -793,7 +1018,8 @@ class EvaluatorContractTest {
                 + "\"positionCanonicalBytesPerDemand\":" + positionBytesPerDemand + ","
                 + "\"positionCanonicalBytesTotal\":" + positionBytesTotal + ","
                 + "\"capabilityStateRecordBytes\":" + capabilityStateRecordBytes + ","
-                + "\"resultDigestStreamingBytes\":" + resultDigestStreamingBytes
+                + "\"resultDigestStreamingBytes\":" + resultDigestStreamingBytes + ","
+                + "\"initializationAttempts\":" + initializationAttempts
                 + "}}}}";
     }
 
@@ -820,6 +1046,99 @@ class EvaluatorContractTest {
 
         private static Runtime scriptedProvider() {
             return (capability, operation, callPosition) -> new ProviderUnavailable();
+        }
+    }
+
+    private static final class TransientEstablishRuntime implements RenderingCapabilityRuntime {
+        private final int failuresBeforeSuccess;
+        private int establishCalls;
+
+        private TransientEstablishRuntime(int failuresBeforeSuccess) {
+            this.failuresBeforeSuccess = failuresBeforeSuccess;
+        }
+
+        @Override
+        public Established establish(CapabilityRequirements requirements) {
+            establishCalls++;
+            if (establishCalls <= failuresBeforeSuccess) {
+                throw new IllegalStateException("transient capability initialization failure");
+            }
+            return new Established(RecordingCapabilityRuntime.scriptedProvider(),
+                    new byte[]{1, 2, 3});
+        }
+
+        @Override
+        public Runtime restore(CapabilityRequirements requirements, byte[] sealedState) {
+            return RecordingCapabilityRuntime.scriptedProvider();
+        }
+
+        @Override
+        public Set<CapabilityContract> supportedContracts() {
+            return Set.of(CapabilityContract.CLOCK_1_0, CapabilityContract.RANDOM_1_0);
+        }
+    }
+
+    private static final class DeadlineAdvancingRuntime implements RenderingCapabilityRuntime {
+        private final MutableClock clock;
+        private final long deadlineMillis;
+        private int establishCalls;
+
+        private DeadlineAdvancingRuntime(MutableClock clock, long deadlineMillis) {
+            this.clock = clock;
+            this.deadlineMillis = deadlineMillis;
+        }
+
+        @Override
+        public Established establish(CapabilityRequirements requirements) {
+            establishCalls++;
+            clock.setMillis(deadlineMillis);
+            return new Established(RecordingCapabilityRuntime.scriptedProvider(),
+                    new byte[]{1, 2, 3});
+        }
+
+        @Override
+        public Runtime restore(CapabilityRequirements requirements, byte[] sealedState) {
+            return RecordingCapabilityRuntime.scriptedProvider();
+        }
+
+        @Override
+        public Set<CapabilityContract> supportedContracts() {
+            return Set.of(CapabilityContract.CLOCK_1_0, CapabilityContract.RANDOM_1_0);
+        }
+    }
+
+    private static final class MutableClock extends Clock {
+        private long epochMillis;
+
+        private MutableClock(long epochMillis) {
+            this.epochMillis = epochMillis;
+        }
+
+        private void setMillis(long epochMillis) {
+            this.epochMillis = epochMillis;
+        }
+
+        @Override
+        public ZoneOffset getZone() {
+            return ZoneOffset.UTC;
+        }
+
+        @Override
+        public Clock withZone(java.time.ZoneId zone) {
+            if (!ZoneOffset.UTC.equals(zone)) {
+                throw new IllegalArgumentException("only UTC is supported");
+            }
+            return this;
+        }
+
+        @Override
+        public Instant instant() {
+            return Instant.ofEpochMilli(epochMillis);
+        }
+
+        @Override
+        public long millis() {
+            return epochMillis;
         }
     }
 
@@ -926,6 +1245,153 @@ class EvaluatorContractTest {
                 return new LoadOutcome.LoadFingerprintConflict();
             }
             return new LoadOutcome.Loaded(committed.sealedState(), committed.expiresAtEpochSecond());
+        }
+    }
+
+    private static final class CommittedUnknownCapabilityStateStore
+            implements CapabilityStateStore {
+        private SaveRequest committed;
+        private int saveCalls;
+        private int loadCalls;
+
+        @Override
+        public SaveOutcome save(SaveRequest request) {
+            saveCalls++;
+            committed = request;
+            return new SaveOutcome.SaveUnavailable();
+        }
+
+        @Override
+        public LoadOutcome load(RenderRequestId requestId, String evaluationFingerprint) {
+            loadCalls++;
+            if (committed == null) {
+                return new LoadOutcome.Missing();
+            }
+            return new LoadOutcome.Loaded(
+                    committed.sealedState(), committed.expiresAtEpochSecond());
+        }
+    }
+
+    private static final class MissingUnknownThenStoredCapabilityStateStore
+            implements CapabilityStateStore {
+        private int saveCalls;
+        private int loadCalls;
+
+        @Override
+        public SaveOutcome save(SaveRequest request) {
+            saveCalls++;
+            if (saveCalls == 1) {
+                return new SaveOutcome.SaveUnavailable();
+            }
+            return new SaveOutcome.Stored(new CapabilityStateId("state-2"));
+        }
+
+        @Override
+        public LoadOutcome load(RenderRequestId requestId, String evaluationFingerprint) {
+            loadCalls++;
+            return new LoadOutcome.Missing();
+        }
+    }
+
+    private static final class DeadlineAdvancingCapabilityStateStore
+            implements CapabilityStateStore {
+        private final MutableClock clock;
+        private final long deadlineMillis;
+        private int saveCalls;
+
+        private DeadlineAdvancingCapabilityStateStore(
+                MutableClock clock, long deadlineMillis) {
+            this.clock = clock;
+            this.deadlineMillis = deadlineMillis;
+        }
+
+        @Override
+        public SaveOutcome save(SaveRequest request) {
+            saveCalls++;
+            clock.setMillis(deadlineMillis);
+            return new SaveOutcome.Stored(new CapabilityStateId("state-deadline"));
+        }
+
+        @Override
+        public LoadOutcome load(RenderRequestId requestId, String evaluationFingerprint) {
+            return new LoadOutcome.Missing();
+        }
+    }
+
+    private static final class ExpiryRecordingCapabilityStateStore
+            implements CapabilityStateStore {
+        private final MutableClock clock;
+        private final List<SaveRequest> requests = new java.util.ArrayList<>();
+
+        private ExpiryRecordingCapabilityStateStore(MutableClock clock) {
+            this.clock = clock;
+        }
+
+        @Override
+        public SaveOutcome save(SaveRequest request) {
+            requests.add(request);
+            if (requests.size() == 1) {
+                clock.setMillis(5_000L);
+                return new SaveOutcome.SaveUnavailable();
+            }
+            return new SaveOutcome.Stored(new CapabilityStateId("state-fixed-expiry"));
+        }
+
+        @Override
+        public LoadOutcome load(RenderRequestId requestId, String evaluationFingerprint) {
+            return new LoadOutcome.Missing();
+        }
+    }
+
+    private static final class DeadlineLoadedCapabilityStateStore
+            implements CapabilityStateStore {
+        private final MutableClock clock;
+        private final long deadlineMillis;
+
+        private DeadlineLoadedCapabilityStateStore(MutableClock clock, long deadlineMillis) {
+            this.clock = clock;
+            this.deadlineMillis = deadlineMillis;
+        }
+
+        @Override
+        public SaveOutcome save(SaveRequest request) {
+            throw new AssertionError("loaded state must not be saved again");
+        }
+
+        @Override
+        public LoadOutcome load(RenderRequestId requestId, String evaluationFingerprint) {
+            clock.setMillis(deadlineMillis);
+            return new LoadOutcome.Loaded(new byte[]{1, 2, 3}, 361L);
+        }
+    }
+
+    private static final class UnknownCommittedDeadlineStateStore
+            implements CapabilityStateStore {
+        private final MutableClock clock;
+        private final long deadlineMillis;
+        private SaveRequest committed;
+        private int loadCalls;
+
+        private UnknownCommittedDeadlineStateStore(MutableClock clock, long deadlineMillis) {
+            this.clock = clock;
+            this.deadlineMillis = deadlineMillis;
+        }
+
+        @Override
+        public SaveOutcome save(SaveRequest request) {
+            committed = request;
+            return new SaveOutcome.SaveUnavailable();
+        }
+
+        @Override
+        public LoadOutcome load(RenderRequestId requestId, String evaluationFingerprint) {
+            loadCalls++;
+            if (committed == null) {
+                return new LoadOutcome.Missing();
+            }
+            clock.setMillis(deadlineMillis);
+            return new LoadOutcome.Loaded(
+                    committed.sealedState(), committed.expiresAtEpochSecond());
         }
     }
 

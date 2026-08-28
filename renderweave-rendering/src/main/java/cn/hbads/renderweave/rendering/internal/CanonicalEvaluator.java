@@ -241,11 +241,8 @@ final class CanonicalEvaluator implements Evaluator {
                 effectiveBudgetVector);
         var loaded = capabilityStates.load(command.renderRequestId(), fingerprint);
         if (loaded instanceof CapabilityStateStore.LoadOutcome.Loaded state) {
-            try {
-                return new CapabilityRuntimeReady(capabilities.restore(requirements, state.sealedState()));
-            } catch (RuntimeException invalid) {
-                return new CapabilityRuntimeRejected(ProblemCode.CAPABILITY_STATE_UNAVAILABLE);
-            }
+            return restoreCapabilityRuntime(
+                    requirements, state, command.deadlineAtEpochMilli());
         }
         if (loaded instanceof CapabilityStateStore.LoadOutcome.LoadFingerprintConflict) {
             return new CapabilityRuntimeRejected(ProblemCode.CAPABILITY_STATE_CONFLICT);
@@ -253,41 +250,88 @@ final class CanonicalEvaluator implements Evaluator {
         if (loaded instanceof CapabilityStateStore.LoadOutcome.LoadUnavailable) {
             return new CapabilityRuntimeRejected(ProblemCode.CAPABILITY_STATE_UNAVAILABLE);
         }
-        final RenderingCapabilityRuntime.Established established;
-        try {
-            established = capabilities.establish(requirements);
-        } catch (RuntimeException unavailable) {
-            return new CapabilityRuntimeRejected(ProblemCode.CAPABILITY_STATE_UNAVAILABLE);
-        }
-        var stateRecordLimit = capabilityBudget.admitStateRecord(established.sealedState().length);
-        if (stateRecordLimit != null) {
-            return new CapabilityRuntimeRejected(
-                    ProblemCode.CAPABILITY_BUDGET_EXCEEDED, stateRecordLimit.limitId());
-        }
         var issuedAt = clock.instant().getEpochSecond();
         var deadlineMillis = command.deadlineAtEpochMilli();
         var deadlineSecond = Math.floorDiv(deadlineMillis, 1_000L)
                 + (Math.floorMod(deadlineMillis, 1_000L) == 0L ? 0L : 1L);
         var expiresAt = Math.max(issuedAt + 1L, deadlineSecond + 300L);
-        var saved = capabilityStates.save(new CapabilityStateStore.SaveRequest(
-                command.renderRequestId(), fingerprint, established.sealedState(), issuedAt, expiresAt));
-        if (saved instanceof CapabilityStateStore.SaveOutcome.Stored) {
-            return new CapabilityRuntimeReady(established.runtime());
-        }
-        if (saved instanceof CapabilityStateStore.SaveOutcome.FingerprintConflict) {
-            return new CapabilityRuntimeRejected(ProblemCode.CAPABILITY_STATE_CONFLICT);
-        }
-        if (saved instanceof CapabilityStateStore.SaveOutcome.Replayed) {
-            var replay = capabilityStates.load(command.renderRequestId(), fingerprint);
-            if (replay instanceof CapabilityStateStore.LoadOutcome.Loaded state) {
-                try {
-                    return new CapabilityRuntimeReady(capabilities.restore(requirements, state.sealedState()));
-                } catch (RuntimeException invalid) {
-                    return new CapabilityRuntimeRejected(ProblemCode.CAPABILITY_STATE_UNAVAILABLE);
-                }
+        var initializationAttempts = capabilityBudget.newInitializationAttempts();
+        while (true) {
+            if (clock.millis() >= deadlineMillis) {
+                return new CapabilityRuntimeRejected(ProblemCode.CAPABILITY_DEADLINE_EXCEEDED);
             }
+            var attemptLimit = initializationAttempts.reserve();
+            if (attemptLimit != null) {
+                return new CapabilityRuntimeRejected(
+                        ProblemCode.CAPABILITY_STATE_UNAVAILABLE, attemptLimit.limitId());
+            }
+            final RenderingCapabilityRuntime.Established established;
+            try {
+                established = Objects.requireNonNull(
+                        capabilities.establish(requirements), "established");
+            } catch (RuntimeException unavailable) {
+                // No state can have committed before establish returns; a bounded resample is safe.
+                continue;
+            }
+            if (clock.millis() >= deadlineMillis) {
+                return new CapabilityRuntimeRejected(ProblemCode.CAPABILITY_DEADLINE_EXCEEDED);
+            }
+            var stateRecordLimit = capabilityBudget.admitStateRecord(
+                    established.sealedState().length);
+            if (stateRecordLimit != null) {
+                return new CapabilityRuntimeRejected(
+                        ProblemCode.CAPABILITY_BUDGET_EXCEEDED, stateRecordLimit.limitId());
+            }
+            var saved = capabilityStates.save(new CapabilityStateStore.SaveRequest(
+                    command.renderRequestId(), fingerprint, established.sealedState(),
+                    issuedAt, expiresAt));
+            if (saved instanceof CapabilityStateStore.SaveOutcome.Stored) {
+                if (clock.millis() >= deadlineMillis) {
+                    return new CapabilityRuntimeRejected(
+                            ProblemCode.CAPABILITY_DEADLINE_EXCEEDED);
+                }
+                return new CapabilityRuntimeReady(established.runtime());
+            }
+            if (saved instanceof CapabilityStateStore.SaveOutcome.FingerprintConflict) {
+                return new CapabilityRuntimeRejected(ProblemCode.CAPABILITY_STATE_CONFLICT);
+            }
+            if (saved instanceof CapabilityStateStore.SaveOutcome.Replayed
+                    || saved instanceof CapabilityStateStore.SaveOutcome.SaveUnavailable) {
+                var replay = capabilityStates.load(command.renderRequestId(), fingerprint);
+                if (replay instanceof CapabilityStateStore.LoadOutcome.Loaded state) {
+                    return restoreCapabilityRuntime(requirements, state, deadlineMillis);
+                }
+                if (replay instanceof CapabilityStateStore.LoadOutcome.LoadFingerprintConflict) {
+                    return new CapabilityRuntimeRejected(ProblemCode.CAPABILITY_STATE_CONFLICT);
+                }
+                if (saved instanceof CapabilityStateStore.SaveOutcome.SaveUnavailable
+                        && replay instanceof CapabilityStateStore.LoadOutcome.Missing) {
+                    continue;
+                }
+                return new CapabilityRuntimeRejected(ProblemCode.CAPABILITY_STATE_UNAVAILABLE);
+            }
+            return new CapabilityRuntimeRejected(ProblemCode.CAPABILITY_STATE_UNAVAILABLE);
         }
-        return new CapabilityRuntimeRejected(ProblemCode.CAPABILITY_STATE_UNAVAILABLE);
+    }
+
+    private CapabilityRuntimeOutcome restoreCapabilityRuntime(
+            CapabilityRequirements requirements,
+            CapabilityStateStore.LoadOutcome.Loaded state,
+            long deadlineMillis
+    ) {
+        if (clock.millis() >= deadlineMillis) {
+            return new CapabilityRuntimeRejected(ProblemCode.CAPABILITY_DEADLINE_EXCEEDED);
+        }
+        try {
+            var restored = Objects.requireNonNull(
+                    capabilities.restore(requirements, state.sealedState()), "restored");
+            if (clock.millis() >= deadlineMillis) {
+                return new CapabilityRuntimeRejected(ProblemCode.CAPABILITY_DEADLINE_EXCEEDED);
+            }
+            return new CapabilityRuntimeReady(restored);
+        } catch (RuntimeException invalid) {
+            return new CapabilityRuntimeRejected(ProblemCode.CAPABILITY_STATE_UNAVAILABLE);
+        }
     }
 
     private sealed interface CapabilityRuntimeOutcome permits CapabilityRuntimeReady, CapabilityRuntimeRejected { }

@@ -4831,3 +4831,36 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
 - A2 仅为未变 Renderer 轴独立 replay、无 T132-specific issued replay；A3 无，J0 pending、J1 未批准。
   provider attempts/API Key reads/reservations/cost/真实数据/Profile registration/push/tag/PR 均为 0。
 - 状态回填后的 resolution `fast` `.sdlc/evidence/20260828-235941-fast/` 3/3 steps 均 passed。
+
+## 133. TV1-T133 执行卡
+
+- 状态：`resolved / automated_verified`；single writer: Codex；blocked by T21/T125/T129/T131/T132（均 resolved）。
+- 决策：T132 verified commit `3a2ef888` 后 worktree clean，DAG 无其他 claimed writer；冻结 capability matrix 的
+  首个 unblocked residual 是 `initializationAttempts=3`。正式 Ticket 19 records 仍被 executor/target 发行前置
+  阻塞，Random rejection 独立性更强，故先完成初始化线性化重试。
+- seam：只经公开 `Evaluator.evaluate` 观察 outcome；现有 `CapabilityBudget` 深模块拥有 frozen maximum、
+  deployment tightening 与 exact limitId。`RenderingCapabilityRuntime`/`CapabilityStateStore` 仍是既有外部 adapter
+  seam，不扩张 SPI。
+- 语义：首次 load 在采样前；precommit establish failure 可在总 deadline 内有界重试；save unknown 必须先 load，
+  `Loaded` restore、`Missing` 才重采样、conflict/unavailable fail closed。issuedAt/expiresAt 首轮固定且重试不续期；
+  record capacity/conflict/restore invalid 均 terminal。
+- TDD：依次做 transient establish 第三次成功、deployment limit 耗尽、unknown-save committed 不重采样、
+  unknown-save missing 才重试的公开 seam RED→GREEN；focused Rendering 与 app assembly 后跑 `render`/`fast`/顺序
+  `server`。
+- 禁止影响：Random rejection/fault schedule、正式 Ticket 19 records、route/OpenAPI/Web/migration/Profile、
+  provider/API Key/真实数据/push/tag/PR；最高 `automated_verified`，A3/J1/READY 不推进。
+- 实现：`CapabilityBudget` fail-closed 解析 fingerprint-bound `initializationAttempts`，冻结最大 `3` 并由请求级
+  authority 在每次 establish 前预约；Evaluator 在同一 deadline 内重试 precommit transient failure，所有 unknown
+  save 先 query，只有明确 `Missing` 才重采样。issuedAt/expiresAt 跨重试固定，load/establish/save/restore 边界均
+  fail closed 检查 deadline。
+- TDD：公开 `Evaluator.evaluate` seam 的 transient third-attempt、unknown committed/missing 与 deadline race tracer
+  均先真实 RED 再 GREEN；deployment limit 耗尽固定 exact stage/code/limitId、两次 establish 与 zero save。最终
+  focused 43/43、Rendering 168/168、生产 assembly/architecture 12/12。
+- A1：`render` `.sdlc/evidence/20260829-001925-render/`、`fast`
+  `.sdlc/evidence/20260829-002016-fast/`、顺序 clean `server`
+  `.sdlc/evidence/20260829-002049-server/` metadata 均 `passed`；server 8-module reactor BUILD SUCCESS，App 372 tests /
+  0 failures / 0 errors / 15 skipped。无 API/Web/migration/Profile 变化，未重复发布级 `full`。
+- A2 仅未变 Renderer 轴独立 replay，无 T133-specific issued record；A3 无，J0 pending、J1 未批准。provider
+  attempts/API Key reads/reservations/cost/真实数据/Profile registration/push/tag/PR 均为 0。Random rejection 与正式
+  Ticket 19 records 留在后续 frontier。
+- 状态回填后的 resolution `fast` `.sdlc/evidence/20260829-003825-fast/` metadata 仍为 `passed`，3/3 steps 全绿。

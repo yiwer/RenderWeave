@@ -834,6 +834,11 @@ Label: wayfinder:map
   vector 执行 `capabilityStateRecordBytes` exact inclusive pre-commit admission；超限以 exact stage/code/limitId
   fail closed 且零 store write。focused 34/34、Rendering 159/159、app assembly 7/7，render/fast/server metadata
   全绿；初始化 retry、Random rejection 与 Ticket 19 records 继续另票。
+- [T133 — CapabilityState 初始化有界重试与 unknown-commit 恢复](issues/133-capability-state-initialization-retry.md)
+  — **resolved / automated_verified**；在公开 `Evaluator.evaluate` seam 下物化 `initializationAttempts<=3`、
+  deployment tightening、precommit transient retry、unknown-save query-before-resample、固定 expiry 与 deadline
+  race 封闭。focused 43/43、Rendering 168/168、app assembly/architecture 12/12，render/fast/server metadata 全绿；
+  resolution fast 亦 3/3 passed；Random rejection 与正式 Ticket 19 records 继续另票。
 
 - 改写或重解释现有 Schema/Inference v1 已提交历史，或在 dirty main 上直接实施 Template。
 - Workspace、组织/成员/分享/协作、跨 ownerScope 复制、通用 connector、任意 SQL/HTTP/文件/脚本、插件节点或运行时代码注册。

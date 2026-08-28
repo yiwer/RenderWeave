@@ -18,6 +18,7 @@ final class CapabilityBudget {
     private static final long MAX_POSITION_BYTES_TOTAL = 16_777_216;
     private static final long MAX_CAPABILITY_STATE_RECORD_BYTES = 1_048_576;
     private static final long MAX_RESULT_DIGEST_STREAMING_BYTES = 16_777_216;
+    private static final long MAX_INITIALIZATION_ATTEMPTS = 3;
 
     private final Limits limits;
 
@@ -34,7 +35,8 @@ final class CapabilityBudget {
                 MAX_POSITION_BYTES_PER_DEMAND,
                 MAX_POSITION_BYTES_TOTAL,
                 MAX_CAPABILITY_STATE_RECORD_BYTES,
-                MAX_RESULT_DIGEST_STREAMING_BYTES));
+                MAX_RESULT_DIGEST_STREAMING_BYTES,
+                MAX_INITIALIZATION_ATTEMPTS));
     }
 
     static CapabilityBudget fromEffectiveVector(String effectiveBudgetVector) {
@@ -61,7 +63,8 @@ final class CapabilityBudget {
                 limit(limits, "capabilityStateRecordBytes",
                         MAX_CAPABILITY_STATE_RECORD_BYTES),
                 limit(limits, "resultDigestStreamingBytes",
-                        MAX_RESULT_DIGEST_STREAMING_BYTES)));
+                        MAX_RESULT_DIGEST_STREAMING_BYTES),
+                limit(limits, "initializationAttempts", MAX_INITIALIZATION_ATTEMPTS)));
     }
 
     LimitExceeded admitStaticSources(long sourceCount) {
@@ -80,6 +83,10 @@ final class CapabilityBudget {
 
     Tracker newTracker() {
         return new Tracker(limits);
+    }
+
+    InitializationAttempts newInitializationAttempts() {
+        return new InitializationAttempts(limits.initializationAttempts());
     }
 
     private static RenderJson.ObjectValue objectMember(
@@ -183,6 +190,23 @@ final class CapabilityBudget {
         }
     }
 
+    static final class InitializationAttempts {
+        private final long maximum;
+        private long attempts;
+
+        private InitializationAttempts(long maximum) {
+            this.maximum = maximum;
+        }
+
+        synchronized LimitExceeded reserve() {
+            if (attempts >= maximum) {
+                return new LimitExceeded("capabilityRuntime.initializationAttempts");
+            }
+            attempts++;
+            return null;
+        }
+    }
+
     private record Limits(
             long staticSources,
             long totalDemands,
@@ -191,7 +215,8 @@ final class CapabilityBudget {
             long positionBytesPerDemand,
             long positionBytesTotal,
             long capabilityStateRecordBytes,
-            long resultDigestStreamingBytes
+            long resultDigestStreamingBytes,
+            long initializationAttempts
     ) {
     }
 }

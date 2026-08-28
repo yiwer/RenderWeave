@@ -3429,3 +3429,25 @@
   故不重复跑 `full`。A2 仅为未变 Renderer 独立 replay，A3 无，J0 pending/J1 未批准；provider/API Key/真实
   数据/Profile registration/push/tag/PR 均为 0。
 - 状态回填后的 resolution `fast` `.sdlc/evidence/20260828-235941-fast/` 3/3 steps 均 passed。
+
+# 2026-08-29 Template-v1 T133 CapabilityState initialization retry（resolved / automated_verified）
+
+- T132 已以 verified commit `3a2ef888` 收口且 worktree clean；DAG 无其他 claimed writer。复算 Ticket 14 §7、
+  Ticket 19 capability matrix 与 T132 residual 后，确认首个 unblocked frontier 是
+  `capabilityRuntime.initializationAttempts=3` 的线性化初始化重试；正式 records 仍受 executor/target 发行前置阻塞。
+- 已按 single-writer 登记并 claim T133：只经公开 `Evaluator.evaluate` seam，深化现有 `CapabilityBudget`，物化
+  deployment-tightenable attempt bound、precommit transient retry、unknown-save query-before-resample 与固定
+  issuedAt/expiresAt。只有查询明确 `Missing` 才允许重采样；已提交记录必须 restore。
+- `CapabilityBudget` 已 fail-closed 解析 fingerprint-bound `initializationAttempts`（frozen max 3），并在每次 establish
+  前预约 exact attempt；Evaluator 只在同一 deadline 内重试 precommit transient failure。unknown save 必须先 query，
+  `Loaded` restore 且零重采样，只有明确 `Missing` 才进入下一 attempt；issuedAt/expiresAt 固定且重试不续期。
+- load/establish/save/restore deadline race 均经公开 seam 的真实 RED→GREEN 固定；最终 focused Evaluator 43/43、
+  Rendering 168/168、生产 assembly/architecture 12/12。
+- A1 `render` `.sdlc/evidence/20260829-001925-render/`、`fast`
+  `.sdlc/evidence/20260829-002016-fast/`、顺序 clean `server`
+  `.sdlc/evidence/20260829-002049-server/` metadata 全部 `passed`；server 8-module reactor BUILD SUCCESS，App 372 tests /
+  0 failures / 0 errors / 15 skipped。无 API/Web/migration/Profile 变化，未重复发布级 `full`。
+- A2 仅未变 Renderer 轴独立 replay，无 T133-specific issued record；A3 无，J0 pending、J1 未批准。Random HMAC
+  rejection/fault schedule 与正式 Ticket 19 records 另票；provider/API Key/真实数据/Profile registration/push/tag/PR
+  均为 0。
+- 状态回填后的 resolution `fast` `.sdlc/evidence/20260829-003825-fast/` metadata 仍为 `passed`，3/3 steps 全绿。
