@@ -991,6 +991,13 @@ Label: wayfinder:map
   第一个使总量超过 1,000,000,000 pixels 的 occurrence 须在 unique-content/RenderResource append/external fetch
   前以 ASSET_ADMISSION / ASSET_BUDGET_EXCEEDED / exact limitId 零文档失败。focused 126/126、Rendering 247/247
   与 render/fast metadata 全绿；A1、无 ticket-specific A2、J0。
+- [T163 — unique IMAGE pixels 预算](issues/163-unique-image-pixels-capacity.md)
+  — **resolved / automated_verified**；按 `RW-T19-S8-010` 与 cap-033，仅在 successful IMAGE fact 首次引入新
+  `(kind, sha256, byteLength, mediaType)` exact identity 时累计 orientation 后
+  `logicalWidthPx × logicalHeightPx`；duplicate identity 不重复收费。第一个使 unique total 超过 125,000,000
+  pixels 的 identity 须在 exact-set/RenderResource append/external fetch 前以 ASSET_ADMISSION /
+  ASSET_BUDGET_EXCEEDED / exact limitId 零文档失败。focused 128/128、Rendering 249/249 与 render/fast metadata
+  全绿；A1、无 ticket-specific A2、J0。
 
 - 改写或重解释现有 Schema/Inference v1 已提交历史，或在 dirty main 上直接实施 Template。
 - Workspace、组织/成员/分享/协作、跨 ownerScope 复制、通用 connector、任意 SQL/HTTP/文件/脚本、插件节点或运行时代码注册。

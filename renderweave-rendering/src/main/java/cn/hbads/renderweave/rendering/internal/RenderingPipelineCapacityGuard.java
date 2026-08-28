@@ -118,6 +118,11 @@ final class RenderingPipelineCapacityGuard {
                 "assetsAndFetch.occurrenceImagePixels",
                 1_000_000_000L,
                 ProblemCode.ASSET_BUDGET_EXCEEDED,
+                EvaluationStage.ASSET_ADMISSION),
+        ASSETS_AND_FETCH_UNIQUE_IMAGE_PIXELS(
+                "assetsAndFetch.uniqueImagePixels",
+                125_000_000L,
+                ProblemCode.ASSET_BUDGET_EXCEEDED,
                 EvaluationStage.ASSET_ADMISSION);
 
         private final String id;

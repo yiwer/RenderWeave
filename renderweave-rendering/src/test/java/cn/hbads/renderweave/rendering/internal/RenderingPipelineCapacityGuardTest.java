@@ -567,4 +567,28 @@ class RenderingPipelineCapacityGuardTest {
         assertEquals("assetsAndFetch.occurrenceImagePixels",
                 problem.limitId().orElseThrow().value());
     }
+
+    @Test
+    void uniqueImagePixelsBoundaryUsesTheFrozenProductionGuardContract() {
+        var guard = new RenderingPipelineCapacityGuard();
+
+        assertTrue(guard.admit(
+                RenderingPipelineCapacityGuard.Limit
+                        .ASSETS_AND_FETCH_UNIQUE_IMAGE_PIXELS,
+                124_999_999L).isEmpty());
+        assertTrue(guard.admit(
+                RenderingPipelineCapacityGuard.Limit
+                        .ASSETS_AND_FETCH_UNIQUE_IMAGE_PIXELS,
+                125_000_000L).isEmpty());
+
+        var problem = guard.admit(
+                        RenderingPipelineCapacityGuard.Limit
+                                .ASSETS_AND_FETCH_UNIQUE_IMAGE_PIXELS,
+                        125_000_001L)
+                .orElseThrow();
+        assertEquals(EvaluationStage.ASSET_ADMISSION, problem.stage());
+        assertEquals(ProblemCode.ASSET_BUDGET_EXCEEDED, problem.code());
+        assertEquals("assetsAndFetch.uniqueImagePixels",
+                problem.limitId().orElseThrow().value());
+    }
 }

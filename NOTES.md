@@ -4149,3 +4149,28 @@
   T162-specific A2/A3；J0 pending、J1 未批准。未重复 server/full；cap-024 继续 deferred；provider attempts/
   API Key reads/真实数据/Profile registration/push/tag/PR 均为 0。
 - 状态回填后的 resolution `fast` `.sdlc/evidence/20260829-074728-fast/` metadata 为 `passed`，3/3 steps 全绿。
+
+# 2026-08-29 Template-v1 T163 unique IMAGE pixels（resolved / automated_verified）
+
+- T162 已以 verified commit `eefa77be` 收口，worktree clean、ahead 153 且 DAG 无其他 current active claim；冻结
+  `RW-T19-S8-010` / cap-033 是下一个 unblocked frontier，现按 single-writer claim T163。
+- `assetsAndFetch.uniqueImagePixels` 固定 MAX_INCLUSIVE `125000000`、observed
+  `124999999/125000000/125000001`，ASSET_ADMISSION_AND_RESOLUTION / public ASSET_ADMISSION /
+  ASSET_BUDGET_EXCEEDED / ZERO_DOCUMENT_OUTPUT，reservation point 为下一 authored/resolved Asset unit 与 external
+  fetch 前。
+- 每个新 IMAGE exact identity `(kind, sha256, byteLength, mediaType)` 按 orientation 后
+  `logicalWidthPx × logicalHeightPx` 收费一次；duplicate identity 不重复收费但继续消费 occurrence 轴。顺序为
+  unique exact count → unique raw bytes → unique IMAGE pixels → exact set/resource entry。
+- claim 时 A0、J0；cap-024 继续 deferred；provider/API Key/真实数据/费用/Profile registration/push/tag/PR 均为 0。
+- guard/Materializer TDD 先得到 5 个缺失 catalog enum 的 compile RED；补唯一 guard 项后 guard 25/25 绿，
+  Materializer 精确保留 1 个 behavioral RED，证明尚未累计 unique logical IMAGE pixels。
+- `reserveExactContent` 现于 new identity 的 unique count/raw reservation 后复用 `reserveImagePixels`，成功后才入
+  exact set。prefix `124999999` + 两个 duplicate exact-content `1×1` occurrence 均成功；第二项改 hash 时第二次
+  Resolver 仍执行但 exact reject，unique count/raw 已含两项而 resource-entry 仅含首项。
+- focused guard 25 + Materializer 29 + Evaluator 68 + architecture 6 = 128/128；受影响 reactor Schema 20、
+  Validation 13、Template 84、Asset 92、Rendering 249 全绿，零 failure/error；`git diff --check` 通过。
+- A1 `render` `.sdlc/evidence/20260829-075320-render/`（2/2）与 `fast`
+  `.sdlc/evidence/20260829-075410-fast/`（3/3）metadata 均 `passed`。cap-033 fixture 只执行 production guard，故无
+  T163-specific A2/A3；J0 pending、J1 未批准。未重复 server/full；cap-024 继续 deferred；provider attempts/
+  API Key reads/真实数据/Profile registration/push/tag/PR 均为 0。
+- 状态回填后的 resolution `fast` `.sdlc/evidence/20260829-075521-fast/` metadata 为 `passed`，3/3 steps 全绿。

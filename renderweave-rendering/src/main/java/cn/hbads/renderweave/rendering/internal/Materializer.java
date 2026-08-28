@@ -1137,7 +1137,11 @@ final class Materializer {
         if (occurrenceRawByteFailure != null) {
             return occurrenceRawByteFailure;
         }
-        var occurrenceImagePixelFailure = reserveOccurrenceImagePixels(kind, fact);
+        var occurrenceImagePixelFailure = reserveImagePixels(
+                RenderingPipelineCapacityGuard.Limit
+                        .ASSETS_AND_FETCH_OCCURRENCE_IMAGE_PIXELS,
+                kind,
+                fact);
         if (occurrenceImagePixelFailure != null) {
             return occurrenceImagePixelFailure;
         }
@@ -1169,7 +1173,8 @@ final class Materializer {
         return new ResolvedValue(new ObjectNode(Map.of("resourceId", new Text(resourceId.value()))));
     }
 
-    private MaterializationFailed reserveOccurrenceImagePixels(
+    private MaterializationFailed reserveImagePixels(
+            RenderingPipelineCapacityGuard.Limit limit,
             AssetKind kind,
             AssetResolutionPort.ResolvedAssetFact fact
     ) {
@@ -1181,10 +1186,7 @@ final class Materializer {
                     ProblemCode.RENDER_INTERNAL_ERROR, null);
         }
         long logicalPixels = (long) image.logicalWidthPx() * image.logicalHeightPx();
-        return capacityFailure(requestCapacity.reserve(
-                RenderingPipelineCapacityGuard.Limit
-                        .ASSETS_AND_FETCH_OCCURRENCE_IMAGE_PIXELS,
-                logicalPixels));
+        return capacityFailure(requestCapacity.reserve(limit, logicalPixels));
     }
 
     private MaterializationFailed reserveExactContent(
@@ -1208,6 +1210,14 @@ final class Materializer {
                 fact.byteLength()));
         if (uniqueRawByteFailure != null) {
             return uniqueRawByteFailure;
+        }
+        var uniqueImagePixelFailure = reserveImagePixels(
+                RenderingPipelineCapacityGuard.Limit
+                        .ASSETS_AND_FETCH_UNIQUE_IMAGE_PIXELS,
+                kind,
+                fact);
+        if (uniqueImagePixelFailure != null) {
+            return uniqueImagePixelFailure;
         }
         exactContents.add(identity);
         return null;
