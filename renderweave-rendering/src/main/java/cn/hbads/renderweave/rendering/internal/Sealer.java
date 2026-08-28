@@ -1,9 +1,6 @@
 package cn.hbads.renderweave.rendering.internal;
 
-import cn.hbads.renderweave.rendering.api.EvaluationStage;
 import cn.hbads.renderweave.rendering.api.RenderingProblem;
-import cn.hbads.renderweave.rendering.api.RenderingProblem.LimitId;
-import cn.hbads.renderweave.rendering.api.RenderingProblem.ProblemCode;
 import cn.hbads.renderweave.template.api.DesignSemanticAuthority.ArrayNode;
 import cn.hbads.renderweave.template.api.DesignSemanticAuthority.Bool;
 import cn.hbads.renderweave.template.api.DesignSemanticAuthority.DesignNodeValue;
@@ -112,23 +109,20 @@ final class Sealer {
             return new Sealed(new SealedEvaluation(canonical, documentDigest, resultDigest));
         } catch (RenderDocumentCanonicalWriter.CapacityExceeded capacity) {
             return new SealRejected(capacity.problem());
-        } catch (SealLimitExceeded limit) {
-            return new SealRejected(documentLimit(limit.limitId));
+        } catch (SealCapacityExceeded capacity) {
+            return new SealRejected(capacity.problem());
         }
     }
 
-    private static RenderingProblem documentLimit(String limitId) {
-        return RenderingProblem.ofLimit(
-                ProblemCode.RENDER_DOCUMENT_LIMIT_EXCEEDED,
-                EvaluationStage.DOCUMENT_SEAL,
-                new LimitId(limitId));
-    }
+    private static final class SealCapacityExceeded extends RuntimeException {
+        private final RenderingProblem problem;
 
-    private static final class SealLimitExceeded extends RuntimeException {
-        private final String limitId;
+        SealCapacityExceeded(RenderingProblem problem) {
+            this.problem = Objects.requireNonNull(problem, "problem");
+        }
 
-        SealLimitExceeded(String limitId) {
-            this.limitId = limitId;
+        RenderingProblem problem() {
+            return problem;
         }
     }
 
@@ -422,7 +416,13 @@ final class Sealer {
 
     private String nextOccurrenceId() {
         if (occurrenceCounter < 0) {
-            throw new SealLimitExceeded("closureAndExpansion.renderOccurrences");
+            throw new IllegalStateException("RenderDocument occurrence ordinal overflow");
+        }
+        var capacityProblem = requestCapacity.reserve(
+                RenderingPipelineCapacityGuard.Limit.RENDER_DOCUMENT_STATIC_NODES,
+                1);
+        if (capacityProblem.isPresent()) {
+            throw new SealCapacityExceeded(capacityProblem.orElseThrow());
         }
         var id = "rwocc_" + String.format("%016x", occurrenceCounter);
         occurrenceCounter++;

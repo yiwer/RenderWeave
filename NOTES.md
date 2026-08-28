@@ -3827,3 +3827,25 @@
 - cap-017 不执行 Evaluator/Sealer，故无 T148-specific A2/A3；J0 pending、J1 未批准。未重复 server/full，provider
   attempts/API Key reads/真实数据/Profile registration/push/tag/PR 均为 0。
 - 状态回填后的 resolution `fast` `.sdlc/evidence/20260829-053518-fast/` metadata 为 passed，3/3 steps 全绿。
+
+# 2026-08-29 Template-v1 T149 RenderDocument final static Nodes（resolved / automated_verified）
+
+- T148 已以 verified commit `42d9cc70` 收口，worktree clean、ahead 139 且 DAG 无其他 active claim；现按
+  single-writer 登记并 claim T149。
+- `RW-T19-S7-091` / cap-018 固定 `renderDocument.staticNodes` MAX_INCLUSIVE `20000`，observed
+  `19999/20000/20001`，DOCUMENT_SEAL_COUNTING / public DOCUMENT_SEAL / RENDER_DOCUMENT_LIMIT_EXCEEDED /
+  ZERO_DOCUMENT_OUTPUT。
+- final node domain 与 occurrenceId 一一对应：root、surviving authored/synthetic Nodes、sourceCanvas 各 `1`；pruned
+  为 `0`。计数将在 `nextOccurrenceId` 前经唯一 request tracker 预留，不把 envelope/placement/bleed/resources 等 JSON
+  object 误计为 Nodes。
+- 同值 T144 轴仍独立属于 MATERIALIZATION/EVALUATION_BUDGET_EXCEEDED；本票不复用其 counter 或 problem。
+- guard compile RED 精确为 3 个 missing-enum errors，接线后 11/11 GREEN；Sealer 8 tests 随后精确 2 个 behavioral
+  RED（超限 root/sourceCanvas 仍 Sealed），在 `nextOccurrenceId()` 前 reserve 后 8/8 GREEN。
+- minimal root prefix 19999/20000 与 compositionViewport root + viewport + sourceCanvas prefix 19997/19998 精确证明
+  at/above 边界；envelope/placement/bleed/resources JSON objects 不进入 final static Node counter。
+- focused 94/94；受影响 reactor Schema 20、Validation 13、Template 84、Asset 92、Rendering 218 全绿，
+  `git diff --check` 通过。A1 `render` `.sdlc/evidence/20260829-054138-render/`（2/2）与 `fast`
+  `.sdlc/evidence/20260829-054226-fast/`（3/3）metadata 均 passed，既有 RenderDocument replay 83/83。
+- cap-018 不执行 Evaluator/Sealer，故无 T149-specific A2/A3；J0 pending、J1 未批准。未重复 server/full，provider
+  attempts/API Key reads/真实数据/Profile registration/push/tag/PR 均为 0。
+- 状态回填后的 resolution `fast` `.sdlc/evidence/20260829-054443-fast/` metadata 为 passed，3/3 steps 全绿。

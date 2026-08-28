@@ -915,6 +915,11 @@ Label: wayfinder:map
   接入 T147 已建立的唯一 production canonical writer/guard；mixed object/array exact boundary、string punctuation 与
   sibling non-accumulation 均绿。focused 91/91、Rendering 215/215 与 render/fast metadata 全绿；仅完成 jsonDepth，
   不提前宣称其余 seal/Engine 容量轴。A1、无 ticket-specific A2、J0。
+- [T149 — RenderDocument final static Nodes 预算](issues/149-render-document-static-nodes-capacity.md)
+  — **resolved / automated_verified**；按 `RW-T19-S7-091` 与 cap-018 将 final static Nodes `19999/20000/20001`
+  接入 Sealer occurrenceId allocation seam；root 与 sourceCanvas 产品边界均精确通过，并与 T144 materialization
+  轴保持 limitId/stage/code/counter 隔离。focused 94/94、Rendering 218/218 与 render/fast metadata 全绿；A1、
+  无 ticket-specific A2、J0。
 
 - 改写或重解释现有 Schema/Inference v1 已提交历史，或在 dirty main 上直接实施 Template。
 - Workspace、组织/成员/分享/协作、跨 ownerScope 复制、通用 connector、任意 SQL/HTTP/文件/脚本、插件节点或运行时代码注册。

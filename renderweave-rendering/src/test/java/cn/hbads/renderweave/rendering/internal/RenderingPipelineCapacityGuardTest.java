@@ -249,4 +249,25 @@ class RenderingPipelineCapacityGuardTest {
         assertEquals("renderDocument.jsonDepth",
                 problem.limitId().orElseThrow().value());
     }
+
+    @Test
+    void renderDocumentStaticNodesBoundaryUsesTheFrozenProductionGuardContract() {
+        var guard = new RenderingPipelineCapacityGuard();
+
+        assertTrue(guard.admit(
+                RenderingPipelineCapacityGuard.Limit.RENDER_DOCUMENT_STATIC_NODES,
+                19_999).isEmpty());
+        assertTrue(guard.admit(
+                RenderingPipelineCapacityGuard.Limit.RENDER_DOCUMENT_STATIC_NODES,
+                20_000).isEmpty());
+
+        var problem = guard.admit(
+                        RenderingPipelineCapacityGuard.Limit.RENDER_DOCUMENT_STATIC_NODES,
+                        20_001)
+                .orElseThrow();
+        assertEquals(EvaluationStage.DOCUMENT_SEAL, problem.stage());
+        assertEquals(ProblemCode.RENDER_DOCUMENT_LIMIT_EXCEEDED, problem.code());
+        assertEquals("renderDocument.staticNodes",
+                problem.limitId().orElseThrow().value());
+    }
 }

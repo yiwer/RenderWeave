@@ -5370,3 +5370,33 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
   仍 byte-identical。cap-017 不执行 Evaluator/Sealer，故无 T148-specific A2/A3；J0 pending、J1 未批准。未重复
   server/full，provider attempts/API Key reads/真实数据/Profile registration/push/tag/PR 均为 0。
 - 状态回填后的 resolution `fast` `.sdlc/evidence/20260829-053518-fast/` metadata 为 `passed`，3/3 steps 全绿。
+
+## 149. TV1-T149 执行卡
+
+- 状态：`resolved / automated_verified`；single writer: Codex；blocked by T21/T148（均 resolved）。
+- authority：`RW-T19-S7-091` / cap-018 固定 `renderDocument.staticNodes` 为 MAX_INCLUSIVE `20000`，observed
+  `19999/20000/20001`，DOCUMENT_SEAL_COUNTING / public DOCUMENT_SEAL / RENDER_DOCUMENT_LIMIT_EXCEEDED /
+  ZERO_DOCUMENT_OUTPUT；reservation point 为 atomic canonical-byte/digest commit 与任何 Engine Command 前。
+- domain：root Canvas、surviving authored/synthetic Node 与 compositionViewport sourceCanvas 各 `1`，与 occurrenceId
+  allocation 一一对应；pruned `0`，visible/opacity/empty Node 仍 `1`。在 `nextOccurrenceId` 前经同一 request tracker
+  reserve，失败不产生 id/document/digest。
+- isolation：不得复用同值的 T144 `closureAndExpansion.materializedStaticNodes`；后者属于 MATERIALIZATION /
+  EVALUATION_BUDGET_EXCEEDED，本轴属于 DOCUMENT_SEAL / RENDER_DOCUMENT_LIMIT_EXCEEDED。
+- TDD：guard missing-enum compile RED 后最小 catalog GREEN；Sealer 预留 prefix 的 minimal root at/above behavioral RED，
+  并覆盖 sourceCanvas unit。focused guard/Sealer/RenderDocument/Evaluator、受影响 reactor、render/fast；无 app wiring，
+  不重复 server/full。
+- honesty：cap-018 target 不执行 Evaluator/Sealer，isolated guard 不冒充正式 records/A2；product Sealer seam 只证明
+  final-node reservation。childEdges/runs/textScalars/vectorEntries 与 diagnostics 继续后续独立票。provider/API Key/
+  真实数据/Profile registration/push/tag/PR 均不推进；J0 pending、J1 未批准。
+- TDD：guard 先精确产生 3 个 missing-enum compile RED，catalog 接线后 11/11 GREEN；Sealer 8 tests 随后精确
+  2 个 behavioral RED（超限 root/sourceCanvas 仍 Sealed），production reservation 接线后 8/8 GREEN。
+- exact product boundary：minimal root 在 prefix 19999 后成功、20000 后 exact reject，证明 envelope/bleed/resources
+  JSON object 不计 Node；compositionViewport tree 的 root + viewport + sourceCanvas 精确消费 3 units，在 prefix
+  19997 后成功、19998 后于 sourceCanvas exact reject。
+- focused Evaluator 68 + writer 3 + RenderDocument 4 + guard 11 + Sealer 8 = 94/94；受影响 reactor Schema 20、
+  Validation 13、Template 84、Asset 92、Rendering 218 全绿，`git diff --check` 通过。
+- A1 `render` `.sdlc/evidence/20260829-054138-render/`（2/2）与 `fast`
+  `.sdlc/evidence/20260829-054226-fast/`（3/3）metadata 均 `passed`，既有 RenderDocument independent replay
+  83/83 仍 byte-identical。cap-018 不执行 Evaluator/Sealer，故无 T149-specific A2/A3；未重复 server/full，
+  provider attempts/API Key reads/真实数据/Profile registration/push/tag/PR 均为 0。
+- 状态回填后的 resolution `fast` `.sdlc/evidence/20260829-054443-fast/` metadata 为 `passed`，3/3 steps 全绿。

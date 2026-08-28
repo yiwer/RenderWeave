@@ -214,6 +214,46 @@ class SealerTest {
                 rejected.problem().limitId().orElseThrow().value());
     }
 
+    @Test
+    void staticNodeCounterAdmitsTheRootAtAndRejectsItAboveTheInclusiveBudget() {
+        var atCapacity = new RenderingPipelineCapacityGuard().newRequestTracker();
+        assertTrue(atCapacity.reserve(
+                RenderingPipelineCapacityGuard.Limit.RENDER_DOCUMENT_STATIC_NODES,
+                19_999).isEmpty());
+        assertInstanceOf(Sealer.Sealed.class, Sealer.seal(
+                closure(), admitted(), minimalTree(), "sha256:" + "c".repeat(64),
+                atCapacity));
+
+        var aboveCapacity = new RenderingPipelineCapacityGuard().newRequestTracker();
+        assertTrue(aboveCapacity.reserve(
+                RenderingPipelineCapacityGuard.Limit.RENDER_DOCUMENT_STATIC_NODES,
+                20_000).isEmpty());
+        var rejected = assertInstanceOf(Sealer.SealRejected.class, Sealer.seal(
+                closure(), admitted(), minimalTree(), "sha256:" + "c".repeat(64),
+                aboveCapacity));
+        assertStaticNodeLimit(rejected);
+    }
+
+    @Test
+    void compositionViewportSourceCanvasConsumesItsOwnStaticNodeUnit() {
+        var atCapacity = new RenderingPipelineCapacityGuard().newRequestTracker();
+        assertTrue(atCapacity.reserve(
+                RenderingPipelineCapacityGuard.Limit.RENDER_DOCUMENT_STATIC_NODES,
+                19_997).isEmpty());
+        assertInstanceOf(Sealer.Sealed.class, Sealer.seal(
+                closure(), admitted(), viewportTree(), "sha256:" + "c".repeat(64),
+                atCapacity));
+
+        var aboveCapacity = new RenderingPipelineCapacityGuard().newRequestTracker();
+        assertTrue(aboveCapacity.reserve(
+                RenderingPipelineCapacityGuard.Limit.RENDER_DOCUMENT_STATIC_NODES,
+                19_998).isEmpty());
+        var rejected = assertInstanceOf(Sealer.SealRejected.class, Sealer.seal(
+                closure(), admitted(), viewportTree(), "sha256:" + "c".repeat(64),
+                aboveCapacity));
+        assertStaticNodeLimit(rejected);
+    }
+
     // ------------------------------------------------------------------
     // fixtures
     // ------------------------------------------------------------------
@@ -249,6 +289,41 @@ class SealerTest {
                 List.of(),
                 "");
         return new Materializer.MaterializedTree(canvas, List.of(), List.of());
+    }
+
+    private static Materializer.MaterializedTree viewportTree() {
+        var sourceCanvas = new Materializer.MaterializedNode(
+                "canvas",
+                new ObjectNode(Map.of(
+                        "kind", new Text("canvas"),
+                        "widthMm", new NumberToken("100"),
+                        "heightMm", new NumberToken("50"))),
+                List.of(),
+                "/use");
+        var viewport = new Materializer.MaterializedNode(
+                "compositionViewport",
+                new ObjectNode(Map.of(
+                        "kind", new Text("compositionViewport"),
+                        "placement", absoluteFixedPlacement("100", "50"))),
+                List.of(sourceCanvas),
+                "/use");
+        var root = new Materializer.MaterializedNode(
+                "canvas",
+                new ObjectNode(Map.of(
+                        "kind", new Text("canvas"),
+                        "widthMm", new NumberToken("210"),
+                        "heightMm", new NumberToken("297"))),
+                List.of(viewport),
+                "");
+        return new Materializer.MaterializedTree(root, List.of(), List.of());
+    }
+
+    private static void assertStaticNodeLimit(Sealer.SealRejected rejected) {
+        assertEquals(EvaluationStage.DOCUMENT_SEAL, rejected.problem().stage());
+        assertEquals(ProblemCode.RENDER_DOCUMENT_LIMIT_EXCEEDED,
+                rejected.problem().code());
+        assertEquals("renderDocument.staticNodes",
+                rejected.problem().limitId().orElseThrow().value());
     }
 
     private static ClosureSnapshot closure() {

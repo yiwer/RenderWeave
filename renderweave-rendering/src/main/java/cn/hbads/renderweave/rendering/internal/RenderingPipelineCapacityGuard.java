@@ -48,6 +48,11 @@ final class RenderingPipelineCapacityGuard {
                 "renderDocument.jsonDepth",
                 128,
                 ProblemCode.RENDER_DOCUMENT_LIMIT_EXCEEDED,
+                EvaluationStage.DOCUMENT_SEAL),
+        RENDER_DOCUMENT_STATIC_NODES(
+                "renderDocument.staticNodes",
+                20_000,
+                ProblemCode.RENDER_DOCUMENT_LIMIT_EXCEEDED,
                 EvaluationStage.DOCUMENT_SEAL);
 
         private final String id;
