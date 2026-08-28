@@ -39,7 +39,6 @@ import java.util.Optional;
  */
 final class Materializer {
 
-    static final int MAX_ACTUAL_RESOLVE_OCCURRENCES = 2_048;
     static final int MAX_RESOURCE_ENTRIES = 2_048;
 
     private static final RenderingPipelineCapacityGuard CAPACITY_GUARD =
@@ -118,7 +117,6 @@ final class Materializer {
     private int invocations;
     private int compositionViewports;
     private int loopFrames;
-    private int resolves;
 
     private Materializer(
             ClosureSnapshot closure,
@@ -1069,11 +1067,12 @@ final class Materializer {
     }
 
     private ValueStep resolveAtom(String memberName, ObjectNode atom, String path) {
-        resolves++;
-        if (resolves > MAX_ACTUAL_RESOLVE_OCCURRENCES) {
-            return failed(EvaluationStage.ASSET_RESOLUTION,
-                    ProblemCode.RESOURCE_BUDGET_EXCEEDED,
-                    "assetsAndFetch.actualResolveOccurrences");
+        var capacityFailure = capacityFailure(requestCapacity.reserve(
+                RenderingPipelineCapacityGuard.Limit
+                        .ASSETS_AND_FETCH_ACTUAL_RESOLVE_OCCURRENCES,
+                1));
+        if (capacityFailure != null) {
+            return capacityFailure;
         }
         if (assets == null) {
             // 依赖不可用（T13 前无生产 bridge）：冻结码集无 asset-unavailable 专用码。

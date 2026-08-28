@@ -88,7 +88,12 @@ final class RenderingPipelineCapacityGuard {
                 "assetsAndFetch.uniqueLogicalAssets",
                 512,
                 ProblemCode.ASSET_BUDGET_EXCEEDED,
-                EvaluationStage.ASSET_ADMISSION);
+                EvaluationStage.ASSET_ADMISSION),
+        ASSETS_AND_FETCH_ACTUAL_RESOLVE_OCCURRENCES(
+                "assetsAndFetch.actualResolveOccurrences",
+                2_048,
+                ProblemCode.RESOURCE_BUDGET_EXCEEDED,
+                EvaluationStage.ASSET_RESOLUTION);
 
         private final String id;
         private final long maximumInclusive;

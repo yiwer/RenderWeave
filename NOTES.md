@@ -4009,3 +4009,26 @@
   T156-specific A2/A3；J0 pending、J1 未批准。未重复 server/full；cap-024 继续 deferred；provider attempts/
   API Key reads/真实数据/Profile registration/push/tag/PR 均为 0。
 - 状态回填后的 resolution `fast` `.sdlc/evidence/20260829-065828-fast/` metadata 为 passed，3/3 steps 全绿。
+
+# 2026-08-29 Template-v1 T157 actual Asset resolve occurrences（resolved / automated_verified）
+
+- T156 已以 verified commit `bf67c63e` 收口，worktree clean、ahead 147 且 DAG 无其他 active claim；冻结
+  `RW-T19-S8-003` / cap-027 是下一个 unblocked frontier，现按 single-writer claim T157。
+- `assetsAndFetch.actualResolveOccurrences` 固定 MAX_INCLUSIVE `2048`、observed `2047/2048/2049`，
+  SERIAL_ASSET_RESOLUTION / public ASSET_RESOLUTION / RESOURCE_BUDGET_EXCEEDED / ZERO_DOCUMENT_OUTPUT，
+  reservation point 为下一次 Resolver operation 前。
+- 当前 `Materializer.resolveAtom` 已在 port 前用私有常量与手写 `resolves` 计数；本票迁入唯一 request tracker，
+  保持实际 occurrence 重计、失败不退款、pruned 零收费与 serial first-fail，并与 RenderResource entries 独立。
+- claim 时 A0、J0；cap-024 继续 deferred；provider/API Key/真实数据/费用/Profile registration/push/tag/PR 均为 0。
+- guard/Materializer TDD 先得到 5 个缺失 catalog enum 的 compile RED；补唯一 guard 项后 guard 19/19 绿，
+  Materializer 精确保留 1 个 behavioral RED，证明旧私有 counter 未共享 request prefix。
+- `Materializer.resolveAtom` 已删除私有常量与实例 counter，改为每个 concrete consumer occurrence 在 port 前经唯一
+  request tracker reserve；prefix 2046 后两个同 Asset/different path occurrence 均成功，prefix 2047 后第二项在
+  port 前以 frozen stage/code/full limitId exact reject，Resolver 仅收到一次调用。
+- focused guard 19 + Materializer 23 + Evaluator 68 + architecture 6 = 116/116；受影响 reactor Schema 20、
+  Validation 13、Template 84、Asset 92、Rendering 237 全绿，零 failure/error；`git diff --check` 通过。
+- A1 `render` `.sdlc/evidence/20260829-070357-render/`（2/2）与 `fast`
+  `.sdlc/evidence/20260829-070548-fast/`（3/3）metadata 均 passed。cap-027 fixture 只执行 guard，故无
+  T157-specific A2/A3；J0 pending、J1 未批准。未重复 server/full；cap-024 继续 deferred；provider attempts/
+  API Key reads/真实数据/Profile registration/push/tag/PR 均为 0。
+- 状态回填后的 resolution `fast` `.sdlc/evidence/20260829-070726-fast/` metadata 为 passed，3/3 steps 全绿。
