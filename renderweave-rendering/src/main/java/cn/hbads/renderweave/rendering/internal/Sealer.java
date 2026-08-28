@@ -278,6 +278,10 @@ final class Sealer {
                 members.put("runs", lowerRuns(entry.getValue()));
                 continue;
             }
+            if (isVectorEntryArray(node.kind(), entry.getKey())) {
+                members.put(entry.getKey(), lowerVectorEntries(entry.getValue()));
+                continue;
+            }
             putLowered(members, entry.getKey(), entry.getValue());
         }
         if (nodeContracts.isContainer(node.kind())) {
@@ -464,6 +468,35 @@ final class Sealer {
         var capacityProblem = requestCapacity.reserve(
                 RenderingPipelineCapacityGuard.Limit.RENDER_DOCUMENT_TEXT_SCALARS,
                 scalarCount);
+        if (capacityProblem.isPresent()) {
+            throw new SealCapacityExceeded(capacityProblem.orElseThrow());
+        }
+    }
+
+    private static boolean isVectorEntryArray(String nodeKind, String member) {
+        return switch (nodeKind) {
+            case "polygon", "polyline" -> "points".equals(member);
+            case "path" -> "commands".equals(member);
+            default -> false;
+        };
+    }
+
+    private CanonicalJson.CanonicalValue lowerVectorEntries(DesignNodeValue value) {
+        if (!(value instanceof ArrayNode entries)) {
+            throw new IllegalStateException("Vector entries must be an array at document seal");
+        }
+        var items = new ArrayList<CanonicalJson.CanonicalValue>();
+        for (var entry : entries.items()) {
+            reserveVectorEntry();
+            items.add(lowerValue(entry));
+        }
+        return CanonicalJson.arrayValue(items);
+    }
+
+    private void reserveVectorEntry() {
+        var capacityProblem = requestCapacity.reserve(
+                RenderingPipelineCapacityGuard.Limit.RENDER_DOCUMENT_VECTOR_ENTRIES,
+                1);
         if (capacityProblem.isPresent()) {
             throw new SealCapacityExceeded(capacityProblem.orElseThrow());
         }

@@ -383,6 +383,42 @@ class SealerTest {
         assertTextScalarLimit(rejected);
     }
 
+    @Test
+    void finalVectorEntriesUseTheRequestTotalFrozenBoundary() {
+        var emptyAtCapacity = new RenderingPipelineCapacityGuard().newRequestTracker();
+        assertTrue(emptyAtCapacity.reserve(
+                RenderingPipelineCapacityGuard.Limit.RENDER_DOCUMENT_VECTOR_ENTRIES,
+                100_000).isEmpty());
+        assertInstanceOf(Sealer.Sealed.class, Sealer.seal(
+                closure(), admitted(), minimalTree(), "sha256:" + "c".repeat(64),
+                emptyAtCapacity));
+
+        var atCapacity = new RenderingPipelineCapacityGuard().newRequestTracker();
+        assertTrue(atCapacity.reserve(
+                RenderingPipelineCapacityGuard.Limit.RENDER_DOCUMENT_VECTOR_ENTRIES,
+                99_993).isEmpty());
+        var sealed = assertInstanceOf(Sealer.Sealed.class, Sealer.seal(
+                closure(), admitted(), mixedVectorEntriesTree(), "sha256:" + "c".repeat(64),
+                atCapacity));
+        var document = new String(
+                sealed.evaluation().renderDocumentCanonicalUtf8(), StandardCharsets.UTF_8);
+        assertTrue(document.contains("\"kind\":\"line\""));
+        assertTrue(document.contains("\"kind\":\"polygon\""));
+        assertTrue(document.contains("\"kind\":\"polyline\""));
+        assertTrue(document.contains("\"kind\":\"path\""));
+        assertTrue(document.contains("\"visible\":false"));
+        assertTrue(document.contains("\"opacity\":0"));
+
+        var aboveCapacity = new RenderingPipelineCapacityGuard().newRequestTracker();
+        assertTrue(aboveCapacity.reserve(
+                RenderingPipelineCapacityGuard.Limit.RENDER_DOCUMENT_VECTOR_ENTRIES,
+                99_994).isEmpty());
+        var rejected = assertInstanceOf(Sealer.SealRejected.class, Sealer.seal(
+                closure(), admitted(), mixedVectorEntriesTree(), "sha256:" + "c".repeat(64),
+                aboveCapacity));
+        assertVectorEntryLimit(rejected);
+    }
+
     // ------------------------------------------------------------------
     // fixtures
     // ------------------------------------------------------------------
@@ -489,6 +525,86 @@ class SealerTest {
                 List.of());
     }
 
+    private static Materializer.MaterializedTree mixedVectorEntriesTree() {
+        var line = new Materializer.MaterializedNode(
+                "line",
+                new ObjectNode(Map.of(
+                        "kind", new Text("line"),
+                        "placement", absoluteFixedPlacement("20", "20"),
+                        "start", point("0", "0"),
+                        "end", point("10", "10"),
+                        "stroke", strokeMm())),
+                List.of(),
+                "/line");
+        var polygon = new Materializer.MaterializedNode(
+                "polygon",
+                new ObjectNode(Map.of(
+                        "kind", new Text("polygon"),
+                        "placement", absoluteFixedPlacement("20", "20"),
+                        "visible", new Bool(false),
+                        "points", new ArrayNode(List.of(
+                                point("0", "0"),
+                                point("10", "0"),
+                                point("0", "10"))),
+                        "fill", new ObjectNode(Map.of(
+                                "color", new Text("#FF0000FF"))))),
+                List.of(),
+                "/polygon");
+        var polyline = new Materializer.MaterializedNode(
+                "polyline",
+                new ObjectNode(Map.of(
+                        "kind", new Text("polyline"),
+                        "placement", absoluteFixedPlacement("20", "20"),
+                        "opacity", new NumberToken("0"),
+                        "points", new ArrayNode(List.of(
+                                point("0", "0"),
+                                point("10", "10"))),
+                        "stroke", strokeMm())),
+                List.of(),
+                "/polyline");
+        var path = new Materializer.MaterializedNode(
+                "path",
+                new ObjectNode(Map.of(
+                        "kind", new Text("path"),
+                        "placement", absoluteFixedPlacement("20", "20"),
+                        "commands", new ArrayNode(List.of(
+                                pathCommand("MOVE_TO", "0", "0"),
+                                pathCommand("LINE_TO", "10", "10"))),
+                        "stroke", strokeMm())),
+                List.of(),
+                "/path");
+        var root = new Materializer.MaterializedNode(
+                "canvas",
+                new ObjectNode(Map.of(
+                        "kind", new Text("canvas"),
+                        "widthMm", new NumberToken("210"),
+                        "heightMm", new NumberToken("297"))),
+                List.of(line, polygon, polyline, path),
+                "");
+        return new Materializer.MaterializedTree(root, List.of(), List.of());
+    }
+
+    private static ObjectNode point(String xMm, String yMm) {
+        return new ObjectNode(Map.of(
+                "xMm", new NumberToken(xMm),
+                "yMm", new NumberToken(yMm)));
+    }
+
+    private static ObjectNode pathCommand(String type, String xMm, String yMm) {
+        return new ObjectNode(Map.of(
+                "type", new Text(type),
+                "xMm", new NumberToken(xMm),
+                "yMm", new NumberToken(yMm)));
+    }
+
+    private static ObjectNode strokeMm() {
+        return new ObjectNode(Map.of(
+                "color", new Text("#000000FF"),
+                "widthMm", new NumberToken("1"),
+                "cap", new Text("BUTT"),
+                "join", new Text("MITER")));
+    }
+
     private static Materializer.MaterializedNode textNode(
             String text,
             String resourceId,
@@ -570,6 +686,14 @@ class SealerTest {
         assertEquals(ProblemCode.RENDER_DOCUMENT_LIMIT_EXCEEDED,
                 rejected.problem().code());
         assertEquals("renderDocument.textScalars",
+                rejected.problem().limitId().orElseThrow().value());
+    }
+
+    private static void assertVectorEntryLimit(Sealer.SealRejected rejected) {
+        assertEquals(EvaluationStage.DOCUMENT_SEAL, rejected.problem().stage());
+        assertEquals(ProblemCode.RENDER_DOCUMENT_LIMIT_EXCEEDED,
+                rejected.problem().code());
+        assertEquals("renderDocument.vectorEntries",
                 rejected.problem().limitId().orElseThrow().value());
     }
 

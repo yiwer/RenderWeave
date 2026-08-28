@@ -68,6 +68,11 @@ final class RenderingPipelineCapacityGuard {
                 "renderDocument.textScalars",
                 1_000_000,
                 ProblemCode.RENDER_DOCUMENT_LIMIT_EXCEEDED,
+                EvaluationStage.DOCUMENT_SEAL),
+        RENDER_DOCUMENT_VECTOR_ENTRIES(
+                "renderDocument.vectorEntries",
+                100_000,
+                ProblemCode.RENDER_DOCUMENT_LIMIT_EXCEEDED,
                 EvaluationStage.DOCUMENT_SEAL);
 
         private final String id;

@@ -935,6 +935,11 @@ Label: wayfinder:map
   `999999/1000000/1000001` 接入 Sealer pre-string allocation seam；按 surviving occurrence/Run index request-total
   计数，保留非 BMP、组合序列、LF 与空 Run 的 frozen scalar 语义，并与 Runs/authored text/Engine shaping 独立。
   focused 101/101、Rendering 225/225 与 render/fast metadata 全绿；A1、无 ticket-specific A2、J0。
+- [T153 — RenderDocument vector entries 预算](issues/153-render-document-vector-entries-capacity.md)
+  — **resolved / automated_verified**；按 `RW-T19-S7-095` 与 cap-022 将 final Polygon/Polyline Point 与 Path Command
+  `99999/100000/100001` 接入 Sealer pre-entry allocation seam；三种 item 共享 request-total counter，按 final tree/
+  array order 逐项预留，并与 authored vectors、其他 RenderDocument 容量及 Engine paint items 独立。
+  focused 103/103、Rendering 227/227 与 render/fast metadata 全绿；A1、无 ticket-specific A2、J0。
 
 - 改写或重解释现有 Schema/Inference v1 已提交历史，或在 dirty main 上直接实施 Template。
 - Workspace、组织/成员/分享/协作、跨 ownerScope 复制、通用 connector、任意 SQL/HTTP/文件/脚本、插件节点或运行时代码注册。
