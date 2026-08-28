@@ -45,6 +45,7 @@ final class Materializer {
     static final int MAX_ACTUAL_RESOLVE_OCCURRENCES = 2_048;
     static final int MAX_RESOURCE_ENTRIES = 2_048;
     static final int MAX_TEMPLATE_INVOCATIONS = 256;
+    static final int MAX_INVOCATION_DEPTH = 16;
 
     record MaterializedTree(
             MaterializedNode root,
@@ -167,7 +168,7 @@ final class Materializer {
             return failed(EvaluationStage.TEMPLATE_CLOSURE, ProblemCode.RENDER_INTERNAL_ERROR, null);
         }
 
-        var invocationFailure = materializer.reserveTemplateInvocation();
+        var invocationFailure = materializer.reserveTemplateInvocation(1);
         if (invocationFailure != null) {
             return invocationFailure;
         }
@@ -178,7 +179,8 @@ final class Materializer {
                 DefinitionEngine.LoopFrames.EMPTY,
                 capabilities,
                 CapabilityCallPosition.root(
-                        rootSnapshot.templateId().value(), rootSnapshot.revision()));
+                        rootSnapshot.templateId().value(), rootSnapshot.revision()),
+                1);
         var children = new ArrayList<MaterializedNode>();
         var expandFailure = materializer.expandNode(
                 designRoot, rootSnapshot, rootScope, "", children);
@@ -593,7 +595,8 @@ final class Materializer {
                 childCustoms.put(target.value(), ((EvalValue) value).value());
             }
         }
-        var invocationFailure = reserveTemplateInvocation();
+        var childInvocationDepth = scope.invocationDepth() + 1;
+        var invocationFailure = reserveTemplateInvocation(childInvocationDepth);
         if (invocationFailure != null) {
             return invocationFailure;
         }
@@ -601,7 +604,8 @@ final class Materializer {
                 childContext, Map.copyOf(childCustoms), childEngine,
                 DefinitionEngine.LoopFrames.EMPTY, capabilities,
                 scope.capabilityPath().enterTemplateUse(
-                        useId.value(), childSnapshot.templateId().value(), childSnapshot.revision()));
+                        useId.value(), childSnapshot.templateId().value(), childSnapshot.revision()),
+                childInvocationDepth);
         var childRoot = childObject(childDocument, "designRoot");
         if (childRoot == null) {
             return failed(EvaluationStage.MATERIALIZATION, ProblemCode.RENDER_INTERNAL_ERROR, null);
@@ -677,7 +681,12 @@ final class Materializer {
         return null;
     }
 
-    private MaterializationOutcome reserveTemplateInvocation() {
+    private MaterializationOutcome reserveTemplateInvocation(int invocationDepth) {
+        if (invocationDepth > MAX_INVOCATION_DEPTH) {
+            return failed(EvaluationStage.MATERIALIZATION,
+                    ProblemCode.EVALUATION_BUDGET_EXCEEDED,
+                    "closureAndExpansion.invocationDepth");
+        }
         invocations++;
         if (invocations > MAX_TEMPLATE_INVOCATIONS) {
             return failed(EvaluationStage.MATERIALIZATION,
@@ -1139,6 +1148,7 @@ final class Materializer {
         private final DefinitionEngine.LoopFrames loopFrames;
         private final DefinitionEngine.CapabilityProvider capabilities;
         private final CapabilityCallPosition.RuntimePath capabilityPath;
+        private final int invocationDepth;
 
         InvocationScope(
                 TypedObject context,
@@ -1146,7 +1156,8 @@ final class Materializer {
                 DefinitionEngine engine,
                 DefinitionEngine.LoopFrames loopFrames,
                 DefinitionEngine.CapabilityProvider capabilities,
-                CapabilityCallPosition.RuntimePath capabilityPath
+                CapabilityCallPosition.RuntimePath capabilityPath,
+                int invocationDepth
         ) {
             this.context = context;
             this.customs = customs;
@@ -1154,6 +1165,10 @@ final class Materializer {
             this.loopFrames = loopFrames;
             this.capabilities = capabilities;
             this.capabilityPath = capabilityPath;
+            if (invocationDepth < 1) {
+                throw new IllegalArgumentException("invocationDepth must be positive");
+            }
+            this.invocationDepth = invocationDepth;
         }
 
         @Override
@@ -1186,6 +1201,10 @@ final class Materializer {
             return capabilityPath;
         }
 
+        int invocationDepth() {
+            return invocationDepth;
+        }
+
         InvocationScope withLoopFrame(String loopId, DefinitionEngine.LoopFrame frame) {
             var frames = new java.util.LinkedHashMap<>(loopFrames.frames());
             frames.put(loopId, frame);
@@ -1195,7 +1214,8 @@ final class Materializer {
                     engine,
                     new DefinitionEngine.LoopFrames(frames),
                     capabilities,
-                    capabilityPath.enterRepeat(loopId, frame.index()));
+                    capabilityPath.enterRepeat(loopId, frame.index()),
+                    invocationDepth);
         }
     }
 }

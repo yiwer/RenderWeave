@@ -5001,3 +5001,32 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
   费用/真实数据/Profile registration/push/tag/PR 均为 0。
 - 状态回填后的 resolution `fast` `.sdlc/evidence/20260829-025035-fast/` metadata 仍为 `passed`，3/3 steps
   全绿。
+
+## 138. TV1-T138 执行卡
+
+- 状态：`resolved / automated_verified`；single writer: Codex；blocked by T21/T137（均 resolved）。
+- 决策：T137 verified commit `c9a1061c` 后 worktree clean 且无其他 active claim。机器 authority 将
+  `closureAndExpansion.invocationDepth` 固定为 MAX_INCLUSIVE `16`，observed `15/16/17`，contract stage
+  `SERIAL_MATERIALIZATION`、public stage `MATERIALIZATION`、code `EVALUATION_BUDGET_EXCEEDED`，reservation point
+  是创建下一 invocation/frame 前，zero boundary 为 `ZERO_DOCUMENT_OUTPUT`；requirement
+  `RW-T19-S7-074`，candidate oracles `ORC::CAPACITY::000184..000186`。
+- 计数语义：root frame depth `1`；每个 surviving TemplateUse child frame 沿当前 invocation path `+1`；Repeat
+  frame保留当前 depth，siblings 不累计，render:false/结构剪枝/SKIP 不创建 child frame。
+- seam/TDD：沿用 ADR-0044 公开 `Evaluator.evaluate`。scripted closure 系统边界直接返回 17 层 frozen chain，
+  隔离动态 guard，避免 stage 2 独立 closureDepth 抢先；先取得错误 seal RED，再加入 path-local guard并补 15/16
+  success。T137 的宽 sibling 与 SKIP 回归继续防止全局累计误实现。
+- 禁止影响：正式 Ticket 19 records/executor、其他容量轴、route/OpenAPI/Web/migration/Profile、provider/API Key/
+  真实数据/push/tag/PR；最高 `automated_verified`，A1/J0 待验证。
+- 实现：`InvocationScope` 持有 immutable path-local depth；root `1`、TemplateUse child `+1`、Repeat copy 保留。
+  `reserveTemplateInvocation(depth)` 在总 invocation 计数前检查 MAX_INCLUSIVE `16`，depth 17 exact
+  MATERIALIZATION / EVALUATION_BUDGET_EXCEEDED / full limitId fail closed。
+- TDD：生产未改时，depth 17 在公开 Evaluator seam 错误返回 `SealedDocument`，形成真实 RED；最小实现后 GREEN，
+  补 depth 15/16 success，focused Evaluator 54/54。T137 的 255 sibling 与 SKIP 回归全绿；受影响 reactor Schema
+  20、Validation 13、Template 84、Asset 92、Rendering 179 均零失败，`git diff --check` 通过。
+- A1：`render` `.sdlc/evidence/20260829-025933-render/`、`fast`
+  `.sdlc/evidence/20260829-030020-fast/`、顺序 `server`
+  `.sdlc/evidence/20260829-030048-server/` metadata 均 `passed`；server 8-module BUILD SUCCESS，App
+  372/0/0/15。无 API/OpenAPI/Web/migration/Profile 变化，未跑发布级 `full`。
+- candidate oracles `ORC::CAPACITY::000184..000186` 非正式 issued product executor 记录，不声明 ticket-specific
+  A2；A3 无，J0 pending、J1 未批准。provider/API Key/费用/真实数据/Profile registration/push/tag/PR 均为 0。
+- 状态回填后的 resolution `fast` `.sdlc/evidence/20260829-031714-fast/` metadata 仍为 `passed`。

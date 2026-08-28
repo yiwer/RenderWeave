@@ -3552,3 +3552,26 @@
   provider attempts/API Key reads/reservations/cost/真实数据/Profile registration/push/tag/PR 均为 0。
 - 状态回填后的 resolution `fast` `.sdlc/evidence/20260829-025035-fast/` metadata 仍为 `passed`，3/3 steps
   全绿。
+
+# 2026-08-29 Template-v1 T138 invocation depth capacity（resolved / automated_verified）
+
+- T137 已以 verified commit `c9a1061c` 收口，worktree clean 且 DAG 无其他 active claim；现已按 single-writer
+  登记并 claim T138。
+- 机器 authority 固定 `closureAndExpansion.invocationDepth` 为 MAX_INCLUSIVE `16`，observed `15/16/17`，
+  SERIAL_MATERIALIZATION / public MATERIALIZATION / EVALUATION_BUDGET_EXCEEDED / ZERO_DOCUMENT_OUTPUT，
+  reservation 在创建下一 invocation/frame 前；requirement `RW-T19-S7-074`。
+- 语义采用 root-counted path-local depth：root `1`，surviving TemplateUse child `+1`；Repeat/sibling/SKIP 不累计。
+  公开 `Evaluator.evaluate` TDD 将由 scripted frozen closure 隔离动态轴，先取得 depth 17 错误 seal RED，再最小
+  实现并验证 15/16 成功及既有 sibling/SKIP 回归。
+- 不新增 API/SPI/DB/Profile，不发行 Ticket 19 正式 records，不运行 provider、不读取 API Key、不发送真实数据，
+  不 push/tag/PR。A1/J0 待验证。
+- 公开 seam 已取得真实 RED：depth 17 在生产未改时错误 seal；加入 `InvocationScope` path-local depth 与
+  `reserveTemplateInvocation(depth)` guard 后 GREEN，depth 15/16 success，Evaluator 54/54。root=1、child+1、
+  Repeat copy，T137 sibling/SKIP 回归保持绿色。
+- 受影响 reactor Schema 20、Validation 13、Template 84、Asset 92、Rendering 179 全绿；`git diff --check` 通过。
+  A1：`render` `.sdlc/evidence/20260829-025933-render/`、`fast`
+  `.sdlc/evidence/20260829-030020-fast/`、`server`
+  `.sdlc/evidence/20260829-030048-server/` metadata 均 passed；server 8-module BUILD SUCCESS，App 372/0/0/15。
+- candidate oracle 非正式 issued product executor，故无 ticket-specific A2；A3 无，J0 pending、J1 未批准。
+  未跑 full；API/OpenAPI/Web/migration/Profile/provider/API Key/真实数据/push/tag/PR 变化均为 0。
+- 状态回填后的 resolution `fast` `.sdlc/evidence/20260829-031714-fast/` metadata 仍为 `passed`。

@@ -776,6 +776,36 @@ class EvaluatorContractTest {
     }
 
     @Test
+    void invocationDepthAboveLimitRejectsBeforeTheNextChildFrame() {
+        var evaluator = evaluator(closureWithInvocationDepth(17), resolver());
+
+        var rejected = assertInstanceOf(EvaluationOutcome.Rejected.class,
+                evaluator.evaluate(command("{\"rootDocument\":{}}")));
+
+        assertEquals(EvaluationStage.MATERIALIZATION, rejected.stage());
+        assertEquals(RenderingProblem.ProblemCode.EVALUATION_BUDGET_EXCEEDED,
+                rejected.problem().code());
+        assertEquals("closureAndExpansion.invocationDepth",
+                rejected.problem().limitId().orElseThrow().value());
+    }
+
+    @Test
+    void invocationDepthBelowLimitIsAccepted() {
+        var evaluator = evaluator(closureWithInvocationDepth(15), resolver());
+
+        assertInstanceOf(EvaluationOutcome.SealedDocument.class,
+                evaluator.evaluate(command("{\"rootDocument\":{}}")));
+    }
+
+    @Test
+    void invocationDepthAtLimitIsAccepted() {
+        var evaluator = evaluator(closureWithInvocationDepth(16), resolver());
+
+        assertInstanceOf(EvaluationOutcome.SealedDocument.class,
+                evaluator.evaluate(command("{\"rootDocument\":{}}")));
+    }
+
+    @Test
     void evaluateSealsDocumentEndToEnd() {
         var evaluator = evaluator(closureWith(canvasWithRect()), resolver());
 
@@ -1682,6 +1712,48 @@ class EvaluatorContractTest {
                 List.of(
                         new ClosureEdge(rootTemplateId, 1, skippedUseId, childTemplateId, 1),
                         new ClosureEdge(rootTemplateId, 1, actualUseId, childTemplateId, 1)));
+    }
+
+    private static ClosureSnapshot closureWithInvocationDepth(int invocationDepth) {
+        if (invocationDepth < 1) {
+            throw new IllegalArgumentException("invocationDepth must be positive");
+        }
+        var snapshots = new ArrayList<TemplateSnapshot>(invocationDepth);
+        var edges = new ArrayList<ClosureEdge>(Math.max(0, invocationDepth - 1));
+        var currentTemplateId = ROOT_ID;
+        for (var depth = 1; depth <= invocationDepth; depth++) {
+            var leaf = depth == invocationDepth;
+            var childTemplateId = leaf ? null : capacityUuid(6, depth);
+            var useId = leaf ? null : capacityUuid(7, depth);
+            var children = leaf ? "" : templateUse(childTemplateId, useId, depth);
+            snapshots.add(snapshot(currentTemplateId, canvasWithChildren(children)));
+            if (!leaf) {
+                edges.add(new ClosureEdge(
+                        new TemplateApplication.TemplateId(currentTemplateId),
+                        1,
+                        useId,
+                        new TemplateApplication.TemplateId(childTemplateId),
+                        1));
+                currentTemplateId = childTemplateId;
+            }
+        }
+        return new ClosureSnapshot(
+                new TemplateClosureAuthority.OwnerScope("owner-a"),
+                new TemplateApplication.TemplateId(ROOT_ID),
+                1,
+                List.copyOf(snapshots),
+                List.copyOf(edges));
+    }
+
+    private static String templateUse(String childTemplateId, String useId, int depth) {
+        return "{\"nodeId\":\"" + capacityUuid(8, depth)
+                + "\",\"kind\":\"templateUse\",\"bindings\":[],"
+                + "\"useId\":\"" + useId + "\","
+                + "\"templateRef\":{\"templateId\":\"" + childTemplateId + "\"},"
+                + "\"contextSelector\":{\"kind\":\"empty\"},\"fills\":[],"
+                + "\"placement\":{\"type\":\"ABSOLUTE\",\"xMm\":0,\"yMm\":0,"
+                + "\"widthMode\":\"FIXED\",\"widthMm\":10,"
+                + "\"heightMode\":\"FIXED\",\"heightMm\":10}}";
     }
 
     private static TemplateSnapshot snapshot(String templateId, String designDocument) {

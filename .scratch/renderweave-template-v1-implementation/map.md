@@ -860,6 +860,11 @@ Label: wayfinder:map
   occurrence 独立计数，SKIP 不消费；MAX_INCLUSIVE `256`，第 257 个在 frame 前以 MATERIALIZATION /
   EVALUATION_BUDGET_EXCEEDED / exact limitId 零文档失败。公开 Evaluator seam 先做 255/256/257 与 SKIP
   behavioral RED→GREEN；Evaluator 51/51、Rendering 176/176 与 render/fast/server metadata 全绿。A1、J0。
+- [T138 — 强制 Template invocation depth 容量](issues/138-invocation-depth-capacity.md)
+  — **resolved / automated_verified**；root-counted path-local depth `1`，surviving TemplateUse child frame `+1`，
+  Repeat、sibling 与 SKIP 不累计。MAX_INCLUSIVE `16`；公开 Evaluator seam 以 scripted frozen chain 取得 depth 17
+  错误 seal RED，再实现 exact MATERIALIZATION / EVALUATION_BUDGET_EXCEEDED / full limitId 零文档边界；depth
+  15/16 成功。Evaluator 54/54、Rendering 179/179 与 render/fast/server metadata 全绿。A1、J0。
 
 - 改写或重解释现有 Schema/Inference v1 已提交历史，或在 dirty main 上直接实施 Template。
 - Workspace、组织/成员/分享/协作、跨 ownerScope 复制、通用 connector、任意 SQL/HTTP/文件/脚本、插件节点或运行时代码注册。
