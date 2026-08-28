@@ -39,7 +39,6 @@ import java.util.Optional;
  */
 final class Materializer {
 
-    static final int MAX_SIDECAR_ITEMS = 25_000;
     static final int MAX_ACTUAL_RESOLVE_OCCURRENCES = 2_048;
     static final int MAX_RESOURCE_ENTRIES = 2_048;
 
@@ -409,8 +408,7 @@ final class Materializer {
                 node);
         output.add(new MaterializedNode(
                 instanceShape.kind(), instanceMembers, placedItems, path));
-        recordSidecar(path, node);
-        return null;
+        return recordSidecar(path, node);
     }
 
     private static List<MaterializedNode> lowerPackedChildren(
@@ -582,8 +580,7 @@ final class Materializer {
         }
         output.add(new MaterializedNode(
                 "frame", loweredStructuralMembers("frame", node), children, path));
-        recordSidecar(path, node);
-        return null;
+        return recordSidecar(path, node);
     }
 
     private static ObjectNode loweredStructuralMembers(String kind, ObjectNode source) {
@@ -741,8 +738,7 @@ final class Materializer {
         }
         output.add(new MaterializedNode(
                 "compositionViewport", new ObjectNode(viewportMembers), viewportChildren, usePath));
-        recordSidecar(usePath, node);
-        return null;
+        return recordSidecar(usePath, node);
     }
 
     private MaterializationOutcome contextFailure(ObjectNode node, String path) {
@@ -772,8 +768,7 @@ final class Materializer {
             return childFailure;
         }
         output.add(new MaterializedNode(kind, finalMembers, children, path));
-        recordSidecar(path, node);
-        return null;
+        return recordSidecar(path, node);
     }
 
     private MaterializationOutcome reserveMaterializedNode() {
@@ -1187,12 +1182,16 @@ final class Materializer {
         return node.members().get(member) instanceof Text text ? text.value() : null;
     }
 
-    private void recordSidecar(String path, ObjectNode node) {
-        if (sidecar.size() < MAX_SIDECAR_ITEMS) {
-            var sourceNodeId = node.members().get("nodeId") instanceof Text nodeId
-                    ? nodeId.value() : null;
-            sidecar.add(new SidecarEntry(path, sourceNodeId));
+    private MaterializationFailed recordSidecar(String path, ObjectNode node) {
+        var capacityFailure = capacityFailure(requestCapacity.reserve(
+                RenderingPipelineCapacityGuard.Limit.DIAGNOSTICS_SIDECAR_ITEMS, 1));
+        if (capacityFailure != null) {
+            return capacityFailure;
         }
+        var sourceNodeId = node.members().get("nodeId") instanceof Text nodeId
+                ? nodeId.value() : null;
+        sidecar.add(new SidecarEntry(path, sourceNodeId));
+        return null;
     }
 
     private static DesignNodeValue toWireValue(DesignValue value) {

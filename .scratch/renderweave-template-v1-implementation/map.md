@@ -940,6 +940,11 @@ Label: wayfinder:map
   `99999/100000/100001` 接入 Sealer pre-entry allocation seam；三种 item 共享 request-total counter，按 final tree/
   array order 逐项预留，并与 authored vectors、其他 RenderDocument 容量及 Engine paint items 独立。
   focused 103/103、Rendering 227/227 与 render/fast metadata 全绿；A1、无 ticket-specific A2、J0。
+- [T154 — diagnostic sidecar items 预算](issues/154-diagnostic-sidecar-items-capacity.md)
+  — **resolved / automated_verified**；按 `RW-T19-S7-103` 与 cap-023 将现有 Materializer sidecar 的静默截断替换为
+  `diagnostics.sidecarItems=25000` request-total atomic reservation；第 25001 项须以 MATERIALIZATION /
+  RENDER_DIAGNOSTIC_LIMIT_EXCEEDED / exact limitId 零文档失败。focused 112/112、Rendering 229/229 与 render/fast
+  metadata 全绿；A1、无 ticket-specific A2、J0，不推进 sidecar bytes 或 LayoutTrace。
 
 - 改写或重解释现有 Schema/Inference v1 已提交历史，或在 dirty main 上直接实施 Template。
 - Workspace、组织/成员/分享/协作、跨 ownerScope 复制、通用 connector、任意 SQL/HTTP/文件/脚本、插件节点或运行时代码注册。

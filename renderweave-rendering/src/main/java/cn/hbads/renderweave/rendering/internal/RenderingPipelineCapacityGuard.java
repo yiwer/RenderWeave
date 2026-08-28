@@ -73,7 +73,12 @@ final class RenderingPipelineCapacityGuard {
                 "renderDocument.vectorEntries",
                 100_000,
                 ProblemCode.RENDER_DOCUMENT_LIMIT_EXCEEDED,
-                EvaluationStage.DOCUMENT_SEAL);
+                EvaluationStage.DOCUMENT_SEAL),
+        DIAGNOSTICS_SIDECAR_ITEMS(
+                "diagnostics.sidecarItems",
+                25_000,
+                ProblemCode.RENDER_DIAGNOSTIC_LIMIT_EXCEEDED,
+                EvaluationStage.MATERIALIZATION);
 
         private final String id;
         private final long maximumInclusive;

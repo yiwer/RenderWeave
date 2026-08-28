@@ -52,6 +52,34 @@ class MaterializerTest {
         var root = tree.root();
         assertEquals("canvas", root.kind());
         assertEquals(1, root.children().size());
+        assertEquals(2, tree.sidecar().size());
+    }
+
+    @Test
+    void diagnosticSidecarItemBudgetIsRequestTotalAndFailsInsteadOfTruncating() {
+        var exactCapacity = new RenderingPipelineCapacityGuard().newRequestTracker();
+        assertTrue(exactCapacity.reserve(
+                RenderingPipelineCapacityGuard.Limit.DIAGNOSTICS_SIDECAR_ITEMS,
+                24_999).isEmpty());
+
+        var exact = materialize(
+                canvasWith(""), Map.of(), null, absentCapability(), exactCapacity);
+        var tree = assertInstanceOf(Materializer.Materialized.class, exact).tree();
+        assertEquals(1, tree.sidecar().size());
+
+        var exceededCapacity = new RenderingPipelineCapacityGuard().newRequestTracker();
+        assertTrue(exceededCapacity.reserve(
+                RenderingPipelineCapacityGuard.Limit.DIAGNOSTICS_SIDECAR_ITEMS,
+                25_000).isEmpty());
+
+        var exceeded = materialize(
+                canvasWith(""), Map.of(), null, absentCapability(), exceededCapacity);
+        var failed = assertInstanceOf(Materializer.MaterializationFailed.class, exceeded);
+        assertEquals(EvaluationStage.MATERIALIZATION, failed.stage());
+        assertEquals(RenderingProblem.ProblemCode.RENDER_DIAGNOSTIC_LIMIT_EXCEEDED,
+                failed.problem().code());
+        assertEquals("diagnostics.sidecarItems",
+                failed.problem().limitId().orElseThrow().value());
     }
 
     @Test

@@ -3940,3 +3940,27 @@
 - cap-022 不执行 Evaluator/Sealer，故无 T153-specific A2/A3；J0 pending、J1 未批准。未重复 server/full，provider
   attempts/API Key reads/真实数据/Profile registration/push/tag/PR 均为 0。
 - 状态回填后的 resolution `fast` `.sdlc/evidence/20260829-063054-fast/` metadata 为 passed，3/3 steps 全绿。
+
+# 2026-08-29 Template-v1 T154 diagnostic sidecar items（resolved / automated_verified）
+
+- T153 已以 verified commit `1e14ecb2` 收口，worktree clean、ahead 144 且 DAG 无其他 active claim；现按
+  single-writer 登记并 claim T154。
+- `RW-T19-S7-103` / cap-023 固定 `diagnostics.sidecarItems` MAX_INCLUSIVE `25000`，observed
+  `24999/25000/25001`，REQUEST_SIDECAR / public MATERIALIZATION / RENDER_DIAGNOSTIC_LIMIT_EXCEEDED /
+  ZERO_DOCUMENT_OUTPUT。
+- 当前 `Materializer.recordSidecar` 在 list size 达到 25000 后静默跳过后续 entry；本票将真实 insertion seam 接入
+  唯一 request tracker，在构造/加入下一 entry 前 reserve，超限整请求失败，不进入 Sealer/Engine。
+- 本票只完成 sidecar item counter；sidecar canonical bytes、LayoutTrace items/bytes、公开授权诊断投影继续独立。
+  claim 时 A0、J0；provider/API Key/真实数据/费用/Profile registration/push/tag/PR 均为 0。
+- tests 先精确产生 5 个 missing-enum compile RED；catalog 接线后 guard 16/16 GREEN 且 Materializer 仅剩
+  prefix 25000 + empty Canvas 仍错误成功的 1 个 behavioral RED。四个真实 `recordSidecar` insertion point 统一在
+  entry 构造/加入前 reserve 后，guard + Materializer 38/38 GREEN。
+- prefix 24999 + empty Canvas exact-at 成功，prefix 25000 + 同一 Canvas 在下一 entry 前 exact reject；既有
+  `render:false` 回归同时证明 root + surviving sibling 计 2、pruned occurrence 计 0，不再存在静默截断。
+- focused guard/Materializer/Evaluator/architecture 112/112；受影响 reactor Schema 20、Validation 13、Template 84、
+  Asset 92、Rendering 229 全绿，`git diff --check` 通过。
+- A1 `render` `.sdlc/evidence/20260829-063808-render/`（2/2，RenderDocument replay 83/83）与 `fast`
+  `.sdlc/evidence/20260829-063856-fast/`（3/3）metadata 均 passed。cap-023 不执行 Evaluator/Materializer，故无
+  T154-specific A2/A3；J0 pending、J1 未批准。未重复 server/full，provider attempts/API Key reads/真实数据/
+  Profile registration/push/tag/PR 均为 0。
+- 状态回填后的 resolution `fast` `.sdlc/evidence/20260829-064003-fast/` metadata 为 passed，3/3 steps 全绿。

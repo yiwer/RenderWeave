@@ -354,4 +354,25 @@ class RenderingPipelineCapacityGuardTest {
         assertEquals("renderDocument.vectorEntries",
                 problem.limitId().orElseThrow().value());
     }
+
+    @Test
+    void diagnosticSidecarItemsBoundaryUsesTheFrozenProductionGuardContract() {
+        var guard = new RenderingPipelineCapacityGuard();
+
+        assertTrue(guard.admit(
+                RenderingPipelineCapacityGuard.Limit.DIAGNOSTICS_SIDECAR_ITEMS,
+                24_999).isEmpty());
+        assertTrue(guard.admit(
+                RenderingPipelineCapacityGuard.Limit.DIAGNOSTICS_SIDECAR_ITEMS,
+                25_000).isEmpty());
+
+        var problem = guard.admit(
+                        RenderingPipelineCapacityGuard.Limit.DIAGNOSTICS_SIDECAR_ITEMS,
+                        25_001)
+                .orElseThrow();
+        assertEquals(EvaluationStage.MATERIALIZATION, problem.stage());
+        assertEquals(ProblemCode.RENDER_DIAGNOSTIC_LIMIT_EXCEEDED, problem.code());
+        assertEquals("diagnostics.sidecarItems",
+                problem.limitId().orElseThrow().value());
+    }
 }
