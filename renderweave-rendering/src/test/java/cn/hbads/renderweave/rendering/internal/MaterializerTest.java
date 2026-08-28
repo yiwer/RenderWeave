@@ -625,8 +625,8 @@ class MaterializerTest {
                         .ASSETS_AND_FETCH_UNIQUE_EXACT_CONTENTS,
                 127).isEmpty());
         var exactPort = new SequencedContentPort(List.of(
-                new ResolvedContent("content-version-1", "sha256:" + "b".repeat(64)),
-                new ResolvedContent("content-version-2", "sha256:" + "b".repeat(64))));
+                new ResolvedContent("content-version-1", "sha256:" + "b".repeat(64), 1234),
+                new ResolvedContent("content-version-2", "sha256:" + "b".repeat(64), 1234)));
 
         var exact = materialize(
                 document, Map.of(), exactPort, absentCapability(), exactCapacity);
@@ -643,8 +643,8 @@ class MaterializerTest {
                         .ASSETS_AND_FETCH_UNIQUE_EXACT_CONTENTS,
                 127).isEmpty());
         var exceededPort = new SequencedContentPort(List.of(
-                new ResolvedContent("content-version-1", "sha256:" + "b".repeat(64)),
-                new ResolvedContent("content-version-2", "sha256:" + "c".repeat(64))));
+                new ResolvedContent("content-version-1", "sha256:" + "b".repeat(64), 1234),
+                new ResolvedContent("content-version-2", "sha256:" + "c".repeat(64), 1234)));
 
         var exceeded = materialize(
                 document, Map.of(), exceededPort, absentCapability(), exceededCapacity);
@@ -654,6 +654,52 @@ class MaterializerTest {
         assertEquals(RenderingProblem.ProblemCode.ASSET_BUDGET_EXCEEDED,
                 failed.problem().code());
         assertEquals("assetsAndFetch.uniqueExactContents",
+                failed.problem().limitId().orElseThrow().value());
+        assertEquals(2, exceededPort.resolves);
+        assertTrue(exceededCapacity.reserve(
+                RenderingPipelineCapacityGuard.Limit
+                        .ASSETS_AND_FETCH_RENDER_RESOURCE_ENTRIES,
+                2_047).isEmpty());
+    }
+
+    @Test
+    void occurrenceDeclaredRawByteBudgetCountsDuplicateExactContentBeforeResourceAppend() {
+        var document = canvasWith(
+                imageNode("00000000-0000-4000-8000-000000000063") + ","
+                        + imageNode("00000000-0000-4000-8000-000000000064"));
+        var exactCapacity = new RenderingPipelineCapacityGuard().newRequestTracker();
+        assertTrue(exactCapacity.reserve(
+                RenderingPipelineCapacityGuard.Limit
+                        .ASSETS_AND_FETCH_OCCURRENCE_DECLARED_RAW_BYTES,
+                2_147_483_646L).isEmpty());
+        var exactPort = new SequencedContentPort(List.of(
+                new ResolvedContent("content-version-1", "sha256:" + "d".repeat(64), 1),
+                new ResolvedContent("content-version-1", "sha256:" + "d".repeat(64), 1)));
+
+        var exact = materialize(
+                document, Map.of(), exactPort, absentCapability(), exactCapacity);
+
+        var exactTree = assertInstanceOf(Materializer.Materialized.class, exact).tree();
+        assertEquals(2, exactPort.resolves);
+        assertEquals(2, exactTree.resources().size());
+
+        var exceededCapacity = new RenderingPipelineCapacityGuard().newRequestTracker();
+        assertTrue(exceededCapacity.reserve(
+                RenderingPipelineCapacityGuard.Limit
+                        .ASSETS_AND_FETCH_OCCURRENCE_DECLARED_RAW_BYTES,
+                2_147_483_647L).isEmpty());
+        var exceededPort = new SequencedContentPort(List.of(
+                new ResolvedContent("content-version-1", "sha256:" + "d".repeat(64), 1),
+                new ResolvedContent("content-version-1", "sha256:" + "d".repeat(64), 1)));
+
+        var exceeded = materialize(
+                document, Map.of(), exceededPort, absentCapability(), exceededCapacity);
+
+        var failed = assertInstanceOf(Materializer.MaterializationFailed.class, exceeded);
+        assertEquals(EvaluationStage.ASSET_ADMISSION, failed.stage());
+        assertEquals(RenderingProblem.ProblemCode.ASSET_BUDGET_EXCEEDED,
+                failed.problem().code());
+        assertEquals("assetsAndFetch.occurrenceDeclaredRawBytes",
                 failed.problem().limitId().orElseThrow().value());
         assertEquals(2, exceededPort.resolves);
         assertTrue(exceededCapacity.reserve(
@@ -1039,7 +1085,7 @@ class MaterializerTest {
         }
     }
 
-    private record ResolvedContent(String contentVersion, String sha256) {
+    private record ResolvedContent(String contentVersion, String sha256, long byteLength) {
     }
 
     static final class SequencedContentPort implements AssetResolutionPort {
@@ -1063,7 +1109,7 @@ class MaterializerTest {
                     content.contentVersion(),
                     content.sha256(),
                     "image/png",
-                    1234,
+                    content.byteLength(),
                     "renderweave-asset-acceptance/1.0",
                     new cn.hbads.renderweave.asset.api.AssetAcceptanceAuthority.ImageDescriptor(
                             10, 10,

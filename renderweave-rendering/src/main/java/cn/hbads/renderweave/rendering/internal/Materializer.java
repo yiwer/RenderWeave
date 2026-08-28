@@ -1129,6 +1129,13 @@ final class Materializer {
                     ProblemCode.RENDER_INTERNAL_ERROR, null);
         }
         var fact = resolved.fact();
+        var occurrenceRawByteFailure = capacityFailure(requestCapacity.reserve(
+                RenderingPipelineCapacityGuard.Limit
+                        .ASSETS_AND_FETCH_OCCURRENCE_DECLARED_RAW_BYTES,
+                fact.byteLength()));
+        if (occurrenceRawByteFailure != null) {
+            return occurrenceRawByteFailure;
+        }
         var exactContentFailure = reserveExactContent(kind, fact);
         if (exactContentFailure != null) {
             return exactContentFailure;

@@ -973,6 +973,12 @@ Label: wayfinder:map
   `(kind, sha256, byteLength, mediaType)` 去重 successful ResolvedAsset exact content；第 129 个新 identity 须在
   RenderResource append/external fetch 前以 ASSET_ADMISSION / ASSET_BUDGET_EXCEEDED / exact limitId 零文档失败。
   focused 120/120、Rendering 241/241 与 render/fast metadata 全绿；A1、无 ticket-specific A2、J0。
+- [T160 — occurrence declared raw bytes 预算](issues/160-occurrence-declared-raw-bytes-capacity.md)
+  — **resolved / automated_verified**；按 `RW-T19-S8-006` 与 cap-030，将每个 successful resolved occurrence 的声明
+  `byteLength` request-total 累计接入唯一 production guard；重复 exact content/cache hit 不减免，第一个使总量
+  超过 2 GiB 的 occurrence 须在 unique-content/RenderResource append/external fetch 前以 ASSET_ADMISSION /
+  ASSET_BUDGET_EXCEEDED / exact limitId 零文档失败。focused 122/122、Rendering 243/243 与 render/fast metadata
+  全绿；A1、无 ticket-specific A2、J0。
 
 - 改写或重解释现有 Schema/Inference v1 已提交历史，或在 dirty main 上直接实施 Template。
 - Workspace、组织/成员/分享/协作、跨 ownerScope 复制、通用 connector、任意 SQL/HTTP/文件/脚本、插件节点或运行时代码注册。

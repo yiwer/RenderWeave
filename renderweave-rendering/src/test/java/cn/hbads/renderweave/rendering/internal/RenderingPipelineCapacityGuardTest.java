@@ -495,4 +495,28 @@ class RenderingPipelineCapacityGuardTest {
         assertEquals("assetsAndFetch.uniqueExactContents",
                 problem.limitId().orElseThrow().value());
     }
+
+    @Test
+    void occurrenceDeclaredRawBytesBoundaryUsesTheFrozenProductionGuardContract() {
+        var guard = new RenderingPipelineCapacityGuard();
+
+        assertTrue(guard.admit(
+                RenderingPipelineCapacityGuard.Limit
+                        .ASSETS_AND_FETCH_OCCURRENCE_DECLARED_RAW_BYTES,
+                2_147_483_647L).isEmpty());
+        assertTrue(guard.admit(
+                RenderingPipelineCapacityGuard.Limit
+                        .ASSETS_AND_FETCH_OCCURRENCE_DECLARED_RAW_BYTES,
+                2_147_483_648L).isEmpty());
+
+        var problem = guard.admit(
+                        RenderingPipelineCapacityGuard.Limit
+                                .ASSETS_AND_FETCH_OCCURRENCE_DECLARED_RAW_BYTES,
+                        2_147_483_649L)
+                .orElseThrow();
+        assertEquals(EvaluationStage.ASSET_ADMISSION, problem.stage());
+        assertEquals(ProblemCode.ASSET_BUDGET_EXCEEDED, problem.code());
+        assertEquals("assetsAndFetch.occurrenceDeclaredRawBytes",
+                problem.limitId().orElseThrow().value());
+    }
 }
