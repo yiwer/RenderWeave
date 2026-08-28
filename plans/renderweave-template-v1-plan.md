@@ -2430,6 +2430,23 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
   `ABSENT`、native stack `BUILD_NOT_AUTHORIZED`、daemon success/public Rendering API/E6/正式 `/templates` route
   `CLOSED`；最终产品 Template-v1 页面与真实功能仍未交付，`/prototype` 不计交付，未推进 J1/A3/READY。
 
+## 123. TV1-T123 执行卡
+
+- 决策：T122 以 verified commit `777f8b6f` 收口且 worktree clean 后，Renderer 产品 frontier 仍受 native/Profile
+  前置阻塞；standards audit 复核确认 Template STALE consumer 仍直接读取 Asset-owned audit table，构成可独立修复的
+  unblocked quality frontier，因此由 Codex `/root` single-writer claim。
+- Interface/seam：新增 Asset-owned `AssetAuditEventSource.readAfter` closed SPI 与 Postgres Asset adapter；Template
+  consumer 只消费 mutation facts，自己的 cursor、projection lookup、STALE transaction 和 readiness recheck 不变。
+- 禁止影响：reservation/delete 线性化、migration/OpenAPI/generated SDK/Web/Renderer/Profile/product route、
+  provider/API Key/真实数据/费用、J1/A3/READY 与 push/tag/PR。
+- TDD/gates：Asset adapter + Template consumer + architecture 先 RED，focused GREEN 后依次 `fast → server → full →
+  resolution fast`，最高 `automated_verified`。
+- 收口：Asset focused 8/8、Asset module 92/92、app focused 26/26；`fast`
+  `.sdlc/evidence/20260828-114535-fast/`、`server` `.sdlc/evidence/20260828-115650-server/`（363 tests）与
+  17-step `full` `.sdlc/evidence/20260828-123150-full/`（17/17）均 passed/A1。第一次 full 的单一 deployment
+  chunk reload 波动已由 `.sdlc/evidence/20260828-123048-e2e/` 和第二次完整 full 排除。状态为
+  `resolved / automated_verified`、J0；reservation/delete 线性化保持独立，未推进 J1/A3/READY。
+
 ## 111. TV1-T111 执行卡
 
 - 决策：T110 以 verified commit `4cbc3b68` 收口且 worktree clean 后，复核 Ticket 10 §6、Ticket 16 §8 与

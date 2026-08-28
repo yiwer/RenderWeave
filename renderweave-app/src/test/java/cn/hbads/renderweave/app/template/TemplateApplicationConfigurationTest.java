@@ -1,5 +1,6 @@
 package cn.hbads.renderweave.app.template;
 
+import cn.hbads.renderweave.asset.spi.AssetAuditEventSource;
 import cn.hbads.renderweave.schema.api.StaticSchemaAuthority;
 import cn.hbads.renderweave.template.api.TemplateApplication;
 import cn.hbads.renderweave.template.spi.OwnerScopeAuthority;
@@ -19,6 +20,7 @@ class TemplateApplicationConfigurationTest {
             .withBean(TemplatePersistence.class, () -> mock(TemplatePersistence.class))
             .withBean(StaticSchemaAuthority.class, () -> mock(StaticSchemaAuthority.class))
             .withBean(JdbcClient.class, () -> mock(JdbcClient.class))
+            .withBean(AssetAuditEventSource.class, () -> mock(AssetAuditEventSource.class))
             .withBean(PlatformTransactionManager.class, () -> mock(PlatformTransactionManager.class));
 
     @Test

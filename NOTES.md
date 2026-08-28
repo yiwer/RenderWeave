@@ -1,6 +1,14 @@
 # NOTES.md
 
 ## 当前目标与进度
+- 2026-08-28 **Template v1 implementation TV1-T123 已由 Codex `/root` single-writer 完成，状态
+  `resolved/automated_verified`**：Asset-owned `AssetAuditEventSource` 与 Postgres Asset adapter 已替代 Template 对
+  `asset_audit_event` 的直接读取；Template cursor/STALE 原子性、200 项有界 replay 与事件顺序不变，Asset API→SPI
+  残留 import 已删除。Asset 92/92、app focused 26/26、`fast` `.sdlc/evidence/20260828-114535-fast/`、`server`
+  `.sdlc/evidence/20260828-115650-server/`（363 tests）与 17-step `full`
+  `.sdlc/evidence/20260828-123150-full/`（17/17）均 passed/A1；独立 `e2e`
+  `.sdlc/evidence/20260828-123048-e2e/` 排除了首次 full 的 deployment chunk reload 波动。reservation/delete
+  线性化另票处理；J0，未推进 J1/A3/READY，provider/API Key/真实数据/费用/push/tag/PR 均为 0。
 - 2026-08-26 **Template v1 implementation TV1-T122 已由 Codex `/root` single-writer 完成，状态
   `resolved/automated_verified`**：最终交付仍是正式 `/templates` 页面、真实后端、public Rendering API、
   Authoritative Preview 与失败撤图，`/prototype` 不计交付。本票物化生产 `RenderingApplication`、Rendering-owned

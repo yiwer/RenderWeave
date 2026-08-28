@@ -4,6 +4,7 @@ import cn.hbads.renderweave.asset.api.AssetApplication;
 import cn.hbads.renderweave.asset.api.AssetResolver;
 import cn.hbads.renderweave.asset.internal.AssetModule;
 import cn.hbads.renderweave.asset.spi.AssetBlobPersistence;
+import cn.hbads.renderweave.asset.spi.AssetAuditEventSource;
 import cn.hbads.renderweave.asset.spi.AssetFetchEndpoint;
 import cn.hbads.renderweave.asset.spi.AssetOwnerScopeAuthority;
 import cn.hbads.renderweave.asset.spi.AssetPersistence;
@@ -15,6 +16,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.scheduling.annotation.Scheduled;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
@@ -30,6 +32,11 @@ import java.util.stream.Collectors;
 
 @Configuration(proxyBeanMethods = false)
 class AssetApplicationConfiguration {
+    @Bean
+    AssetAuditEventSource assetAuditEventSource(JdbcClient jdbc) {
+        return new PostgresAssetAuditEventSource(jdbc);
+    }
+
     @Bean
     @ConditionalOnProperty(
             name = "renderweave.asset.single-owner.enabled",

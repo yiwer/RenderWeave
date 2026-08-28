@@ -642,6 +642,11 @@ Label: wayfinder:map
   Rendering/app、`fast`、sequential `server` 与 17-step Goal `full` 均绿；默认无 Certified Profile 时仍在 payload
   work 前 fail closed。Profile/daemon success/public Rendering API/E6/正式 `/templates` route 与 native build 保持
   关闭，`/prototype` 不计最终交付。
+- [物化 Asset audit event outbound seam](issues/123-asset-audit-event-outbound-seam.md) —
+  **resolved / automated_verified**；Template STALE consumer 已只消费 Asset-owned `AssetAuditEventSource`，
+  `asset_audit_event` SQL 由 Asset app adapter 独占；Template cursor/STALE 事务、有界 replay 与事件顺序保持不变，
+  Asset API→SPI 残留 import 已删除。Asset 92/92、app focused 26/26、server 363 tests 与 17-step full 均绿；
+  reservation/delete 线性化、Renderer/Profile/public route 不在本票范围。
 - [验证 Product Editor 状态、恢复与权威预览架构](issues/09-validate-product-editor-architecture.md) —
   throwaway 逻辑原型（`/prototype/editor-state-model`，不进产品 route）把冻结编辑器规则编码为确定性
   fixture 状态机：10 个引导走查场景 37/37 断言 + 自由操作冒烟 + 键盘焦点检查全部通过（Playwright A1，
