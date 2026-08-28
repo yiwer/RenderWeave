@@ -49,6 +49,8 @@ class EvaluatorContractTest {
             SchemaKey.systemProvided("system-empty"), VersionTag.of("v1"));
     private static final String ROOT_ID = "00000000-0000-4000-8000-0000000000a1";
     private static final String AUTH_DIGEST = "sha256:" + "5".repeat(64);
+    private static final String DEFAULT_BUDGET_VECTOR = budgetVector(
+            4_096, 8_192, 4_096, 4_096, 2_048, 16_777_216, 16_777_216);
     private static final String PUBLIC_IMAGE_DEFINITION =
             "00000000-0000-4000-8000-0000000000d1";
     private static final String DEFAULT_IMAGE =
@@ -90,6 +92,170 @@ class EvaluatorContractTest {
                 rejected.problem().code());
         assertEquals(0, stateStore.loadCalls);
         assertEquals(0, stateStore.saveCalls);
+    }
+
+    @Test
+    void staticCapabilitySourceOverBudgetRejectsBeforeCapabilityStateWork() {
+        var stateStore = new RecordingCapabilityStateStore();
+        var runtime = new RecordingCapabilityRuntime();
+        var evaluator = evaluator(
+                closureWith(withUnusedClock(canvasWithRect())),
+                resolver(),
+                stateStore,
+                runtime,
+                budgetVector(0, 8, 4, 4, 2_048, 16_777_216, 16_777_216));
+
+        var rejected = assertInstanceOf(EvaluationOutcome.Rejected.class,
+                evaluator.evaluate(command("{\"rootDocument\":{}}")));
+
+        assertEquals(EvaluationStage.TEMPLATE_CLOSURE, rejected.stage());
+        assertEquals(RenderingProblem.ProblemCode.CAPABILITY_BUDGET_EXCEEDED,
+                rejected.problem().code());
+        assertEquals("capabilityRuntime.staticCapabilitySources",
+                rejected.problem().limitId().orElseThrow().value());
+        assertEquals(0, runtime.establishCalls);
+        assertEquals(0, stateStore.loadCalls);
+        assertEquals(0, stateStore.saveCalls);
+    }
+
+    @Test
+    void randomDemandOverBudgetRejectsBeforeCallingProviderForTheNextPosition() {
+        var runtime = new SupplyingCapabilityRuntime();
+        var evaluator = evaluator(
+                closureWith(loopRandomCapabilityDocument("[\"a\",\"b\"]")),
+                resolver(),
+                new RecordingCapabilityStateStore(),
+                runtime,
+                budgetVector(1, 8, 4, 1, 2_048, 16_777_216, 16_777_216));
+
+        var rejected = assertInstanceOf(EvaluationOutcome.Rejected.class,
+                evaluator.evaluate(command("{\"rootDocument\":{}}")));
+
+        assertEquals(EvaluationStage.MATERIALIZATION, rejected.stage());
+        assertEquals(RenderingProblem.ProblemCode.CAPABILITY_BUDGET_EXCEEDED,
+                rejected.problem().code());
+        assertEquals("capabilityRuntime.randomDemands",
+                rejected.problem().limitId().orElseThrow().value());
+        assertEquals(1, runtime.supplyCalls);
+    }
+
+    @Test
+    void totalDemandBudgetPrecedesTheSecondProviderCallAcrossDistinctAliases() {
+        var runtime = new SupplyingCapabilityRuntime();
+        var evaluator = evaluator(
+                closureWith(twoRandomAliasCapabilityDocument()),
+                resolver(),
+                new RecordingCapabilityStateStore(),
+                runtime,
+                budgetVector(2, 1, 4, 2, 2_048, 16_777_216, 16_777_216));
+
+        var rejected = assertInstanceOf(EvaluationOutcome.Rejected.class,
+                evaluator.evaluate(command("{\"rootDocument\":{}}")));
+
+        assertEquals(EvaluationStage.MATERIALIZATION, rejected.stage());
+        assertEquals(RenderingProblem.ProblemCode.CAPABILITY_BUDGET_EXCEEDED,
+                rejected.problem().code());
+        assertEquals("capabilityRuntime.totalDemands",
+                rejected.problem().limitId().orElseThrow().value());
+        assertEquals(1, runtime.supplyCalls);
+    }
+
+    @Test
+    void clockDemandBudgetCountsDistinctAliasesEvenWhenTheSnapshotValueMatches() {
+        var runtime = new SupplyingCapabilityRuntime();
+        var evaluator = evaluator(
+                closureWith(twoClockAliasCapabilityDocument()),
+                resolver(),
+                new RecordingCapabilityStateStore(),
+                runtime,
+                budgetVector(2, 8, 1, 4, 2_048, 16_777_216, 16_777_216));
+
+        var rejected = assertInstanceOf(EvaluationOutcome.Rejected.class,
+                evaluator.evaluate(command("{\"rootDocument\":{}}")));
+
+        assertEquals(EvaluationStage.MATERIALIZATION, rejected.stage());
+        assertEquals(RenderingProblem.ProblemCode.CAPABILITY_BUDGET_EXCEEDED,
+                rejected.problem().code());
+        assertEquals("capabilityRuntime.clockDemands",
+                rejected.problem().limitId().orElseThrow().value());
+        assertEquals(1, runtime.supplyCalls);
+    }
+
+    @Test
+    void positionPerDemandBudgetRejectsBeforeProviderWork() {
+        assertFirstDemandByteLimit(
+                budgetVector(2, 2, 2, 2, 1, 16_777_216, 16_777_216),
+                "capabilityRuntime.positionCanonicalBytesPerDemand",
+                0);
+    }
+
+    @Test
+    void positionTotalBudgetRejectsBeforeProviderWork() {
+        assertFirstDemandByteLimit(
+                budgetVector(2, 2, 2, 2, 2_048, 1, 16_777_216),
+                "capabilityRuntime.positionCanonicalBytesTotal",
+                0);
+    }
+
+    @Test
+    void resultDigestStreamingBudgetRejectsBeforeReturningTheProviderResult() {
+        assertFirstDemandByteLimit(
+                budgetVector(2, 2, 2, 2, 2_048, 16_777_216, 1),
+                "capabilityRuntime.resultDigestStreamingBytes",
+                1);
+    }
+
+    @Test
+    void unusedCapabilitySourceConsumesNoDemandBudget() {
+        var runtime = new SupplyingCapabilityRuntime();
+        var evaluator = evaluator(
+                closureWith(withUnusedRandom(canvasWithRect())),
+                resolver(),
+                new RecordingCapabilityStateStore(),
+                runtime,
+                budgetVector(1, 0, 0, 0, 0, 0, 0));
+
+        assertInstanceOf(EvaluationOutcome.SealedDocument.class,
+                evaluator.evaluate(command("{\"rootDocument\":{}}")));
+        assertEquals(0, runtime.supplyCalls);
+    }
+
+    @Test
+    void invocationMemoAcrossLoopConsumersReservesOnlyOneDemand() {
+        var runtime = new SupplyingCapabilityRuntime();
+        var evaluator = evaluator(
+                closureWith(invocationRandomCapabilityDocument("[\"a\",\"b\"]")),
+                resolver(),
+                new RecordingCapabilityStateStore(),
+                runtime,
+                budgetVector(1, 1, 0, 1, 2_048, 2_048, 2_048));
+
+        assertInstanceOf(EvaluationOutcome.SealedDocument.class,
+                evaluator.evaluate(command("{\"rootDocument\":{}}")));
+        assertEquals(1, runtime.supplyCalls);
+    }
+
+    private static void assertFirstDemandByteLimit(
+            String effectiveBudgetVector,
+            String expectedLimitId,
+            int expectedSupplyCalls
+    ) {
+        var runtime = new SupplyingCapabilityRuntime();
+        var evaluator = evaluator(
+                closureWith(twoRandomAliasCapabilityDocument()),
+                resolver(),
+                new RecordingCapabilityStateStore(),
+                runtime,
+                effectiveBudgetVector);
+
+        var rejected = assertInstanceOf(EvaluationOutcome.Rejected.class,
+                evaluator.evaluate(command("{\"rootDocument\":{}}")));
+
+        assertEquals(EvaluationStage.MATERIALIZATION, rejected.stage());
+        assertEquals(RenderingProblem.ProblemCode.CAPABILITY_BUDGET_EXCEEDED,
+                rejected.problem().code());
+        assertEquals(expectedLimitId, rejected.problem().limitId().orElseThrow().value());
+        assertEquals(expectedSupplyCalls, runtime.supplyCalls);
     }
 
     @Test
@@ -180,7 +346,7 @@ class EvaluatorContractTest {
                     }
                 },
                 new RecordingCapabilityStateStore(),
-                "{}",
+                DEFAULT_BUDGET_VECTOR,
                 resolver(),
                 Clock.fixed(Instant.ofEpochMilli(1_000L), ZoneOffset.UTC));
 
@@ -260,7 +426,7 @@ class EvaluatorContractTest {
                 assets,
                 scriptedRuntime(),
                 new RecordingCapabilityStateStore(),
-                "{}",
+                DEFAULT_BUDGET_VECTOR,
                 resolver(),
                 Clock.fixed(Instant.ofEpochMilli(1_000L), ZoneOffset.UTC));
 
@@ -321,7 +487,7 @@ class EvaluatorContractTest {
                 null,
                 scriptedRuntime(),
                 new RecordingCapabilityStateStore(),
-                "{}",
+                DEFAULT_BUDGET_VECTOR,
                 resolver(),
                 Clock.fixed(Instant.ofEpochMilli(1_000L), ZoneOffset.UTC));
 
@@ -349,7 +515,7 @@ class EvaluatorContractTest {
                 null,
                 scriptedRuntime(),
                 new RecordingCapabilityStateStore(),
-                "{}",
+                DEFAULT_BUDGET_VECTOR,
                 resolver(),
                 Clock.fixed(Instant.ofEpochMilli(1_000L), ZoneOffset.UTC));
 
@@ -443,7 +609,7 @@ class EvaluatorContractTest {
                 assets,
                 scriptedRuntime(),
                 new RecordingCapabilityStateStore(),
-                "{}",
+                DEFAULT_BUDGET_VECTOR,
                 resolver(),
                 Clock.fixed(now, ZoneOffset.UTC));
 
@@ -511,7 +677,7 @@ class EvaluatorContractTest {
                 null,
                 scriptedRuntime(),
                 new RecordingCapabilityStateStore(),
-                "{}",
+                DEFAULT_BUDGET_VECTOR,
                 resolver(),
                 Clock.fixed(Instant.ofEpochMilli(1_000L), ZoneOffset.UTC));
     }
@@ -530,7 +696,7 @@ class EvaluatorContractTest {
                 assets,
                 runtime,
                 stateStore,
-                "{\"capabilityRuntime\":{\"initializationAttempts\":3}}",
+                DEFAULT_BUDGET_VECTOR,
                 resolver,
                 Clock.fixed(Instant.ofEpochMilli(1_000L), ZoneOffset.UTC));
     }
@@ -540,6 +706,15 @@ class EvaluatorContractTest {
             ValidationTargetResolver resolver,
             CapabilityStateStore stateStore,
             RenderingCapabilityRuntime runtime) {
+        return evaluator(closure, resolver, stateStore, runtime, DEFAULT_BUDGET_VECTOR);
+    }
+
+    private static cn.hbads.renderweave.rendering.internal.CanonicalEvaluator evaluator(
+            ClosureSnapshot closure,
+            ValidationTargetResolver resolver,
+            CapabilityStateStore stateStore,
+            RenderingCapabilityRuntime runtime,
+            String effectiveBudgetVector) {
         return new cn.hbads.renderweave.rendering.internal.CanonicalEvaluator(
                 scriptedClosure(closure),
                 TemplateModule.designSemanticAuthority(),
@@ -547,9 +722,29 @@ class EvaluatorContractTest {
                 null,
                 runtime,
                 stateStore,
-                "{\"capabilityRuntime\":{\"initializationAttempts\":3}}",
+                effectiveBudgetVector,
                 resolver,
                 Clock.fixed(Instant.ofEpochMilli(1_000L), ZoneOffset.UTC));
+    }
+
+    private static String budgetVector(
+            long staticSources,
+            long totalDemands,
+            long clockDemands,
+            long randomDemands,
+            long positionBytesPerDemand,
+            long positionBytesTotal,
+            long resultDigestStreamingBytes
+    ) {
+        return "{\"groups\":{\"capabilityRuntime\":{\"limits\":{"
+                + "\"staticCapabilitySources\":" + staticSources + ","
+                + "\"totalDemands\":" + totalDemands + ","
+                + "\"clockDemands\":" + clockDemands + ","
+                + "\"randomDemands\":" + randomDemands + ","
+                + "\"positionCanonicalBytesPerDemand\":" + positionBytesPerDemand + ","
+                + "\"positionCanonicalBytesTotal\":" + positionBytesTotal + ","
+                + "\"resultDigestStreamingBytes\":" + resultDigestStreamingBytes
+                + "}}}}";
     }
 
     private static final class RecordingCapabilityRuntime implements RenderingCapabilityRuntime {
@@ -617,6 +812,38 @@ class EvaluatorContractTest {
 
         private static Runtime provider() {
             return (capability, operation, callPosition) -> new ProviderUnavailable();
+        }
+    }
+
+    private static final class SupplyingCapabilityRuntime implements RenderingCapabilityRuntime {
+        private int supplyCalls;
+
+        @Override
+        public Established establish(CapabilityRequirements requirements) {
+            return new Established(provider(), new byte[]{1});
+        }
+
+        @Override
+        public Runtime restore(CapabilityRequirements requirements, byte[] sealedState) {
+            return provider();
+        }
+
+        @Override
+        public Set<CapabilityContract> supportedContracts() {
+            return Set.of(CapabilityContract.CLOCK_1_0, CapabilityContract.RANDOM_1_0);
+        }
+
+        private Runtime provider() {
+            return (capability, operation, callPosition) -> {
+                supplyCalls++;
+                return switch (capability + "/" + operation) {
+                    case "CLOCK/UTC_DATE" -> new Supplied(new DateResult("2026-08-28"));
+                    case "CLOCK/UTC_TIME" -> new Supplied(new TimeResult("22:00:00"));
+                    case "RANDOM/UNIFORM_DECIMAL_0_1" ->
+                            new Supplied(new DecimalResult(new BigDecimal("5")));
+                    default -> new ProviderUnavailable();
+                };
+            };
         }
     }
 
@@ -764,6 +991,95 @@ class EvaluatorContractTest {
                 + "\"inputs\":[{\"alias\":\"draw\",\"source\":{\"kind\":\"capability\","
                 + "\"capability\":\"RANDOM\",\"operation\":\"UNIFORM_DECIMAL_0_1\"}}],"
                 + "\"source\":\"if(input.draw < 0.5, 'A', 'B')\"}]");
+    }
+
+    private static String loopRandomCapabilityDocument(String items) {
+        var definitionId = "00000000-0000-4000-8000-0000000000e3";
+        var loopId = "00000000-0000-4000-8000-0000000000b1";
+        return "{\"dslVersion\":\"renderweave-design/1.0\","
+                + "\"expressionProfile\":\"renderweave-expression/1.0\","
+                + "\"displayName\":\"Capability budget\",\"definitions\":[{"
+                + "\"definitionId\":\"" + definitionId + "\",\"kind\":\"expression\","
+                + "\"displayName\":\"Draw\",\"domain\":{\"kind\":\"loop\","
+                + "\"loopId\":\"" + loopId + "\"},\"output\":\"decimal\","
+                + "\"inputs\":[{\"alias\":\"draw\",\"source\":{\"kind\":\"capability\","
+                + "\"capability\":\"RANDOM\",\"operation\":\"UNIFORM_DECIMAL_0_1\"}}],"
+                + "\"source\":\"input.draw\"}],\"designRoot\":{"
+                + "\"nodeId\":\"00000000-0000-4000-8000-000000000001\","
+                + "\"kind\":\"canvas\",\"widthMm\":210,\"heightMm\":297,\"bindings\":[],"
+                + "\"children\":[{\"nodeId\":\"00000000-0000-4000-8000-000000000092\","
+                + "\"kind\":\"repeat\",\"bindings\":[],\"placement\":{\"type\":\"ABSOLUTE\","
+                + "\"xMm\":0,\"yMm\":0,\"widthMode\":\"FIXED\",\"widthMm\":20,"
+                + "\"heightMode\":\"FIXED\",\"heightMm\":20},"
+                + "\"loopId\":\"" + loopId + "\",\"absentPolicy\":\"ERROR\","
+                + "\"items\":{\"kind\":\"literal\",\"valueType\":{\"type\":\"list\","
+                + "\"items\":\"text\"},\"value\":" + items + "},"
+                + "\"itemLayout\":{\"kind\":\"STACK\",\"direction\":\"ROW\"},"
+                + "\"instanceLayout\":{\"kind\":\"STACK\",\"direction\":\"ROW\"},"
+                + "\"children\":[{\"nodeId\":\"00000000-0000-4000-8000-000000000093\","
+                + "\"kind\":\"rect\",\"bindings\":[{"
+                + "\"bindingId\":\"00000000-0000-4000-8000-0000000000f1\","
+                + "\"targetPropertyRef\":{\"rootPropertyId\":\"placement\","
+                + "\"selectors\":[{\"kind\":\"member\",\"name\":\"widthMm\"}]},"
+                + "\"source\":{\"kind\":\"definition\",\"definitionId\":\""
+                + definitionId + "\"}}],\"placement\":{\"type\":\"PACK\","
+                + "\"widthMode\":\"FIXED\",\"widthMm\":10,\"heightMode\":\"FIXED\","
+                + "\"heightMm\":10},\"fill\":{\"color\":\"#FF000000\"}}]}]}}";
+    }
+
+    private static String invocationRandomCapabilityDocument(String items) {
+        return loopRandomCapabilityDocument(items).replace(
+                "\"domain\":{\"kind\":\"loop\","
+                        + "\"loopId\":\"00000000-0000-4000-8000-0000000000b1\"}",
+                "\"domain\":\"invocation\"");
+    }
+
+    private static String twoRandomAliasCapabilityDocument() {
+        var definitionId = "00000000-0000-4000-8000-0000000000e4";
+        return canvasWithRect()
+                .replace("\"definitions\":[]", "\"definitions\":[{"
+                        + "\"definitionId\":\"" + definitionId + "\","
+                        + "\"kind\":\"expression\",\"displayName\":\"Two draws\","
+                        + "\"domain\":\"invocation\",\"output\":\"decimal\","
+                        + "\"inputs\":["
+                        + "{\"alias\":\"first\",\"source\":{\"kind\":\"capability\","
+                        + "\"capability\":\"RANDOM\","
+                        + "\"operation\":\"UNIFORM_DECIMAL_0_1\"}},"
+                        + "{\"alias\":\"second\",\"source\":{\"kind\":\"capability\","
+                        + "\"capability\":\"RANDOM\","
+                        + "\"operation\":\"UNIFORM_DECIMAL_0_1\"}}],"
+                        + "\"source\":\"input.first + input.second\"}]")
+                .replace("\"kind\":\"rect\",\"bindings\":[]", "\"kind\":\"rect\","
+                        + "\"bindings\":[{"
+                        + "\"bindingId\":\"00000000-0000-4000-8000-0000000000f4\","
+                        + "\"targetPropertyRef\":{\"rootPropertyId\":\"placement\","
+                        + "\"selectors\":[{\"kind\":\"member\","
+                        + "\"name\":\"widthMm\"}]},"
+                        + "\"source\":{\"kind\":\"definition\","
+                        + "\"definitionId\":\"" + definitionId + "\"}}]");
+    }
+
+    private static String twoClockAliasCapabilityDocument() {
+        var definitionId = "00000000-0000-4000-8000-0000000000e5";
+        return canvasWithRect()
+                .replace("\"definitions\":[]", "\"definitions\":[{"
+                        + "\"definitionId\":\"" + definitionId + "\","
+                        + "\"kind\":\"expression\",\"displayName\":\"Two dates\","
+                        + "\"domain\":\"invocation\",\"output\":\"decimal\","
+                        + "\"inputs\":["
+                        + "{\"alias\":\"first\",\"source\":{\"kind\":\"capability\","
+                        + "\"capability\":\"CLOCK\",\"operation\":\"UTC_DATE\"}},"
+                        + "{\"alias\":\"second\",\"source\":{\"kind\":\"capability\","
+                        + "\"capability\":\"CLOCK\",\"operation\":\"UTC_DATE\"}}],"
+                        + "\"source\":\"if(input.first == input.second, 10, 10)\"}]")
+                .replace("\"kind\":\"rect\",\"bindings\":[]", "\"kind\":\"rect\","
+                        + "\"bindings\":[{"
+                        + "\"bindingId\":\"00000000-0000-4000-8000-0000000000f5\","
+                        + "\"targetPropertyRef\":{\"rootPropertyId\":\"placement\","
+                        + "\"selectors\":[{\"kind\":\"member\","
+                        + "\"name\":\"widthMm\"}]},"
+                        + "\"source\":{\"kind\":\"definition\","
+                        + "\"definitionId\":\"" + definitionId + "\"}}]");
     }
 
     private static final class RejectingAssetPort implements AssetResolutionPort {

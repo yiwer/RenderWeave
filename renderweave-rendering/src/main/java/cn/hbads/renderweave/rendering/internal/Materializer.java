@@ -207,10 +207,11 @@ final class Materializer {
         if (node.members().get("render") instanceof Bool render && !render.value()) {
             return null;
         }
-        var evaluatedNode = overlayBindings(node, snapshot, scope);
-        if (evaluatedNode == null) {
-            return failed(EvaluationStage.MATERIALIZATION, ProblemCode.EVALUATION_FAILED, null);
+        var overlay = overlayBindings(node, snapshot, scope);
+        if (overlay instanceof OverlayFailed overlayFailed) {
+            return overlayFailed.failure();
         }
+        var evaluatedNode = ((Overlaid) overlay).node();
         if (evaluatedNode.members().get("render") instanceof Bool render && !render.value()) {
             return null;
         }
@@ -233,8 +234,8 @@ final class Materializer {
             return failed(EvaluationStage.MATERIALIZATION, ProblemCode.RENDER_INTERNAL_ERROR, null);
         }
         var condition = scope.definitions().resolveSource(conditionWire, scope);
-        if (condition instanceof EvalError) {
-            return failed(EvaluationStage.MATERIALIZATION, ProblemCode.EVALUATION_FAILED, null);
+        if (condition instanceof EvalError error) {
+            return valueFailure(error);
         }
         boolean flag;
         if (condition instanceof EvalAbsent) {
@@ -264,8 +265,8 @@ final class Materializer {
             return failed(EvaluationStage.MATERIALIZATION, ProblemCode.RENDER_INTERNAL_ERROR, null);
         }
         var items = scope.definitions().resolveSource(itemsWire, scope);
-        if (items instanceof EvalError) {
-            return failed(EvaluationStage.MATERIALIZATION, ProblemCode.EVALUATION_FAILED, null);
+        if (items instanceof EvalError error) {
+            return valueFailure(error);
         }
         List<DesignValue> itemList;
         if (items instanceof EvalAbsent) {
@@ -585,9 +586,8 @@ final class Materializer {
                 }
                 var value = scope.definitions().resolveSource(
                         fillObject.members().get("source"), scope);
-                if (value instanceof EvalError) {
-                    return failed(EvaluationStage.MATERIALIZATION,
-                            ProblemCode.EVALUATION_FAILED, null);
+                if (value instanceof EvalError error) {
+                    return valueFailure(error);
                 }
                 if (value instanceof EvalAbsent) {
                     continue;
@@ -677,41 +677,59 @@ final class Materializer {
     // Binding overlay + re-admission
     // ------------------------------------------------------------------
 
-    private ObjectNode overlayBindings(
+    private sealed interface OverlayOutcome permits Overlaid, OverlayFailed {
+    }
+
+    private record Overlaid(ObjectNode node) implements OverlayOutcome {
+    }
+
+    private record OverlayFailed(MaterializationFailed failure) implements OverlayOutcome {
+    }
+
+    private OverlayOutcome overlayBindings(
             ObjectNode node, TemplateSnapshot snapshot, InvocationScope scope) {
         var bindings = node.members().get("bindings");
         if (!(bindings instanceof ArrayNode bindingList) || bindingList.items().isEmpty()) {
-            return node;
+            return new Overlaid(node);
         }
         var members = new LinkedHashMap<>(node.members());
         for (var binding : bindingList.items()) {
             if (!(binding instanceof ObjectNode bindingObject)) {
-                return null;
+                return new OverlayFailed(failed(
+                        EvaluationStage.MATERIALIZATION, ProblemCode.EVALUATION_FAILED, null));
             }
             var targetRef = bindingObject.members().get("targetPropertyRef");
             var sourceWire = bindingObject.members().get("source");
             if (!(targetRef instanceof ObjectNode ref) || sourceWire == null) {
-                return null;
+                return new OverlayFailed(failed(
+                        EvaluationStage.MATERIALIZATION, ProblemCode.EVALUATION_FAILED, null));
             }
             var value = scope.definitions().resolveSource(sourceWire, scope);
+            if (value instanceof EvalError error) {
+                return new OverlayFailed(valueFailure(error));
+            }
             if (!(value instanceof EvalValue evalValue)) {
-                return null;
+                return new OverlayFailed(failed(
+                        EvaluationStage.MATERIALIZATION, ProblemCode.EVALUATION_FAILED, null));
             }
             if (!(ref.members().get("rootPropertyId") instanceof Text rootProperty)) {
-                return null;
+                return new OverlayFailed(failed(
+                        EvaluationStage.MATERIALIZATION, ProblemCode.EVALUATION_FAILED, null));
             }
             var applied = applyOverlay(
                     members, rootProperty.value(), ref, toWireValue(evalValue.value()));
             if (applied == null) {
-                return null;
+                return new OverlayFailed(failed(
+                        EvaluationStage.MATERIALIZATION, ProblemCode.EVALUATION_FAILED, null));
             }
             members = applied;
         }
         var overlaid = new ObjectNode(members);
         if (!readmitWith(snapshot, node, overlaid)) {
-            return null;
+            return new OverlayFailed(failed(
+                    EvaluationStage.MATERIALIZATION, ProblemCode.EVALUATION_FAILED, null));
         }
-        return overlaid;
+        return new Overlaid(overlaid);
     }
 
     private LinkedHashMap<String, DesignNodeValue> applyOverlay(
@@ -1082,6 +1100,17 @@ final class Materializer {
         return new MaterializationFailed(stage, new RenderingProblem(
                 code, stage, Optional.empty(),
                 limitId == null ? Optional.empty() : Optional.of(new LimitId(limitId))));
+    }
+
+    private static MaterializationFailed valueFailure(EvalError error) {
+        return switch (error.failure().kind()) {
+            case CAPABILITY_BUDGET_EXCEEDED -> failed(
+                    EvaluationStage.MATERIALIZATION,
+                    ProblemCode.CAPABILITY_BUDGET_EXCEEDED,
+                    error.failure().limitId());
+            default -> failed(
+                    EvaluationStage.MATERIALIZATION, ProblemCode.EVALUATION_FAILED, null);
+        };
     }
 
     /** invocation frame：typed context、有效 Custom map、definition 引擎与活跃 loop frames。 */

@@ -3383,3 +3383,28 @@
   保留。A2 仅来自未变轴独立重放、无 T130-specific issued replay；A3 无，J0、J1 未批准。provider attempts/
   API Key reads/reservations/cost/真实数据/migration/OpenAPI/Profile/push/tag/PR 均为 0。
 - 状态回填后的 resolution `fast` `.sdlc/evidence/20260828-223446-fast/` 为 3/3 steps passed。
+
+# 2026-08-28 Template-v1 T131 Capability demand capacity（resolved / automated_verified）
+
+- T130 已以 verified commit `192f72ee` 收口且 worktree clean；tracker 无其他 claimed writer。复算冻结 Ticket 14
+  §6、Ticket 19 capability matrix 与 T129 residual 后，确认首个 unblocked 缺口是 static source、total/kind
+  demand、position canonical bytes 与 result-digest streaming bytes 七个上限仍未执行，且 Materializer 会丢失
+  capability capacity failure taxonomy。
+- 已按 single-writer 登记并 claim T131：只经 `Evaluator.evaluate` 公共 seam 做 RED→GREEN，以 Rendering
+  internal 深容量 module 集中解析 effective budget 子向量并执行 request-local 原子预留；不扩散计数器到
+  Materializer/DefinitionEngine。初始化重试、state-record bytes、Random rejection fault schedule 与 Ticket 19
+  records 另票；不新增 route/OpenAPI/migration/Profile，不运行 provider，不读取 API Key，不发送真实数据，
+  不 push/tag/PR。当前 A0、J0。
+- T131 已实现并进入 `resolved / automated_verified`：新增单一 Rendering-internal `CapabilityBudget`，从已绑定
+  fingerprint 的 effective vector fail-closed 解析七个 exact limit；static source 在 state/input 前准入，动态
+  首次 demand 在 provider 前原子预留 total/kind/position bytes，并在结果返回 Expression 前预留 uint64 frame +
+  canonical result entry。Binding/Conditional/Repeat/TemplateUse fill 均保留 `CAPABILITY_BUDGET_EXCEEDED` 与 exact
+  limitId；lazy branch、未物化 Definition 与 memo hit 不重复计数。
+- 真实 TDD：static over-limit 首次 RED 为实际 SealedDocument，dynamic random over-limit 首次 RED 仍调用第二个
+  position；实现后 focused `EvaluatorContractTest` 32/32、Rendering module 157/157、生产 Spring assembly 9/9。
+- A1：`render` `.sdlc/evidence/20260828-231330-render/`、`fast`
+  `.sdlc/evidence/20260828-231420-fast/`、顺序 `server`
+  `.sdlc/evidence/20260828-231456-server/` metadata 均 `passed`。T131 不改 API/Web/migration/Profile，故不重复跑
+  已包含全 reactor clean server 的 `full`。A2 仅为未变 Renderer 轴独立 replay、无 T131-specific issued replay；
+  A3 无，J0/J1 未批准。provider attempts/API Key reads/reservations/cost/真实数据/push/tag/PR 均为 0。
+- 状态回填后的 resolution `fast` `.sdlc/evidence/20260828-233332-fast/` metadata 为 `passed`。

@@ -35,6 +35,7 @@ final class CanonicalEvaluator implements Evaluator {
     private final RenderingCapabilityRuntime capabilities;
     private final CapabilityStateStore capabilityStates;
     private final String effectiveBudgetVector;
+    private final CapabilityBudget capabilityBudget;
     private final ValidationTargetResolver validationResolver;
     private final Clock clock;
 
@@ -56,6 +57,7 @@ final class CanonicalEvaluator implements Evaluator {
         this.capabilities = Objects.requireNonNull(capabilities, "capabilities");
         this.capabilityStates = Objects.requireNonNull(capabilityStates, "capabilityStates");
         this.effectiveBudgetVector = Objects.requireNonNull(effectiveBudgetVector, "effectiveBudgetVector");
+        this.capabilityBudget = CapabilityBudget.fromEffectiveVector(effectiveBudgetVector);
         this.validationResolver = Objects.requireNonNull(validationResolver, "validationResolver");
         this.clock = Objects.requireNonNull(clock, "clock");
     }
@@ -127,6 +129,12 @@ final class CanonicalEvaluator implements Evaluator {
                     ProblemCode.RENDER_INTERNAL_ERROR, null);
         }
         var declarations = (CapabilityDeclarations.Declared) declarationOutcome;
+        var staticCapabilityLimit = capabilityBudget.admitStaticSources(declarations.sourceCount());
+        if (staticCapabilityLimit != null) {
+            return rejected(EvaluationStage.TEMPLATE_CLOSURE,
+                    ProblemCode.CAPABILITY_BUDGET_EXCEEDED,
+                    staticCapabilityLimit.limitId());
+        }
 
         var admission = InputAdmission.admit(
                 command.rawRenderInputUtf8(), rootSnapshot, validationResolver);
@@ -160,7 +168,7 @@ final class CanonicalEvaluator implements Evaluator {
             return rejected(EvaluationStage.CAPABILITY_STATE, rejected.code(), null);
         }
         var runtime = CapabilityValues.wrapping(
-                ((CapabilityRuntimeReady) runtimeOutcome).runtime());
+                ((CapabilityRuntimeReady) runtimeOutcome).runtime(), capabilityBudget.newTracker());
         var audience = new AssetResolutionPort.RendererAudience(command.rendererProfile());
         var materialization = Materializer.materialize(
                 admittedAssets,

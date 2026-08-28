@@ -59,17 +59,22 @@ final class CapabilityValues {
 
     private final CapabilityState state;
     private final cn.hbads.renderweave.rendering.spi.RenderingCapabilityRuntime.Runtime externalRuntime;
+    private final CapabilityBudget.Tracker budget;
     private final List<DemandEntry> demands = new ArrayList<>();
+    private final List<byte[]> framedEntries = new ArrayList<>();
 
-    private CapabilityValues(CapabilityState state) {
+    private CapabilityValues(CapabilityState state, CapabilityBudget.Tracker budget) {
         this.state = state;
         this.externalRuntime = null;
+        this.budget = Objects.requireNonNull(budget, "budget");
     }
 
     private CapabilityValues(
-            cn.hbads.renderweave.rendering.spi.RenderingCapabilityRuntime.Runtime externalRuntime) {
+            cn.hbads.renderweave.rendering.spi.RenderingCapabilityRuntime.Runtime externalRuntime,
+            CapabilityBudget.Tracker budget) {
         this.state = null;
         this.externalRuntime = externalRuntime;
+        this.budget = Objects.requireNonNull(budget, "budget");
     }
 
     static CapabilityState establish(Clock clock, SecureRandom entropy) {
@@ -80,13 +85,14 @@ final class CapabilityValues {
     }
 
     static CapabilityValues forState(CapabilityState state) {
-        return new CapabilityValues(state);
+        return new CapabilityValues(state, CapabilityBudget.frozen().newTracker());
     }
 
     /** 包装外部 spi runtime：demand 记账与 result digest 留在 Rendering 内部。 */
     static CapabilityValues wrapping(
-            cn.hbads.renderweave.rendering.spi.RenderingCapabilityRuntime.Runtime runtime) {
-        return new CapabilityValues(runtime);
+            cn.hbads.renderweave.rendering.spi.RenderingCapabilityRuntime.Runtime runtime,
+            CapabilityBudget.Tracker budget) {
+        return new CapabilityValues(runtime, budget);
     }
 
     record DemandEntry(String capability, String operation, byte[] callPosition, DesignValue result) {
@@ -105,6 +111,13 @@ final class CapabilityValues {
     }
 
     private EvalOutcome supply(String capability, String operation, byte[] callPosition) {
+        if (!("CLOCK".equals(capability) || "RANDOM".equals(capability))) {
+            return new EvalError(new RuntimeFailure(RuntimeFailureKind.TYPE_FAULT, null));
+        }
+        var capacity = budget.reserveDemand(capability, callPosition.length);
+        if (capacity != null) {
+            return capabilityBudgetExceeded(capacity.limitId());
+        }
         if (externalRuntime != null) {
             var outcome = externalRuntime.supply(capability, operation, callPosition);
             if (outcome
@@ -151,8 +164,20 @@ final class CapabilityValues {
 
     private EvalOutcome record(DesignValue result, String capability, String operation,
                                byte[] callPosition) {
-        demands.add(new DemandEntry(capability, operation, callPosition, result));
+        var demand = new DemandEntry(capability, operation, callPosition, result);
+        var entry = canonicalEntry(demand).getBytes(StandardCharsets.UTF_8);
+        var capacity = budget.reserveResultDigestBytes(8L + entry.length);
+        if (capacity != null) {
+            return capabilityBudgetExceeded(capacity.limitId());
+        }
+        demands.add(demand);
+        framedEntries.add(entry);
         return new EvalValue(result);
+    }
+
+    private static EvalError capabilityBudgetExceeded(String limitId) {
+        return new EvalError(new RuntimeFailure(
+                RuntimeFailureKind.CAPABILITY_BUDGET_EXCEEDED, limitId));
     }
 
     static String utcDate(long epochSecond) {
@@ -180,8 +205,7 @@ final class CapabilityValues {
      */
     String capabilityResultDigest() {
         var framed = new java.io.ByteArrayOutputStream();
-        for (var demand : demands) {
-            var entry = canonicalEntry(demand).getBytes(StandardCharsets.UTF_8);
+        for (var entry : framedEntries) {
             framed.writeBytes(lengthFrame(entry.length));
             framed.writeBytes(entry);
         }

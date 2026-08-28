@@ -4772,3 +4772,29 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
   reads/reservations/cost=0。A2 仅为未变轴独立重放、无 ticket-specific issued replay；A3 无，J0、J1 未批准。
   未新增 migration/OpenAPI/Profile，未发送真实数据，未 push/tag/PR。
 - 状态回填后的 resolution `fast` `20260828-223446-fast` 为 3/3 steps passed。
+
+## 131. TV1-T131 执行卡
+
+- 状态：`resolved / automated_verified`；single writer: Codex；blocked by T21/T125/T128/T129/T130（均 resolved）。
+- 决策：T130 verified commit `192f72ee` 后 worktree clean，复算冻结 Ticket 14 §6、Ticket 19 capability
+  matrix 与 T129 residual，确认当前 `CapabilityValues` 只追加 demand entry，未执行 static source、total/kind、
+  position canonical bytes 与 result-digest streaming bytes 七个上限；Materializer 还会把 capability runtime
+  failure 抹平成 `EVALUATION_FAILED`。该缺口不依赖 native Renderer、Profile、外部授权或产品语义变化，
+  因此登记为当前 single-writer frontier。
+- seam：公开测试只经过 `Evaluator.evaluate`；Rendering internal 一个深容量 module 解析已进入 fingerprint 的
+  effective capability budget 子向量，并封装 closure static admission 与 request-local 原子预留。
+  Materializer/DefinitionEngine 不暴露上限或计数器，只传播 closed capability failure。
+- TDD：static admission 与首次 dynamic demand 分别取得真实 RED 后 GREEN；低预算 exact count 成功/over-limit、
+  per-position/position-total/result-streaming over-limit、provider 调用边界、first-fail、memo/lazy 均从公开
+  `Evaluator.evaluate` 证明。初始化重试、state-record bytes、Random rejection fault schedule 与正式 Ticket 19
+  records 留给后续独立票。
+- 实现：`CapabilityBudget` fail-closed 解析并验证已绑定 fingerprint 的 exact capability 子向量；request-local
+  tracker 在 provider 前原子预留 total/kind/position，在向 Expression 返回结果前预留 uint64-framed canonical
+  result entry。四类 Materializer consumer 统一保留 capability budget taxonomy 与 exact limitId。
+- 验证：focused `EvaluatorContractTest` 32/32、Rendering module 157/157、生产 Spring assembly 9/9；A1 `render`
+  `.sdlc/evidence/20260828-231330-render/`、`fast` `.sdlc/evidence/20260828-231420-fast/`、顺序 `server`
+  `.sdlc/evidence/20260828-231456-server/` metadata 均 `passed`。本票不改 API/Web/migration/Profile，`full` 会
+  重复已完成的全 reactor clean server，故不追加；最高 `automated_verified`，A3/J1/READY 不推进。
+- provider attempts/API Key reads/reservations/cost/真实数据/push/tag/PR 均为 0；A2 仅为未变 Renderer 轴独立
+  replay、无 T131-specific issued replay，A3 无，J0/J1 未批准。
+- 状态回填后的 resolution `fast` `.sdlc/evidence/20260828-233332-fast/` metadata 为 `passed`。
