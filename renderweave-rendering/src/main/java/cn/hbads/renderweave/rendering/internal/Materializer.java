@@ -1,5 +1,6 @@
 package cn.hbads.renderweave.rendering.internal;
 
+import cn.hbads.renderweave.asset.api.AssetAcceptanceAuthority.AssetKind;
 import cn.hbads.renderweave.rendering.api.EvaluationStage;
 import cn.hbads.renderweave.rendering.api.Evaluator.RenderRequestId;
 import cn.hbads.renderweave.rendering.api.RenderingProblem;
@@ -24,11 +25,13 @@ import cn.hbads.renderweave.template.api.TemplateClosureAuthority.TemplateSnapsh
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * MATERIALIZATION/ASSET_RESOLUTION（冻结规格 stage 7）：在 {@link AssetAdmission} 成功后执行
@@ -62,6 +65,14 @@ final class Materializer {
             int rows,
             int columns,
             long generatedEntries
+    ) {
+    }
+
+    private record ExactContentIdentity(
+            AssetKind kind,
+            String sha256,
+            long byteLength,
+            String mediaType
     ) {
     }
 
@@ -109,6 +120,7 @@ final class Materializer {
     private final Map<String, DefinitionEngine> enginesByTemplate = new HashMap<>();
     private final List<ResourceEntry> resources = new ArrayList<>();
     private final List<SidecarEntry> sidecar = new ArrayList<>();
+    private final Set<ExactContentIdentity> exactContents = new HashSet<>();
     private final RenderingPipelineCapacityGuard.RequestTracker requestCapacity;
     private int occurrences;
     private int nodes;
@@ -1077,9 +1089,7 @@ final class Materializer {
             return failed(EvaluationStage.ASSET_RESOLUTION, ProblemCode.EVALUATION_FAILED, null);
         }
         var assetId = ((Text) atom.members().get("assetId")).value();
-        var kind = "imageRef".equals(memberName)
-                ? cn.hbads.renderweave.asset.api.AssetAcceptanceAuthority.AssetKind.IMAGE
-                : cn.hbads.renderweave.asset.api.AssetAcceptanceAuthority.AssetKind.FONT;
+        var kind = "imageRef".equals(memberName) ? AssetKind.IMAGE : AssetKind.FONT;
         // 冻结公式：SHA-256(canonical OccurrencePath + ConsumerPropertyRef + expectedKind)。
         // T21 边界：OccurrencePath 以物化路径字符串近似，完整语义随求值硬化票。
         var canonicalIdentity = (path + "\0" + memberName + "\0" + kind.name())
@@ -1118,6 +1128,11 @@ final class Materializer {
             return failed(EvaluationStage.ASSET_RESOLUTION,
                     ProblemCode.RENDER_INTERNAL_ERROR, null);
         }
+        var fact = resolved.fact();
+        var exactContentFailure = reserveExactContent(kind, fact);
+        if (exactContentFailure != null) {
+            return exactContentFailure;
+        }
         var resourceCapacityFailure = capacityFailure(requestCapacity.reserve(
                 RenderingPipelineCapacityGuard.Limit
                         .ASSETS_AND_FETCH_RENDER_RESOURCE_ENTRIES,
@@ -1125,7 +1140,6 @@ final class Materializer {
         if (resourceCapacityFailure != null) {
             return resourceCapacityFailure;
         }
-        var fact = resolved.fact();
         resources.add(new ResourceEntry(
                 resourceId.value(),
                 kind.name(),
@@ -1141,6 +1155,25 @@ final class Materializer {
                 memberName,
                 fact.technicalDescriptor()));
         return new ResolvedValue(new ObjectNode(Map.of("resourceId", new Text(resourceId.value()))));
+    }
+
+    private MaterializationFailed reserveExactContent(
+            AssetKind kind,
+            AssetResolutionPort.ResolvedAssetFact fact
+    ) {
+        var identity = new ExactContentIdentity(
+                kind, fact.sha256(), fact.byteLength(), fact.mediaType());
+        if (exactContents.contains(identity)) {
+            return null;
+        }
+        var capacityFailure = capacityFailure(requestCapacity.reserve(
+                RenderingPipelineCapacityGuard.Limit
+                        .ASSETS_AND_FETCH_UNIQUE_EXACT_CONTENTS,
+                1));
+        if (capacityFailure == null) {
+            exactContents.add(identity);
+        }
+        return capacityFailure;
     }
 
     // ------------------------------------------------------------------

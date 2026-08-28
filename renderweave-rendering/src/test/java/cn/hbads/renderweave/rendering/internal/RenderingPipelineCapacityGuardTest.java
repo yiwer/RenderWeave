@@ -471,4 +471,28 @@ class RenderingPipelineCapacityGuardTest {
         assertEquals("assetsAndFetch.renderResourceEntries",
                 problem.limitId().orElseThrow().value());
     }
+
+    @Test
+    void uniqueExactContentsBoundaryUsesTheFrozenProductionGuardContract() {
+        var guard = new RenderingPipelineCapacityGuard();
+
+        assertTrue(guard.admit(
+                RenderingPipelineCapacityGuard.Limit
+                        .ASSETS_AND_FETCH_UNIQUE_EXACT_CONTENTS,
+                127).isEmpty());
+        assertTrue(guard.admit(
+                RenderingPipelineCapacityGuard.Limit
+                        .ASSETS_AND_FETCH_UNIQUE_EXACT_CONTENTS,
+                128).isEmpty());
+
+        var problem = guard.admit(
+                        RenderingPipelineCapacityGuard.Limit
+                                .ASSETS_AND_FETCH_UNIQUE_EXACT_CONTENTS,
+                        129)
+                .orElseThrow();
+        assertEquals(EvaluationStage.ASSET_ADMISSION, problem.stage());
+        assertEquals(ProblemCode.ASSET_BUDGET_EXCEEDED, problem.code());
+        assertEquals("assetsAndFetch.uniqueExactContents",
+                problem.limitId().orElseThrow().value());
+    }
 }

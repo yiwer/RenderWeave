@@ -615,6 +615,54 @@ class MaterializerTest {
     }
 
     @Test
+    void uniqueExactContentBudgetDeduplicatesContentIdentityBeforeResourceAppend() {
+        var document = canvasWith(
+                imageNode("00000000-0000-4000-8000-000000000061") + ","
+                        + imageNode("00000000-0000-4000-8000-000000000062"));
+        var exactCapacity = new RenderingPipelineCapacityGuard().newRequestTracker();
+        assertTrue(exactCapacity.reserve(
+                RenderingPipelineCapacityGuard.Limit
+                        .ASSETS_AND_FETCH_UNIQUE_EXACT_CONTENTS,
+                127).isEmpty());
+        var exactPort = new SequencedContentPort(List.of(
+                new ResolvedContent("content-version-1", "sha256:" + "b".repeat(64)),
+                new ResolvedContent("content-version-2", "sha256:" + "b".repeat(64))));
+
+        var exact = materialize(
+                document, Map.of(), exactPort, absentCapability(), exactCapacity);
+
+        var exactTree = assertInstanceOf(Materializer.Materialized.class, exact).tree();
+        assertEquals(2, exactPort.resolves);
+        assertEquals(2, exactTree.resources().size());
+        assertEquals("content-version-1", exactTree.resources().get(0).contentVersion());
+        assertEquals("content-version-2", exactTree.resources().get(1).contentVersion());
+
+        var exceededCapacity = new RenderingPipelineCapacityGuard().newRequestTracker();
+        assertTrue(exceededCapacity.reserve(
+                RenderingPipelineCapacityGuard.Limit
+                        .ASSETS_AND_FETCH_UNIQUE_EXACT_CONTENTS,
+                127).isEmpty());
+        var exceededPort = new SequencedContentPort(List.of(
+                new ResolvedContent("content-version-1", "sha256:" + "b".repeat(64)),
+                new ResolvedContent("content-version-2", "sha256:" + "c".repeat(64))));
+
+        var exceeded = materialize(
+                document, Map.of(), exceededPort, absentCapability(), exceededCapacity);
+
+        var failed = assertInstanceOf(Materializer.MaterializationFailed.class, exceeded);
+        assertEquals(EvaluationStage.ASSET_ADMISSION, failed.stage());
+        assertEquals(RenderingProblem.ProblemCode.ASSET_BUDGET_EXCEEDED,
+                failed.problem().code());
+        assertEquals("assetsAndFetch.uniqueExactContents",
+                failed.problem().limitId().orElseThrow().value());
+        assertEquals(2, exceededPort.resolves);
+        assertTrue(exceededCapacity.reserve(
+                RenderingPipelineCapacityGuard.Limit
+                        .ASSETS_AND_FETCH_RENDER_RESOURCE_ENTRIES,
+                2_047).isEmpty());
+    }
+
+    @Test
     void missingAssetPortFailsClosedAtAssetAdmission() {
         var document = canvasWith(imageNode());
         var outcome = materialize(document, Map.of(), null);
@@ -988,6 +1036,42 @@ class MaterializerTest {
 
         String position(int index) {
             return new String(positions.get(index), StandardCharsets.UTF_8);
+        }
+    }
+
+    private record ResolvedContent(String contentVersion, String sha256) {
+    }
+
+    static final class SequencedContentPort implements AssetResolutionPort {
+        private final List<ResolvedContent> contents;
+        int resolves;
+
+        SequencedContentPort(List<ResolvedContent> contents) {
+            this.contents = List.copyOf(contents);
+        }
+
+        @Override
+        public PrecheckOutcome precheckAdmission(
+                OwnerScope ownerScope, AssetId assetId, AssetKind expectedKind) {
+            return new PrecheckOutcome.PrecheckPassed();
+        }
+
+        @Override
+        public ResolveOutcome resolve(ResolveRequest request) {
+            var content = contents.get(resolves++);
+            return new ResolveOutcome.Resolved(new ResolvedAssetFact(
+                    content.contentVersion(),
+                    content.sha256(),
+                    "image/png",
+                    1234,
+                    "renderweave-asset-acceptance/1.0",
+                    new cn.hbads.renderweave.asset.api.AssetAcceptanceAuthority.ImageDescriptor(
+                            10, 10,
+                            cn.hbads.renderweave.asset.api.AssetAcceptanceAuthority.Orientation.IDENTITY,
+                            10, 10, 1,
+                            cn.hbads.renderweave.asset.api.AssetAcceptanceAuthority.ColorEncoding.SRGB_8BIT),
+                    "https://assets.internal/fetch/" + request.resourceId().value(),
+                    2_000L));
         }
     }
 

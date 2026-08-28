@@ -4056,3 +4056,26 @@
   T158-specific A2/A3；J0 pending、J1 未批准。未重复 server/full；cap-024 继续 deferred；provider attempts/
   API Key reads/真实数据/Profile registration/push/tag/PR 均为 0。
 - 状态回填后的 resolution `fast` `.sdlc/evidence/20260829-071354-fast/` metadata 为 passed，3/3 steps 全绿。
+
+# 2026-08-29 Template-v1 T159 unique exact contents（resolved / automated_verified）
+
+- T158 已以 verified commit `e4aeaeb7` 收口，worktree clean、ahead 149 且 DAG 无其他 current active claim；冻结
+  `RW-T19-S8-005` / cap-029 是下一个 unblocked frontier，现按 single-writer claim T159。
+- `assetsAndFetch.uniqueExactContents` 固定 MAX_INCLUSIVE `128`、observed `127/128/129`，
+  ASSET_ADMISSION_AND_RESOLUTION / public ASSET_ADMISSION / ASSET_BUDGET_EXCEEDED / ZERO_DOCUMENT_OUTPUT，
+  reservation point 为接纳下一 authored/resolved Asset unit 且 external fetch 前。
+- request 单一 ownerScope 下 exact identity 固定为 `(kind, sha256, byteLength, mediaType)`；相同 bytes 的不同
+  assetId/contentVersion/resourceId/lease 只占一个 unique 单位，但仍逐 occurrence resolve 并形成独立 resource entry。
+- claim 时 A0、J0；cap-024 继续 deferred；provider/API Key/真实数据/费用/Profile registration/push/tag/PR 均为 0。
+- guard/Materializer TDD 先得到 5 个缺失 catalog enum 的 compile RED；补唯一 guard 项后 guard 21/21 绿，
+  Materializer 精确保留 1 个 behavioral RED，证明尚无 request-local exact-content admission。
+- `Materializer` 已加入与 Rust `ExactContentKey` 对齐的 `(kind, sha256, byteLength, mediaType)` set；新 identity
+  先 reserve 后入 set。prefix 127 + 相同 exact bytes/不同 contentVersion 两项成功；第二项改 hash 时，两次 Resolver
+  均执行，但第 129 个 identity 在 resource-entry reservation 前以 frozen stage/code/full limitId exact reject。
+- focused guard 21 + Materializer 25 + Evaluator 68 + architecture 6 = 120/120；受影响 reactor Schema 20、
+  Validation 13、Template 84、Asset 92、Rendering 241 全绿，零 failure/error；`git diff --check` 通过。
+- A1 `render` `.sdlc/evidence/20260829-071958-render/`（2/2）与 `fast`
+  `.sdlc/evidence/20260829-072046-fast/`（3/3）metadata 均 passed。cap-029 fixture 只执行 guard，故无
+  T159-specific A2/A3；J0 pending、J1 未批准。未重复 server/full；cap-024 继续 deferred；provider attempts/
+  API Key reads/真实数据/Profile registration/push/tag/PR 均为 0。
+- 状态回填后的 resolution `fast` `.sdlc/evidence/20260829-072153-fast/` metadata 为 passed，3/3 steps 全绿。
