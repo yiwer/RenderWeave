@@ -19,6 +19,7 @@ import cn.hbads.renderweave.template.api.TemplateClosureAuthority.TemplateSnapsh
 import org.junit.jupiter.api.Test;
 
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -188,6 +189,69 @@ class MaterializerTest {
                 transform.members().get("rotationDeg")).rawToken());
     }
 
+    @Test
+    void invocationCapabilityMemoIgnoresDownstreamRepeatConsumer() {
+        var capability = new CapturingCapability();
+        var document = capabilityDocument(
+                "\"invocation\"",
+                repeatWithBoundRect("[\"a\",\"b\"]"));
+
+        var outcome = materialize(document, Map.of(), null, capability);
+
+        assertInstanceOf(Materializer.Materialized.class, outcome);
+        assertEquals(1, capability.positions.size());
+        assertEquals(rootPosition(), capability.position(0));
+    }
+
+    @Test
+    void loopCapabilityUsesOriginalInputIndexPerDeclarationFrame() {
+        var capability = new CapturingCapability();
+        var document = capabilityDocument(
+                "{\"kind\":\"loop\",\"loopId\":\"" + LOOP_ID + "\"}",
+                repeatWithBoundRect("[\"duplicate\",\"duplicate\"]"));
+
+        var outcome = materialize(document, Map.of(), null, capability);
+
+        assertInstanceOf(Materializer.Materialized.class, outcome);
+        assertEquals(2, capability.positions.size());
+        assertEquals(loopPosition(0), capability.position(0));
+        assertEquals(loopPosition(1), capability.position(1));
+    }
+
+    @Test
+    void childInvocationCapabilityIsIsolatedByUseId() {
+        var capability = new CapturingCapability();
+        var childDocument = capabilityDocument(
+                "\"invocation\"",
+                boundRect("00000000-0000-4000-8000-000000000091", absolute()));
+        var rootDocument = canvasWith(
+                templateUse(USE_ONE) + "," + templateUse(USE_TWO));
+        var rootSnapshot = snapshot(ROOT_ID, canonical(rootDocument));
+        var childSnapshot = snapshot(CHILD_ID, canonical(childDocument));
+        var closure = new ClosureSnapshot(
+                new cn.hbads.renderweave.template.api.TemplateClosureAuthority.OwnerScope("owner-a"),
+                new cn.hbads.renderweave.template.api.TemplateApplication.TemplateId(ROOT_ID),
+                1,
+                List.of(childSnapshot, rootSnapshot),
+                List.of());
+
+        var outcome = Materializer.materialize(
+                closure,
+                TemplateModule.designSemanticAuthority(),
+                DESIGNS,
+                null,
+                capability,
+                admitted(Map.of()),
+                new RenderRequestId("00000000-0000-4000-8000-000000000001"),
+                new AssetResolutionPort.RendererAudience("test-audience"),
+                1_000L);
+
+        assertInstanceOf(Materializer.Materialized.class, outcome);
+        assertEquals(2, capability.positions.size());
+        assertEquals(usePosition(USE_ONE), capability.position(0));
+        assertEquals(usePosition(USE_TWO), capability.position(1));
+    }
+
     // ------------------------------------------------------------------
     // bindings + re-admission
     // ------------------------------------------------------------------
@@ -303,6 +367,84 @@ class MaterializerTest {
     }
 
     private static final String DEFINITION_ID = "00000000-0000-4000-8000-0000000000d1";
+    private static final String LOOP_ID = "00000000-0000-4000-8000-0000000000b1";
+    private static final String USE_ONE = "00000000-0000-4000-8000-0000000000e1";
+    private static final String USE_TWO = "00000000-0000-4000-8000-0000000000e2";
+
+    private static String capabilityDocument(String domain, String children) {
+        return "{\"dslVersion\":\"renderweave-design/1.0\","
+                + "\"expressionProfile\":\"renderweave-expression/1.0\","
+                + "\"displayName\":\"Capability\",\"definitions\":["
+                + "{\"definitionId\":\"" + DEFINITION_ID + "\",\"kind\":\"expression\","
+                + "\"displayName\":\"Draw\",\"domain\":" + domain + ","
+                + "\"output\":\"decimal\",\"inputs\":[{\"alias\":\"draw\","
+                + "\"source\":{\"kind\":\"capability\",\"capability\":\"RANDOM\","
+                + "\"operation\":\"UNIFORM_DECIMAL_0_1\"}}],\"source\":\"input.draw\"}],"
+                + "\"designRoot\":{\"nodeId\":\"00000000-0000-4000-8000-000000000001\","
+                + "\"kind\":\"canvas\",\"widthMm\":210,\"heightMm\":297,"
+                + "\"bindings\":[],\"children\":[" + children + "]}}";
+    }
+
+    private static String repeatWithBoundRect(String items) {
+        return "{\"nodeId\":\"00000000-0000-4000-8000-000000000092\","
+                + "\"kind\":\"repeat\",\"bindings\":[],\"placement\":" + absolute() + ","
+                + "\"loopId\":\"" + LOOP_ID + "\",\"absentPolicy\":\"ERROR\","
+                + "\"items\":{\"kind\":\"literal\","
+                + "\"valueType\":{\"type\":\"list\",\"items\":\"text\"},"
+                + "\"value\":" + items + "},"
+                + "\"itemLayout\":{\"kind\":\"STACK\",\"direction\":\"ROW\"},"
+                + "\"instanceLayout\":{\"kind\":\"STACK\",\"direction\":\"ROW\"},"
+                + "\"children\":[" + boundRect(
+                        "00000000-0000-4000-8000-000000000093", packFixed()) + "]}";
+    }
+
+    private static String boundRect(String nodeId, String placement) {
+        return "{\"nodeId\":\"" + nodeId + "\",\"kind\":\"rect\","
+                + "\"bindings\":[{\"bindingId\":\"00000000-0000-4000-8000-0000000000f1\","
+                + "\"targetPropertyRef\":{\"rootPropertyId\":\"placement\","
+                + "\"selectors\":[{\"kind\":\"member\",\"name\":\"widthMm\"}]},"
+                + "\"source\":{\"kind\":\"definition\",\"definitionId\":\""
+                + DEFINITION_ID + "\"}}],\"placement\":" + placement + ","
+                + "\"fill\":{\"color\":\"#FF000000\"}}";
+    }
+
+    private static String packFixed() {
+        return "{\"type\":\"PACK\",\"widthMode\":\"FIXED\",\"widthMm\":10,"
+                + "\"heightMode\":\"FIXED\",\"heightMm\":10}";
+    }
+
+    private static String templateUse(String useId) {
+        return "{\"nodeId\":\"" + useId + "\",\"kind\":\"templateUse\","
+                + "\"bindings\":[],\"useId\":\"" + useId + "\","
+                + "\"templateRef\":{\"templateId\":\"" + CHILD_ID + "\"},"
+                + "\"contextSelector\":{\"kind\":\"empty\"},\"fills\":[],"
+                + "\"placement\":" + absolute() + "}";
+    }
+
+    private static String rootPosition() {
+        return position("[{\"kind\":\"ROOT\",\"revision\":1,\"templateId\":\""
+                + ROOT_ID + "\"}]");
+    }
+
+    private static String loopPosition(int inputIndex) {
+        return position("[{\"kind\":\"ROOT\",\"revision\":1,\"templateId\":\""
+                + ROOT_ID + "\"},{\"inputIndex\":" + inputIndex
+                + ",\"kind\":\"REPEAT\",\"loopId\":\"" + LOOP_ID + "\"}]");
+    }
+
+    private static String usePosition(String useId) {
+        return position("[{\"kind\":\"ROOT\",\"revision\":1,\"templateId\":\""
+                + ROOT_ID + "\"},{\"kind\":\"TEMPLATE_USE\",\"revision\":1,"
+                + "\"templateId\":\"" + CHILD_ID + "\",\"useId\":\"" + useId + "\"}]");
+    }
+
+    private static String position(String path) {
+        return "{\"capabilityContractId\":\"renderweave-capability-random/1.0\","
+                + "\"definitionId\":\"" + DEFINITION_ID + "\","
+                + "\"inputAlias\":\"draw\",\"operation\":\"UNIFORM_DECIMAL_0_1\","
+                + "\"path\":" + path + ","
+                + "\"positionVersion\":\"renderweave-capability-call-position/1.0\"}";
+    }
 
     /** binding source 只允许 context/loopIndex/definition（literal 应写成静态值）。 */
     private static String textDocumentWithDefinitionBinding(String valueType, String defaultJson) {
@@ -397,6 +539,15 @@ class MaterializerTest {
 
     private static Materializer.MaterializationOutcome materialize(
             String document, Map<String, DesignValue> customs, AssetResolutionPort port) {
+        return materialize(document, customs, port, absentCapability());
+    }
+
+    private static Materializer.MaterializationOutcome materialize(
+            String document,
+            Map<String, DesignValue> customs,
+            AssetResolutionPort port,
+            DefinitionEngine.CapabilityProvider capability
+    ) {
         var snapshot = snapshot(ROOT_ID, canonical(document));
         var closure = new ClosureSnapshot(
                 new cn.hbads.renderweave.template.api.TemplateClosureAuthority.OwnerScope("owner-a"),
@@ -409,7 +560,7 @@ class MaterializerTest {
                 TemplateModule.designSemanticAuthority(),
                 DESIGNS,
                 port,
-                absentCapability(),
+                capability,
                 admitted(customs),
                 new RenderRequestId("00000000-0000-4000-8000-000000000001"),
                 new AssetResolutionPort.RendererAudience("test-audience"),
@@ -442,6 +593,20 @@ class MaterializerTest {
         return (capability, operation, callPosition) -> new ExpressionEvaluator.EvalError(
                 new ExpressionEvaluator.RuntimeFailure(
                         ExpressionEvaluator.RuntimeFailureKind.TYPE_FAULT, null));
+    }
+
+    static final class CapturingCapability implements DefinitionEngine.CapabilityProvider {
+        private final List<byte[]> positions = new ArrayList<>();
+
+        @Override
+        public EvalOutcome supply(String capability, String operation, byte[] callPosition) {
+            positions.add(callPosition.clone());
+            return new EvalValue(new DesignValue.Decimal(new java.math.BigDecimal("5")));
+        }
+
+        String position(int index) {
+            return new String(positions.get(index), StandardCharsets.UTF_8);
+        }
     }
 
     static final class ScriptedAssetPort implements AssetResolutionPort {

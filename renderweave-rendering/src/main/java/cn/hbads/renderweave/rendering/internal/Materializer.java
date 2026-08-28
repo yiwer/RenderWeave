@@ -177,7 +177,9 @@ final class Materializer {
                 admittedInput.customs(),
                 materializer.engineOf(rootSnapshot),
                 DefinitionEngine.LoopFrames.EMPTY,
-                capabilities);
+                capabilities,
+                CapabilityCallPosition.root(
+                        rootSnapshot.templateId().value(), rootSnapshot.revision()));
         var children = new ArrayList<MaterializedNode>();
         var expandFailure = materializer.expandNode(
                 designRoot, rootSnapshot, rootScope, "", children);
@@ -385,7 +387,7 @@ final class Materializer {
         if (conditionWire == null) {
             return failed(EvaluationStage.MATERIALIZATION, ProblemCode.RENDER_INTERNAL_ERROR, null);
         }
-        var condition = scope.definitions().resolveSource(conditionWire, scope, frameKey(scope));
+        var condition = scope.definitions().resolveSource(conditionWire, scope);
         if (condition instanceof EvalError) {
             return failed(EvaluationStage.MATERIALIZATION, ProblemCode.EVALUATION_FAILED, null);
         }
@@ -416,7 +418,7 @@ final class Materializer {
         if (itemsWire == null || loopId == null) {
             return failed(EvaluationStage.MATERIALIZATION, ProblemCode.RENDER_INTERNAL_ERROR, null);
         }
-        var items = scope.definitions().resolveSource(itemsWire, scope, frameKey(scope));
+        var items = scope.definitions().resolveSource(itemsWire, scope);
         if (items instanceof EvalError) {
             return failed(EvaluationStage.MATERIALIZATION, ProblemCode.EVALUATION_FAILED, null);
         }
@@ -450,9 +452,8 @@ final class Materializer {
             if (capacityFailure != null) {
                 return capacityFailure;
             }
-            var frames = new HashMap<>(scope.loopFrames().frames());
-            frames.put(loopId, new DefinitionEngine.LoopFrame(toTypedValue(item), index));
-            var itemScope = scope.withLoopFrames(new DefinitionEngine.LoopFrames(frames));
+            var itemScope = scope.withLoopFrame(
+                    loopId, new DefinitionEngine.LoopFrame(toTypedValue(item), index));
             var itemPath = path + "/repeat(" + loopId + ")[" + index + "]";
             var expandedChildren = new ArrayList<MaterializedNode>();
             var failure = expandChildList(
@@ -672,7 +673,8 @@ final class Materializer {
         }
         var templateRef = node.members().get("templateRef");
         if (!(templateRef instanceof ObjectNode refObject)
-                || !(refObject.members().get("templateId") instanceof Text targetId)) {
+                || !(refObject.members().get("templateId") instanceof Text targetId)
+                || !(node.members().get("useId") instanceof Text useId)) {
             return failed(EvaluationStage.MATERIALIZATION, ProblemCode.RENDER_INTERNAL_ERROR, null);
         }
         var childSnapshot = closure.snapshots().stream()
@@ -737,7 +739,7 @@ final class Materializer {
                             ProblemCode.RENDER_INTERNAL_ERROR, null);
                 }
                 var value = scope.definitions().resolveSource(
-                        fillObject.members().get("source"), scope, frameKey(scope));
+                        fillObject.members().get("source"), scope);
                 if (value instanceof EvalError) {
                     return failed(EvaluationStage.MATERIALIZATION,
                             ProblemCode.EVALUATION_FAILED, null);
@@ -750,7 +752,9 @@ final class Materializer {
         }
         var childScope = new InvocationScope(
                 childContext, Map.copyOf(childCustoms), childEngine,
-                DefinitionEngine.LoopFrames.EMPTY, capabilities);
+                DefinitionEngine.LoopFrames.EMPTY, capabilities,
+                scope.capabilityPath().enterTemplateUse(
+                        useId.value(), childSnapshot.templateId().value(), childSnapshot.revision()));
         var childRoot = childObject(childDocument, "designRoot");
         if (childRoot == null) {
             return failed(EvaluationStage.MATERIALIZATION, ProblemCode.RENDER_INTERNAL_ERROR, null);
@@ -844,7 +848,7 @@ final class Materializer {
             if (!(targetRef instanceof ObjectNode ref) || sourceWire == null) {
                 return null;
             }
-            var value = scope.definitions().resolveSource(sourceWire, scope, frameKey(scope));
+            var value = scope.definitions().resolveSource(sourceWire, scope);
             if (!(value instanceof EvalValue evalValue)) {
                 return null;
             }
@@ -1154,17 +1158,6 @@ final class Materializer {
         return node.members().get(member) instanceof Text text ? text.value() : null;
     }
 
-    private static String frameKey(InvocationScope scope) {
-        if (scope.loopFrames().frames().isEmpty()) {
-            return "invocation";
-        }
-        var builder = new StringBuilder();
-        for (var frame : scope.loopFrames().frames().entrySet()) {
-            builder.append(frame.getKey()).append(':').append(frame.getValue().index()).append(';');
-        }
-        return builder.toString();
-    }
-
     private void recordSidecar(String path, ObjectNode node) {
         if (sidecar.size() < MAX_SIDECAR_ITEMS) {
             var sourceNodeId = node.members().get("nodeId") instanceof Text nodeId
@@ -1248,19 +1241,22 @@ final class Materializer {
         private final DefinitionEngine engine;
         private final DefinitionEngine.LoopFrames loopFrames;
         private final DefinitionEngine.CapabilityProvider capabilities;
+        private final CapabilityCallPosition.RuntimePath capabilityPath;
 
         InvocationScope(
                 TypedObject context,
                 Map<String, DesignValue> customs,
                 DefinitionEngine engine,
                 DefinitionEngine.LoopFrames loopFrames,
-                DefinitionEngine.CapabilityProvider capabilities
+                DefinitionEngine.CapabilityProvider capabilities,
+                CapabilityCallPosition.RuntimePath capabilityPath
         ) {
             this.context = context;
             this.customs = customs;
             this.engine = engine;
             this.loopFrames = loopFrames;
             this.capabilities = capabilities;
+            this.capabilityPath = capabilityPath;
         }
 
         @Override
@@ -1288,8 +1284,21 @@ final class Materializer {
             return capabilities;
         }
 
-        InvocationScope withLoopFrames(DefinitionEngine.LoopFrames frames) {
-            return new InvocationScope(context, customs, engine, frames, capabilities);
+        @Override
+        public CapabilityCallPosition.RuntimePath capabilityPath() {
+            return capabilityPath;
+        }
+
+        InvocationScope withLoopFrame(String loopId, DefinitionEngine.LoopFrame frame) {
+            var frames = new java.util.LinkedHashMap<>(loopFrames.frames());
+            frames.put(loopId, frame);
+            return new InvocationScope(
+                    context,
+                    customs,
+                    engine,
+                    new DefinitionEngine.LoopFrames(frames),
+                    capabilities,
+                    capabilityPath.enterRepeat(loopId, frame.index()));
         }
     }
 }

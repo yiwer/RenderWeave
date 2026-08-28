@@ -4672,3 +4672,39 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
   truth，不伪报；14 个绿色 steps 与精确恢复重放共同构成 ticket A1。
 - A2 未签发 ticket-specific independent replay；A3 未外部强制；J0；provider attempts/API Key
   reads/real data/Profile registration/push/tag/PR = 0。
+
+## 128. TV1-T128 执行卡
+
+- 状态：`resolved / automated_verified`；single writer: Codex；blocked by T21/T125/T127（均 resolved）。
+- 决策：T21 resolution 与 map 均明确把完整 CapabilityCallPosition/OccurrencePath 留给后续硬化；当前
+  `DefinitionEngine` 仍用 capability source wire + unordered frameKey，无法表达 root revision、useId、
+  declaration loop、definitionId/alias/contract，且 result digest 把 position 错投影为 Base64 string。
+  该缺口完全在 Rendering internal，可在不注册 Profile/route 或请求外部授权的前提下成为当前 frontier。
+- seam：建立单一 deep `CapabilityCallPosition` module，封装 immutable runtime path、declaration-frame
+  截断、canonical bytes 与 memo identity；Materializer 只导航 path，DefinitionEngine 只请求 position，
+  既有 SPI 继续消费 opaque bytes。
+- 完成信号：ROOT/TEMPLATE_USE/REPEAT exact bytes、invocation/loop memo 与 child isolation 经 focused
+  public/internal seam RED→GREEN；`render`/`fast`/顺序 `server`/Goal `full`/resolution `fast` 通过，
+  verified 独立 commit，Profile/A3/J1/READY/provider/push/tag/PR 均不推进。
+
+### TV1-T128 resolution evidence
+
+- focused TDD 先因缺少 `CapabilityCallPosition` module 得到编译 RED；实现后 exact canonical/path tests 3、
+  capability values/digest tests 10、Materializer declaration-frame tests 14，共 27/27 GREEN。
+- 单一 Rendering-internal deep module 封装 ROOT/TEMPLATE_USE/REPEAT runtime path、declaration-frame 截断、
+  canonical bytes 与 memo identity；Materializer 只导航 immutable path，DefinitionEngine 不再接受
+  caller-crafted frame key。invocation definition 跨下游 loop memoize，loop definition 按声明 loop 的原
+  inputIndex 分帧，不同 TemplateUse occurrence 隔离。
+- `capabilityResultDigest` 直接嵌入 canonical position object；冻结 digest 为
+  `sha256:8b0960a385085e2a4d03cada5347867ea1193eec09e0128ff0c149501179d30a`。既有 app/SPI
+  `byte[]` seam 未扩散内部路径表示。
+- 分级 A1：`render` `.sdlc/evidence/20260828-181110-render/`、affected `fast`
+  `.sdlc/evidence/20260828-181203-fast/`、顺序 `server`
+  `.sdlc/evidence/20260828-181232-server/`、17-step Goal `full`
+  `.sdlc/evidence/20260828-182907-full/` 全部 passed；full 17/17 steps 均 exit 0。
+- `server` App 366/0/0/15；`full` 覆盖 Rendering 134 tests、Node 24 Web 28 files/217 tests、runtime
+  canary、Playwright 23 passed + 1 controlled skip、Draft/browser journeys 与 inference replay E2E 1/1。
+  R0/R1/P0 provider attempts=0，P0 API Key reads/reservations/cost=0。
+- A2 未签发 ticket-specific independent replay；A3 未外部强制；J0。Profile/A3/J1/READY、paid/live
+  provider、真实数据、push/tag/PR 均未推进。
+- 状态回填后的 resolution `fast` `.sdlc/evidence/20260828-185451-fast/` 3 steps 均 exit 0。

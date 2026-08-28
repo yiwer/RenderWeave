@@ -98,13 +98,37 @@ class CapabilityValuesTest {
         var values = CapabilityValues.forState(
                 new CapabilityValues.CapabilityState(0, FIXED_NONCE));
         var provider = values.provider();
-        provider.supply("CLOCK", "UTC_DATE", new byte[] { 1 });
+        var frame = CapabilityCallPosition.root(
+                        "00000000-0000-4000-8000-0000000000a1", 1)
+                .invocationFrame();
+        provider.supply("CLOCK", "UTC_DATE", frame.canonicalBytes(
+                "00000000-0000-4000-8000-0000000000d1",
+                "date", "CLOCK", "UTC_DATE"));
         var afterOne = values.capabilityResultDigest();
-        provider.supply("CLOCK", "UTC_TIME", new byte[] { 2 });
+        provider.supply("CLOCK", "UTC_TIME", frame.canonicalBytes(
+                "00000000-0000-4000-8000-0000000000d1",
+                "time", "CLOCK", "UTC_TIME"));
         var afterTwo = values.capabilityResultDigest();
         assertNotEquals(afterOne, afterTwo);
         assertTrue(afterTwo.startsWith("sha256:"));
         assertEquals(2, values.demands().size());
+    }
+
+    @Test
+    void resultDigestEmbedsCanonicalCallPositionObject() {
+        var values = CapabilityValues.forState(
+                new CapabilityValues.CapabilityState(0, FIXED_NONCE));
+        var position = CapabilityCallPosition.root(
+                        "00000000-0000-4000-8000-0000000000a1", 7)
+                .invocationFrame()
+                .canonicalBytes(
+                        "00000000-0000-4000-8000-0000000000d1",
+                        "today", "CLOCK", "UTC_DATE");
+
+        values.provider().supply("CLOCK", "UTC_DATE", position);
+
+        assertEquals("sha256:8b0960a385085e2a4d03cada5347867ea1193eec09e0128ff0c149501179d30a",
+                values.capabilityResultDigest());
     }
 
     @Test

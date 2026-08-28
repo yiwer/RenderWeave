@@ -16,7 +16,6 @@ import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Base64;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -91,6 +90,14 @@ final class CapabilityValues {
     }
 
     record DemandEntry(String capability, String operation, byte[] callPosition, DesignValue result) {
+        DemandEntry {
+            callPosition = callPosition.clone();
+        }
+
+        @Override
+        public byte[] callPosition() {
+            return callPosition.clone();
+        }
     }
 
     DefinitionEngine.CapabilityProvider provider() {
@@ -144,7 +151,7 @@ final class CapabilityValues {
 
     private EvalOutcome record(DesignValue result, String capability, String operation,
                                byte[] callPosition) {
-        demands.add(new DemandEntry(capability, operation, callPosition.clone(), result));
+        demands.add(new DemandEntry(capability, operation, callPosition, result));
         return new EvalValue(result);
     }
 
@@ -168,9 +175,8 @@ final class CapabilityValues {
      * outputType, result} 以 canonical JSON 编码并前置 uint64be(entryBytes.length) 分帧，
      * domain-separated SHA-256。
      *
-     * <p>T21 边界：callPosition 使用 positionVersion + 请求内 demand 位置字节的简化
-     * canonical object；完整 OccurrencePath 语义（ROOT/TEMPLATE_USE/REPEAT 段）随后续
-     * 求值硬化票物化，届时向量一同升级。
+     * callPosition 已是 {@code renderweave-capability-call-position/1.0} canonical object
+     * bytes，作为 object 原样嵌入 entry，不转为 string/Base64。
      */
     String capabilityResultDigest() {
         var framed = new java.io.ByteArrayOutputStream();
@@ -198,21 +204,13 @@ final class CapabilityValues {
 
     private static String canonicalEntry(DemandEntry demand) {
         var members = new java.util.TreeMap<String, String>();
-        members.put("capabilityContractId", CanonicalJson.string(contractId(demand.capability())));
+        members.put("capabilityContractId", CanonicalJson.string(
+                CapabilityCallPosition.contractId(demand.capability())));
         members.put("operation", CanonicalJson.string(demand.operation()));
-        members.put("callPosition", CanonicalJson.string(
-                Base64.getEncoder().encodeToString(demand.callPosition())));
+        members.put("callPosition", new String(demand.callPosition(), StandardCharsets.UTF_8));
         members.put("outputType", CanonicalJson.string(outputType(demand.result())));
         members.put("result", resultCanonical(demand.result()));
         return CanonicalJson.object(members);
-    }
-
-    private static String contractId(String capability) {
-        return switch (capability) {
-            case "CLOCK" -> "renderweave-capability-clock/1.0";
-            case "RANDOM" -> "renderweave-capability-random/1.0";
-            default -> throw new IllegalStateException("unknown capability " + capability);
-        };
     }
 
     private static String outputType(DesignValue value) {

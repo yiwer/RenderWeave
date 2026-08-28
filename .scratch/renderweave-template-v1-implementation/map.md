@@ -810,6 +810,10 @@ Label: wayfinder:map
   — **resolved / automated_verified**；修复 T114 后 OpenAPI info 0.16.0 与
   runtime/SystemStatus schema/generated SDK 仍为 0.15.0 的合同身份漂移，公共 canary
   RED→GREEN 且四个合同身份点现已一致。
+- [T128 — 物化 CapabilityCallPosition 完整 OccurrencePath](issues/128-capability-call-position-occurrence-path.md)
+  — **resolved / automated_verified**；已移除 T21 的 source-wire/frameKey 近似，以 declaration-frame
+  ROOT/TEMPLATE_USE/REPEAT path 形成 exact canonical position，修正 invocation/loop memo、child isolation
+  与 capability result digest 的 canonical object 嵌入；focused 27/27 及 render/fast/server/full 全绿。
 
 - 改写或重解释现有 Schema/Inference v1 已提交历史，或在 dirty main 上直接实施 Template。
 - Workspace、组织/成员/分享/协作、跨 ownerScope 复制、通用 connector、任意 SQL/HTTP/文件/脚本、插件节点或运行时代码注册。

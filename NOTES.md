@@ -3311,3 +3311,25 @@
   steps + 精确恢复重放构成 A1；A2/A3 未推进，J0；provider attempts/API Key reads/real data/
   Profile registration/push/tag/PR = 0。状态回填后的 resolution `fast`
   `.sdlc/evidence/20260828-175621-fast/` 通过。
+
+# 2026-08-28 Template-v1 T128 CapabilityCallPosition（resolved / automated_verified）
+
+- T127 已以 verified commit `1280e96f` 收口且 worktree clean；复算 DAG 后无遗留 claimed writer。
+  map/T21 明确记录的首个无外部授权缺口是完整 CapabilityCallPosition/OccurrencePath，现登记并由
+  Codex single-writer claim。
+- 当前 position 仍是 source wire + frameKey，缺 root/use/repeat declaration path、definitionId/alias/
+  exact contract，result digest 还把 position 作为 Base64 string。T128 以一个 Rendering-internal deep
+  module 收口 path/canonical/memo 规则，保持 app SPI 为 opaque bytes；不新增 route/migration/Profile，
+  不运行 provider，不 push/tag/PR。当前 A0，J0。
+- 已实现 exact declaration-frame ROOT/TEMPLATE_USE/REPEAT position、invocation/loop memo 与 child
+  occurrence isolation；result digest 改为 canonical object 嵌入，冻结 digest 为
+  `sha256:8b0960a385085e2a4d03cada5347867ea1193eec09e0128ff0c149501179d30a`。focused 先编译 RED，
+  后 27/27 GREEN。
+- A1：`render` `.sdlc/evidence/20260828-181110-render/`、`fast`
+  `.sdlc/evidence/20260828-181203-fast/`、顺序 `server`
+  `.sdlc/evidence/20260828-181232-server/`、Goal `full`
+  `.sdlc/evidence/20260828-182907-full/` 均 passed；full 17/17 steps exit 0，Rendering 134、App
+  366/0/0/15、Node 24 Web 28 files/217 tests、Playwright 23+1 controlled skip 与最终 replay E2E 全绿。
+  A2 ticket-specific 未签发，A3 未外部强制，J0；provider attempts/API Key reads/real data/Profile
+  registration/push/tag/PR = 0。
+- 状态回填后的 resolution `fast` `.sdlc/evidence/20260828-185451-fast/` 3 steps 均 exit 0。
