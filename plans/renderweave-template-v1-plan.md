@@ -5400,3 +5400,35 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
   83/83 仍 byte-identical。cap-018 不执行 Evaluator/Sealer，故无 T149-specific A2/A3；未重复 server/full，
   provider attempts/API Key reads/真实数据/Profile registration/push/tag/PR 均为 0。
 - 状态回填后的 resolution `fast` `.sdlc/evidence/20260829-054443-fast/` metadata 为 `passed`，3/3 steps 全绿。
+
+## 150. TV1-T150 执行卡
+
+- 状态：`resolved / automated_verified`；single writer: Codex；blocked by T21/T149（均 resolved）。
+- authority：`RW-T19-S7-092` / cap-019 固定 `renderDocument.childEdges` 为 MAX_INCLUSIVE `19999`，observed
+  `19998/19999/20000`，DOCUMENT_SEAL_COUNTING / public DOCUMENT_SEAL / RENDER_DOCUMENT_LIMIT_EXCEEDED /
+  ZERO_DOCUMENT_OUTPUT；reservation point 为 atomic canonical-byte/digest commit 与任何 Engine Command 前。
+- domain：root `0`；每个 surviving `children[]` item-parent link 计 `1`；compositionViewport→sourceCanvas 专用 link
+  也计 `1`，sourceCanvas children 再逐项计数；pruned/empty 均为 `0`。
+- seam：普通 edge 在 `sealChildren → sealNode` 前预留，sourceCanvas edge 在 source occurrenceId/object 前预留；
+  20,000th edge 因而先于第 20,001 个 static Node 失败。与 T149 staticNodes 使用同一 guard、独立 limit/counter，
+  不以后验 `nodes - 1` 或 JSON array item 近似。
+- TDD：guard missing-enum compile RED；Sealer prefix + empty/one-child 与 viewport/sourceCanvas exact behavioral RED，
+  随后最小接线。focused guard/Sealer/RenderDocument/Evaluator、受影响 reactor、render/fast；无 app wiring，不重复
+  server/full。
+- honesty：cap-019 target 不执行 Evaluator/Sealer，isolated guard 不冒充正式 records/A2；Runs/textScalars/
+  vectorEntries 与 diagnostics 继续后续票。provider/API Key/真实数据/Profile registration/push/tag/PR 均不推进；
+  J0 pending、J1 未批准。
+- TDD：guard test 精确产生 3 个 missing-enum compile RED，catalog 接线后 12/12 GREEN；Sealer 10 tests 随后
+  精确 2 个 behavioral RED（one-child/sourceCanvas above 均 Sealed），production reservation 后 10/10 GREEN。
+- exact product boundary：empty root 在 child/static 双 prefix 19999 仍成功；one-child 双 prefix 19998 同时到达
+  19999 edges/20000 Nodes、双 prefix 19999 exact child-edge reject；root→viewport→sourceCanvas 在双 prefix 19997
+  同时到达两轴上限、双 prefix 19998 于 source edge exact reject。
+- allocation order：普通 edge 在 `sealNode` 前、source edge 在 source occurrenceId/object 前 reserve；
+  `sealChildren` 不按未准入 size 预分配 backing storage，20,000th edge 先于 child 与第 20,001 个 static Node 失败。
+- focused Evaluator 68 + writer 3 + RenderDocument 4 + guard 12 + Sealer 10 = 97/97；受影响 reactor Schema 20、
+  Validation 13、Template 84、Asset 92、Rendering 221 全绿，`git diff --check` 通过。
+- A1 `render` `.sdlc/evidence/20260829-055908-render/`（2/2）与 `fast`
+  `.sdlc/evidence/20260829-055957-fast/`（3/3）metadata 均 `passed`，既有 RenderDocument independent replay
+  83/83 仍 byte-identical。cap-019 不执行 Evaluator/Sealer，故无 T150-specific A2/A3；未重复 server/full，
+  provider attempts/API Key reads/真实数据/Profile registration/push/tag/PR 均为 0。
+- 状态回填后的 resolution `fast` `.sdlc/evidence/20260829-060138-fast/` metadata 为 `passed`，3/3 steps 全绿。

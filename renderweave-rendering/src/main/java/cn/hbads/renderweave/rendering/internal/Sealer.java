@@ -251,8 +251,9 @@ final class Sealer {
     private List<CanonicalJson.CanonicalValue> sealChildren(
             List<Materializer.MaterializedNode> children,
             ObjectNode expandedParent) {
-        var items = new ArrayList<CanonicalJson.CanonicalValue>(children.size());
+        var items = new ArrayList<CanonicalJson.CanonicalValue>();
         for (var child : children) {
+            reserveChildEdge();
             items.add(sealNode(child, expandedParent));
         }
         return items;
@@ -298,6 +299,7 @@ final class Sealer {
             putLowered(members, entry.getKey(), entry.getValue());
         }
         if (!node.children().isEmpty() && "canvas".equals(node.children().get(0).kind())) {
+            reserveChildEdge();
             var source = node.children().get(0);
             var expandedSource = nodeContracts.expandNodeDefaults("canvas", source.members());
             var sourceMembers = new TreeMap<String, CanonicalJson.CanonicalValue>();
@@ -412,6 +414,15 @@ final class Sealer {
             items.add(CanonicalJson.objectValue(entry));
         }
         return items;
+    }
+
+    private void reserveChildEdge() {
+        var capacityProblem = requestCapacity.reserve(
+                RenderingPipelineCapacityGuard.Limit.RENDER_DOCUMENT_CHILD_EDGES,
+                1);
+        if (capacityProblem.isPresent()) {
+            throw new SealCapacityExceeded(capacityProblem.orElseThrow());
+        }
     }
 
     private String nextOccurrenceId() {

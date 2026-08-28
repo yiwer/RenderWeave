@@ -254,6 +254,69 @@ class SealerTest {
         assertStaticNodeLimit(rejected);
     }
 
+    @Test
+    void childEdgeCounterLeavesTheRootAndEmptyArrayUncharged() {
+        var emptyAtCapacity = new RenderingPipelineCapacityGuard().newRequestTracker();
+        assertTrue(emptyAtCapacity.reserve(
+                RenderingPipelineCapacityGuard.Limit.RENDER_DOCUMENT_CHILD_EDGES,
+                19_999).isEmpty());
+        assertTrue(emptyAtCapacity.reserve(
+                RenderingPipelineCapacityGuard.Limit.RENDER_DOCUMENT_STATIC_NODES,
+                19_999).isEmpty());
+        assertInstanceOf(Sealer.Sealed.class, Sealer.seal(
+                closure(), admitted(), minimalTree(), "sha256:" + "c".repeat(64),
+                emptyAtCapacity));
+
+        var atCapacity = new RenderingPipelineCapacityGuard().newRequestTracker();
+        assertTrue(atCapacity.reserve(
+                RenderingPipelineCapacityGuard.Limit.RENDER_DOCUMENT_CHILD_EDGES,
+                19_998).isEmpty());
+        assertTrue(atCapacity.reserve(
+                RenderingPipelineCapacityGuard.Limit.RENDER_DOCUMENT_STATIC_NODES,
+                19_998).isEmpty());
+        assertInstanceOf(Sealer.Sealed.class, Sealer.seal(
+                closure(), admitted(), oneChildTree(), "sha256:" + "c".repeat(64),
+                atCapacity));
+
+        var aboveCapacity = new RenderingPipelineCapacityGuard().newRequestTracker();
+        assertTrue(aboveCapacity.reserve(
+                RenderingPipelineCapacityGuard.Limit.RENDER_DOCUMENT_CHILD_EDGES,
+                19_999).isEmpty());
+        assertTrue(aboveCapacity.reserve(
+                RenderingPipelineCapacityGuard.Limit.RENDER_DOCUMENT_STATIC_NODES,
+                19_999).isEmpty());
+        var rejected = assertInstanceOf(Sealer.SealRejected.class, Sealer.seal(
+                closure(), admitted(), oneChildTree(), "sha256:" + "c".repeat(64),
+                aboveCapacity));
+        assertChildEdgeLimit(rejected);
+    }
+
+    @Test
+    void compositionViewportSourceCanvasConsumesItsOwnChildEdgeUnit() {
+        var atCapacity = new RenderingPipelineCapacityGuard().newRequestTracker();
+        assertTrue(atCapacity.reserve(
+                RenderingPipelineCapacityGuard.Limit.RENDER_DOCUMENT_CHILD_EDGES,
+                19_997).isEmpty());
+        assertTrue(atCapacity.reserve(
+                RenderingPipelineCapacityGuard.Limit.RENDER_DOCUMENT_STATIC_NODES,
+                19_997).isEmpty());
+        assertInstanceOf(Sealer.Sealed.class, Sealer.seal(
+                closure(), admitted(), viewportTree(), "sha256:" + "c".repeat(64),
+                atCapacity));
+
+        var aboveCapacity = new RenderingPipelineCapacityGuard().newRequestTracker();
+        assertTrue(aboveCapacity.reserve(
+                RenderingPipelineCapacityGuard.Limit.RENDER_DOCUMENT_CHILD_EDGES,
+                19_998).isEmpty());
+        assertTrue(aboveCapacity.reserve(
+                RenderingPipelineCapacityGuard.Limit.RENDER_DOCUMENT_STATIC_NODES,
+                19_998).isEmpty());
+        var rejected = assertInstanceOf(Sealer.SealRejected.class, Sealer.seal(
+                closure(), admitted(), viewportTree(), "sha256:" + "c".repeat(64),
+                aboveCapacity));
+        assertChildEdgeLimit(rejected);
+    }
+
     // ------------------------------------------------------------------
     // fixtures
     // ------------------------------------------------------------------
@@ -291,6 +354,27 @@ class SealerTest {
         return new Materializer.MaterializedTree(canvas, List.of(), List.of());
     }
 
+    private static Materializer.MaterializedTree oneChildTree() {
+        var child = new Materializer.MaterializedNode(
+                "rect",
+                new ObjectNode(Map.of(
+                        "kind", new Text("rect"),
+                        "placement", absoluteFixedPlacement("10", "10"),
+                        "fill", new ObjectNode(Map.of(
+                                "color", new Text("#FF000000"))))),
+                List.of(),
+                "/rect");
+        var root = new Materializer.MaterializedNode(
+                "canvas",
+                new ObjectNode(Map.of(
+                        "kind", new Text("canvas"),
+                        "widthMm", new NumberToken("210"),
+                        "heightMm", new NumberToken("297"))),
+                List.of(child),
+                "");
+        return new Materializer.MaterializedTree(root, List.of(), List.of());
+    }
+
     private static Materializer.MaterializedTree viewportTree() {
         var sourceCanvas = new Materializer.MaterializedNode(
                 "canvas",
@@ -323,6 +407,14 @@ class SealerTest {
         assertEquals(ProblemCode.RENDER_DOCUMENT_LIMIT_EXCEEDED,
                 rejected.problem().code());
         assertEquals("renderDocument.staticNodes",
+                rejected.problem().limitId().orElseThrow().value());
+    }
+
+    private static void assertChildEdgeLimit(Sealer.SealRejected rejected) {
+        assertEquals(EvaluationStage.DOCUMENT_SEAL, rejected.problem().stage());
+        assertEquals(ProblemCode.RENDER_DOCUMENT_LIMIT_EXCEEDED,
+                rejected.problem().code());
+        assertEquals("renderDocument.childEdges",
                 rejected.problem().limitId().orElseThrow().value());
     }
 

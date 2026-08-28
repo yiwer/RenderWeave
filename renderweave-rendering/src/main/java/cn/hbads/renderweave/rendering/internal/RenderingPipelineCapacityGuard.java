@@ -53,6 +53,11 @@ final class RenderingPipelineCapacityGuard {
                 "renderDocument.staticNodes",
                 20_000,
                 ProblemCode.RENDER_DOCUMENT_LIMIT_EXCEEDED,
+                EvaluationStage.DOCUMENT_SEAL),
+        RENDER_DOCUMENT_CHILD_EDGES(
+                "renderDocument.childEdges",
+                19_999,
+                ProblemCode.RENDER_DOCUMENT_LIMIT_EXCEEDED,
                 EvaluationStage.DOCUMENT_SEAL);
 
         private final String id;

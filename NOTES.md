@@ -3849,3 +3849,25 @@
 - cap-018 不执行 Evaluator/Sealer，故无 T149-specific A2/A3；J0 pending、J1 未批准。未重复 server/full，provider
   attempts/API Key reads/真实数据/Profile registration/push/tag/PR 均为 0。
 - 状态回填后的 resolution `fast` `.sdlc/evidence/20260829-054443-fast/` metadata 为 passed，3/3 steps 全绿。
+
+# 2026-08-29 Template-v1 T150 RenderDocument child edges（resolved / automated_verified）
+
+- T149 已以 verified commit `e36dcf83` 收口，worktree clean、ahead 140 且 DAG 无其他 active claim；现按
+  single-writer 登记并 claim T150。
+- `RW-T19-S7-092` / cap-019 固定 `renderDocument.childEdges` MAX_INCLUSIVE `19999`，observed
+  `19998/19999/20000`，DOCUMENT_SEAL_COUNTING / public DOCUMENT_SEAL / RENDER_DOCUMENT_LIMIT_EXCEEDED /
+  ZERO_DOCUMENT_OUTPUT。
+- root/empty array 计 `0`；每个 surviving `children[]` item-parent link 与 compositionViewport→sourceCanvas 专用 link
+  各计 `1`。在 child/source occurrenceId 与 object 分配前经唯一 request tracker 预留，并与 T149 staticNodes 使用
+  独立 limit/counter。
+- guard compile RED 精确为 3 个 missing-enum errors，接线后 12/12 GREEN；Sealer 10 tests 随后精确 2 个 behavioral
+  RED（one-child/sourceCanvas above 仍 Sealed），production reservation 后 10/10 GREEN。
+- empty root child/static 双 prefix 19999 仍 seal；one-child 双 prefix 19998/19999 与 viewport 双 prefix 19997/19998
+  同时卡住 19999 edges/20000 Nodes，并证明 above 时 child-edge first-fail。`sealChildren` 不按未准入 size 预分配
+  backing storage，edge 先于对应 child allocation。
+- focused 97/97；受影响 reactor Schema 20、Validation 13、Template 84、Asset 92、Rendering 221 全绿，
+  `git diff --check` 通过。A1 `render` `.sdlc/evidence/20260829-055908-render/`（2/2）与 `fast`
+  `.sdlc/evidence/20260829-055957-fast/`（3/3）metadata 均 passed，既有 RenderDocument replay 83/83。
+- cap-019 不执行 Evaluator/Sealer，故无 T150-specific A2/A3；J0 pending、J1 未批准。未重复 server/full，provider
+  attempts/API Key reads/真实数据/Profile registration/push/tag/PR 均为 0。
+- 状态回填后的 resolution `fast` `.sdlc/evidence/20260829-060138-fast/` metadata 为 passed，3/3 steps 全绿。
