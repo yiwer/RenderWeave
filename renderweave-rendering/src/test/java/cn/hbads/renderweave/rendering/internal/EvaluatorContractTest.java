@@ -50,7 +50,8 @@ class EvaluatorContractTest {
     private static final String ROOT_ID = "00000000-0000-4000-8000-0000000000a1";
     private static final String AUTH_DIGEST = "sha256:" + "5".repeat(64);
     private static final String DEFAULT_BUDGET_VECTOR = budgetVector(
-            4_096, 8_192, 4_096, 4_096, 2_048, 16_777_216, 16_777_216);
+            4_096, 8_192, 4_096, 4_096, 2_048, 16_777_216, 1_048_576,
+            16_777_216);
     private static final String PUBLIC_IMAGE_DEFINITION =
             "00000000-0000-4000-8000-0000000000d1";
     private static final String DEFAULT_IMAGE =
@@ -103,7 +104,8 @@ class EvaluatorContractTest {
                 resolver(),
                 stateStore,
                 runtime,
-                budgetVector(0, 8, 4, 4, 2_048, 16_777_216, 16_777_216));
+                budgetVector(0, 8, 4, 4, 2_048, 16_777_216, 1_048_576,
+                        16_777_216));
 
         var rejected = assertInstanceOf(EvaluationOutcome.Rejected.class,
                 evaluator.evaluate(command("{\"rootDocument\":{}}")));
@@ -126,7 +128,8 @@ class EvaluatorContractTest {
                 resolver(),
                 new RecordingCapabilityStateStore(),
                 runtime,
-                budgetVector(1, 8, 4, 1, 2_048, 16_777_216, 16_777_216));
+                budgetVector(1, 8, 4, 1, 2_048, 16_777_216, 1_048_576,
+                        16_777_216));
 
         var rejected = assertInstanceOf(EvaluationOutcome.Rejected.class,
                 evaluator.evaluate(command("{\"rootDocument\":{}}")));
@@ -147,7 +150,8 @@ class EvaluatorContractTest {
                 resolver(),
                 new RecordingCapabilityStateStore(),
                 runtime,
-                budgetVector(2, 1, 4, 2, 2_048, 16_777_216, 16_777_216));
+                budgetVector(2, 1, 4, 2, 2_048, 16_777_216, 1_048_576,
+                        16_777_216));
 
         var rejected = assertInstanceOf(EvaluationOutcome.Rejected.class,
                 evaluator.evaluate(command("{\"rootDocument\":{}}")));
@@ -168,7 +172,8 @@ class EvaluatorContractTest {
                 resolver(),
                 new RecordingCapabilityStateStore(),
                 runtime,
-                budgetVector(2, 8, 1, 4, 2_048, 16_777_216, 16_777_216));
+                budgetVector(2, 8, 1, 4, 2_048, 16_777_216, 1_048_576,
+                        16_777_216));
 
         var rejected = assertInstanceOf(EvaluationOutcome.Rejected.class,
                 evaluator.evaluate(command("{\"rootDocument\":{}}")));
@@ -184,7 +189,7 @@ class EvaluatorContractTest {
     @Test
     void positionPerDemandBudgetRejectsBeforeProviderWork() {
         assertFirstDemandByteLimit(
-                budgetVector(2, 2, 2, 2, 1, 16_777_216, 16_777_216),
+                budgetVector(2, 2, 2, 2, 1, 16_777_216, 1_048_576, 16_777_216),
                 "capabilityRuntime.positionCanonicalBytesPerDemand",
                 0);
     }
@@ -192,7 +197,7 @@ class EvaluatorContractTest {
     @Test
     void positionTotalBudgetRejectsBeforeProviderWork() {
         assertFirstDemandByteLimit(
-                budgetVector(2, 2, 2, 2, 2_048, 1, 16_777_216),
+                budgetVector(2, 2, 2, 2, 2_048, 1, 1_048_576, 16_777_216),
                 "capabilityRuntime.positionCanonicalBytesTotal",
                 0);
     }
@@ -200,7 +205,7 @@ class EvaluatorContractTest {
     @Test
     void resultDigestStreamingBudgetRejectsBeforeReturningTheProviderResult() {
         assertFirstDemandByteLimit(
-                budgetVector(2, 2, 2, 2, 2_048, 16_777_216, 1),
+                budgetVector(2, 2, 2, 2, 2_048, 16_777_216, 1_048_576, 1),
                 "capabilityRuntime.resultDigestStreamingBytes",
                 1);
     }
@@ -213,7 +218,7 @@ class EvaluatorContractTest {
                 resolver(),
                 new RecordingCapabilityStateStore(),
                 runtime,
-                budgetVector(1, 0, 0, 0, 0, 0, 0));
+                budgetVector(1, 0, 0, 0, 0, 0, 1_048_576, 0));
 
         assertInstanceOf(EvaluationOutcome.SealedDocument.class,
                 evaluator.evaluate(command("{\"rootDocument\":{}}")));
@@ -228,7 +233,7 @@ class EvaluatorContractTest {
                 resolver(),
                 new RecordingCapabilityStateStore(),
                 runtime,
-                budgetVector(1, 1, 0, 1, 2_048, 2_048, 2_048));
+                budgetVector(1, 1, 0, 1, 2_048, 2_048, 1_048_576, 2_048));
 
         assertInstanceOf(EvaluationOutcome.SealedDocument.class,
                 evaluator.evaluate(command("{\"rootDocument\":{}}")));
@@ -273,6 +278,49 @@ class EvaluatorContractTest {
         assertEquals(1, runtime.restoreCalls);
         assertEquals(1, stateStore.saveCalls);
         assertEquals(2, stateStore.loadCalls);
+    }
+
+    @Test
+    void capabilityStateRecordOverBudgetRejectsBeforeStoreCommit() {
+        var stateStore = new RecordingCapabilityStateStore();
+        var runtime = new RecordingCapabilityRuntime();
+        var evaluator = evaluator(
+                closureWith(withUnusedClock(canvasWithRect())),
+                resolver(),
+                stateStore,
+                runtime,
+                budgetVector(1, 8, 4, 4, 2_048, 16_777_216, 2, 16_777_216));
+
+        var rejected = assertInstanceOf(EvaluationOutcome.Rejected.class,
+                evaluator.evaluate(command("{\"rootDocument\":{}}")));
+
+        assertEquals(EvaluationStage.CAPABILITY_STATE, rejected.stage());
+        assertEquals(RenderingProblem.ProblemCode.CAPABILITY_BUDGET_EXCEEDED,
+                rejected.problem().code());
+        assertEquals("capabilityRuntime.capabilityStateRecordBytes",
+                rejected.problem().limitId().orElseThrow().value());
+        assertEquals(1, runtime.establishCalls);
+        assertEquals(1, stateStore.loadCalls);
+        assertEquals(0, stateStore.saveCalls);
+    }
+
+    @Test
+    void capabilityStateRecordAtLimitCommitsNormally() {
+        var stateStore = new RecordingCapabilityStateStore();
+        var runtime = new RecordingCapabilityRuntime();
+        var evaluator = evaluator(
+                closureWith(withUnusedClock(canvasWithRect())),
+                resolver(),
+                stateStore,
+                runtime,
+                budgetVector(1, 8, 4, 4, 2_048, 16_777_216, 3, 16_777_216));
+
+        assertInstanceOf(EvaluationOutcome.SealedDocument.class,
+                evaluator.evaluate(command("{\"rootDocument\":{}}")));
+
+        assertEquals(1, runtime.establishCalls);
+        assertEquals(1, stateStore.loadCalls);
+        assertEquals(1, stateStore.saveCalls);
     }
 
     @Test
@@ -734,6 +782,7 @@ class EvaluatorContractTest {
             long randomDemands,
             long positionBytesPerDemand,
             long positionBytesTotal,
+            long capabilityStateRecordBytes,
             long resultDigestStreamingBytes
     ) {
         return "{\"groups\":{\"capabilityRuntime\":{\"limits\":{"
@@ -743,6 +792,7 @@ class EvaluatorContractTest {
                 + "\"randomDemands\":" + randomDemands + ","
                 + "\"positionCanonicalBytesPerDemand\":" + positionBytesPerDemand + ","
                 + "\"positionCanonicalBytesTotal\":" + positionBytesTotal + ","
+                + "\"capabilityStateRecordBytes\":" + capabilityStateRecordBytes + ","
                 + "\"resultDigestStreamingBytes\":" + resultDigestStreamingBytes
                 + "}}}}";
     }

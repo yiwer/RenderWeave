@@ -16,6 +16,7 @@ final class CapabilityBudget {
     private static final long MAX_RANDOM_DEMANDS = 4_096;
     private static final long MAX_POSITION_BYTES_PER_DEMAND = 2_048;
     private static final long MAX_POSITION_BYTES_TOTAL = 16_777_216;
+    private static final long MAX_CAPABILITY_STATE_RECORD_BYTES = 1_048_576;
     private static final long MAX_RESULT_DIGEST_STREAMING_BYTES = 16_777_216;
 
     private final Limits limits;
@@ -32,6 +33,7 @@ final class CapabilityBudget {
                 MAX_RANDOM_DEMANDS,
                 MAX_POSITION_BYTES_PER_DEMAND,
                 MAX_POSITION_BYTES_TOTAL,
+                MAX_CAPABILITY_STATE_RECORD_BYTES,
                 MAX_RESULT_DIGEST_STREAMING_BYTES));
     }
 
@@ -56,6 +58,8 @@ final class CapabilityBudget {
                 limit(limits, "positionCanonicalBytesPerDemand",
                         MAX_POSITION_BYTES_PER_DEMAND),
                 limit(limits, "positionCanonicalBytesTotal", MAX_POSITION_BYTES_TOTAL),
+                limit(limits, "capabilityStateRecordBytes",
+                        MAX_CAPABILITY_STATE_RECORD_BYTES),
                 limit(limits, "resultDigestStreamingBytes",
                         MAX_RESULT_DIGEST_STREAMING_BYTES)));
     }
@@ -63,6 +67,13 @@ final class CapabilityBudget {
     LimitExceeded admitStaticSources(long sourceCount) {
         if (sourceCount > limits.staticSources()) {
             return new LimitExceeded("capabilityRuntime.staticCapabilitySources");
+        }
+        return null;
+    }
+
+    LimitExceeded admitStateRecord(long recordBytes) {
+        if (recordBytes > limits.capabilityStateRecordBytes()) {
+            return new LimitExceeded("capabilityRuntime.capabilityStateRecordBytes");
         }
         return null;
     }
@@ -179,6 +190,7 @@ final class CapabilityBudget {
             long randomDemands,
             long positionBytesPerDemand,
             long positionBytesTotal,
+            long capabilityStateRecordBytes,
             long resultDigestStreamingBytes
     ) {
     }

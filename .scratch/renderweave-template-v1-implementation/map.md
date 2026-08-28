@@ -829,6 +829,11 @@ Label: wayfinder:map
   bytes 七个冻结上限，并保留 lazy/memo 与 first-error 顺序。focused 32/32、Rendering 157/157、app assembly
   9/9，render/fast/server metadata 全绿；初始化重试、state-record bytes、Random rejection 与 Ticket 19 records
   继续另票。
+- [T132 — 强制 CapabilityState record bytes 容量](issues/132-capability-state-record-capacity.md)
+  — **resolved / automated_verified**；已深化 T131 的单一 capacity authority，从 fingerprint-bound effective
+  vector 执行 `capabilityStateRecordBytes` exact inclusive pre-commit admission；超限以 exact stage/code/limitId
+  fail closed 且零 store write。focused 34/34、Rendering 159/159、app assembly 7/7，render/fast/server metadata
+  全绿；初始化 retry、Random rejection 与 Ticket 19 records 继续另票。
 
 - 改写或重解释现有 Schema/Inference v1 已提交历史，或在 dirty main 上直接实施 Template。
 - Workspace、组织/成员/分享/协作、跨 ownerScope 复制、通用 connector、任意 SQL/HTTP/文件/脚本、插件节点或运行时代码注册。

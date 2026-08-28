@@ -3408,3 +3408,24 @@
   已包含全 reactor clean server 的 `full`。A2 仅为未变 Renderer 轴独立 replay、无 T131-specific issued replay；
   A3 无，J0/J1 未批准。provider attempts/API Key reads/reservations/cost/真实数据/push/tag/PR 均为 0。
 - 状态回填后的 resolution `fast` `.sdlc/evidence/20260828-233332-fast/` metadata 为 `passed`。
+
+# 2026-08-28 Template-v1 T132 CapabilityState record capacity（resolved / automated_verified）
+
+- T131 已以 verified commit `dafb87ab` 收口且 worktree clean；DAG 无其他 claimed writer。复算 Ticket 19
+  capability matrix 后，首个 unblocked residual 是 `capabilityStateRecordBytes=1,048,576` 的 pre-commit guard。
+- 已按 single-writer 登记并 claim T132：只经 `Evaluator.evaluate` 公共 seam，以现有 `CapabilityBudget` 深模块
+  解析 fingerprint-bound limit，并在 establish 后、store save 前 admission opaque `sealedState` bytes；exact
+  inclusive，超限必须零 store write。初始化 retry、Random rejection 与 Ticket 19 records 另票。
+- 不改 SPI/PostgreSQL/encryption/state wire/fingerprint/expiry，不新增 route/OpenAPI/Web/migration/Profile；不
+  运行 provider、不读取 API Key、不发送真实数据、不 push/tag/PR。当前 A0、J0。
+- 已实现 fingerprint-bound `capabilityStateRecordBytes` pre-commit admission：冻结最大 1 MiB、部署只可收紧；
+  exact-at-limit 成功，above-limit 以 `CAPABILITY_STATE` / `CAPABILITY_BUDGET_EXCEEDED` / exact limitId 拒绝且
+  `saveCalls=0`。既有 replay restore 与无 capability 零 state work 不变。
+- 真实公开 seam RED 为 expected Rejected / actual SealedDocument；修复后 focused Evaluator 34/34、Rendering
+  159/159、生产 Spring assembly 7/7。
+- A1：`render` `.sdlc/evidence/20260828-234144-render/`、`fast`
+  `.sdlc/evidence/20260828-234233-fast/`、顺序 clean `server`
+  `.sdlc/evidence/20260828-234303-server/` 均 passed；server App 372/0/0/15。无 API/Web/migration/Profile 改动，
+  故不重复跑 `full`。A2 仅为未变 Renderer 独立 replay，A3 无，J0 pending/J1 未批准；provider/API Key/真实
+  数据/Profile registration/push/tag/PR 均为 0。
+- 状态回填后的 resolution `fast` `.sdlc/evidence/20260828-235941-fast/` 3/3 steps 均 passed。

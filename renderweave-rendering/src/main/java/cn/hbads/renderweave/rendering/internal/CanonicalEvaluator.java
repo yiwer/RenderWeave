@@ -165,7 +165,7 @@ final class CanonicalEvaluator implements Evaluator {
 
         var runtimeOutcome = capabilityRuntime(command, closure, admitted.input(), declarations);
         if (runtimeOutcome instanceof CapabilityRuntimeRejected rejected) {
-            return rejected(EvaluationStage.CAPABILITY_STATE, rejected.code(), null);
+            return rejected(EvaluationStage.CAPABILITY_STATE, rejected.code(), rejected.limitId());
         }
         var runtime = CapabilityValues.wrapping(
                 ((CapabilityRuntimeReady) runtimeOutcome).runtime(), capabilityBudget.newTracker());
@@ -259,6 +259,11 @@ final class CanonicalEvaluator implements Evaluator {
         } catch (RuntimeException unavailable) {
             return new CapabilityRuntimeRejected(ProblemCode.CAPABILITY_STATE_UNAVAILABLE);
         }
+        var stateRecordLimit = capabilityBudget.admitStateRecord(established.sealedState().length);
+        if (stateRecordLimit != null) {
+            return new CapabilityRuntimeRejected(
+                    ProblemCode.CAPABILITY_BUDGET_EXCEEDED, stateRecordLimit.limitId());
+        }
         var issuedAt = clock.instant().getEpochSecond();
         var deadlineMillis = command.deadlineAtEpochMilli();
         var deadlineSecond = Math.floorDiv(deadlineMillis, 1_000L)
@@ -289,7 +294,12 @@ final class CanonicalEvaluator implements Evaluator {
     private record CapabilityRuntimeReady(
             RenderingCapabilityRuntime.Runtime runtime)
             implements CapabilityRuntimeOutcome { }
-    private record CapabilityRuntimeRejected(ProblemCode code) implements CapabilityRuntimeOutcome { }
+    private record CapabilityRuntimeRejected(
+            ProblemCode code, String limitId) implements CapabilityRuntimeOutcome {
+        private CapabilityRuntimeRejected(ProblemCode code) {
+            this(code, null);
+        }
+    }
 
     private static EvaluationOutcome.Rejected rejected(
             EvaluationStage stage, ProblemCode code, String limitId) {

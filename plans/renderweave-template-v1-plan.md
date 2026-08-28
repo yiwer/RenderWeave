@@ -4798,3 +4798,36 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
 - provider attempts/API Key reads/reservations/cost/真实数据/push/tag/PR 均为 0；A2 仅为未变 Renderer 轴独立
   replay、无 T131-specific issued replay，A3 无，J0/J1 未批准。
 - 状态回填后的 resolution `fast` `.sdlc/evidence/20260828-233332-fast/` metadata 为 `passed`。
+
+## 132. TV1-T132 执行卡
+
+- 状态：`resolved / automated_verified`；single writer: Codex；blocked by T21/T125/T129/T131（均 resolved）。
+- 决策：T131 verified commit `dafb87ab` 后 worktree clean，DAG 无其他 claimed writer；T131 明确留下的首个
+  frozen capacity axis 是 `capabilityStateRecordBytes=1,048,576`，且 existing runtime 已提供 opaque store-ready
+  `Established.sealedState` bytes，因此无需改变 SPI、state wire 或数据库即可形成真实 pre-commit 纵切。
+- seam：只经公开 `Evaluator.evaluate` 观察结果；现有 `CapabilityBudget` 深模块解析 fingerprint-bound limit 并
+  接受 opaque record byte length。Evaluator 在 establish 后、SaveRequest/store save 前调用一次 admission；
+  exact limit inclusive，above-limit 返回 `CAPABILITY_BUDGET_EXCEEDED`、stage `CAPABILITY_STATE` 与 exact limitId。
+- TDD：先以 3-byte record / limit 2 建立真实 RED，证明超限前 saveCalls=0；再实现最小 GREEN 并补 3-byte
+  exact-at-limit success。replay 不建立新 record、不重复 charge；无 capability 仍零 state work。
+- 禁止影响：SPI/PostgreSQL/encryption/state wire/fingerprint/expiry/retry、Random rejection、正式 Ticket 19
+  records、route/OpenAPI/Web/migration/Profile/provider/真实数据/push/tag/PR。
+- 验证：focused Rendering、app assembly、`render`、`fast`、顺序 `server`，按影响面决定 `full`；最高
+  `automated_verified`，A3/J1/READY 不推进。
+
+### TV1-T132 resolution evidence
+
+- `CapabilityBudget` 在同一个 fingerprint-bound effective vector parser 中纳入冻结
+  `capabilityStateRecordBytes=1,048,576`，并在 runtime establish 后、state-store commit 前 admission opaque
+  `sealedState` 长度；exact-at-limit 成功，above-limit 返回 `CAPABILITY_STATE` /
+  `CAPABILITY_BUDGET_EXCEEDED` / exact limitId，且 saveCalls=0。SPI、DB/encryption、state wire、fingerprint、
+  expiry、restore replay 均未改变。
+- TDD 经公开 `Evaluator.evaluate` 先取得真实 RED（expected Rejected / actual SealedDocument），后同一 tracer
+  GREEN；最终 focused Evaluator 34/34、Rendering 159/159、生产 Spring assembly 7/7。
+- A1：`render` `.sdlc/evidence/20260828-234144-render/`、`fast`
+  `.sdlc/evidence/20260828-234233-fast/`、顺序 clean `server`
+  `.sdlc/evidence/20260828-234303-server/` 均 passed；server 8-module reactor BUILD SUCCESS，App
+  372/0/0/15。T132 无 API/Web/migration/Profile 改动，故不重复跑 `full`。
+- A2 仅为未变 Renderer 轴独立 replay、无 T132-specific issued replay；A3 无，J0 pending、J1 未批准。
+  provider attempts/API Key reads/reservations/cost/真实数据/Profile registration/push/tag/PR 均为 0。
+- 状态回填后的 resolution `fast` `.sdlc/evidence/20260828-235941-fast/` 3/3 steps 均 passed。
