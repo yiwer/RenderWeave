@@ -1785,7 +1785,7 @@ components:
           enum: [ready]
         contractVersion:
           type: string
-          const: 0.15.0
+          const: 0.16.0
     AssetDeletePrecheckResponse:
       type: object
       additionalProperties: false

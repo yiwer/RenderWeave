@@ -3290,3 +3290,24 @@
   绿色 `full` `.sdlc/evidence/20260828-141041-full/`（17/17）。A2 未签发；A3 未外部强制；
   状态回填后的 resolution `fast` `.sdlc/evidence/20260828-171548-fast/` 通过。J0；provider
   attempts/API Key reads/real data/Profile registration/push/tag/PR = 0。
+
+# 2026-08-28 Template-v1 T127 API contract identity（resolved / automated_verified）
+
+- T126 已以 verified commit `82d17805` 收口且 worktree clean。DAG 复核发现 T67 tracker issue
+  已 resolved，但计划表仍陈旧标为 claimed，现已回填；当前不存在另一名 writer。
+- T114 的 OpenAPI `info.version` 已为 `0.16.0`，但 runtime status、OpenAPI `SystemStatus`
+  closed schema 与 generated SDK 仍为 `0.15.0`。已登记并 claim T127，以公共 status canary
+  做 RED→GREEN，再用既有生成器同步 SDK；不新增 route/migration/Profile，不运行 provider，不
+  push/tag/PR。
+- focused canary 先真实 RED（expected 0.16.0 / actual 0.15.0）后 1/1 GREEN；runtime、OpenAPI
+  info/schema 与 generated SDK 现均为 0.16.0。`web` `.sdlc/evidence/20260828-172316-web/`、
+  `fast` `.sdlc/evidence/20260828-172402-fast/`、顺序 `server`
+  `.sdlc/evidence/20260828-172426-server/`、`asset`
+  `.sdlc/evidence/20260828-173629-asset/` 均通过。
+- Goal `full` `.sdlc/evidence/20260828-173705-full/` 前 14/15 steps 通过，runtime canary 返回
+  `contractVersion: 0.16.0`；唯一 prototype-e2e 失败为本机 `ERR_NO_BUFFER_SPACE`
+  （22 passed / 1 skipped / 1 failed）。该唯一 Schema Studio case 降为 1 worker 后 1/1 通过：
+  `.sdlc/evidence/20260828-175513-t127-browser-replay/`。保留原 failed metadata truth，以绿色
+  steps + 精确恢复重放构成 A1；A2/A3 未推进，J0；provider attempts/API Key reads/real data/
+  Profile registration/push/tag/PR = 0。状态回填后的 resolution `fast`
+  `.sdlc/evidence/20260828-175621-fast/` 通过。

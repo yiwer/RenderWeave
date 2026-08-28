@@ -390,7 +390,7 @@ flowchart LR
 | 64 | task | `resolved / automated_verified` | 23, 25, 26, 33, 34, 38, 39, 40, 41, 43, 44, 45, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63 | COLUMN Stack already-resolved width → direct Grid ContentBox → strict columns-first HUG rows；shared `/27` Rust/Python 134/134、401 checks；rows→columns/general constraint/tolerance 保持 fail closed |
 | 65 | task | `resolved / automated_verified` | 23, 25, 26, 34, 39, 40, 41, 44, 45, 57, 58, 59, 60, 64 | definite Grid FIXED→AUTO→multi-FRACTION，authored-order 前 n-1 weighted share + last remainder；shared `/28` Rust/Python 136/136、409 checks；跨多 AUTO deficit/Stack water filling/Profile tolerance 保持 fail closed |
 | 66 | task | `resolved / automated_verified` | 23, 25, 26, 34, 40, 41, 44, 45, 65 | stable-sorted Grid span constraint 对 covered AUTO tracks 做 authored-order average increase，前 n-1 equal share + last remainder；shared `/29` Rust/Python 139/139、419 checks；不做 convergence；Stack water filling/rows→columns/Profile tolerance 保持 fail closed |
-| 67 | task | `active / claimed` | 23, 25, 26, 33, 38, 43, 55, 56, 65, 66 | definite Stack 多 main-FILL 仅在 owning-axis 全无 min/max 时按 positive fillWeight 做 authored-order weighted share + last remainder；bound freeze/redistribution 与 residual tolerance 保持 fail closed |
+| 67 | task | `resolved / automated_verified` | 23, 25, 26, 33, 38, 43, 55, 56, 65, 66 | definite Stack 多 main-FILL 仅在 owning-axis 全无 min/max 时按 positive fillWeight 做 authored-order weighted share + last remainder；bound freeze/redistribution 与 residual tolerance 保持 fail closed |
 
 每次只 claim 一个 unblocked ticket；一票 resolved 后才由其 `Blocked by` 关系产生下一 frontier。未知实现切片留在
 map 的 `Not yet specified`，不为排满计划提前发明接口、migration 或 Profile identity。
@@ -4641,5 +4641,34 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
   TCP `ERR_NO_BUFFER_SPACE` 资源耗尽影响。因本票零 Web 变更，按 RULE-VAL-001 复用 T125
   绿色 `full` `.sdlc/evidence/20260828-141041-full/`（17/17）。
 - 状态回填后的 resolution `fast` `.sdlc/evidence/20260828-171548-fast/` 通过。
+- A2 未签发 ticket-specific independent replay；A3 未外部强制；J0；provider attempts/API Key
+  reads/real data/Profile registration/push/tag/PR = 0。状态回填后的 resolution `fast`
+  `.sdlc/evidence/20260828-175621-fast/` 通过。
+
+## 127. TV1-T127 执行卡
+
+- 状态：`resolved / automated_verified`；single writer: Codex；blocked by T114/T126（均 resolved）。
+- 决策：T114 已把 OpenAPI `info.version` bump 到 0.16.0，却遗漏 runtime status、同一 OpenAPI
+  closed schema 与 generated SDK；该漂移直接破坏客户端合同身份，且无需新产品语义/外部授权，登记为
+  当前 unblocked frontier。DAG 复核同时把已 resolved 的 T67 计划行从陈旧 `active / claimed` 回填。
+- seam：只经 `GET /api/v1/system/status` canary 观察运行时，OpenAPI schema + 既有 SDK generator
+  观察静态合同；不新增 route/operation/payload shape/migration/Profile。
+- TDD/验证：canary 先 RED 后 GREEN，SDK generation/Web focused，再 `web`/`fast`/顺序 `server`/
+  Goal `full`/resolution `fast`；最高 `automated_verified`，不推进 A3/J1/READY，不 push/tag/PR。
+
+### TV1-T127 resolution evidence
+
+- `EnvironmentCanaryTest` 在生产改动前按 `0.16.0` 期望取得真实 RED（实际仍为 `0.15.0`），
+  修正 runtime 后同一 focused test 1/1 GREEN；OpenAPI schema 经既有 generator 再生 SDK，diff
+  仅包含预期 contract literal。
+- `web` `.sdlc/evidence/20260828-172316-web/`、`fast`
+  `.sdlc/evidence/20260828-172402-fast/`、顺序 `server`
+  `.sdlc/evidence/20260828-172426-server/`、`asset`
+  `.sdlc/evidence/20260828-173629-asset/` 均通过。
+- Goal `full` `.sdlc/evidence/20260828-173705-full/` 前 14/15 steps 通过，其中 runtime canary
+  返回 `contractVersion: 0.16.0`；prototype-e2e 因本机 TCP `ERR_NO_BUFFER_SPACE` 得到
+  22 passed / 1 skipped / 1 failed。该唯一失败 Schema Studio case 随后以 1 worker 精确重放
+  1/1 通过：`.sdlc/evidence/20260828-175513-t127-browser-replay/`。原 `full` metadata 保持 failed
+  truth，不伪报；14 个绿色 steps 与精确恢复重放共同构成 ticket A1。
 - A2 未签发 ticket-specific independent replay；A3 未外部强制；J0；provider attempts/API Key
   reads/real data/Profile registration/push/tag/PR = 0。

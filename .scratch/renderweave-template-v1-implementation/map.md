@@ -806,6 +806,10 @@ Label: wayfinder:map
   — **resolved / automated_verified**；root missing/deleted、dependency invalid 与 authority unavailable
   已从含糊的 `EVALUATION_FAILED`/internal fold 分离为冻结 Template 领域 code，integrity/current-drift
   既有语义保持不变。
+- [T127 — 同步 Template catalog API contractVersion 0.16.0](issues/127-api-contract-version-identity.md)
+  — **resolved / automated_verified**；修复 T114 后 OpenAPI info 0.16.0 与
+  runtime/SystemStatus schema/generated SDK 仍为 0.15.0 的合同身份漂移，公共 canary
+  RED→GREEN 且四个合同身份点现已一致。
 
 - 改写或重解释现有 Schema/Inference v1 已提交历史，或在 dirty main 上直接实施 Template。
 - Workspace、组织/成员/分享/协作、跨 ownerScope 复制、通用 connector、任意 SQL/HTTP/文件/脚本、插件节点或运行时代码注册。
