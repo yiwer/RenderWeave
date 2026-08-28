@@ -182,7 +182,8 @@ final class Materializer {
                 capabilities,
                 CapabilityCallPosition.root(
                         rootSnapshot.templateId().value(), rootSnapshot.revision()),
-                1);
+                1,
+                0);
         var children = new ArrayList<MaterializedNode>();
         var expandFailure = materializer.expandNode(
                 designRoot, rootSnapshot, rootScope, "", children);
@@ -272,6 +273,12 @@ final class Materializer {
         if (itemsWire == null || loopId == null) {
             return failed(EvaluationStage.MATERIALIZATION, ProblemCode.RENDER_INTERNAL_ERROR, null);
         }
+        MaterializationOutcome capacityFailure = capacityFailure(CAPACITY_GUARD.admit(
+                RenderingPipelineCapacityGuard.Limit.REPEAT_NESTING_DEPTH,
+                scope.repeatNestingDepth() + 1));
+        if (capacityFailure != null) {
+            return capacityFailure;
+        }
         var items = scope.definitions().resolveSource(itemsWire, scope);
         if (items instanceof EvalError error) {
             return valueFailure(error);
@@ -288,7 +295,7 @@ final class Materializer {
         } else {
             return failed(EvaluationStage.MATERIALIZATION, ProblemCode.EVALUATION_FAILED, null);
         }
-        MaterializationOutcome capacityFailure = capacityFailure(CAPACITY_GUARD.admit(
+        capacityFailure = capacityFailure(CAPACITY_GUARD.admit(
                 RenderingPipelineCapacityGuard.Limit.REPEAT_COLLECTION_ITEMS_PER_OCCURRENCE,
                 itemList.size()));
         if (capacityFailure != null) {
@@ -613,7 +620,8 @@ final class Materializer {
                 DefinitionEngine.LoopFrames.EMPTY, capabilities,
                 scope.capabilityPath().enterTemplateUse(
                         useId.value(), childSnapshot.templateId().value(), childSnapshot.revision()),
-                childInvocationDepth);
+                childInvocationDepth,
+                scope.repeatNestingDepth());
         var childRoot = childObject(childDocument, "designRoot");
         if (childRoot == null) {
             return failed(EvaluationStage.MATERIALIZATION, ProblemCode.RENDER_INTERNAL_ERROR, null);
@@ -1171,6 +1179,7 @@ final class Materializer {
         private final DefinitionEngine.CapabilityProvider capabilities;
         private final CapabilityCallPosition.RuntimePath capabilityPath;
         private final int invocationDepth;
+        private final int repeatNestingDepth;
 
         InvocationScope(
                 TypedObject context,
@@ -1179,7 +1188,8 @@ final class Materializer {
                 DefinitionEngine.LoopFrames loopFrames,
                 DefinitionEngine.CapabilityProvider capabilities,
                 CapabilityCallPosition.RuntimePath capabilityPath,
-                int invocationDepth
+                int invocationDepth,
+                int repeatNestingDepth
         ) {
             this.context = context;
             this.customs = customs;
@@ -1190,7 +1200,11 @@ final class Materializer {
             if (invocationDepth < 1) {
                 throw new IllegalArgumentException("invocationDepth must be positive");
             }
+            if (repeatNestingDepth < 0) {
+                throw new IllegalArgumentException("repeatNestingDepth must be non-negative");
+            }
             this.invocationDepth = invocationDepth;
+            this.repeatNestingDepth = repeatNestingDepth;
         }
 
         @Override
@@ -1227,6 +1241,10 @@ final class Materializer {
             return invocationDepth;
         }
 
+        int repeatNestingDepth() {
+            return repeatNestingDepth;
+        }
+
         InvocationScope withLoopFrame(String loopId, DefinitionEngine.LoopFrame frame) {
             var frames = new java.util.LinkedHashMap<>(loopFrames.frames());
             frames.put(loopId, frame);
@@ -1237,7 +1255,8 @@ final class Materializer {
                     new DefinitionEngine.LoopFrames(frames),
                     capabilities,
                     capabilityPath.enterRepeat(loopId, frame.index()),
-                    invocationDepth);
+                    invocationDepth,
+                    repeatNestingDepth + 1);
         }
     }
 }

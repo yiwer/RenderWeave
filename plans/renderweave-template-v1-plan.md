@@ -5103,3 +5103,39 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
 - 无正式 Ticket 19 product target/executor，故无 T140-specific A2；A3 无，J0 pending、J1 未批准。provider
   attempts/API Key reads/真实数据/Profile registration/push/tag/PR 均为 0。
 - 状态回填后的 resolution `fast` `.sdlc/evidence/20260829-033936-fast/` metadata 为 `passed`，3/3 steps 全绿。
+
+## 141. TV1-T141 执行卡
+
+- 状态：`resolved / automated_verified`；single writer: Codex；blocked by T21/T140（均 resolved）。
+- authority：`closureAndExpansion.repeatNestingDepth` 为 MAX_INCLUSIVE `8`，observed `7/8/9`，contract stage
+  SERIAL_MATERIALIZATION、public stage MATERIALIZATION、code EVALUATION_BUDGET_EXCEEDED、zero boundary
+  ZERO_DOCUMENT_OUTPUT；requirements 包含 `RW-T19-S7-077`。
+- 语义：root active Repeat depth 为 0，每个实际进入的 Repeat occurrence 沿当前 expansion path +1；items/sibling/
+  returned branch 不累计，render:false、false Conditional 与 zero outer Repeat 未进入的 descendant 不计。child
+  Template invocation 隔离 lexical Loop frames，但保留物理 occurrence path 上活跃的 Repeat depth。
+- seam：扩展唯一 package-internal `RenderingPipelineCapacityGuard`；`InvocationScope` 携带不可变 depth，
+  `withLoopFrame` +1，TemplateUse child scope 原样继承。depth 9 在该层 items/frame/node/generated/descendant work
+  前 exact fail closed；不新增产品 API/SPI/config/test override。
+- TDD：先让合法 depth 9 nested Repeat 在公开 Evaluator seam 错误 seal 形成 behavioral RED，再最小接线；补
+  7/8 success、sibling path-local、pruned branch 与 isolated guard 回归。验证 focused、受影响 reactor、render/fast；
+  无 app wiring/API/Web/migration/Profile 变化，不重复 full，server 留到周期性容量批次。
+- 禁止影响：loopFramesTotal 等后续容量轴、正式 Ticket 19 records/product executor、provider/API Key/真实数据/
+  Profile registration/push/tag/PR；最高 `automated_verified`，当前 A1、J0。
+
+### TV1-T141 resolution evidence
+
+- 实现：唯一 package-internal `RenderingPipelineCapacityGuard` 增加 `REPEAT_NESTING_DEPTH=8`；root scope depth 0，
+  Repeat entry 检查 current+1，`withLoopFrame` 携带新 depth，父 scope 不变。TemplateUse child 清空 lexical Loop
+  frames 但继承 active physical depth，不能用 invocation boundary 绕过限制。
+- TDD：生产未改时，合法 depth 9 nested Repeat 预期 `Rejected`、实际 `SealedDocument`，形成 behavioral RED；
+  最小接线后 7/8 success，9 exact MATERIALIZATION / EVALUATION_BUDGET_EXCEEDED / full limitId，且第九层
+  items/frame/node/descendant work 前终止。
+- 两个 sibling depth-8 tree 成功，第九层 render:false 成功剪枝；九层 Repeat→TemplateUse chain 在第九层拒绝；
+  isolated guard 7/8/9 全绿。focused Evaluator/guard 66/66；受影响 reactor Schema 20、Validation 13、Template 84、
+  Asset 92、Rendering 191 全绿；`git diff --check` 通过。
+- A1 `render` `.sdlc/evidence/20260829-034848-render/`（2/2）与 `fast`
+  `.sdlc/evidence/20260829-034940-fast/`（3/3）metadata 均 `passed`。无 app wiring/API/Web/migration/Profile 变化，
+  按快速迭代约定未重复 server/full。
+- frozen candidate fixture 尚无正式 product target/executor replay，故无 T141-specific A2；A3 无，J0 pending、
+  J1 未批准。provider attempts/API Key reads/真实数据/Profile registration/push/tag/PR 均为 0。
+- 状态回填后的 resolution `fast` `.sdlc/evidence/20260829-035052-fast/` metadata 为 `passed`，3/3 steps 全绿。

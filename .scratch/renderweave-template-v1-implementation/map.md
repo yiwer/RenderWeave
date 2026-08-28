@@ -875,6 +875,11 @@ Label: wayfinder:map
   actual Repeat 的完整 collection length，MAX_INCLUSIVE `1000`，公开 Evaluator seam 重放 `999/1000/1001`，
   guard 同时覆盖 zero。9×1000 + 995 sibling 回归证明不跨 occurrence 累计；focused 73/73、Rendering 184/184
   与 render/fast metadata 全绿。A1、无 ticket-specific A2、J0。
+- [T141 — 强制 Repeat nesting depth 容量](issues/141-repeat-nesting-depth-capacity.md)
+  — **resolved / automated_verified**；按 `RW-T19-S7-077` 将 active actual Repeat path 固定为 root `0`、enter
+  `+1`、MAX_INCLUSIVE `8`，公开 Evaluator seam 重放 `7/8/9`；sibling 不累计、render:false 不进入，TemplateUse
+  只隔离 lexical frame 而不能重置物理 depth。focused 66/66、Rendering 191/191 与 render/fast metadata 全绿；
+  A1、无 ticket-specific A2、J0。
 
 - 改写或重解释现有 Schema/Inference v1 已提交历史，或在 dirty main 上直接实施 Template。
 - Workspace、组织/成员/分享/协作、跨 ownerScope 复制、通用 connector、任意 SQL/HTTP/文件/脚本、插件节点或运行时代码注册。

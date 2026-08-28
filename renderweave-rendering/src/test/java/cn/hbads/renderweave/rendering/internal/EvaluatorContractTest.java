@@ -849,6 +849,64 @@ class EvaluatorContractTest {
     }
 
     @Test
+    void repeatNestingAboveLimitRejectsBeforeTheNinthLoopFrame() {
+        assertRepeatNestingRejected(closureWith(nestedRepeatDocument(9)));
+    }
+
+    @Test
+    void repeatNestingBelowLimitIsAccepted() {
+        assertRepeatNestingAccepted(7);
+    }
+
+    @Test
+    void repeatNestingAtLimitIsAccepted() {
+        assertRepeatNestingAccepted(8);
+    }
+
+    @Test
+    void repeatNestingIsPathLocalAcrossSiblings() {
+        var document = canvasWithChildren(
+                nestedRepeatNode(8, 0, -1) + "," + nestedRepeatNode(8, 1_000, -1));
+
+        assertInstanceOf(EvaluationOutcome.SealedDocument.class,
+                evaluator(closureWith(document), resolver())
+                        .evaluate(command("{\"rootDocument\":{}}")));
+    }
+
+    @Test
+    void renderFalseRepeatDoesNotEnterTheNinthDepth() {
+        var document = canvasWithChildren(nestedRepeatNode(9, 0, 9));
+
+        assertInstanceOf(EvaluationOutcome.SealedDocument.class,
+                evaluator(closureWith(document), resolver())
+                        .evaluate(command("{\"rootDocument\":{}}")));
+    }
+
+    @Test
+    void templateUseCannotResetActiveRepeatNestingDepth() {
+        assertRepeatNestingRejected(closureWithRepeatAcrossTemplateDepth(9));
+    }
+
+    private static void assertRepeatNestingAccepted(int repeatDepth) {
+        assertInstanceOf(EvaluationOutcome.SealedDocument.class,
+                evaluator(closureWith(nestedRepeatDocument(repeatDepth)), resolver())
+                        .evaluate(command("{\"rootDocument\":{}}")));
+    }
+
+    private static void assertRepeatNestingRejected(ClosureSnapshot closure) {
+        var evaluator = evaluator(closure, resolver());
+
+        var rejected = assertInstanceOf(EvaluationOutcome.Rejected.class,
+                evaluator.evaluate(command("{\"rootDocument\":{}}")));
+
+        assertEquals(EvaluationStage.MATERIALIZATION, rejected.stage());
+        assertEquals(RenderingProblem.ProblemCode.EVALUATION_BUDGET_EXCEEDED,
+                rejected.problem().code());
+        assertEquals("closureAndExpansion.repeatNestingDepth",
+                rejected.problem().limitId().orElseThrow().value());
+    }
+
+    @Test
     void evaluateSealsDocumentEndToEnd() {
         var evaluator = evaluator(closureWith(canvasWithRect()), resolver());
 
@@ -1788,6 +1846,41 @@ class EvaluatorContractTest {
                 List.copyOf(edges));
     }
 
+    private static ClosureSnapshot closureWithRepeatAcrossTemplateDepth(int repeatDepth) {
+        if (repeatDepth < 1) {
+            throw new IllegalArgumentException("repeatDepth must be positive");
+        }
+        var snapshots = new ArrayList<TemplateSnapshot>(repeatDepth);
+        var edges = new ArrayList<ClosureEdge>(Math.max(0, repeatDepth - 1));
+        var currentTemplateId = ROOT_ID;
+        for (var depth = 1; depth <= repeatDepth; depth++) {
+            var leaf = depth == repeatDepth;
+            var childTemplateId = leaf ? null : capacityUuid(6, depth);
+            var useId = leaf ? null : capacityUuid(7, depth);
+            var child = leaf
+                    ? packedCapacityRect(capacityUuid(3, depth))
+                    : packedTemplateUse(childTemplateId, useId, depth);
+            snapshots.add(snapshot(
+                    currentTemplateId,
+                    canvasWithChildren(repeatNode(depth, child, false, true))));
+            if (!leaf) {
+                edges.add(new ClosureEdge(
+                        new TemplateApplication.TemplateId(currentTemplateId),
+                        1,
+                        useId,
+                        new TemplateApplication.TemplateId(childTemplateId),
+                        1));
+                currentTemplateId = childTemplateId;
+            }
+        }
+        return new ClosureSnapshot(
+                new TemplateClosureAuthority.OwnerScope("owner-a"),
+                new TemplateApplication.TemplateId(ROOT_ID),
+                1,
+                List.copyOf(snapshots),
+                List.copyOf(edges));
+    }
+
     private static String templateUse(String childTemplateId, String useId, int depth) {
         return "{\"nodeId\":\"" + capacityUuid(8, depth)
                 + "\",\"kind\":\"templateUse\",\"bindings\":[],"
@@ -1828,6 +1921,70 @@ class EvaluatorContractTest {
     private static String capacityUuid(int namespace, int ordinal) {
         return String.format(Locale.ROOT,
                 "%d0000000-0000-4000-8000-%012x", namespace, ordinal);
+    }
+
+    private static String nestedRepeatDocument(int repeatDepth) {
+        if (repeatDepth < 1) {
+            throw new IllegalArgumentException("repeatDepth must be positive");
+        }
+        return canvasWithChildren(nestedRepeatNode(repeatDepth, 0, -1));
+    }
+
+    private static String nestedRepeatNode(
+            int repeatDepth, int identityOffset, int renderFalseDepth) {
+        var child = packedCapacityRect(capacityUuid(3, identityOffset + 999));
+        for (var depth = repeatDepth; depth >= 1; depth--) {
+            var identity = identityOffset + depth;
+            child = repeatNode(
+                    identity,
+                    child,
+                    depth == renderFalseDepth,
+                    depth == 1);
+        }
+        return child;
+    }
+
+    private static String repeatNode(
+            int identity, String child, boolean renderFalse, boolean absolutePlacement) {
+        return "{\"nodeId\":\"" + capacityUuid(9, identity)
+                + "\",\"kind\":\"repeat\",\"bindings\":[],"
+                + (renderFalse ? "\"render\":false," : "")
+                + "\"placement\":"
+                + (absolutePlacement ? capacityAbsolutePlacement() : capacityPackPlacement())
+                + ",\"loopId\":\"" + capacityUuid(5, identity) + "\","
+                + "\"absentPolicy\":\"ERROR\",\"items\":{\"kind\":\"literal\","
+                + "\"valueType\":{\"type\":\"list\",\"items\":\"text\"},"
+                + "\"value\":[\"x\"]},"
+                + "\"itemLayout\":{\"kind\":\"STACK\",\"direction\":\"ROW\"},"
+                + "\"instanceLayout\":{\"kind\":\"STACK\",\"direction\":\"ROW\"},"
+                + "\"children\":[" + child + "]}";
+    }
+
+    private static String packedTemplateUse(
+            String childTemplateId, String useId, int identity) {
+        return "{\"nodeId\":\"" + capacityUuid(8, identity)
+                + "\",\"kind\":\"templateUse\",\"bindings\":[],"
+                + "\"useId\":\"" + useId + "\","
+                + "\"templateRef\":{\"templateId\":\"" + childTemplateId + "\"},"
+                + "\"contextSelector\":{\"kind\":\"empty\"},\"fills\":[],"
+                + "\"placement\":" + capacityPackPlacement() + "}";
+    }
+
+    private static String packedCapacityRect(String nodeId) {
+        return "{\"nodeId\":\"" + nodeId + "\",\"kind\":\"rect\",\"bindings\":[],"
+                + "\"placement\":" + capacityPackPlacement() + ","
+                + "\"fill\":{\"color\":\"#FF000000\"}}";
+    }
+
+    private static String capacityAbsolutePlacement() {
+        return "{\"type\":\"ABSOLUTE\",\"xMm\":0,\"yMm\":0,"
+                + "\"widthMode\":\"FIXED\",\"widthMm\":10,"
+                + "\"heightMode\":\"FIXED\",\"heightMm\":10}";
+    }
+
+    private static String capacityPackPlacement() {
+        return "{\"type\":\"PACK\",\"widthMode\":\"FIXED\",\"widthMm\":10,"
+                + "\"heightMode\":\"FIXED\",\"heightMm\":10}";
     }
 
     private static String canvasWithRect() {

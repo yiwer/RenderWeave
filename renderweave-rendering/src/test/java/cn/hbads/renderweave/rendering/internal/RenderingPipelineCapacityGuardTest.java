@@ -51,4 +51,25 @@ class RenderingPipelineCapacityGuardTest {
         assertEquals("closureAndExpansion.repeatCollectionItemsPerOccurrence",
                 problem.limitId().orElseThrow().value());
     }
+
+    @Test
+    void repeatNestingBoundaryUsesTheFrozenProductionGuardContract() {
+        var guard = new RenderingPipelineCapacityGuard();
+
+        assertTrue(guard.admit(
+                RenderingPipelineCapacityGuard.Limit.REPEAT_NESTING_DEPTH,
+                7).isEmpty());
+        assertTrue(guard.admit(
+                RenderingPipelineCapacityGuard.Limit.REPEAT_NESTING_DEPTH,
+                8).isEmpty());
+
+        var problem = guard.admit(
+                        RenderingPipelineCapacityGuard.Limit.REPEAT_NESTING_DEPTH,
+                        9)
+                .orElseThrow();
+        assertEquals(EvaluationStage.MATERIALIZATION, problem.stage());
+        assertEquals(ProblemCode.EVALUATION_BUDGET_EXCEEDED, problem.code());
+        assertEquals("closureAndExpansion.repeatNestingDepth",
+                problem.limitId().orElseThrow().value());
+    }
 }

@@ -25,7 +25,9 @@ final class RenderingPipelineCapacityGuard {
         COMPOSITION_VIEWPORTS(
                 "closureAndExpansion.compositionViewports", 256),
         REPEAT_COLLECTION_ITEMS_PER_OCCURRENCE(
-                "closureAndExpansion.repeatCollectionItemsPerOccurrence", 1_000);
+                "closureAndExpansion.repeatCollectionItemsPerOccurrence", 1_000),
+        REPEAT_NESTING_DEPTH(
+                "closureAndExpansion.repeatNestingDepth", 8);
 
         private final String id;
         private final long maximumInclusive;

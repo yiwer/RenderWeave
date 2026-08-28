@@ -3626,3 +3626,28 @@
 - 无正式 Ticket 19 product target/executor，故无 T140-specific A2；A3 无，J0 pending、J1 未批准。provider
   attempts/API Key reads/真实数据/Profile registration/push/tag/PR 均为 0。
 - 状态回填后的 resolution `fast` `.sdlc/evidence/20260829-033936-fast/` metadata 为 passed，3/3 steps 全绿。
+
+# 2026-08-29 Template-v1 T141 Repeat nesting depth（resolved / automated_verified）
+
+- T140 已以 verified commit `c39ca9ec` 收口，worktree clean 且 DAG 无其他 active claim；现按 single-writer 登记并
+  claim T141。
+- 机器 authority 固定 `closureAndExpansion.repeatNestingDepth` 为 MAX_INCLUSIVE `8`，observed `7/8/9`，
+  SERIAL_MATERIALIZATION / public MATERIALIZATION / EVALUATION_BUDGET_EXCEEDED / ZERO_DOCUMENT_OUTPUT，
+  requirement `RW-T19-S7-077`。
+- root active Repeat depth 为 0；每个实际进入的 Repeat path +1，items/sibling/returned branch 不累计。
+  TemplateUse child 清空 lexical Loop frames 但保留物理 active Repeat depth；depth 9 必须在该层 items/frame/node/
+  descendant work 前 fail closed。沿用 T139 唯一 internal guard，不新增产品 API/SPI/config。
+- claim 时 A0、J0；不运行 provider、不读取 API Key、不发送真实数据，不 push/tag/PR。
+- behavioral RED：生产未改时，合法 depth 9 nested Repeat 预期 `Rejected`、实际 `SealedDocument`。唯一 guard 增加
+  `REPEAT_NESTING_DEPTH=8`，root scope 0、Repeat entry current+1、item frame 携带新 depth；TemplateUse child 清空
+  lexical Loop frames 但继承 active physical depth。
+- depth 7/8 seal，9 exact MATERIALIZATION / EVALUATION_BUDGET_EXCEEDED / full limitId；两个 depth-8 sibling
+  成功，第九层 render:false 成功剪枝，九层 Repeat→TemplateUse chain 在第九层拒绝。focused Evaluator/guard
+  66/66；受影响 reactor Schema 20、Validation 13、Template 84、Asset 92、Rendering 191 全绿；
+  `git diff --check` 通过。
+- A1 `render` `.sdlc/evidence/20260829-034848-render/` 2/2 与 `fast`
+  `.sdlc/evidence/20260829-034940-fast/` 3/3 metadata 均 passed。无 app wiring/API/Web/migration/Profile 变化，按
+  快速迭代节奏未重复 server/full。
+- frozen candidate fixture 尚无正式 product target/executor replay，故无 T141-specific A2；A3 无，J0 pending、
+  J1 未批准。provider attempts/API Key reads/真实数据/Profile registration/push/tag/PR 均为 0。
+- 状态回填后的 resolution `fast` `.sdlc/evidence/20260829-035052-fast/` metadata 为 passed，3/3 steps 全绿。
