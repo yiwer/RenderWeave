@@ -4937,3 +4937,35 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
   费用/真实数据/Profile registration/push/tag/PR 均为 0。
 - 状态回填后的 resolution `fast` `.sdlc/evidence/20260829-014454-fast/` metadata 仍为 `passed`，3/3 steps
   全绿。
+
+## 136. TV1-T136 执行卡
+
+- 状态：`resolved / automated_verified`；single writer: Codex；blocked by T21/T135（均 resolved）。
+- 决策：T135 verified commit `62b5ce9c` 后 worktree clean 且无其他 active claim；机器 authority 将
+  `closureAndExpansion.closureCanonicalDesignBytes` 固定为 MAX_INCLUSIVE `33,554,432`，reservation point 是
+  加入下一份 unique snapshot canonical byte length 前，超限终态为 TEMPLATE_CLOSURE_FREEZE /
+  TEMPLATE_CLOSURE_LIMIT_EXCEEDED / ZERO_EVALUATION_DOCUMENT_OUTPUT。现有 closure authority 尚未累计该轴。
+- seam：Template-owned `TemplateClosureAuthority.freezeClosure` 是 ADR-0044 已冻结的公开 closure seam；
+  Rendering 的唯一产品 seam 仍为 `Evaluator.evaluate`。实现只深化既有 authority，并在既有 mapper 形成完整
+  `closureAndExpansion.*` limitId；不新增接口或容量档位。
+- 语义：每 complete freeze attempt 从零计数，每个 unique snapshot 仅计 exact canonical bytes 一次；diamond reuse
+  不重复计数，at-limit 成功，next byte 失败，overflow fail closed。失败发生在 input/capability/materialization/Engine
+  前，零 partial result。
+- TDD：公开 authority seam 固定 `33,554,431/32/33` below/at/above，公开 Evaluator seam 固定 exact
+  stage/code/full limitId；先取得真实 RED，再做最小 GREEN。focused 后跑 template/render/fast/顺序 server。
+- 禁止影响：正式 Ticket 19 records/executor、其他容量轴、route/OpenAPI/Web/migration/Profile、provider/API Key/
+  真实数据/push/tag/PR；最高 `automated_verified`，A3/J1/READY 不推进。
+- 实现：closure authority 为每个 complete freeze attempt 建立 overflow-safe request-local byte budget；unique snapshot
+  在写入 closure map 前预留 exact canonical bytes，at-limit success、next byte fail，diamond target 只计一次；
+  Evaluator 把 Template suffix 统一映射为 `closureAndExpansion.*` full limitId。
+- TDD：Template focused 18 tests 中 above-limit 错误 freeze 成功形成 RED；Evaluator 47 tests 中 suffix limitId 形成
+  第二个 RED。最小 GREEN 后 Template focused 20/20、Evaluator 47/47；受影响 reactor Schema 20、Validation 13、
+  Template 84、Asset 92、Rendering 172 tests 均零失败，`git diff --check` 通过。
+- A1：`template` `.sdlc/evidence/20260829-015926-template/`、`render`
+  `.sdlc/evidence/20260829-015956-render/`、`fast` `.sdlc/evidence/20260829-020045-fast/`、顺序 `server`
+  `.sdlc/evidence/20260829-020118-server/` metadata 均 `passed`；server 8-module reactor BUILD SUCCESS，App 372 tests /
+  0 failures / 0 errors / 15 controlled skips。无 API/OpenAPI/Web/migration/Profile 变化，未跑发布级 `full`。
+- 无 T136-specific issued record，故不声明 ticket-specific A2；A3 无，J0 pending、J1 未批准。provider attempts/
+  API Key reads/reservations/cost/真实数据/Profile registration/push/tag/PR 均为 0。
+- 状态回填后的 resolution `fast` `.sdlc/evidence/20260829-021815-fast/` metadata 仍为 `passed`，3/3 steps
+  全绿。

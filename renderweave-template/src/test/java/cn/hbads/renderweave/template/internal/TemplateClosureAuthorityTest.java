@@ -11,6 +11,7 @@ import cn.hbads.renderweave.template.spi.TemplatePersistence;
 import org.junit.jupiter.api.Test;
 
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -21,7 +22,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class TemplateClosureAuthorityTest {
 
+    private static final int MAX_DESIGN_BYTES = 16 * 1024 * 1024;
+    private static final int MAX_CLOSURE_CANONICAL_DESIGN_BYTES = 32 * 1024 * 1024;
+    private static final String SCRIPTED_CONTENT_HASH = "sha256:" + "a".repeat(64);
     private static final DesignDslAuthority DESIGNS = new CanonicalDesignDslAuthority();
+    private static final DesignDslAuthority SCRIPTED_DESIGNS = rawUtf8 ->
+            new DesignDslAuthority.Admitted(rawUtf8, SCRIPTED_CONTENT_HASH);
     private static final StaticSchemaRef SCHEMA = new StaticSchemaRef(
             SchemaKey.systemProvided("system-empty"),
             VersionTag.of("v1")
@@ -266,6 +272,58 @@ class TemplateClosureAuthorityTest {
     }
 
     @Test
+    void closureCanonicalDesignBytesAboveBudgetIsLimitExceeded() {
+        var scriptedPersistence = new FakePersistence();
+        var scriptedAuthority = new CanonicalTemplateClosureAuthority(
+                scriptedPersistence,
+                SCRIPTED_DESIGNS
+        );
+        var rootId = putClosureWithCanonicalByteCount(
+                scriptedPersistence,
+                MAX_CLOSURE_CANONICAL_DESIGN_BYTES + 1
+        );
+
+        var outcome = scriptedAuthority.freezeClosure(request("render-canonical-bytes-above"), rootId);
+
+        var limited = assertInstanceOf(TemplateClosureAuthority.ClosureLimitExceeded.class, outcome);
+        assertEquals("closureCanonicalDesignBytes", limited.limitId().value());
+    }
+
+    @Test
+    void closureCanonicalDesignBytesBelowBudgetIsAccepted() {
+        var scriptedPersistence = new FakePersistence();
+        var scriptedAuthority = new CanonicalTemplateClosureAuthority(
+                scriptedPersistence,
+                SCRIPTED_DESIGNS
+        );
+        var rootId = putClosureWithCanonicalByteCount(
+                scriptedPersistence,
+                MAX_CLOSURE_CANONICAL_DESIGN_BYTES - 1
+        );
+
+        var outcome = scriptedAuthority.freezeClosure(request("render-canonical-bytes-below"), rootId);
+
+        assertInstanceOf(TemplateClosureAuthority.ClosureFrozen.class, outcome);
+    }
+
+    @Test
+    void closureCanonicalDesignBytesAtBudgetIsAccepted() {
+        var scriptedPersistence = new FakePersistence();
+        var scriptedAuthority = new CanonicalTemplateClosureAuthority(
+                scriptedPersistence,
+                SCRIPTED_DESIGNS
+        );
+        var rootId = putClosureWithCanonicalByteCount(
+                scriptedPersistence,
+                MAX_CLOSURE_CANONICAL_DESIGN_BYTES
+        );
+
+        var outcome = scriptedAuthority.freezeClosure(request("render-canonical-bytes-at"), rootId);
+
+        assertInstanceOf(TemplateClosureAuthority.ClosureFrozen.class, outcome);
+    }
+
+    @Test
     void persistenceUnavailableIsClosureUnavailable() {
         var rootId = id("00000000-0000-4000-8000-0000000000a1");
         persistence.put(rootId, 1, "owner-a", canvasDoc("Root"));
@@ -345,6 +403,47 @@ class TemplateClosureAuthorityTest {
                 + "\"bindings\":[],\"children\":[" + children + "]}}";
     }
 
+    private static TemplateApplication.TemplateId putClosureWithCanonicalByteCount(
+            FakePersistence target,
+            int totalCanonicalBytes
+    ) {
+        var rootId = id("00000000-0000-4000-8000-0000000000a1");
+        var firstChildId = id("00000000-0000-4000-8000-0000000000b1");
+        var secondChildId = id("00000000-0000-4000-8000-0000000000c1");
+        var rootJson = multiUseDoc(
+                "Root",
+                new String[] {firstChildId.value(), secondChildId.value()},
+                new String[] {useId(1), useId(2)}
+        );
+        var leafJson = canvasDoc("Leaf");
+        var secondChildBytes = leafJson.getBytes(StandardCharsets.UTF_8);
+        var rootBytes = paddedJson(rootJson, MAX_DESIGN_BYTES);
+        var firstChildBytes = paddedJson(
+                leafJson,
+                totalCanonicalBytes - rootBytes.length - secondChildBytes.length
+        );
+        assertEquals(
+                totalCanonicalBytes,
+                rootBytes.length + firstChildBytes.length + secondChildBytes.length
+        );
+        target.putCanonical(firstChildId, 1, "owner-a", firstChildBytes);
+        target.putCanonical(secondChildId, 1, "owner-a", secondChildBytes);
+        target.putCanonical(rootId, 1, "owner-a", rootBytes);
+        return rootId;
+    }
+
+    private static byte[] paddedJson(String json, int byteLength) {
+        var raw = json.getBytes(StandardCharsets.UTF_8);
+        if (raw.length > byteLength || raw[raw.length - 1] != '}') {
+            throw new IllegalArgumentException("JSON cannot be padded to requested byte length");
+        }
+        var padded = new byte[byteLength];
+        System.arraycopy(raw, 0, padded, 0, raw.length - 1);
+        Arrays.fill(padded, raw.length - 1, byteLength - 1, (byte) ' ');
+        padded[byteLength - 1] = '}';
+        return padded;
+    }
+
     // ------------------------------------------------------------------
     // fake persistence
     // ------------------------------------------------------------------
@@ -383,6 +482,29 @@ class TemplateClosureAuthorityTest {
             );
             store.put(templateId.value(), new Entry(stored, false));
             return admitted;
+        }
+
+        void putCanonical(
+                TemplateApplication.TemplateId templateId,
+                long revision,
+                String ownerScope,
+                byte[] canonicalUtf8
+        ) {
+            var metadata = new TemplateMetadata(
+                    templateId,
+                    new OwnerScopeAuthority.OwnerScope(ownerScope),
+                    SCHEMA,
+                    revision,
+                    Lifecycle.ACTIVE
+            );
+            var stored = new StoredCurrent(
+                    metadata,
+                    new byte[] {'{', '}'},
+                    canonicalUtf8,
+                    SCRIPTED_CONTENT_HASH,
+                    TemplateApplication.Readiness.READY
+            );
+            store.put(templateId.value(), new Entry(stored, false));
         }
 
         void delete(TemplateApplication.TemplateId templateId) {

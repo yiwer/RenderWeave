@@ -3504,3 +3504,24 @@
   push/tag/PR 均为 0。
 - 状态回填后的 resolution `fast` `.sdlc/evidence/20260829-014454-fast/` metadata 仍为 `passed`，3/3 steps
   全绿。
+
+# 2026-08-29 Template-v1 T136 closure canonical DesignDSL bytes capacity（resolved / automated_verified）
+
+- T135 已以 verified commit `62b5ce9c` 收口且 worktree clean；DAG 无其他 active claim。机器 capacity coverage
+  明确 `closureAndExpansion.closureCanonicalDesignBytes` 为 MAX_INCLUSIVE `33,554,432`，现有 closure authority
+  已执行 snapshot/edge/depth/retry 上限但没有累计 canonical bytes。
+- 已按 single-writer 登记并 claim T136：在加入下一份 unique snapshot 前 request-local 原子预留 exact canonical
+  byte length；每 freeze attempt 重置，diamond target 只计一次。Template authority 返回 suffix key，Rendering
+  经既有 Evaluator seam 投影 full limitId 与 exact stage/code/zero boundary。
+- 公开 seam TDD 取得两个真实 RED：Template focused 18 tests 中 above-limit 错误 freeze 成功；Evaluator 47 tests
+  中 limitId 错误保留 suffix。最小 GREEN 后每 freeze attempt 以 overflow-safe budget 在 map insert 前预留，
+  at-limit success、next byte fail；Evaluator 统一投影 `closureAndExpansion.*`。Template focused 20/20、Evaluator
+  47/47、受影响 reactor Schema 20、Validation 13、Template 84、Asset 92、Rendering 172 tests 均零失败。
+- A1：`template` `.sdlc/evidence/20260829-015926-template/`、`render`
+  `.sdlc/evidence/20260829-015956-render/`、`fast` `.sdlc/evidence/20260829-020045-fast/`、顺序 `server`
+  `.sdlc/evidence/20260829-020118-server/` metadata 均 `passed`。server 8-module reactor BUILD SUCCESS，App 372 tests /
+  0 failures / 0 errors / 15 controlled skips；无 API/OpenAPI/Web/migration/Profile 变化，未跑发布级 `full`。
+- 无 T136-specific formally issued record，故不声明 ticket-specific A2；A3 无，J0 pending、J1 未批准。不新增
+  API/SPI/DB/Profile，不运行 provider、不读取 API Key、不发送真实数据，不 push/tag/PR。
+- 状态回填后的 resolution `fast` `.sdlc/evidence/20260829-021815-fast/` metadata 仍为 `passed`，3/3 steps
+  全绿。

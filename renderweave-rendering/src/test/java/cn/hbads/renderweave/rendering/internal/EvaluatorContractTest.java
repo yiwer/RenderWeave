@@ -811,6 +811,22 @@ class EvaluatorContractTest {
     }
 
     @Test
+    void closureCapacityRejectsWithFullMachineLimitId() {
+        var evaluator = evaluator(new TemplateClosureAuthority.ClosureLimitExceeded(
+                new TemplateClosureAuthority.LimitId("closureCanonicalDesignBytes")
+        ));
+
+        var rejected = assertInstanceOf(EvaluationOutcome.Rejected.class,
+                evaluator.evaluate(command("{\"rootDocument\":{}}")));
+
+        assertEquals(EvaluationStage.TEMPLATE_CLOSURE, rejected.stage());
+        assertEquals(RenderingProblem.ProblemCode.TEMPLATE_CLOSURE_LIMIT_EXCEEDED,
+                rejected.problem().code());
+        assertEquals("closureAndExpansion.closureCanonicalDesignBytes",
+                rejected.problem().limitId().orElseThrow().value());
+    }
+
+    @Test
     void missingRootTemplatePreservesTemplateDomainCode() {
         var evaluator = evaluator(new TemplateClosureAuthority.ClosureNotFound());
 

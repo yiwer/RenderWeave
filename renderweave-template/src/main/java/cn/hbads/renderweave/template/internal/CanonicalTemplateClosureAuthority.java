@@ -34,6 +34,7 @@ final class CanonicalTemplateClosureAuthority implements TemplateClosureAuthorit
     private static final int MAX_UNIQUE_SNAPSHOTS = 64;
     private static final int MAX_AUTHORED_EDGES = 256;
     private static final int MAX_CLOSURE_DEPTH = 16;
+    private static final long MAX_CLOSURE_CANONICAL_DESIGN_BYTES = 32L * 1024 * 1024;
 
     private static final Comparator<String> UTF8_ORDER =
             Comparator.comparing(name -> name.getBytes(StandardCharsets.UTF_8),
@@ -80,8 +81,9 @@ final class CanonicalTemplateClosureAuthority implements TemplateClosureAuthorit
         var snapshots = new TreeMap<String, TemplateSnapshot>(UTF8_ORDER);
         var edges = new ArrayList<ClosureEdge>();
         var inPath = new LinkedHashSet<String>();
+        var budget = new ClosureBudget();
 
-        var visitFailure = visit(rootTemplateId, 1, snapshots, edges, inPath);
+        var visitFailure = visit(rootTemplateId, 1, snapshots, edges, inPath, budget);
         if (visitFailure != null) {
             return visitFailure;
         }
@@ -126,7 +128,8 @@ final class CanonicalTemplateClosureAuthority implements TemplateClosureAuthorit
             int depth,
             TreeMap<String, TemplateSnapshot> snapshots,
             ArrayList<ClosureEdge> edges,
-            LinkedHashSet<String> inPath
+            LinkedHashSet<String> inPath,
+            ClosureBudget budget
     ) {
         if (depth > MAX_CLOSURE_DEPTH) {
             return new Done(new ClosureLimitExceeded(new LimitId("closureDepth")));
@@ -158,9 +161,15 @@ final class CanonicalTemplateClosureAuthority implements TemplateClosureAuthorit
             return integrityFailure;
         }
 
-        var versions = readVersions(stored.canonicalDesignDslUtf8());
+        var canonicalDesignDslUtf8 = stored.canonicalDesignDslUtf8();
+        var versions = readVersions(canonicalDesignDslUtf8);
         if (versions == null) {
             return new Done(new ClosureIntegrityViolation());
+        }
+        if (!budget.reserveCanonicalDesignBytes(canonicalDesignDslUtf8.length)) {
+            return new Done(new ClosureLimitExceeded(
+                    new LimitId("closureCanonicalDesignBytes")
+            ));
         }
 
         var snapshot = new TemplateSnapshot(
@@ -170,7 +179,7 @@ final class CanonicalTemplateClosureAuthority implements TemplateClosureAuthorit
                 stored.metadata().staticSchema(),
                 versions.dslVersion(),
                 versions.expressionProfile(),
-                stored.canonicalDesignDslUtf8(),
+                canonicalDesignDslUtf8,
                 stored.contentHash()
         );
         inPath.add(templateId.value());
@@ -179,10 +188,10 @@ final class CanonicalTemplateClosureAuthority implements TemplateClosureAuthorit
             return new Done(new ClosureLimitExceeded(new LimitId("uniqueTemplateSnapshots")));
         }
 
-        var projection = new AssetRefAtomExtractor().extract(stored.canonicalDesignDslUtf8());
+        var projection = new AssetRefAtomExtractor().extract(canonicalDesignDslUtf8);
         for (var use : projection.templateUses()) {
             var childId = new TemplateApplication.TemplateId(use.targetTemplateId());
-            var childFailure = visit(childId, depth + 1, snapshots, edges, inPath);
+            var childFailure = visit(childId, depth + 1, snapshots, edges, inPath, budget);
             if (childFailure != null) {
                 return childFailure;
             }
@@ -200,6 +209,19 @@ final class CanonicalTemplateClosureAuthority implements TemplateClosureAuthorit
         }
         inPath.remove(templateId.value());
         return null;
+    }
+
+    private static final class ClosureBudget {
+        private long canonicalDesignBytes;
+
+        private boolean reserveCanonicalDesignBytes(int nextSnapshotBytes) {
+            if (canonicalDesignBytes
+                    > MAX_CLOSURE_CANONICAL_DESIGN_BYTES - nextSnapshotBytes) {
+                return false;
+            }
+            canonicalDesignBytes += nextSnapshotBytes;
+            return true;
+        }
     }
 
     /**

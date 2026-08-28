@@ -849,6 +849,12 @@ Label: wayfinder:map
   纠正 T133 的 deployment-tightening 解释：effective profile `2/4` fail closed，持续 transient failure 恰好执行
   三次 establish 后以 CAPABILITY_STATE/CAPABILITY_STATE_UNAVAILABLE/exact limitId 零文档终止。公开 seam
   46/46、Rendering 171/171、App 12/12 与 render/fast/server metadata 全绿。
+- [T136 — 强制 closure canonical DesignDSL bytes 容量](issues/136-closure-canonical-design-bytes-capacity.md)
+  — **resolved / automated_verified**；按机器 capacity coverage 的 MAX_INCLUSIVE `33,554,432`，在加入下一份
+  unique snapshot canonical byte length 前做 request-local overflow-safe 累计预留；diamond reuse 不重复计费，
+  current-drift 新 attempt 重置。Evaluator 公开投影 exact TEMPLATE_CLOSURE /
+  TEMPLATE_CLOSURE_LIMIT_EXCEEDED / full limitId。公开 seam RED→GREEN，Template 20/20、Evaluator 47/47、
+  Template 84/84、Rendering 172/172 与 template/render/fast/server metadata 全绿；A1、J0。
 
 - 改写或重解释现有 Schema/Inference v1 已提交历史，或在 dirty main 上直接实施 Template。
 - Workspace、组织/成员/分享/协作、跨 ownerScope 复制、通用 connector、任意 SQL/HTTP/文件/脚本、插件节点或运行时代码注册。

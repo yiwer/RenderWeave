@@ -100,7 +100,9 @@ final class CanonicalEvaluator implements Evaluator {
                             ProblemCode.TEMPLATE_CLOSURE_LIMIT_EXCEEDED,
                             EvaluationStage.TEMPLATE_CLOSURE,
                             Optional.empty(),
-                            Optional.of(new LimitId(limited.limitId().value()))));
+                            Optional.of(new LimitId(
+                                    "closureAndExpansion." + limited.limitId().value()
+                            ))));
         }
         if (closureOutcome instanceof TemplateClosureAuthority.ClosureUnavailable) {
             return rejected(EvaluationStage.TEMPLATE_CLOSURE,
