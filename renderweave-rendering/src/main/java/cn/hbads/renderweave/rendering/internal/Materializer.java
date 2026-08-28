@@ -61,6 +61,14 @@ final class Materializer {
     ) {
     }
 
+    private record PackingShape(
+            String kind,
+            int rows,
+            int columns,
+            long generatedEntries
+    ) {
+    }
+
     record ResourceEntry(
             String resourceId,
             String kind,
@@ -105,6 +113,8 @@ final class Materializer {
     private final Map<String, DefinitionEngine> enginesByTemplate = new HashMap<>();
     private final List<ResourceEntry> resources = new ArrayList<>();
     private final List<SidecarEntry> sidecar = new ArrayList<>();
+    private final RenderingPipelineCapacityGuard.RequestTracker requestCapacity =
+            CAPACITY_GUARD.newRequestTracker();
     private int occurrences;
     private int nodes;
     private int invocations;
@@ -307,18 +317,10 @@ final class Materializer {
         if (itemList.isEmpty()) {
             return null;
         }
-        capacityFailure = reserveMaterializedNode();
-        if (capacityFailure != null) {
-            return capacityFailure;
-        }
         var itemNodes = new ArrayList<MaterializedNode>(itemList.size());
         var index = 0;
         for (var item : itemList) {
             capacityFailure = reserveLoopFrame();
-            if (capacityFailure != null) {
-                return capacityFailure;
-            }
-            capacityFailure = reserveMaterializedNode();
             if (capacityFailure != null) {
                 return capacityFailure;
             }
@@ -331,35 +333,58 @@ final class Materializer {
             if (failure != null) {
                 return failure;
             }
-            var packedChildren = lowerPackedChildren(expandedChildren, itemLayout);
-            var itemKind = renderPackingKind(itemLayout);
+            if (expandedChildren.isEmpty()) {
+                index++;
+                continue;
+            }
+            capacityFailure = reserveMaterializedNode();
+            if (capacityFailure != null) {
+                return capacityFailure;
+            }
+            var itemShape = packingShape(itemLayout, expandedChildren.size());
+            capacityFailure = reserveGeneratedEntries(itemShape);
+            if (capacityFailure != null) {
+                return capacityFailure;
+            }
+            var packedChildren = lowerPackedChildren(
+                    expandedChildren, itemShape);
             var itemMembers = packingNodeMembers(
-                    itemKind,
                     itemLayout,
-                    generatedPackingPlacement(instanceLayout, index),
-                    packedChildren.size(),
+                    itemShape,
+                    null,
                     null);
             itemNodes.add(new MaterializedNode(
-                    itemKind, itemMembers, packedChildren, itemPath));
+                    itemShape.kind(), itemMembers, packedChildren, itemPath));
             index++;
         }
-        var instanceKind = renderPackingKind(instanceLayout);
+        if (itemNodes.isEmpty()) {
+            return null;
+        }
+        capacityFailure = reserveMaterializedNode();
+        if (capacityFailure != null) {
+            return capacityFailure;
+        }
+        var instanceShape = packingShape(instanceLayout, itemNodes.size());
+        capacityFailure = reserveGeneratedEntries(instanceShape);
+        if (capacityFailure != null) {
+            return capacityFailure;
+        }
+        var placedItems = placeGeneratedChildren(itemNodes, instanceShape);
         var instanceMembers = packingNodeMembers(
-                instanceKind,
                 instanceLayout,
+                instanceShape,
                 null,
-                itemNodes.size(),
                 node);
         output.add(new MaterializedNode(
-                instanceKind, instanceMembers, itemNodes, path));
+                instanceShape.kind(), instanceMembers, placedItems, path));
         recordSidecar(path, node);
         return null;
     }
 
     private static List<MaterializedNode> lowerPackedChildren(
-            List<MaterializedNode> children, ObjectNode packing) {
+            List<MaterializedNode> children,
+            PackingShape shape) {
         var lowered = new ArrayList<MaterializedNode>(children.size());
-        var parentKind = renderPackingKind(packing);
         for (var index = 0; index < children.size(); index++) {
             var child = children.get(index);
             if (!(child.members().members().get("placement") instanceof ObjectNode placement)
@@ -369,68 +394,80 @@ final class Materializer {
             }
             var members = new LinkedHashMap<>(child.members().members());
             members.put("placement", convertedPackingPlacement(
-                    placement, packing, index));
+                    placement, shape, index));
             lowered.add(new MaterializedNode(
                     child.kind(), new ObjectNode(members), child.children(), child.occurrencePath()));
         }
         return List.copyOf(lowered);
     }
 
+    private static List<MaterializedNode> placeGeneratedChildren(
+            List<MaterializedNode> children,
+            PackingShape shape) {
+        var placed = new ArrayList<MaterializedNode>(children.size());
+        for (var index = 0; index < children.size(); index++) {
+            var child = children.get(index);
+            var members = new LinkedHashMap<>(child.members().members());
+            members.put("placement", generatedPackingPlacement(shape, index));
+            placed.add(new MaterializedNode(
+                    child.kind(), new ObjectNode(members), child.children(), child.occurrencePath()));
+        }
+        return List.copyOf(placed);
+    }
+
     private static ObjectNode convertedPackingPlacement(
-            ObjectNode authored, ObjectNode packing, int index) {
+            ObjectNode authored,
+            PackingShape shape,
+            int index) {
         var members = new LinkedHashMap<String, DesignNodeValue>();
-        members.put("type", new Text(renderPackingKind(packing).toUpperCase(java.util.Locale.ROOT)));
+        members.put("type", new Text(shape.kind().toUpperCase(java.util.Locale.ROOT)));
         for (var entry : authored.members().entrySet()) {
             if (!"type".equals(entry.getKey())) {
                 members.put(entry.getKey(), entry.getValue());
             }
         }
-        addGridCell(members, packing, index);
+        addGridCell(members, shape, index);
         return new ObjectNode(members);
     }
 
-    private static ObjectNode generatedPackingPlacement(ObjectNode packing, int index) {
+    private static ObjectNode generatedPackingPlacement(PackingShape shape, int index) {
         var members = new LinkedHashMap<String, DesignNodeValue>();
-        members.put("type", new Text(renderPackingKind(packing).toUpperCase(java.util.Locale.ROOT)));
+        members.put("type", new Text(shape.kind().toUpperCase(java.util.Locale.ROOT)));
         members.put("widthMode", new Text("HUG_CONTENT"));
         members.put("heightMode", new Text("HUG_CONTENT"));
-        addGridCell(members, packing, index);
+        addGridCell(members, shape, index);
         return new ObjectNode(members);
     }
 
     private static void addGridCell(
             LinkedHashMap<String, DesignNodeValue> members,
-            ObjectNode packing,
+            PackingShape shape,
             int index) {
-        if (!"grid".equals(renderPackingKind(packing))) {
+        if (!"grid".equals(shape.kind())) {
             return;
         }
-        var columns = positiveIntegerMember(packing, "columns");
-        members.put("row", new NumberToken(Integer.toString(index / columns)));
-        members.put("column", new NumberToken(Integer.toString(index % columns)));
+        members.put("row", new NumberToken(Integer.toString(index / shape.columns())));
+        members.put("column", new NumberToken(Integer.toString(index % shape.columns())));
     }
 
     private static ObjectNode packingNodeMembers(
-            String kind,
             ObjectNode packing,
+            PackingShape shape,
             ObjectNode placement,
-            int childCount,
             ObjectNode host) {
         var members = host == null
                 ? new LinkedHashMap<String, DesignNodeValue>()
-                : new LinkedHashMap<>(loweredStructuralMembers(kind, host).members());
-        members.put("kind", new Text(kind));
+                : new LinkedHashMap<>(loweredStructuralMembers(shape.kind(), host).members());
+        members.put("kind", new Text(shape.kind()));
         if (placement != null) {
             members.put("placement", placement);
         }
-        if ("stack".equals(kind)) {
+        if ("stack".equals(shape.kind())) {
             members.put("direction", requiredMember(packing, "direction"));
             copyIfPresent(packing, members, "gapMm");
         } else {
-            var columns = positiveIntegerMember(packing, "columns");
-            var rows = Math.max(1, (childCount + columns - 1) / columns);
-            members.put("rows", autoTracks(rows));
-            members.put("columns", autoTracks(columns));
+            members.put("rows", autoTracks(shape.rows()));
+            members.put("columns", autoTracks(shape.columns()));
             copyIfPresent(packing, members, "rowGapMm");
             copyIfPresent(packing, members, "columnGapMm");
         }
@@ -454,11 +491,30 @@ final class Materializer {
         };
     }
 
-    private static int positiveIntegerMember(ObjectNode object, String member) {
-        if (!(object.members().get(member) instanceof NumberToken number)) {
+    private static PackingShape packingShape(ObjectNode packing, int childCount) {
+        if (childCount <= 0) {
+            throw new IllegalArgumentException("packing requires surviving children");
+        }
+        var kind = renderPackingKind(packing);
+        if ("stack".equals(kind)) {
+            return new PackingShape(kind, 0, 0, 0);
+        }
+        if (!(packing.members().get("columns") instanceof NumberToken number)) {
             throw new IllegalStateException("Repeat grid packing requires columns");
         }
-        return new java.math.BigDecimal(number.rawToken()).intValueExact();
+        var authoredColumns = new java.math.BigDecimal(number.rawToken());
+        if (authoredColumns.signum() <= 0) {
+            throw new IllegalStateException("Repeat grid packing requires positive columns");
+        }
+        var columns = authoredColumns.compareTo(java.math.BigDecimal.valueOf(childCount)) >= 0
+                ? childCount
+                : authoredColumns.intValueExact();
+        var rows = (childCount + columns - 1) / columns;
+        return new PackingShape(
+                kind,
+                rows,
+                columns,
+                (long) rows + columns + childCount);
     }
 
     private static DesignNodeValue requiredMember(ObjectNode object, String member) {
@@ -727,6 +783,12 @@ final class Materializer {
         return capacityFailure(CAPACITY_GUARD.admit(
                 RenderingPipelineCapacityGuard.Limit.LOOP_FRAMES_TOTAL,
                 loopFrames));
+    }
+
+    private MaterializationOutcome reserveGeneratedEntries(PackingShape shape) {
+        return capacityFailure(requestCapacity.reserve(
+                RenderingPipelineCapacityGuard.Limit.GENERATED_TRACK_AND_CELL_ENTRIES,
+                shape.generatedEntries()));
     }
 
     private static MaterializationFailed capacityFailure(

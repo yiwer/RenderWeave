@@ -135,4 +135,40 @@ class RenderingPipelineCapacityGuardTest {
         assertEquals("closureAndExpansion.materializedStaticNodes",
                 problem.limitId().orElseThrow().value());
     }
+
+    @Test
+    void generatedTrackAndCellEntriesBoundaryUsesTheFrozenProductionGuardContract() {
+        var guard = new RenderingPipelineCapacityGuard();
+
+        assertTrue(guard.admit(
+                RenderingPipelineCapacityGuard.Limit.GENERATED_TRACK_AND_CELL_ENTRIES,
+                99_999).isEmpty());
+        assertTrue(guard.admit(
+                RenderingPipelineCapacityGuard.Limit.GENERATED_TRACK_AND_CELL_ENTRIES,
+                100_000).isEmpty());
+
+        var problem = guard.admit(
+                        RenderingPipelineCapacityGuard.Limit.GENERATED_TRACK_AND_CELL_ENTRIES,
+                        100_001)
+                .orElseThrow();
+        assertEquals(EvaluationStage.MATERIALIZATION, problem.stage());
+        assertEquals(ProblemCode.EVALUATION_BUDGET_EXCEEDED, problem.code());
+        assertEquals("closureAndExpansion.generatedTrackAndCellEntries",
+                problem.limitId().orElseThrow().value());
+
+        var request = guard.newRequestTracker();
+        assertTrue(request.reserve(
+                RenderingPipelineCapacityGuard.Limit.GENERATED_TRACK_AND_CELL_ENTRIES,
+                60_000).isEmpty());
+        assertTrue(request.reserve(
+                RenderingPipelineCapacityGuard.Limit.GENERATED_TRACK_AND_CELL_ENTRIES,
+                40_000).isEmpty());
+        var cumulativeProblem = request.reserve(
+                        RenderingPipelineCapacityGuard.Limit.GENERATED_TRACK_AND_CELL_ENTRIES,
+                        1)
+                .orElseThrow();
+        assertEquals(ProblemCode.EVALUATION_BUDGET_EXCEEDED, cumulativeProblem.code());
+        assertEquals("closureAndExpansion.generatedTrackAndCellEntries",
+                cumulativeProblem.limitId().orElseThrow().value());
+    }
 }

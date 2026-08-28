@@ -5,6 +5,7 @@ import cn.hbads.renderweave.rendering.api.RenderingProblem;
 import cn.hbads.renderweave.rendering.api.RenderingProblem.LimitId;
 import cn.hbads.renderweave.rendering.api.RenderingProblem.ProblemCode;
 
+import java.util.EnumMap;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -33,7 +34,9 @@ final class RenderingPipelineCapacityGuard {
         RENDER_OCCURRENCES(
                 "closureAndExpansion.renderOccurrences", 25_000),
         MATERIALIZED_STATIC_NODES(
-                "closureAndExpansion.materializedStaticNodes", 20_000);
+                "closureAndExpansion.materializedStaticNodes", 20_000),
+        GENERATED_TRACK_AND_CELL_ENTRIES(
+                "closureAndExpansion.generatedTrackAndCellEntries", 100_000);
 
         private final String id;
         private final long maximumInclusive;
@@ -56,5 +59,35 @@ final class RenderingPipelineCapacityGuard {
                 ProblemCode.EVALUATION_BUDGET_EXCEEDED,
                 EvaluationStage.MATERIALIZATION,
                 new LimitId(limit.id)));
+    }
+
+    RequestTracker newRequestTracker() {
+        return new RequestTracker(this);
+    }
+
+    /** Request-local atomic accumulator backed by the same frozen limit catalog. */
+    static final class RequestTracker {
+        private final RenderingPipelineCapacityGuard guard;
+        private final EnumMap<Limit, Long> observed = new EnumMap<>(Limit.class);
+
+        private RequestTracker(RenderingPipelineCapacityGuard guard) {
+            this.guard = guard;
+        }
+
+        Optional<RenderingProblem> reserve(Limit limit, long delta) {
+            Objects.requireNonNull(limit, "limit");
+            if (delta < 0) {
+                throw new IllegalArgumentException("delta must be non-negative");
+            }
+            var current = observed.getOrDefault(limit, 0L);
+            var next = delta > Long.MAX_VALUE - current
+                    ? Long.MAX_VALUE
+                    : current + delta;
+            var problem = guard.admit(limit, next);
+            if (problem.isEmpty()) {
+                observed.put(limit, next);
+            }
+            return problem;
+        }
     }
 }

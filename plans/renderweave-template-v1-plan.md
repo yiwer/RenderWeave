@@ -5228,3 +5228,39 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
   J0 pending、J1 未批准。未重复 server/full，provider attempts/API Key reads/真实数据/Profile registration/
   push/tag/PR 均为 0。
 - 状态回填后的 resolution `fast` `.sdlc/evidence/20260829-042717-fast/` metadata 为 `passed`，3/3 steps 全绿。
+
+## 145. TV1-T145 执行卡
+
+- 状态：`resolved / automated_verified`；single writer: Codex；blocked by T21/T144（均 resolved）。
+- authority：`closureAndExpansion.generatedTrackAndCellEntries` 为 MAX_INCLUSIVE `100000`，observed
+  `99999/100000/100001`，contract stage SERIAL_MATERIALIZATION、public stage MATERIALIZATION、code
+  EVALUATION_BUDGET_EXCEEDED、zero boundary ZERO_DOCUMENT_OUTPUT；primary requirement `RW-T19-S7-084`。
+- 计数：每条 Repeat GRID lowering-generated AUTO row/column track 与每个 surviving child/item 的 GRID placement
+  cell 各计 1；cell 不按 row/column wire leaf 双计。itemLayout/instanceLayout 独立累计；STACK、authored Grid、
+  pruned item、zero-survivor Repeat 与 RenderDocument-owned tracks 不计。
+- correctness prerequisite：使用 `effectiveColumns=min(authoredColumns,survivingCount)`、末行无 placeholder、
+  surviving packing ordinal 紧凑；当前 raw columns、inputIndex placement 与零-survivor synthetic container drift 必须
+  在同一 Materializer seam 校正，不能让错误 lowering 成为 capacity counter authority。
+- seam：扩展唯一 Rendering guard；request-local counter 在每个非空 generated GRID allocation 前批量原子预留
+  `rows + effectiveColumns + survivingCount`。cap-014 target 明确不执行 Evaluator/Sealer，故 exact boundary 在同一
+  production guard 隔离重放，Materializer tests 验证真实小规模 delta/累计/剪枝，不冒充 full-pipeline A2。
+- TDD：先加 missing enum exact guard RED 与 raw-columns/zero-survivor/compact-cell behavioral RED，再最小重构；
+  focused Materializer/guard、受影响 reactor、render/fast。无 app wiring/API/Web/migration/Profile 变化，不重复
+  server/full。
+- 禁止影响：logical operations、RenderDocument-owned 容量、正式 Ticket 19 records/product executor、provider/
+  API Key/真实数据/Profile registration/push/tag/PR；最高 `automated_verified`，当前 A1、J0。
+
+### TV1-T145 resolution evidence
+
+- missing-enum focused compile RED 精确失败于 3 个 production enum 引用；补入 enum 后，Materializer 18 tests
+  精确 2 RED：raw columns 为 99 而冻结 effective columns 应为 2，all-pruned Repeat 生成 1 个 container 而应为 0。
+- 唯一 guard 的 overflow-safe request tracker 与 Materializer 的单一 `PackingShape` 已共同绑定实际生成与容量预留；
+  surviving cells 使用 compact ordinal，原 inputIndex 只保留在 loop frame/path，pruned/zero-survivor 不收费。
+- focused Materializer 18 + guard 7 = 25/25；受影响 reactor Schema 20、Validation 13、Template 84、Asset 92、
+  Rendering 204 全绿，`git diff --check` 通过。A1 `render`
+  `.sdlc/evidence/20260829-045143-render/`（2/2）与 `fast`
+  `.sdlc/evidence/20260829-045238-fast/`（3/3）metadata 均 `passed`。
+- cap-014 不执行 Evaluator/Sealer 且无正式 product executor，故无 T145-specific A2/A3；J0 pending、J1 未批准。
+  无 app wiring/API/Web/migration/Profile 变化，未重复 server/full；provider attempts/API Key reads/真实数据/
+  Profile registration/push/tag/PR 均为 0。
+- 状态回填后的 resolution `fast` `.sdlc/evidence/20260829-045433-fast/` metadata 为 `passed`，3/3 steps 全绿。

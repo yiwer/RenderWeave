@@ -102,6 +102,109 @@ class MaterializerTest {
     }
 
     @Test
+    void repeatGridUsesEffectiveColumnsAndCompactsSurvivingCells() {
+        var tree = materializeOk(booleanGridRepeat("[true,false,true]"), Map.of(), null);
+
+        assertEquals(1, tree.root().children().size());
+        var instances = tree.root().children().get(0);
+        assertEquals("grid", instances.kind());
+        assertEquals(1, arrayMemberSize(instances.members(), "rows"));
+        assertEquals(2, arrayMemberSize(instances.members(), "columns"));
+        assertEquals(2, instances.children().size());
+        assertTrue(instances.children().get(0).occurrencePath().contains("[0]"));
+        assertTrue(instances.children().get(1).occurrencePath().contains("[2]"));
+        assertGridCell(instances.children().get(0), 0, 0);
+        assertGridCell(instances.children().get(1), 0, 1);
+
+        for (var item : instances.children()) {
+            assertEquals("grid", item.kind());
+            assertEquals(1, arrayMemberSize(item.members(), "rows"));
+            assertEquals(1, arrayMemberSize(item.members(), "columns"));
+            assertEquals(1, item.children().size());
+            assertGridCell(item.children().get(0), 0, 0);
+        }
+        assertEquals(11, countGeneratedGridEntries(instances));
+    }
+
+    @Test
+    void allPrunedRepeatGeneratesNoContainerTrackOrCell() {
+        var tree = materializeOk(booleanGridRepeat("[false,false]"), Map.of(), null);
+
+        assertEquals(0, tree.root().children().size());
+    }
+
+    private static String booleanGridRepeat(String items) {
+        var loopId = capacityUuid(2, 900);
+        var definitionId = capacityUuid(5, 900);
+        var falseResult = "{\"kind\":\"literal\",\"valueType\":\"boolean\","
+                + "\"value\":false}";
+        var caseWire = "[false,false]".equals(items)
+                ? "{\"operator\":\"IS_PRESENT\",\"then\":" + falseResult + "}"
+                : "{\"operator\":\"EQ\","
+                + "\"operand\":{\"valueType\":\"decimal\",\"value\":1},"
+                + "\"then\":" + falseResult + "}";
+        var definition = "{\"definitionId\":\"" + definitionId + "\",\"kind\":\"mapping\","
+                + "\"displayName\":\"Survival\",\"domain\":{\"kind\":\"loop\","
+                + "\"loopId\":\"" + loopId + "\"},\"output\":\"boolean\","
+                + "\"input\":{\"kind\":\"loopIndex\",\"loopId\":\"" + loopId + "\"},"
+                + "\"cases\":[" + caseWire + "],\"otherwise\":{\"kind\":\"literal\","
+                + "\"valueType\":\"boolean\",\"value\":true}}";
+        var conditional = "{\"nodeId\":\"" + capacityUuid(3, 900) + "\","
+                + "\"kind\":\"conditional\",\"bindings\":[],"
+                + "\"condition\":{\"kind\":\"definition\",\"definitionId\":\""
+                + definitionId + "\"},"
+                + "\"absentPolicy\":\"ERROR\","
+                + "\"placement\":{\"type\":\"PACK\",\"widthMode\":\"HUG_CONTENT\","
+                + "\"heightMode\":\"HUG_CONTENT\"},"
+                + "\"children\":[" + rect(capacityUuid(4, 900)) + "]}";
+        var repeat = "{\"nodeId\":\"" + capacityUuid(1, 900) + "\","
+                + "\"kind\":\"repeat\",\"bindings\":[],\"placement\":" + absolute() + ","
+                + "\"loopId\":\"" + loopId + "\",\"absentPolicy\":\"ERROR\","
+                + "\"items\":{\"kind\":\"literal\","
+                + "\"valueType\":{\"type\":\"list\",\"items\":\"boolean\"},"
+                + "\"value\":" + items + "},"
+                + "\"itemLayout\":{\"kind\":\"GRID\",\"columns\":99},"
+                + "\"instanceLayout\":{\"kind\":\"GRID\",\"columns\":99},"
+                + "\"children\":[" + conditional + "]}";
+        return "{\"dslVersion\":\"renderweave-design/1.0\","
+                + "\"expressionProfile\":\"renderweave-expression/1.0\","
+                + "\"displayName\":\"R\",\"definitions\":[" + definition + "],"
+                + "\"designRoot\":{\"nodeId\":\"00000000-0000-4000-8000-000000000001\","
+                + "\"kind\":\"canvas\",\"widthMm\":210,\"heightMm\":297,"
+                + "\"bindings\":[],\"children\":[" + repeat + "]}}";
+    }
+
+    private static void assertGridCell(
+            Materializer.MaterializedNode node, int expectedRow, int expectedColumn) {
+        var placement = assertInstanceOf(
+                cn.hbads.renderweave.template.api.DesignSemanticAuthority.ObjectNode.class,
+                node.members().members().get("placement"));
+        assertEquals(Integer.toString(expectedRow), numberMember(placement, "row"));
+        assertEquals(Integer.toString(expectedColumn), numberMember(placement, "column"));
+    }
+
+    private static int arrayMemberSize(
+            cn.hbads.renderweave.template.api.DesignSemanticAuthority.ObjectNode object,
+            String member) {
+        return assertInstanceOf(
+                cn.hbads.renderweave.template.api.DesignSemanticAuthority.ArrayNode.class,
+                object.members().get(member)).items().size();
+    }
+
+    private static int countGeneratedGridEntries(Materializer.MaterializedNode node) {
+        var count = 0;
+        if ("grid".equals(node.kind())) {
+            count += arrayMemberSize(node.members(), "rows");
+            count += arrayMemberSize(node.members(), "columns");
+            count += node.children().size();
+        }
+        for (var child : node.children()) {
+            count += countGeneratedGridEntries(child);
+        }
+        return count;
+    }
+
+    @Test
     void materializedStaticNodesBelowLimitAreAccepted() {
         var tree = materializeOk(
                 repeatDocument(materializedNodeBoundaryItemLists(994)), Map.of(), null);
@@ -582,7 +685,8 @@ class MaterializerTest {
     private static Materializer.MaterializedTree materializeOk(
             String document, Map<String, DesignValue> customs, AssetResolutionPort port) {
         var outcome = materialize(document, customs, port);
-        return ((Materializer.Materialized) outcome).tree();
+        return assertInstanceOf(
+                Materializer.Materialized.class, outcome, () -> "outcome=" + outcome).tree();
     }
 
     private static Materializer.MaterializationOutcome materialize(

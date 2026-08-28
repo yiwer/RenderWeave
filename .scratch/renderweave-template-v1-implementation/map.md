@@ -895,6 +895,11 @@ Label: wayfinder:map
   ad-hoc/wrong-code 检查迁入唯一 production guard；真实 Materializer seam 精确重放 `19999/20000/20001`，并与
   DOCUMENT_SEAL-owned `renderDocument.staticNodes` 分离。focused 22/22、Rendering 201/201 与 render/fast
   metadata 全绿；A1、无 ticket-specific A2、J0。
+- [T145 — 强制 generated track/cell entries 容量](issues/145-generated-track-cell-capacity.md)
+  — **resolved / automated_verified**；按 `RW-T19-S7-084` 与 cap-014 物化 MAX_INCLUSIVE `100000` 的唯一 production
+  guard/counter，并在 Repeat GRID lowering 校正 effectiveColumns、compact surviving cell 与 pruned zero-charge。
+  exact guard 重放 `99999/100000/100001`；focused 25/25、Rendering 204/204 与 render/fast metadata 全绿；
+  A1、无 ticket-specific A2、J0。
 
 - 改写或重解释现有 Schema/Inference v1 已提交历史，或在 dirty main 上直接实施 Template。
 - Workspace、组织/成员/分享/协作、跨 ownerScope 复制、通用 connector、任意 SQL/HTTP/文件/脚本、插件节点或运行时代码注册。

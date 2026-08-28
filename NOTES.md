@@ -3724,3 +3724,30 @@
   J0 pending、J1 未批准。未重复 server/full，provider attempts/API Key reads/真实数据/Profile registration/
   push/tag/PR 均为 0。
 - 状态回填后的 resolution `fast` `.sdlc/evidence/20260829-042717-fast/` metadata 为 passed，3/3 steps 全绿。
+
+# 2026-08-29 Template-v1 T145 generated track/cell entries（resolved / automated_verified）
+
+- T144 已以 verified commit `83f3f815` 收口，worktree clean、ahead 135 且 DAG 无其他 active claim；现按
+  single-writer 登记并 claim T145。
+- 机器 authority 固定 `closureAndExpansion.generatedTrackAndCellEntries` 为 MAX_INCLUSIVE `100000`，observed
+  `99999/100000/100001`，SERIAL_MATERIALIZATION / public MATERIALIZATION / EVALUATION_BUDGET_EXCEEDED /
+  ZERO_DOCUMENT_OUTPUT，primary requirement `RW-T19-S7-084`。
+- generated entry 是 Repeat GRID lowering 产生的 AUTO track 或 surviving placement cell；item/instance grids
+  request-global 累计，STACK/authored/pruned/RenderDocument-owned entries 不计。cap-014 exact boundary 只执行同一
+  production guard，不执行 Evaluator/Sealer。
+- 当前 Materializer 无本轴 counter，且存在 raw authored columns、inputIndex cell 与 zero-survivor synthetic
+  container drift；本票在同一 seam 校正 effectiveColumns/compact packing/zero-charge 后再预留 generated delta。
+  claim 时 A0、J0；不运行 provider、不读取 API Key、不发送真实数据，不 push/tag/PR。
+- TDD RED：missing enum focused compile 精确失败于 3 个引用；补 enum 后 Materializer 18 tests 精确 2 failures，
+  分别为 99 raw columns vs 2 effective columns、all-pruned 1 synthetic container vs 0。
+- 唯一 guard 现含 `GENERATED_TRACK_AND_CELL_ENTRIES=100000` 与 overflow-safe request tracker；同一
+  `PackingShape` 同时决定真实 AUTO tracks/cells 和 reservation delta。surviving ordinal 紧凑，原 inputIndex 只保留在
+  loop frame/path；pruned item 与 zero-survivor Repeat 不生成 container、也不收费。
+- focused Materializer 18 + guard 7 = 25/25；受影响 reactor Schema 20、Validation 13、Template 84、Asset 92、
+  Rendering 204 全绿，`git diff --check` 通过。A1 `render`
+  `.sdlc/evidence/20260829-045143-render/`（2/2）与 `fast`
+  `.sdlc/evidence/20260829-045238-fast/`（3/3）metadata 均为 passed。
+- cap-014 不执行 Evaluator/Sealer 且无正式 product target，故无 T145-specific A2/A3；J0 pending、J1 未批准。
+  无 app wiring/API/Web/migration/Profile 变化，未重复 server/full；provider attempts/API Key reads/真实数据/
+  Profile registration/push/tag/PR 均为 0。
+- 状态回填后的 resolution `fast` `.sdlc/evidence/20260829-045433-fast/` metadata 为 passed，3/3 steps 全绿。
