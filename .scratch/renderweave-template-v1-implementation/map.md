@@ -802,6 +802,10 @@ Label: wayfinder:map
 - [T125 — 物化 Evaluator CapabilityState 持久化重放纵切](issues/125-capability-state-orchestration.md) — **resolved / automated_verified**；
   stage 6 以完整 evaluation fingerprint 绑定授权摘要、closure/input digest、冻结 contracts/Profile/budget vector，
   并经既有加密 store 完成首次建立、同 fingerprint 恢复、异 fingerprint 冲突与 unavailable fail-closed。
+- [T126 — 物化 Rendering closure outcome 精确 problem taxonomy](issues/126-rendering-closure-problem-taxonomy.md)
+  — **resolved / automated_verified**；root missing/deleted、dependency invalid 与 authority unavailable
+  已从含糊的 `EVALUATION_FAILED`/internal fold 分离为冻结 Template 领域 code，integrity/current-drift
+  既有语义保持不变。
 
 - 改写或重解释现有 Schema/Inference v1 已提交历史，或在 dirty main 上直接实施 Template。
 - Workspace、组织/成员/分享/协作、跨 ownerScope 复制、通用 connector、任意 SQL/HTTP/文件/脚本、插件节点或运行时代码注册。

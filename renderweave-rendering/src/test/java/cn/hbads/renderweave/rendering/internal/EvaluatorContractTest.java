@@ -176,6 +176,66 @@ class EvaluatorContractTest {
     }
 
     @Test
+    void missingRootTemplatePreservesTemplateDomainCode() {
+        var evaluator = evaluator(new TemplateClosureAuthority.ClosureNotFound());
+
+        var rejected = assertInstanceOf(EvaluationOutcome.Rejected.class,
+                evaluator.evaluate(command("{\"rootDocument\":{}}")));
+
+        assertEquals(EvaluationStage.TEMPLATE_CLOSURE, rejected.stage());
+        assertEquals(RenderingProblem.ProblemCode.TEMPLATE_NOT_FOUND,
+                rejected.problem().code());
+    }
+
+    @Test
+    void deletedRootTemplatePreservesTemplateDomainCode() {
+        var evaluator = evaluator(new TemplateClosureAuthority.ClosureDeleted());
+
+        var rejected = assertInstanceOf(EvaluationOutcome.Rejected.class,
+                evaluator.evaluate(command("{\"rootDocument\":{}}")));
+
+        assertEquals(EvaluationStage.TEMPLATE_CLOSURE, rejected.stage());
+        assertEquals(RenderingProblem.ProblemCode.TEMPLATE_DELETED,
+                rejected.problem().code());
+    }
+
+    @Test
+    void invalidClosureDependencyPreservesTemplateDomainCode() {
+        var evaluator = evaluator(new TemplateClosureAuthority.ClosureDependencyInvalid());
+
+        var rejected = assertInstanceOf(EvaluationOutcome.Rejected.class,
+                evaluator.evaluate(command("{\"rootDocument\":{}}")));
+
+        assertEquals(EvaluationStage.TEMPLATE_CLOSURE, rejected.stage());
+        assertEquals(RenderingProblem.ProblemCode.TEMPLATE_DEPENDENCY_ERROR,
+                rejected.problem().code());
+    }
+
+    @Test
+    void unavailableClosureAuthorityPreservesTemplateDomainCode() {
+        var evaluator = evaluator(new TemplateClosureAuthority.ClosureUnavailable());
+
+        var rejected = assertInstanceOf(EvaluationOutcome.Rejected.class,
+                evaluator.evaluate(command("{\"rootDocument\":{}}")));
+
+        assertEquals(EvaluationStage.TEMPLATE_CLOSURE, rejected.stage());
+        assertEquals(RenderingProblem.ProblemCode.TEMPLATE_AUTHORITY_UNAVAILABLE,
+                rejected.problem().code());
+    }
+
+    @Test
+    void closureIntegrityViolationRemainsAnInternalError() {
+        var evaluator = evaluator(new TemplateClosureAuthority.ClosureIntegrityViolation());
+
+        var rejected = assertInstanceOf(EvaluationOutcome.Rejected.class,
+                evaluator.evaluate(command("{\"rootDocument\":{}}")));
+
+        assertEquals(EvaluationStage.TEMPLATE_CLOSURE, rejected.stage());
+        assertEquals(RenderingProblem.ProblemCode.RENDER_INTERNAL_ERROR,
+                rejected.problem().code());
+    }
+
+    @Test
     void missingRootDocumentRejectsAtEnvelopeStage() {
         var evaluator = evaluator(closureWith(canvasWithRect()), resolver());
 
@@ -236,6 +296,20 @@ class EvaluatorContractTest {
     private static cn.hbads.renderweave.rendering.internal.CanonicalEvaluator evaluator(
             ClosureSnapshot closure, ValidationTargetResolver resolver) {
         return evaluator(closure, resolver, new RecordingCapabilityStateStore(), scriptedRuntime());
+    }
+
+    private static cn.hbads.renderweave.rendering.internal.CanonicalEvaluator evaluator(
+            ClosureOutcome closureOutcome) {
+        return new cn.hbads.renderweave.rendering.internal.CanonicalEvaluator(
+                (renderRequestId, rootTemplateId) -> closureOutcome,
+                TemplateModule.designSemanticAuthority(),
+                TemplateModule.designDslAuthority(),
+                null,
+                scriptedRuntime(),
+                new RecordingCapabilityStateStore(),
+                "{}",
+                resolver(),
+                Clock.fixed(Instant.ofEpochMilli(1_000L), ZoneOffset.UTC));
     }
 
     private static cn.hbads.renderweave.rendering.internal.CanonicalEvaluator evaluator(

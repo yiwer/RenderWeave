@@ -70,10 +70,17 @@ final class CanonicalEvaluator implements Evaluator {
         var closureOutcome = closureAuthority.freezeClosure(
                 new TemplateClosureAuthority.RenderRequestId(command.renderRequestId().value()),
                 command.rootTemplateId());
-        if (closureOutcome instanceof TemplateClosureAuthority.ClosureNotFound
-                || closureOutcome instanceof TemplateClosureAuthority.ClosureDeleted
-                || closureOutcome instanceof TemplateClosureAuthority.ClosureDependencyInvalid) {
-            return rejected(EvaluationStage.TEMPLATE_CLOSURE, ProblemCode.EVALUATION_FAILED, null);
+        if (closureOutcome instanceof TemplateClosureAuthority.ClosureNotFound) {
+            return rejected(EvaluationStage.TEMPLATE_CLOSURE,
+                    ProblemCode.TEMPLATE_NOT_FOUND, null);
+        }
+        if (closureOutcome instanceof TemplateClosureAuthority.ClosureDeleted) {
+            return rejected(EvaluationStage.TEMPLATE_CLOSURE,
+                    ProblemCode.TEMPLATE_DELETED, null);
+        }
+        if (closureOutcome instanceof TemplateClosureAuthority.ClosureDependencyInvalid) {
+            return rejected(EvaluationStage.TEMPLATE_CLOSURE,
+                    ProblemCode.TEMPLATE_DEPENDENCY_ERROR, null);
         }
         if (closureOutcome instanceof TemplateClosureAuthority.ClosureIntegrityViolation) {
             return rejected(EvaluationStage.TEMPLATE_CLOSURE,
@@ -90,6 +97,10 @@ final class CanonicalEvaluator implements Evaluator {
                             EvaluationStage.TEMPLATE_CLOSURE,
                             Optional.empty(),
                             Optional.of(new LimitId(limited.limitId().value()))));
+        }
+        if (closureOutcome instanceof TemplateClosureAuthority.ClosureUnavailable) {
+            return rejected(EvaluationStage.TEMPLATE_CLOSURE,
+                    ProblemCode.TEMPLATE_AUTHORITY_UNAVAILABLE, null);
         }
         if (!(closureOutcome instanceof TemplateClosureAuthority.ClosureFrozen frozen)) {
             return rejected(EvaluationStage.TEMPLATE_CLOSURE,

@@ -3273,3 +3273,20 @@
   `.sdlc/evidence/20260828-141009-fast/`、server `.sdlc/evidence/20260828-135801-server/`、full
   `.sdlc/evidence/20260828-141041-full/` 17/17 passed；resolution fast
   `.sdlc/evidence/20260828-144008-fast/` 亦通过。A2 未签发；A3 未外部强制；J0。
+
+# 2026-08-28 Template-v1 T126 closure problem taxonomy（resolved / automated_verified）
+
+- T125 已以 `2ca6a3bd` verified commit 收口且 worktree clean。复核 T21 后确认 Asset 预准入/
+  kind/resourceId/unavailable 已由 T122 修正，CapabilityState 已由 T125 修正；剩余首个
+  unblocked 语义缺口是 closure outcome 仍丢失 Template 领域 code。
+- 已按 single-writer 登记并 claim T126；以 `Evaluator.evaluate` 公共 seam 做四个
+  RED→GREEN 纵切，不改 route/OpenAPI/Web/migration/Profile，不运行 provider，不 push/tag/PR。
+  四个 Template 领域 code 已精确保留，integrity/current-drift 回归保持；focused Evaluator
+  14/14、Rendering 127/127 通过。
+- A1：`render` `.sdlc/evidence/20260828-145104-render/`、`fast`
+  `.sdlc/evidence/20260828-145202-fast/`、顺序 `server`
+  `.sdlc/evidence/20260828-161736-server/`。两次当前 full 的非浏览器步骤均通过；浏览器受本机
+  TCP `ERR_NO_BUFFER_SPACE` 资源耗尽影响。因本票零 Web 变更，按 RULE-VAL-001 复用 T125
+  绿色 `full` `.sdlc/evidence/20260828-141041-full/`（17/17）。A2 未签发；A3 未外部强制；
+  状态回填后的 resolution `fast` `.sdlc/evidence/20260828-171548-fast/` 通过。J0；provider
+  attempts/API Key reads/real data/Profile registration/push/tag/PR = 0。

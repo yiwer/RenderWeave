@@ -4619,3 +4619,27 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
   resolution `fast` `.sdlc/evidence/20260828-144008-fast/` 亦通过。
 - A2 未签发 ticket-specific independent implementation replay；A3 未外部强制；J0。
   provider attempts/API Key reads/real data/Profile registration/push/tag/PR = 0。
+
+## 126. TV1-T126 执行卡
+
+- 状态：`resolved` / `automated_verified`；single writer: Codex；blocked by T21/T125（均 resolved）。
+- 决策：冻结 issue 15 要求 Template dependency 错误保留具体领域 code，ADR-0042 已给出
+  `TEMPLATE_NOT_FOUND/DELETED/DEPENDENCY_ERROR/AUTHORITY_UNAVAILABLE` 稳定语汇；当前
+  Evaluator 映射与此冲突，且不依赖 native/Profile/外部授权，因此登记为当前 frontier。
+- seam：仅经 `Evaluator.evaluate` 观察 closed stage/code；scripted closure authority 只是 outbound
+  system-boundary fake，不测试私有方法或内部调用次数。
+- 验证：focused Rendering、fast、server、full、resolution fast；最高
+  `automated_verified`，A3/J1/READY 不推进，不 push/tag/PR。
+
+### TV1-T126 resolution evidence
+
+- 四个 closure outcome 已经 Evaluator 公共 seam 精确映射，integrity/current-drift 回归保持；
+  focused Evaluator 14/14、Rendering 127/127 通过。
+- A1：`render` `.sdlc/evidence/20260828-145104-render/`、`fast`
+  `.sdlc/evidence/20260828-145202-fast/`、顺序 `server`
+  `.sdlc/evidence/20260828-161736-server/`。当前两次 full 的非浏览器步骤均通过；浏览器受本机
+  TCP `ERR_NO_BUFFER_SPACE` 资源耗尽影响。因本票零 Web 变更，按 RULE-VAL-001 复用 T125
+  绿色 `full` `.sdlc/evidence/20260828-141041-full/`（17/17）。
+- 状态回填后的 resolution `fast` `.sdlc/evidence/20260828-171548-fast/` 通过。
+- A2 未签发 ticket-specific independent replay；A3 未外部强制；J0；provider attempts/API Key
+  reads/real data/Profile registration/push/tag/PR = 0。
