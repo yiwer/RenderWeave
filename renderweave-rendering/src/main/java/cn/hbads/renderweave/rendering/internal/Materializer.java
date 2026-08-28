@@ -39,8 +39,6 @@ import java.util.Optional;
  */
 final class Materializer {
 
-    static final int MAX_RESOURCE_ENTRIES = 2_048;
-
     private static final RenderingPipelineCapacityGuard CAPACITY_GUARD =
             new RenderingPipelineCapacityGuard();
 
@@ -1120,10 +1118,12 @@ final class Materializer {
             return failed(EvaluationStage.ASSET_RESOLUTION,
                     ProblemCode.RENDER_INTERNAL_ERROR, null);
         }
-        if (resources.size() == MAX_RESOURCE_ENTRIES) {
-            return failed(EvaluationStage.ASSET_RESOLUTION,
-                    ProblemCode.RESOURCE_BUDGET_EXCEEDED,
-                    "assetsAndFetch.renderResourceEntries");
+        var resourceCapacityFailure = capacityFailure(requestCapacity.reserve(
+                RenderingPipelineCapacityGuard.Limit
+                        .ASSETS_AND_FETCH_RENDER_RESOURCE_ENTRIES,
+                1));
+        if (resourceCapacityFailure != null) {
+            return resourceCapacityFailure;
         }
         var fact = resolved.fact();
         resources.add(new ResourceEntry(

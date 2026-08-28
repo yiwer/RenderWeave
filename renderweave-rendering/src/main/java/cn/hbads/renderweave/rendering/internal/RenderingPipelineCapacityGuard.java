@@ -93,6 +93,11 @@ final class RenderingPipelineCapacityGuard {
                 "assetsAndFetch.actualResolveOccurrences",
                 2_048,
                 ProblemCode.RESOURCE_BUDGET_EXCEEDED,
+                EvaluationStage.ASSET_RESOLUTION),
+        ASSETS_AND_FETCH_RENDER_RESOURCE_ENTRIES(
+                "assetsAndFetch.renderResourceEntries",
+                2_048,
+                ProblemCode.RESOURCE_BUDGET_EXCEEDED,
                 EvaluationStage.ASSET_RESOLUTION);
 
         private final String id;

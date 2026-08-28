@@ -577,6 +577,44 @@ class MaterializerTest {
     }
 
     @Test
+    void renderResourceEntryBudgetStopsAfterResolveAndBeforeAppend() {
+        var document = canvasWith(
+                imageNode("00000000-0000-4000-8000-000000000061") + ","
+                        + imageNode("00000000-0000-4000-8000-000000000062"));
+        var exactCapacity = new RenderingPipelineCapacityGuard().newRequestTracker();
+        assertTrue(exactCapacity.reserve(
+                RenderingPipelineCapacityGuard.Limit
+                        .ASSETS_AND_FETCH_RENDER_RESOURCE_ENTRIES,
+                2_046).isEmpty());
+        var exactPort = new ScriptedAssetPort(true);
+
+        var exact = materialize(
+                document, Map.of(), exactPort, absentCapability(), exactCapacity);
+
+        var exactTree = assertInstanceOf(Materializer.Materialized.class, exact).tree();
+        assertEquals(2, exactPort.resolves);
+        assertEquals(2, exactTree.resources().size());
+
+        var exceededCapacity = new RenderingPipelineCapacityGuard().newRequestTracker();
+        assertTrue(exceededCapacity.reserve(
+                RenderingPipelineCapacityGuard.Limit
+                        .ASSETS_AND_FETCH_RENDER_RESOURCE_ENTRIES,
+                2_047).isEmpty());
+        var exceededPort = new ScriptedAssetPort(true);
+
+        var exceeded = materialize(
+                document, Map.of(), exceededPort, absentCapability(), exceededCapacity);
+
+        var failed = assertInstanceOf(Materializer.MaterializationFailed.class, exceeded);
+        assertEquals(EvaluationStage.ASSET_RESOLUTION, failed.stage());
+        assertEquals(RenderingProblem.ProblemCode.RESOURCE_BUDGET_EXCEEDED,
+                failed.problem().code());
+        assertEquals("assetsAndFetch.renderResourceEntries",
+                failed.problem().limitId().orElseThrow().value());
+        assertEquals(2, exceededPort.resolves);
+    }
+
+    @Test
     void missingAssetPortFailsClosedAtAssetAdmission() {
         var document = canvasWith(imageNode());
         var outcome = materialize(document, Map.of(), null);

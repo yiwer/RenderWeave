@@ -963,6 +963,11 @@ Label: wayfinder:map
   迁入唯一 request tracker；相同 Asset 按实际 consumer occurrence 重计，第 2049 次须在
   `AssetResolutionPort.resolve` 前以 ASSET_RESOLUTION / RESOURCE_BUDGET_EXCEEDED / exact limitId 零文档失败。
   focused 116/116、Rendering 237/237 与 render/fast metadata 全绿；A1、无 ticket-specific A2、J0。
+- [T158 — RenderResource entries 预算](issues/158-render-resource-entries-capacity.md)
+  — **resolved / automated_verified**；按 `RW-T19-S8-004` 与 cap-028 将 Materializer 私有 2048 `resources.size()` 判断
+  迁入唯一 request tracker；第 2049 个成功 ResolvedAsset 在 append one-to-one RenderResource entry 前以
+  ASSET_RESOLUTION / RESOURCE_BUDGET_EXCEEDED / exact limitId 零文档失败。focused 118/118、Rendering 239/239
+  与 render/fast metadata 全绿；A1、无 ticket-specific A2、J0。
 
 - 改写或重解释现有 Schema/Inference v1 已提交历史，或在 dirty main 上直接实施 Template。
 - Workspace、组织/成员/分享/协作、跨 ownerScope 复制、通用 connector、任意 SQL/HTTP/文件/脚本、插件节点或运行时代码注册。

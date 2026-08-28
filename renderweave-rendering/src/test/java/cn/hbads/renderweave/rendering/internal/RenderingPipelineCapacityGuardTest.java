@@ -447,4 +447,28 @@ class RenderingPipelineCapacityGuardTest {
         assertEquals("assetsAndFetch.actualResolveOccurrences",
                 problem.limitId().orElseThrow().value());
     }
+
+    @Test
+    void renderResourceEntriesBoundaryUsesTheFrozenProductionGuardContract() {
+        var guard = new RenderingPipelineCapacityGuard();
+
+        assertTrue(guard.admit(
+                RenderingPipelineCapacityGuard.Limit
+                        .ASSETS_AND_FETCH_RENDER_RESOURCE_ENTRIES,
+                2_047).isEmpty());
+        assertTrue(guard.admit(
+                RenderingPipelineCapacityGuard.Limit
+                        .ASSETS_AND_FETCH_RENDER_RESOURCE_ENTRIES,
+                2_048).isEmpty());
+
+        var problem = guard.admit(
+                        RenderingPipelineCapacityGuard.Limit
+                                .ASSETS_AND_FETCH_RENDER_RESOURCE_ENTRIES,
+                        2_049)
+                .orElseThrow();
+        assertEquals(EvaluationStage.ASSET_RESOLUTION, problem.stage());
+        assertEquals(ProblemCode.RESOURCE_BUDGET_EXCEEDED, problem.code());
+        assertEquals("assetsAndFetch.renderResourceEntries",
+                problem.limitId().orElseThrow().value());
+    }
 }

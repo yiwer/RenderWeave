@@ -4032,3 +4032,27 @@
   T157-specific A2/A3；J0 pending、J1 未批准。未重复 server/full；cap-024 继续 deferred；provider attempts/
   API Key reads/真实数据/Profile registration/push/tag/PR 均为 0。
 - 状态回填后的 resolution `fast` `.sdlc/evidence/20260829-070726-fast/` metadata 为 passed，3/3 steps 全绿。
+
+# 2026-08-29 Template-v1 T158 RenderResource entries（resolved / automated_verified）
+
+- T157 已以 verified commit `e7b02d4d` 收口，worktree clean、ahead 148 且 DAG 无其他 active claim；冻结
+  `RW-T19-S8-004` / cap-028 是下一个 unblocked frontier，现按 single-writer claim T158。
+- `assetsAndFetch.renderResourceEntries` 固定 MAX_INCLUSIVE `2048`、observed `2047/2048/2049`，
+  SERIAL_ASSET_RESOLUTION / public ASSET_RESOLUTION / RESOURCE_BUDGET_EXCEEDED / ZERO_DOCUMENT_OUTPUT，
+  reservation point 为 append 下一项 one-to-one RenderResource entry 前。
+- 当前 `Materializer.resolveAtom` 已在 Resolver 成功后以私有常量与 `resources.size()` 判断；本票迁入唯一 request
+  tracker，保持 successful consumer occurrence 重计、失败 Resolver 零 entry、跨 child 共享与 serial first-fail，
+  并与 actual resolve occurrences 独立。
+- claim 时 A0、J0；cap-024 继续 deferred；provider/API Key/真实数据/费用/Profile registration/push/tag/PR 均为 0。
+- guard/Materializer TDD 先得到 5 个缺失 catalog enum 的 compile RED；补唯一 guard 项后 guard 20/20 绿，
+  Materializer 精确保留 1 个 behavioral RED，证明旧 `resources.size()` 未消费 request prefix。
+- `Materializer.resolveAtom` 已删除私有常量与 list-size 判断，改为 Resolver 成功后、append 前经唯一 request tracker
+  reserve；prefix 2046 后两个同 Asset/different path occurrence 均 resolve/append，prefix 2047 后第二次 Resolver
+  仍成功但 entry 以 frozen stage/code/full limitId exact reject，证明与 actual-resolve 轴独立。
+- focused guard 20 + Materializer 24 + Evaluator 68 + architecture 6 = 118/118；受影响 reactor Schema 20、
+  Validation 13、Template 84、Asset 92、Rendering 239 全绿，零 failure/error；`git diff --check` 通过。
+- A1 `render` `.sdlc/evidence/20260829-071200-render/`（2/2）与 `fast`
+  `.sdlc/evidence/20260829-071248-fast/`（3/3）metadata 均 passed。cap-028 fixture 只执行 guard，故无
+  T158-specific A2/A3；J0 pending、J1 未批准。未重复 server/full；cap-024 继续 deferred；provider attempts/
+  API Key reads/真实数据/Profile registration/push/tag/PR 均为 0。
+- 状态回填后的 resolution `fast` `.sdlc/evidence/20260829-071354-fast/` metadata 为 passed，3/3 steps 全绿。
