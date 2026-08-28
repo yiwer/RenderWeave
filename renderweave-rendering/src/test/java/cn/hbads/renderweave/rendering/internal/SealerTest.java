@@ -1,5 +1,7 @@
 package cn.hbads.renderweave.rendering.internal;
 
+import cn.hbads.renderweave.rendering.api.EvaluationStage;
+import cn.hbads.renderweave.rendering.api.RenderingProblem.ProblemCode;
 import cn.hbads.renderweave.schema.definition.StaticSchemaRef;
 import cn.hbads.renderweave.schema.identity.SchemaKey;
 import cn.hbads.renderweave.schema.identity.VersionTag;
@@ -15,6 +17,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -24,6 +27,13 @@ class SealerTest {
 
     private static final StaticSchemaRef SCHEMA = new StaticSchemaRef(
             SchemaKey.systemProvided("system-empty"), VersionTag.of("v1"));
+    private static final String MINIMAL_RENDER_DOCUMENT =
+            "{\"canvas\":{\"backgroundColor\":\"#00000000\",\"bleed\":{\"bottomPt\":0,"
+                    + "\"leftPt\":0,\"rightPt\":0,\"topPt\":0},\"children\":[],"
+                    + "\"heightPt\":841.889764,\"kind\":\"canvas\","
+                    + "\"occurrenceId\":\"rwocc_0000000000000000\",\"widthPt\":595.275591},"
+                    + "\"dslVersion\":\"renderweave-render/1.0\","
+                    + "\"layoutProfile\":\"renderweave-layout/1.0\",\"resources\":[]}";
 
     @Test
     void sealProducesEnvelopeWithOccurrenceIdsAndPtQuantization() {
@@ -49,7 +59,8 @@ class SealerTest {
 
         var sealOutcome = Sealer.seal(closure(), admitted(), tree, "sha256:" + "c".repeat(64));
         if (sealOutcome instanceof Sealer.SealRejected rejected) {
-            throw new AssertionError("seal rejected: " + rejected.limitId());
+            throw new AssertionError("seal rejected: "
+                    + rejected.problem().limitId().orElseThrow().value());
         }
         var sealed = (Sealer.Sealed) sealOutcome;
 
@@ -169,6 +180,40 @@ class SealerTest {
         assertTrue(digestAb.startsWith("sha256:"));
     }
 
+    @Test
+    void canonicalWriterCommitsTheFrozenDocumentAtTheInclusiveByteBudget() {
+        var expected = MINIMAL_RENDER_DOCUMENT.getBytes(StandardCharsets.UTF_8);
+        assertEquals(305, expected.length);
+        var capacity = new RenderingPipelineCapacityGuard().newRequestTracker();
+        assertTrue(capacity.reserve(
+                RenderingPipelineCapacityGuard.Limit.RENDER_DOCUMENT_CANONICAL_BYTES,
+                67_108_864L - expected.length).isEmpty());
+
+        var outcome = Sealer.seal(
+                closure(), admitted(), minimalTree(), "sha256:" + "c".repeat(64), capacity);
+
+        var sealed = assertInstanceOf(Sealer.Sealed.class, outcome);
+        assertArrayEquals(expected, sealed.evaluation().renderDocumentCanonicalUtf8());
+    }
+
+    @Test
+    void canonicalWriterRejectsAboveTheByteBudgetWithoutASealedDocument() {
+        var expectedBytes = MINIMAL_RENDER_DOCUMENT.getBytes(StandardCharsets.UTF_8).length;
+        var capacity = new RenderingPipelineCapacityGuard().newRequestTracker();
+        assertTrue(capacity.reserve(
+                RenderingPipelineCapacityGuard.Limit.RENDER_DOCUMENT_CANONICAL_BYTES,
+                67_108_864L - expectedBytes + 1).isEmpty());
+
+        var outcome = Sealer.seal(
+                closure(), admitted(), minimalTree(), "sha256:" + "c".repeat(64), capacity);
+
+        var rejected = assertInstanceOf(Sealer.SealRejected.class, outcome);
+        assertEquals(EvaluationStage.DOCUMENT_SEAL, rejected.problem().stage());
+        assertEquals(ProblemCode.RENDER_DOCUMENT_LIMIT_EXCEEDED, rejected.problem().code());
+        assertEquals("renderDocument.canonicalBytes",
+                rejected.problem().limitId().orElseThrow().value());
+    }
+
     // ------------------------------------------------------------------
     // fixtures
     // ------------------------------------------------------------------
@@ -192,6 +237,18 @@ class SealerTest {
                         cn.hbads.renderweave.asset.api.AssetAcceptanceAuthority.Orientation.IDENTITY,
                         10, 10, 1,
                         cn.hbads.renderweave.asset.api.AssetAcceptanceAuthority.ColorEncoding.SRGB_8BIT));
+    }
+
+    private static Materializer.MaterializedTree minimalTree() {
+        var canvas = new Materializer.MaterializedNode(
+                "canvas",
+                new ObjectNode(Map.of(
+                        "kind", new Text("canvas"),
+                        "widthMm", new NumberToken("210"),
+                        "heightMm", new NumberToken("297"))),
+                List.of(),
+                "");
+        return new Materializer.MaterializedTree(canvas, List.of(), List.of());
     }
 
     private static ClosureSnapshot closure() {

@@ -38,14 +38,34 @@ final class RenderingPipelineCapacityGuard {
         GENERATED_TRACK_AND_CELL_ENTRIES(
                 "closureAndExpansion.generatedTrackAndCellEntries", 100_000),
         LOGICAL_OPERATIONS(
-                "closureAndExpansion.logicalOperations", 1_000_000);
+                "closureAndExpansion.logicalOperations", 1_000_000),
+        RENDER_DOCUMENT_CANONICAL_BYTES(
+                "renderDocument.canonicalBytes",
+                67_108_864,
+                ProblemCode.RENDER_DOCUMENT_LIMIT_EXCEEDED,
+                EvaluationStage.DOCUMENT_SEAL);
 
         private final String id;
         private final long maximumInclusive;
+        private final ProblemCode problemCode;
+        private final EvaluationStage publicStage;
 
         Limit(String id, long maximumInclusive) {
+            this(id, maximumInclusive,
+                    ProblemCode.EVALUATION_BUDGET_EXCEEDED,
+                    EvaluationStage.MATERIALIZATION);
+        }
+
+        Limit(
+                String id,
+                long maximumInclusive,
+                ProblemCode problemCode,
+                EvaluationStage publicStage
+        ) {
             this.id = id;
             this.maximumInclusive = maximumInclusive;
+            this.problemCode = problemCode;
+            this.publicStage = publicStage;
         }
     }
 
@@ -58,8 +78,8 @@ final class RenderingPipelineCapacityGuard {
             return Optional.empty();
         }
         return Optional.of(RenderingProblem.ofLimit(
-                ProblemCode.EVALUATION_BUDGET_EXCEEDED,
-                EvaluationStage.MATERIALIZATION,
+                limit.problemCode,
+                limit.publicStage,
                 new LimitId(limit.id)));
     }
 

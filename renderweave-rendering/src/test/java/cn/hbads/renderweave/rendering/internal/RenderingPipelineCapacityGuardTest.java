@@ -207,4 +207,25 @@ class RenderingPipelineCapacityGuardTest {
         assertEquals("closureAndExpansion.logicalOperations",
                 cumulativeProblem.limitId().orElseThrow().value());
     }
+
+    @Test
+    void renderDocumentCanonicalBytesBoundaryUsesTheFrozenProductionGuardContract() {
+        var guard = new RenderingPipelineCapacityGuard();
+
+        assertTrue(guard.admit(
+                RenderingPipelineCapacityGuard.Limit.RENDER_DOCUMENT_CANONICAL_BYTES,
+                67_108_863).isEmpty());
+        assertTrue(guard.admit(
+                RenderingPipelineCapacityGuard.Limit.RENDER_DOCUMENT_CANONICAL_BYTES,
+                67_108_864).isEmpty());
+
+        var problem = guard.admit(
+                        RenderingPipelineCapacityGuard.Limit.RENDER_DOCUMENT_CANONICAL_BYTES,
+                        67_108_865)
+                .orElseThrow();
+        assertEquals(EvaluationStage.DOCUMENT_SEAL, problem.stage());
+        assertEquals(ProblemCode.RENDER_DOCUMENT_LIMIT_EXCEEDED, problem.code());
+        assertEquals("renderDocument.canonicalBytes",
+                problem.limitId().orElseThrow().value());
+    }
 }

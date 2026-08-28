@@ -5300,3 +5300,40 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
   retry/memo position 与 `RW-T19-S7-085..088` 仍开放。J0 pending、J1 未批准；未重复 server/full，provider attempts/
   API Key reads/真实数据/Profile registration/push/tag/PR 均为 0。
 - 状态回填后的 resolution `fast` `.sdlc/evidence/20260829-050800-fast/` metadata 为 `passed`，3/3 steps 全绿。
+
+## 147. TV1-T147 执行卡
+
+- 状态：`resolved / automated_verified`；single writer: Codex；blocked by T21/T146（均 resolved）。
+- authority：`RW-T19-S7-089` / cap-016 固定 `renderDocument.canonicalBytes` 为 MAX_INCLUSIVE `67108864`，
+  observed `67108863/67108864/67108865`，DOCUMENT_SEAL_COUNTING / public DOCUMENT_SEAL /
+  RENDER_DOCUMENT_LIMIT_EXCEEDED / ZERO_DOCUMENT_OUTPUT；reservation point 为 atomic canonical-byte/digest commit
+  与任何 Engine Command 前。
+- 缺口：Sealer 当前在完整 canonical String 与 UTF-8 byte[] 已分配后才执行手写 64 MiB 比较，既非 capped writer，
+  又与 production guard 重复拥有 limit。必须让唯一 guard 携带 limit-specific stage/code，并在每段 UTF-8 写入前
+  reserve，完整成功后才返回 bytes/digest。
+- seam：保持 `Sealer.seal` 小 interface；内部 canonical value → chunked UTF-8 accumulator。默认 production seal
+  创建 document request tracker，package-internal overload 允许测试预充；不增加外部 Interface/config/route。
+- TDD：先做 guard missing enum/stage-code RED；再用冻结 305-byte minimal RenderDocument 预充 `limit-305` 与
+  `limit-304`，捕获 missing overload 及 post-hoc writer behavioral RED，最后最小替换 writer。focused guard/Sealer/
+  RenderDocument/Evaluator、受影响 reactor、render/fast；无 app wiring，不重复 server/full。
+- honesty：cap-016 target 不执行 Sealer，exact 三点只在同一 production guard 隔离重放；产品 seam 证明 at/above
+  commit 边界，但不冒充正式 records/A2。jsonDepth/staticNodes/childEdges/runs/textScalars/vectorEntries 与 diagnostics
+  继续后续独立票。provider/API Key/真实数据/Profile registration/push/tag/PR 均不推进；当前 A1、J0。
+
+### TV1-T147 resolution evidence
+
+- guard test 首先产生 3 个 missing-enum compile RED；唯一 catalog 加入 limit-specific code/stage 后 cap-016 三点
+  GREEN。Sealer test 再产生 2 个 missing-overload compile RED；只接 tracker seam 时 6 tests 精确 1 个 behavioral
+  RED，above actual `Sealed`、expected `SealRejected`。
+- canonical object/array/scalar 现直接进入 64 KiB chunked writer；每段先无分配计算 exact UTF-8 bytes，再经同一
+  request tracker reserve 后编码/保留。string escape 也分块，完整 writer 成功后才 commit bytes 与 digest；旧完整
+  document String、post-allocation byte[] check、手写 limit 与 Evaluator problem 重建均已删除。
+- frozen 305-byte minimal document 以 precharged tracker 证明 exact-at byte-identical commit 与 above zero-document
+  rejection。focused Evaluator 68 + RenderDocument 4 + guard 9 + Sealer 6 = 87/87；受影响 reactor Schema 20、
+  Validation 13、Template 84、Asset 92、Rendering 211 全绿，`git diff --check` 通过。
+- A1 `render` `.sdlc/evidence/20260829-052149-render/`（2/2）与 `fast`
+  `.sdlc/evidence/20260829-052240-fast/`（3/3）metadata 均 `passed`；render gate 的既有 RenderDocument independent
+  replay 83/83 仍 byte-identical。cap-016 不执行 Sealer 且无正式 product executor，故无 T147-specific A2/A3；
+  J0 pending、J1 未批准。未重复 server/full，provider attempts/API Key reads/真实数据/Profile registration/
+  push/tag/PR 均为 0。
+- 状态回填后的 resolution `fast` `.sdlc/evidence/20260829-052401-fast/` metadata 为 `passed`，3/3 steps 全绿。

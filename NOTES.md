@@ -3778,3 +3778,29 @@
   `RW-T19-S7-085..088` 仍开放。J0 pending、J1 未批准；未重复 server/full，provider attempts/API Key reads/真实数据/
   Profile registration/push/tag/PR 均为 0。
 - 状态回填后的 resolution `fast` `.sdlc/evidence/20260829-050800-fast/` metadata 为 passed，3/3 steps 全绿。
+
+# 2026-08-29 Template-v1 T147 RenderDocument canonical-byte seal（resolved / automated_verified）
+
+- T146 已以 verified commit `554a7261` 收口，worktree clean、ahead 137 且 DAG 无其他 active claim；现按
+  single-writer 登记并 claim T147。
+- `RW-T19-S7-089` / cap-016 固定 `renderDocument.canonicalBytes` MAX_INCLUSIVE `67108864`，observed
+  `67108863/67108864/67108865`，DOCUMENT_SEAL_COUNTING / public DOCUMENT_SEAL /
+  RENDER_DOCUMENT_LIMIT_EXCEEDED / ZERO_DOCUMENT_OUTPUT。
+- 当前 Sealer 先分配完整 canonical String/UTF-8 byte[] 再手写检查；本票把 limit 与 stage/code 接入唯一 production
+  guard，并改为每段写前 reserve、完整成功后才 commit bytes/digest 的 chunked writer。
+- 测试 seam 为既有 `Sealer.seal` outcome 与同一 guard。冻结 minimal document 为 305 bytes，预充后证明 exact at/above；
+  cap-016 不执行 Sealer，故 guard 三点不冒充 full pipeline A2。当前 A0、J0；不运行 provider、不读取 API Key、不发送
+  真实数据，不 push/tag/PR。
+- TDD RED 顺序已保留：guard test 3 个 missing-enum compile failures；Sealer test 2 个 missing-overload compile
+  failures；只接 tracker seam 后，Sealer 6 tests 精确 1 个 behavioral failure，above actual `Sealed`、expected
+  `SealRejected`。
+- 唯一 guard 现携带每个 limit 的 frozen stage/code。Sealer canonical value 直接写入 64 KiB chunk accumulator；每段
+  先计算 exact UTF-8 byte length 并 reserve，再编码/保留，escaping 也分块。完整成功后才形成 immutable bytes/digest；
+  旧完整文档 String、post-allocation 手写 64 MiB check 与 Evaluator problem 重建已删除。
+- frozen 305-byte exact-at/above 产品 seam 全绿；focused 87/87。受影响 reactor Schema 20、Validation 13、Template
+  84、Asset 92、Rendering 211 全绿，`git diff --check` 通过。A1 `render`
+  `.sdlc/evidence/20260829-052149-render/`（2/2）与 `fast`
+  `.sdlc/evidence/20260829-052240-fast/`（3/3）metadata 均 passed。
+- cap-016 不执行 Sealer 且无正式 product executor，故无 T147-specific A2/A3；J0 pending、J1 未批准。未重复
+  server/full，provider attempts/API Key reads/真实数据/Profile registration/push/tag/PR 均为 0。
+- 状态回填后的 resolution `fast` `.sdlc/evidence/20260829-052401-fast/` metadata 为 passed，3/3 steps 全绿。

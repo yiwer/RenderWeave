@@ -198,12 +198,8 @@ final class CanonicalEvaluator implements Evaluator {
                 runtime.capabilityResultDigest());
         // Capability state is established or restored before materialization can demand it.
         if (seal instanceof Sealer.SealRejected sealRejected) {
-            return new EvaluationOutcome.Rejected(EvaluationStage.DOCUMENT_SEAL,
-                    new RenderingProblem(
-                            ProblemCode.RENDER_DOCUMENT_LIMIT_EXCEEDED,
-                            EvaluationStage.DOCUMENT_SEAL,
-                            Optional.empty(),
-                            Optional.of(new LimitId(sealRejected.limitId()))));
+            return new EvaluationOutcome.Rejected(
+                    sealRejected.problem().stage(), sealRejected.problem());
         }
         var sealed = ((Sealer.Sealed) seal).evaluation();
         return new EvaluationOutcome.SealedDocument(
