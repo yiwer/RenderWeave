@@ -2,6 +2,7 @@ package cn.hbads.renderweave.rendering.internal;
 
 import cn.hbads.renderweave.asset.api.AssetAcceptanceAuthority.AssetKind;
 import cn.hbads.renderweave.rendering.spi.AssetResolutionPort;
+import cn.hbads.renderweave.rendering.api.Evaluator.ExternalAssetReadAuthorization;
 import cn.hbads.renderweave.schema.definition.StaticSchemaRef;
 import cn.hbads.renderweave.schema.identity.SchemaKey;
 import cn.hbads.renderweave.schema.identity.VersionTag;
@@ -53,7 +54,8 @@ class AssetAdmissionTest {
                 TemplateModule.designSemanticAuthority(),
                 port,
                 new AdmittedRenderInput(
-                        SCHEMA, new TypedObject(SCHEMA, Map.of()), Map.of(), Map.of()));
+                        SCHEMA, new TypedObject(SCHEMA, Map.of()), Map.of(), Map.of()),
+                ExternalAssetReadAuthorization.GRANTED);
 
         assertInstanceOf(AssetAdmission.Admitted.class, outcome);
         assertEquals(List.of(IMAGE_ID, FONT_ID), port.assetIds);
@@ -79,7 +81,8 @@ class AssetAdmissionTest {
                                 "private-default", new DesignValue.ImageRef(PRIVATE_DEFAULT_ID),
                                 "images", images,
                                 "font", font),
-                        Map.of("images", images, "font", font)));
+                        Map.of("images", images, "font", font)),
+                ExternalAssetReadAuthorization.GRANTED);
 
         assertInstanceOf(AssetAdmission.Admitted.class, outcome);
         assertEquals(List.of(OVERRIDE_FONT, OVERRIDE_IMAGE_1, OVERRIDE_IMAGE_2), port.assetIds);

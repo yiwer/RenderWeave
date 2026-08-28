@@ -4,6 +4,7 @@ import cn.hbads.renderweave.rendering.api.EvaluationStage;
 import cn.hbads.renderweave.rendering.api.Evaluator;
 import cn.hbads.renderweave.rendering.api.Evaluator.EvaluationCommand;
 import cn.hbads.renderweave.rendering.api.Evaluator.EvaluationOutcome;
+import cn.hbads.renderweave.rendering.api.Evaluator.ExternalAssetReadAuthorization;
 import cn.hbads.renderweave.rendering.api.Evaluator.OutputSelection;
 import cn.hbads.renderweave.rendering.api.RenderOutput;
 import cn.hbads.renderweave.rendering.api.RenderingApplication;
@@ -69,6 +70,8 @@ class RenderingApplicationContractTest {
         assertEquals(NOW + 60_000L, evaluation.deadlineAtEpochMilli());
         assertEquals(evaluation.deadlineAtEpochMilli(), engineCommand.deadlineAtEpochMilli());
         assertEquals("renderweave-renderer/1.0", evaluation.rendererProfile());
+        assertEquals(ExternalAssetReadAuthorization.GRANTED,
+                evaluation.externalAssetReadAuthorization());
         assertEquals(evaluation.rendererProfile(), engineCommand.rendererProfile());
         assertArrayEquals(
                 evaluator.sealedDocumentBytes,
@@ -329,6 +332,7 @@ class RenderingApplicationContractTest {
         return new RenderingAuthority.Authorized(
                 new Evaluator.OwnerScope("owner-a"),
                 "sha256:" + "5".repeat(64),
+                ExternalAssetReadAuthorization.GRANTED,
                 new RenderingAuthority.RecheckIdentity("recheck-1"),
                 purpose == RenderPurpose.AUTHORITATIVE_PREVIEW
                         ? RenderingAuthority.Disclosure.READABLE

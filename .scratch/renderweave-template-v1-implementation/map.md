@@ -819,6 +819,10 @@ Label: wayfinder:map
   substring，显式 stage 5 `AssetAdmission` 先于 state，runtime 仅建立/恢复 exact 声明的 CLOCK/RANDOM 组件，
   无 capability 时零 state work；focused 143/143 + 17/17 及 render/asset/fast/web/server/full 17/17 全绿。
   external PUBLIC override caller `asset.read` 与 demand/position/digest 容量轴留给后续独立 frontier。
+- [T130 — 强制 root PUBLIC AssetRef override 的 caller `asset.read`](issues/130-external-asset-override-read-authorization.md)
+  — **resolved / automated_verified**；已以 Asset-owned Host capability seam 在请求准入时冻结同 scope
+  `asset.read` 事实，并仅在 stage 5 external PUBLIC winner admission 消费；authored/default/child 引用继续
+  不要求 caller `asset.read`。focused 公共 seam 与 app adapter、render/asset/fast/web/server/full 17/17 全绿。
 
 - 改写或重解释现有 Schema/Inference v1 已提交历史，或在 dirty main 上直接实施 Template。
 - Workspace、组织/成员/分享/协作、跨 ownerScope 复制、通用 connector、任意 SQL/HTTP/文件/脚本、插件节点或运行时代码注册。

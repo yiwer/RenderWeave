@@ -1,5 +1,6 @@
 package cn.hbads.renderweave.app.rendering;
 
+import cn.hbads.renderweave.asset.spi.AssetOwnerScopeAuthority;
 import cn.hbads.renderweave.rendering.api.RenderingApplication;
 import cn.hbads.renderweave.rendering.api.RenderingApplication.RenderCommand;
 import cn.hbads.renderweave.rendering.api.RenderingApplication.RenderInvocationRef;
@@ -47,6 +48,7 @@ class RenderingApplicationConfigurationTest {
             .withBean(DesignSemanticAuthority.class, () -> mock(DesignSemanticAuthority.class))
             .withBean(DesignDslAuthority.class, () -> mock(DesignDslAuthority.class))
             .withBean(TemplatePersistence.class, RenderingApplicationConfigurationTest::templates)
+            .withBean(AssetOwnerScopeAuthority.class, () -> mock(AssetOwnerScopeAuthority.class))
             .withBean(ValidationTargetResolver.class, () -> mock(ValidationTargetResolver.class));
 
     @Test

@@ -1,6 +1,7 @@
 package cn.hbads.renderweave.app.rendering;
 
 import cn.hbads.renderweave.asset.api.AssetResolver;
+import cn.hbads.renderweave.asset.spi.AssetOwnerScopeAuthority;
 import cn.hbads.renderweave.rendering.api.CapabilityDerivation;
 import cn.hbads.renderweave.rendering.api.EvaluationStage;
 import cn.hbads.renderweave.rendering.api.Evaluator;
@@ -75,12 +76,14 @@ class RenderingApplicationConfiguration {
     RenderingAuthority configuredRenderingAuthority(
             @Value("${renderweave.template.single-owner.owner-scope:}") String ownerScope,
             @Value("${renderweave.template.single-owner.capabilities:}") String capabilities,
-            TemplatePersistence templates
+            TemplatePersistence templates,
+            AssetOwnerScopeAuthority assetOwnerScopes
     ) {
         return new ConfiguredSingleOwnerRenderingAuthority(
                 ownerScope,
                 parseCapabilities(capabilities),
-                templates);
+                templates,
+                assetOwnerScopes);
     }
 
     @Bean

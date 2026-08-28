@@ -3,6 +3,7 @@ package cn.hbads.renderweave.app.rendering;
 import cn.hbads.renderweave.rendering.api.Evaluator;
 import cn.hbads.renderweave.rendering.api.Evaluator.EvaluationCommand;
 import cn.hbads.renderweave.rendering.api.Evaluator.EvaluationOutcome;
+import cn.hbads.renderweave.rendering.api.Evaluator.ExternalAssetReadAuthorization;
 import cn.hbads.renderweave.rendering.api.Evaluator.OutputSelection;
 import cn.hbads.renderweave.rendering.api.Evaluator.OwnerScope;
 import cn.hbads.renderweave.rendering.api.Evaluator.RenderRequestId;
@@ -92,6 +93,7 @@ class EvaluatorAssemblyTest {
                 new RenderRequestId("00000000-0000-4000-8000-000000000101"),
                 new OwnerScope("owner-a"),
                 "sha256:" + "5".repeat(64),
+                ExternalAssetReadAuthorization.GRANTED,
                 created.current().templateId(),
                 "{\"rootDocument\":{}}".getBytes(StandardCharsets.UTF_8),
                 OutputSelection.defaultPng(),
@@ -116,6 +118,7 @@ class EvaluatorAssemblyTest {
                 new RenderRequestId("00000000-0000-4000-8000-000000000102"),
                 new OwnerScope("owner-a"),
                 "sha256:" + "5".repeat(64),
+                ExternalAssetReadAuthorization.GRANTED,
                 new TemplateApplication.TemplateId("00000000-0000-4000-8000-0000000000f9"),
                 "{\"rootDocument\":{}}".getBytes(StandardCharsets.UTF_8),
                 OutputSelection.defaultPng(),

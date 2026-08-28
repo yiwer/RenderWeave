@@ -3359,3 +3359,27 @@
   状态回填后的 resolution `fast` `.sdlc/evidence/20260828-210925-fast/` 3/3 steps 均通过。
   external PUBLIC override caller `asset.read` 与 demand/position/digest/init-retry/Ticket 19 records 另票推进；
   本票无 migration/OpenAPI 变更。
+
+# 2026-08-28 Template-v1 T130 external override `asset.read`（resolved / automated_verified）
+
+- T129 已以 verified commit `3ed9e5df` 收口且 worktree clean；复算冻结 Ticket 13 §3 后确认当前唯一首要
+  安全缺口是 root PUBLIC external AssetRef winner 尚未检查 caller `asset.read`，tracker 无其他 claimed writer。
+- 已按 single-writer 登记并 claim T130：app 通过 Asset-owned Host capability seam 冻结同 scope read 事实，
+  Rendering 以 closed command value 传播，Evaluator 仅在 stage 5 external admission 消费；authored/default/
+  child 引用不重复授权，release 不重查 asset 权限。先做公共 seam RED→GREEN，再跑 app-wiring gates；当前
+  A0、J0，provider/API Key/真实数据/Profile/push/tag/PR 均不推进。
+- 已完成 closed GRANTED/DENIED/UNAVAILABLE 授权值与 app→Rendering→Evaluator 传播；授权事实进入
+  authorization-context digest。Asset-owned catalog capability 仅在请求 admission 检查一次，exact scope grant
+  才允许 external winner；DENIED 不探测 Asset 且统一 `ASSET_NOT_FOUND`，UNAVAILABLE fail-closed。stage 5
+  authored atoms 始终先行；无 external winner、authored/default、unknown/PRIVATE/duplicate loser 与 child fill
+  均不要求 caller `asset.read`，既有 caller-agnostic resolver 保持不变。
+- focused 公共 seam 40/40、app authority/config 14/14、Rendering 148/148、Template 81/81、Asset 92/92；A1
+  `render` `.sdlc/evidence/20260828-212630-render/`、`asset` `.sdlc/evidence/20260828-212719-asset/`、`fast`
+  `.sdlc/evidence/20260828-212741-fast/`、`web` `.sdlc/evidence/20260828-212812-web/`、`server`
+  `.sdlc/evidence/20260828-212857-server/` 与最终 `full` `.sdlc/evidence/20260828-220847-full/` 均通过；full
+  metadata 17/17，App 372/0/0/15、Web 28 files/217 tests、Playwright 23 passed + 1 controlled skip。
+- 首次 full `.sdlc/evidence/20260828-214438-full/` 仅在既有 Vite chunk recovery 用例发生一次 5 秒启动竞态；
+  targeted 文件 3/3 通过，未改代码原样重跑 full 后该用例与 draft/inference browser E2E 全绿，失败 metadata
+  保留。A2 仅来自未变轴独立重放、无 T130-specific issued replay；A3 无，J0、J1 未批准。provider attempts/
+  API Key reads/reservations/cost/真实数据/migration/OpenAPI/Profile/push/tag/PR 均为 0。
+- 状态回填后的 resolution `fast` `.sdlc/evidence/20260828-223446-fast/` 为 3/3 steps passed。

@@ -105,6 +105,7 @@ final class CanonicalRenderingApplication implements RenderingApplication {
                 requestId,
                 authorized.ownerScope(),
                 authorized.authorizationContextDigest(),
+                authorized.externalAssetReadAuthorization(),
                 command.rootTemplateId(),
                 command.rawRenderInputUtf8(),
                 command.outputSelection(),

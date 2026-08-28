@@ -4,6 +4,7 @@ import cn.hbads.renderweave.asset.api.AssetAcceptanceAuthority.AssetKind;
 import cn.hbads.renderweave.asset.api.AssetApplication.AssetId;
 import cn.hbads.renderweave.asset.api.AssetApplication.OwnerScope;
 import cn.hbads.renderweave.rendering.api.EvaluationStage;
+import cn.hbads.renderweave.rendering.api.Evaluator.ExternalAssetReadAuthorization;
 import cn.hbads.renderweave.rendering.api.RenderingProblem;
 import cn.hbads.renderweave.rendering.api.RenderingProblem.LimitId;
 import cn.hbads.renderweave.rendering.api.RenderingProblem.ProblemCode;
@@ -64,13 +65,17 @@ final class AssetAdmission {
             ClosureSnapshot closure,
             DesignSemanticAuthority semantics,
             AssetResolutionPort assets,
-            AdmittedRenderInput admittedInput
+            AdmittedRenderInput admittedInput,
+            ExternalAssetReadAuthorization externalAssetReadAuthorization
     ) {
         var admission = new AssetAdmission(closure, semantics, assets);
-        return admission.admit(admittedInput);
+        return admission.admit(admittedInput, externalAssetReadAuthorization);
     }
 
-    private Outcome admit(AdmittedRenderInput admittedInput) {
+    private Outcome admit(
+            AdmittedRenderInput admittedInput,
+            ExternalAssetReadAuthorization externalAssetReadAuthorization
+    ) {
         var externalAtoms = new ArrayList<AssetAtom>();
         for (var custom : admittedInput.externalCustomOverrides().entrySet().stream()
                 .sorted(Map.Entry.comparingByKey())
@@ -89,18 +94,31 @@ final class AssetAdmission {
         if (authored.isEmpty() && externalAtoms.isEmpty()) {
             return new Admitted();
         }
-        if (assets == null) {
-            return rejected(EvaluationStage.ASSET_ADMISSION, ProblemCode.EVALUATION_FAILED, null);
-        }
         for (var atom : authored) {
             var capacityFailure = reserveAuthoredAtom();
             if (capacityFailure != null) {
                 return capacityFailure;
             }
+            if (assets == null) {
+                return rejected(
+                        EvaluationStage.ASSET_ADMISSION,
+                        ProblemCode.EVALUATION_FAILED,
+                        null);
+            }
             var failure = precheck(atom);
             if (failure != null) {
                 return failure;
             }
+        }
+        if (externalAtoms.isEmpty()) {
+            return new Admitted();
+        }
+        if (externalAssetReadAuthorization == ExternalAssetReadAuthorization.DENIED) {
+            return rejected(EvaluationStage.ASSET_ADMISSION, ProblemCode.ASSET_NOT_FOUND, null);
+        }
+        if (externalAssetReadAuthorization == ExternalAssetReadAuthorization.UNAVAILABLE
+                || assets == null) {
+            return rejected(EvaluationStage.ASSET_ADMISSION, ProblemCode.EVALUATION_FAILED, null);
         }
         for (var atom : externalAtoms) {
             var failure = precheck(atom);

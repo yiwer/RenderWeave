@@ -43,6 +43,16 @@ public interface Evaluator {
     }
 
     /**
+     * Host 在请求准入时冻结的 external PUBLIC AssetRef 读取授权事实。
+     * 它不是 RenderInput 字段，也不适用于 authored/default/child AssetRef。
+     */
+    enum ExternalAssetReadAuthorization {
+        GRANTED,
+        DENIED,
+        UNAVAILABLE
+    }
+
+    /**
      * 一次根 Evaluation 的封闭命令。
      *
      * @param renderRequestId     Rendering 创建的请求级身份
@@ -57,6 +67,7 @@ public interface Evaluator {
             RenderRequestId renderRequestId,
             OwnerScope ownerScope,
             String authorizationContextDigest,
+            ExternalAssetReadAuthorization externalAssetReadAuthorization,
             cn.hbads.renderweave.template.api.TemplateApplication.TemplateId rootTemplateId,
             byte[] rawRenderInputUtf8,
             OutputSelection outputSelection,
@@ -70,6 +81,9 @@ public interface Evaluator {
             if (!authorizationContextDigest.matches("sha256:[0-9a-f]{64}")) {
                 throw new IllegalArgumentException("authorizationContextDigest must be sha256");
             }
+            Objects.requireNonNull(
+                    externalAssetReadAuthorization,
+                    "externalAssetReadAuthorization");
             Objects.requireNonNull(rootTemplateId, "rootTemplateId");
             Objects.requireNonNull(rawRenderInputUtf8, "rawRenderInputUtf8");
             Objects.requireNonNull(outputSelection, "outputSelection");

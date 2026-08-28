@@ -4742,3 +4742,33 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
 - 状态回填后的 resolution `fast` `.sdlc/evidence/20260828-210925-fast/` 3/3 steps 均 exit 0。
 - 残余：external PUBLIC override caller `asset.read` 尚未由当前 Asset seam 表达；capability demand/position/digest
   容量、初始化重试预算与 Ticket 19 正式 records 另票推进。不新增 migration/OpenAPI 版本。
+
+## 130. TV1-T130 执行卡
+
+- 状态：`resolved / automated_verified`；single writer: Codex；blocked by T21/T125/T129（均 resolved）。
+- 决策：T129 verified commit 后复算冻结 Ticket 13 §3，确认 stage 5 已识别 root PUBLIC external winners，
+  但当前命令与 Asset seam 均未携带 caller `asset.read` 事实，因而任何调用者都可提交同 scope external
+  AssetRef。这是无外部授权依赖且可独立修复的当前安全 frontier。
+- seam：app `RenderingAuthority` 通过 Asset-owned `AssetOwnerScopeAuthority` 一次性取得同 scope read
+  决策，向 `EvaluationCommand` 传播 closed GRANTED/DENIED/UNAVAILABLE 值；`AssetAdmission` 仅对 external
+  winners 消费它，`AssetResolutionPort` 继续保持 trusted internal resolver，不承担 actor ACL。
+- TDD：先从 `RenderingApplication.render` 与 `Evaluator.evaluate` 公共 seam 取得真实 RED；覆盖授权事实
+  传播、denied/unavailable fail-closed、IMAGE/FONT/list winner、authored-only bypass、scope mismatch，以及
+  capability state 下游零副作用。
+- 完成信号：focused Rendering/app、`render`、`asset`、`fast`、`web`、顺序 `server`、app-wiring `full`
+  全绿并独立提交；不新增 route/OpenAPI/migration/Profile，不运行 provider，不读取 API Key，不发送真实
+  数据，不 push/tag/PR。capability 容量与 Ticket 19 records 继续另票。
+- 收口：server-created GRANTED/DENIED/UNAVAILABLE 从 app authority 传播到 Evaluation；Asset-owned catalog
+  capability 只在初始 admission 检查一次并绑定 authorization-context digest。stage 5 保持 authored 先行，
+  external DENIED 不探测对象且统一 `ASSET_NOT_FOUND`，UNAVAILABLE fail-closed，GRANTED 才执行 exact
+  scope/existence/ACTIVE/kind 预准入；无 external winner 与 authored/default/child 均不依赖 caller `asset.read`。
+- focused 公共 seam 40/40、app authority/config 14/14、Rendering 148/148、Template 81/81、Asset 92/92；A1
+  `render` `20260828-212630-render`、`asset` `20260828-212719-asset`、`fast` `20260828-212741-fast`、`web`
+  `20260828-212812-web`、`server` `20260828-212857-server` 与最终 17-step `full`
+  `20260828-220847-full` 均 passed。首次 full `20260828-214438-full` 的既有 Vite chunk recovery 5 秒竞态经
+  targeted 3/3 与无代码变更的最终 full 复跑收口，失败 metadata 保留。
+- full 最终为 17/17、App 372 tests/0 failures/0 errors/15 skipped、Node 24 Web 28 files/217 tests、Playwright
+  23 passed + 1 controlled skip，runtime canary PostgreSQL ready / contract 0.16.0；provider attempts/API Key
+  reads/reservations/cost=0。A2 仅为未变轴独立重放、无 ticket-specific issued replay；A3 无，J0、J1 未批准。
+  未新增 migration/OpenAPI/Profile，未发送真实数据，未 push/tag/PR。
+- 状态回填后的 resolution `fast` `20260828-223446-fast` 为 3/3 steps passed。

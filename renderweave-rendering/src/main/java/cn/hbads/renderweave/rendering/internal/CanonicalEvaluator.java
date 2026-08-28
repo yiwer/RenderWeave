@@ -145,7 +145,11 @@ final class CanonicalEvaluator implements Evaluator {
         }
 
         var assetAdmission = AssetAdmission.admit(
-                closure, semantics, assets, admitted.input());
+                closure,
+                semantics,
+                assets,
+                admitted.input(),
+                command.externalAssetReadAuthorization());
         if (assetAdmission instanceof AssetAdmission.Rejected rejected) {
             return new EvaluationOutcome.Rejected(rejected.stage(), rejected.problem());
         }

@@ -560,7 +560,12 @@ class MaterializerTest {
             AdmittedRenderInput input
     ) {
         var admission = AssetAdmission.admit(
-                closure, TemplateModule.designSemanticAuthority(), port, input);
+                closure,
+                TemplateModule.designSemanticAuthority(),
+                port,
+                input,
+                cn.hbads.renderweave.rendering.api.Evaluator
+                        .ExternalAssetReadAuthorization.GRANTED);
         if (admission instanceof AssetAdmission.Rejected rejected) {
             return new Materializer.MaterializationFailed(rejected.stage(), rejected.problem());
         }

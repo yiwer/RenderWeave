@@ -4,6 +4,7 @@ import cn.hbads.renderweave.rendering.api.EvaluationStage;
 import cn.hbads.renderweave.rendering.api.Evaluator;
 import cn.hbads.renderweave.rendering.api.Evaluator.EvaluationCommand;
 import cn.hbads.renderweave.rendering.api.Evaluator.EvaluationOutcome;
+import cn.hbads.renderweave.rendering.api.Evaluator.ExternalAssetReadAuthorization;
 import cn.hbads.renderweave.rendering.api.Evaluator.OutputSelection;
 import cn.hbads.renderweave.rendering.api.Evaluator.OwnerScope;
 import cn.hbads.renderweave.rendering.api.Evaluator.RenderRequestId;
@@ -48,6 +49,14 @@ class EvaluatorContractTest {
             SchemaKey.systemProvided("system-empty"), VersionTag.of("v1"));
     private static final String ROOT_ID = "00000000-0000-4000-8000-0000000000a1";
     private static final String AUTH_DIGEST = "sha256:" + "5".repeat(64);
+    private static final String PUBLIC_IMAGE_DEFINITION =
+            "00000000-0000-4000-8000-0000000000d1";
+    private static final String DEFAULT_IMAGE =
+            "00000000-0000-4000-8000-0000000000a1";
+    private static final String OVERRIDE_IMAGE_LOSER =
+            "00000000-0000-4000-8000-0000000000a3";
+    private static final String OVERRIDE_IMAGE =
+            "00000000-0000-4000-8000-0000000000a2";
 
     @Test
     void closureWithoutCapabilityDeclarationsDoesNoStateWork() {
@@ -184,6 +193,97 @@ class EvaluatorContractTest {
     }
 
     @Test
+    void externalPublicAssetOverrideWithoutReadIsHiddenBeforeCapabilityState() {
+        var stateStore = new RecordingCapabilityStateStore();
+        var runtime = new RecordingCapabilityRuntime();
+        var assets = new RecordingAssetPort();
+        var evaluator = evaluator(
+                closureWith(withUnusedRandom(canvasWithPublicImageCustom())),
+                resolver(), assets, stateStore, runtime);
+
+        var rejected = assertInstanceOf(EvaluationOutcome.Rejected.class,
+                evaluator.evaluate(command(externalImageEnvelope(),
+                        ExternalAssetReadAuthorization.DENIED)));
+
+        assertEquals(EvaluationStage.ASSET_ADMISSION, rejected.stage());
+        assertEquals(RenderingProblem.ProblemCode.ASSET_NOT_FOUND,
+                rejected.problem().code());
+        assertEquals(List.of(DEFAULT_IMAGE), assets.precheckedAssetIds);
+        assertEquals(0, runtime.establishCalls);
+        assertEquals(0, stateStore.loadCalls);
+        assertEquals(0, stateStore.saveCalls);
+    }
+
+    @Test
+    void externalPublicAssetOverrideWithReadIsAdmittedAfterAuthoredDefault() {
+        var assets = new RecordingAssetPort();
+        var evaluator = evaluator(
+                closureWith(canvasWithPublicImageCustom()),
+                resolver(), assets, new RecordingCapabilityStateStore(), scriptedRuntime());
+
+        assertInstanceOf(EvaluationOutcome.SealedDocument.class,
+                evaluator.evaluate(command(externalImageEnvelope(),
+                        ExternalAssetReadAuthorization.GRANTED)));
+
+        assertEquals(List.of(DEFAULT_IMAGE, OVERRIDE_IMAGE), assets.precheckedAssetIds);
+    }
+
+    @Test
+    void externalAssetAuthorityUnavailabilityDoesNotProbeOverrideOrInitializeCapabilities() {
+        var stateStore = new RecordingCapabilityStateStore();
+        var runtime = new RecordingCapabilityRuntime();
+        var assets = new RecordingAssetPort();
+        var evaluator = evaluator(
+                closureWith(withUnusedRandom(canvasWithPublicImageCustom())),
+                resolver(), assets, stateStore, runtime);
+
+        var rejected = assertInstanceOf(EvaluationOutcome.Rejected.class,
+                evaluator.evaluate(command(externalImageEnvelope(),
+                        ExternalAssetReadAuthorization.UNAVAILABLE)));
+
+        assertEquals(EvaluationStage.ASSET_ADMISSION, rejected.stage());
+        assertEquals(RenderingProblem.ProblemCode.EVALUATION_FAILED,
+                rejected.problem().code());
+        assertEquals(List.of(DEFAULT_IMAGE), assets.precheckedAssetIds);
+        assertEquals(0, runtime.establishCalls);
+        assertEquals(0, stateStore.loadCalls);
+        assertEquals(0, stateStore.saveCalls);
+    }
+
+    @Test
+    void authoredAssetDoesNotRequireCallerAssetRead() {
+        var assets = new CapturingAssetPort();
+        var evaluator = new CanonicalEvaluator(
+                scriptedClosure(closureWith(canvasWithImage())),
+                TemplateModule.designSemanticAuthority(),
+                TemplateModule.designDslAuthority(),
+                assets,
+                scriptedRuntime(),
+                new RecordingCapabilityStateStore(),
+                "{}",
+                resolver(),
+                Clock.fixed(Instant.ofEpochMilli(1_000L), ZoneOffset.UTC));
+
+        assertInstanceOf(EvaluationOutcome.SealedDocument.class,
+                evaluator.evaluate(command("{\"rootDocument\":{}}",
+                        ExternalAssetReadAuthorization.DENIED)));
+        assertTrue(assets.lastRequest != null);
+    }
+
+    @Test
+    void ignoredUnknownOverrideDoesNotRequireCallerAssetRead() {
+        var evaluator = evaluator(closureWith(canvasWithRect()), resolver());
+        var envelope = "{\"rootDocument\":{},\"customValues\":[{"
+                + "\"definitionId\":\"00000000-0000-4000-8000-0000000000f9\","
+                + "\"value\":{\"assetId\":\"" + OVERRIDE_IMAGE + "\"}}]}";
+
+        assertInstanceOf(EvaluationOutcome.SealedDocument.class,
+                evaluator.evaluate(command(
+                        envelope,
+                        ExternalAssetReadAuthorization.DENIED)));
+    }
+
+    @Test
     void evaluateSealsDocumentEndToEnd() {
         var evaluator = evaluator(closureWith(canvasWithRect()), resolver());
 
@@ -229,6 +329,7 @@ class EvaluatorContractTest {
                 new RenderRequestId("00000000-0000-4000-8000-000000000001"),
                 new OwnerScope("intruder-scope"),
                 AUTH_DIGEST,
+                ExternalAssetReadAuthorization.GRANTED,
                 new TemplateApplication.TemplateId(ROOT_ID),
                 "{\"rootDocument\":{}}".getBytes(StandardCharsets.UTF_8),
                 OutputSelection.defaultPng(),
@@ -361,16 +462,34 @@ class EvaluatorContractTest {
         return command(envelope, 61_000L);
     }
 
+    private static EvaluationCommand command(
+            String envelope,
+            ExternalAssetReadAuthorization externalAssetReadAuthorization
+    ) {
+        return command(envelope, 61_000L, AUTH_DIGEST, externalAssetReadAuthorization);
+    }
+
     private static EvaluationCommand command(String envelope, long deadlineAtEpochMilli) {
         return command(envelope, deadlineAtEpochMilli, AUTH_DIGEST);
     }
 
     private static EvaluationCommand command(
             String envelope, long deadlineAtEpochMilli, String authorizationDigest) {
+        return command(envelope, deadlineAtEpochMilli, authorizationDigest,
+                ExternalAssetReadAuthorization.GRANTED);
+    }
+
+    private static EvaluationCommand command(
+            String envelope,
+            long deadlineAtEpochMilli,
+            String authorizationDigest,
+            ExternalAssetReadAuthorization externalAssetReadAuthorization
+    ) {
         return new EvaluationCommand(
                 new RenderRequestId("00000000-0000-4000-8000-000000000001"),
                 new OwnerScope("owner-a"),
                 authorizationDigest,
+                externalAssetReadAuthorization,
                 new TemplateApplication.TemplateId(ROOT_ID),
                 envelope.getBytes(StandardCharsets.UTF_8),
                 OutputSelection.defaultPng(),
@@ -394,6 +513,25 @@ class EvaluatorContractTest {
                 new RecordingCapabilityStateStore(),
                 "{}",
                 resolver(),
+                Clock.fixed(Instant.ofEpochMilli(1_000L), ZoneOffset.UTC));
+    }
+
+    private static CanonicalEvaluator evaluator(
+            ClosureSnapshot closure,
+            ValidationTargetResolver resolver,
+            AssetResolutionPort assets,
+            CapabilityStateStore stateStore,
+            RenderingCapabilityRuntime runtime
+    ) {
+        return new CanonicalEvaluator(
+                scriptedClosure(closure),
+                TemplateModule.designSemanticAuthority(),
+                TemplateModule.designDslAuthority(),
+                assets,
+                runtime,
+                stateStore,
+                "{\"capabilityRuntime\":{\"initializationAttempts\":3}}",
+                resolver,
                 Clock.fixed(Instant.ofEpochMilli(1_000L), ZoneOffset.UTC));
     }
 
@@ -588,6 +726,22 @@ class EvaluatorContractTest {
                 + "\"imageRef\":{\"assetId\":\"00000000-0000-4000-8000-0000000000aa\"}}]}}";
     }
 
+    private static String canvasWithPublicImageCustom() {
+        return canvasWithRect().replace("\"definitions\":[]", "\"definitions\":[{"
+                + "\"definitionId\":\"" + PUBLIC_IMAGE_DEFINITION + "\","
+                + "\"kind\":\"custom\",\"displayName\":\"Logo\","
+                + "\"exposure\":\"PUBLIC\",\"valueType\":\"imageRef\","
+                + "\"defaultValue\":{\"assetId\":\"" + DEFAULT_IMAGE + "\"}}]");
+    }
+
+    private static String externalImageEnvelope() {
+        return "{\"rootDocument\":{},\"customValues\":["
+                + "{\"definitionId\":\"" + PUBLIC_IMAGE_DEFINITION
+                + "\",\"value\":{\"assetId\":\"" + OVERRIDE_IMAGE_LOSER + "\"}},"
+                + "{\"definitionId\":\"" + PUBLIC_IMAGE_DEFINITION
+                + "\",\"value\":{\"assetId\":\"" + OVERRIDE_IMAGE + "\"}}]}";
+    }
+
     private static String canvasWithUnusedRandom() {
         return withUnusedRandom(canvasWithRect());
     }
@@ -625,6 +779,25 @@ class EvaluatorContractTest {
         @Override
         public ResolveOutcome resolve(ResolveRequest request) {
             throw new IllegalStateException("resolution must not follow rejected admission");
+        }
+    }
+
+    private static final class RecordingAssetPort implements AssetResolutionPort {
+        private final java.util.ArrayList<String> precheckedAssetIds = new java.util.ArrayList<>();
+
+        @Override
+        public PrecheckOutcome precheckAdmission(
+                cn.hbads.renderweave.asset.api.AssetApplication.OwnerScope ownerScope,
+                cn.hbads.renderweave.asset.api.AssetApplication.AssetId assetId,
+                cn.hbads.renderweave.asset.api.AssetAcceptanceAuthority.AssetKind expectedKind
+        ) {
+            precheckedAssetIds.add(assetId.value());
+            return new PrecheckOutcome.PrecheckPassed();
+        }
+
+        @Override
+        public ResolveOutcome resolve(ResolveRequest request) {
+            throw new AssertionError("unused CustomDefinition must not resolve an Asset");
         }
     }
 
