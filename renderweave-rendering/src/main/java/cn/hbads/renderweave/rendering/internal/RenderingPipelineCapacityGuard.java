@@ -78,7 +78,12 @@ final class RenderingPipelineCapacityGuard {
                 "diagnostics.sidecarItems",
                 25_000,
                 ProblemCode.RENDER_DIAGNOSTIC_LIMIT_EXCEEDED,
-                EvaluationStage.MATERIALIZATION);
+                EvaluationStage.MATERIALIZATION),
+        ASSETS_AND_FETCH_AUTHORED_ASSET_OCCURRENCES(
+                "assetsAndFetch.authoredAssetOccurrences",
+                4_096,
+                ProblemCode.ASSET_BUDGET_EXCEEDED,
+                EvaluationStage.ASSET_ADMISSION);
 
         private final String id;
         private final long maximumInclusive;

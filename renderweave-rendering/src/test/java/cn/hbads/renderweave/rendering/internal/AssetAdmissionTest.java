@@ -1,6 +1,8 @@
 package cn.hbads.renderweave.rendering.internal;
 
 import cn.hbads.renderweave.asset.api.AssetAcceptanceAuthority.AssetKind;
+import cn.hbads.renderweave.rendering.api.EvaluationStage;
+import cn.hbads.renderweave.rendering.api.RenderingProblem;
 import cn.hbads.renderweave.rendering.spi.AssetResolutionPort;
 import cn.hbads.renderweave.rendering.api.Evaluator.ExternalAssetReadAuthorization;
 import cn.hbads.renderweave.schema.definition.StaticSchemaRef;
@@ -21,6 +23,7 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class AssetAdmissionTest {
 
@@ -89,10 +92,98 @@ class AssetAdmissionTest {
         assertEquals(List.of(AssetKind.FONT, AssetKind.IMAGE, AssetKind.IMAGE), port.kinds);
     }
 
+    @Test
+    void authoredOccurrenceBudgetIsRequestTotalAndStopsBeforeTheNextPrecheck() {
+        var exactCapacity = new RenderingPipelineCapacityGuard().newRequestTracker();
+        assertTrue(exactCapacity.reserve(
+                RenderingPipelineCapacityGuard.Limit
+                        .ASSETS_AND_FETCH_AUTHORED_ASSET_OCCURRENCES,
+                4_094).isEmpty());
+        var exactPort = new RecordingAssetPort();
+
+        var exact = AssetAdmission.admit(
+                closure(twoAuthoredImageDefaults()),
+                TemplateModule.designSemanticAuthority(),
+                exactPort,
+                new AdmittedRenderInput(
+                        SCHEMA, new TypedObject(SCHEMA, Map.of()), Map.of(), Map.of()),
+                ExternalAssetReadAuthorization.GRANTED,
+                exactCapacity);
+
+        assertInstanceOf(AssetAdmission.Admitted.class, exact);
+        assertEquals(List.of(IMAGE_ID, IMAGE_ID), exactPort.assetIds);
+
+        var exceededCapacity = new RenderingPipelineCapacityGuard().newRequestTracker();
+        assertTrue(exceededCapacity.reserve(
+                RenderingPipelineCapacityGuard.Limit
+                        .ASSETS_AND_FETCH_AUTHORED_ASSET_OCCURRENCES,
+                4_095).isEmpty());
+        var exceededPort = new RecordingAssetPort();
+
+        var exceeded = AssetAdmission.admit(
+                closure(twoAuthoredImageDefaults()),
+                TemplateModule.designSemanticAuthority(),
+                exceededPort,
+                new AdmittedRenderInput(
+                        SCHEMA, new TypedObject(SCHEMA, Map.of()), Map.of(), Map.of()),
+                ExternalAssetReadAuthorization.GRANTED,
+                exceededCapacity);
+
+        var rejected = assertInstanceOf(AssetAdmission.Rejected.class, exceeded);
+        assertEquals(EvaluationStage.ASSET_ADMISSION, rejected.stage());
+        assertEquals(RenderingProblem.ProblemCode.ASSET_BUDGET_EXCEEDED,
+                rejected.problem().code());
+        assertEquals("assetsAndFetch.authoredAssetOccurrences",
+                rejected.problem().limitId().orElseThrow().value());
+        assertEquals(List.of(IMAGE_ID), exceededPort.assetIds);
+    }
+
+    @Test
+    void externalOverridesDoNotConsumeTheAuthoredOccurrenceBudget() {
+        var capacity = new RenderingPipelineCapacityGuard().newRequestTracker();
+        assertTrue(capacity.reserve(
+                RenderingPipelineCapacityGuard.Limit
+                        .ASSETS_AND_FETCH_AUTHORED_ASSET_OCCURRENCES,
+                4_096).isEmpty());
+        var external = new DesignValue.ImageRef(OVERRIDE_IMAGE_1);
+        var port = new RecordingAssetPort();
+
+        var outcome = AssetAdmission.admit(
+                closure(emptyDsl()),
+                TemplateModule.designSemanticAuthority(),
+                port,
+                new AdmittedRenderInput(
+                        SCHEMA,
+                        new TypedObject(SCHEMA, Map.of()),
+                        Map.of("image", external),
+                        Map.of("image", external)),
+                ExternalAssetReadAuthorization.GRANTED,
+                capacity);
+
+        assertInstanceOf(AssetAdmission.Admitted.class, outcome);
+        assertEquals(List.of(OVERRIDE_IMAGE_1), port.assetIds);
+    }
+
     private static String emptyDsl() {
         return "{\"dslVersion\":\"renderweave-design/1.0\","
                 + "\"expressionProfile\":\"renderweave-expression/1.0\","
                 + "\"displayName\":\"Empty\",\"definitions\":[],"
+                + "\"designRoot\":{\"nodeId\":\"" + ROOT_ID + "\",\"kind\":\"canvas\","
+                + "\"widthMm\":210,\"heightMm\":297,\"bindings\":[],\"children\":[]}}";
+    }
+
+    private static String twoAuthoredImageDefaults() {
+        return "{\"dslVersion\":\"renderweave-design/1.0\","
+                + "\"expressionProfile\":\"renderweave-expression/1.0\","
+                + "\"displayName\":\"Duplicate Assets\",\"definitions\":["
+                + "{\"definitionId\":\"00000000-0000-4000-8000-0000000000d1\","
+                + "\"kind\":\"custom\",\"displayName\":\"First\",\"exposure\":\"PRIVATE\","
+                + "\"valueType\":\"imageRef\",\"defaultValue\":{\"assetId\":\""
+                + IMAGE_ID + "\"}},"
+                + "{\"definitionId\":\"00000000-0000-4000-8000-0000000000d2\","
+                + "\"kind\":\"custom\",\"displayName\":\"Second\",\"exposure\":\"PRIVATE\","
+                + "\"valueType\":\"imageRef\",\"defaultValue\":{\"assetId\":\""
+                + IMAGE_ID + "\"}}],"
                 + "\"designRoot\":{\"nodeId\":\"" + ROOT_ID + "\",\"kind\":\"canvas\","
                 + "\"widthMm\":210,\"heightMm\":297,\"bindings\":[],\"children\":[]}}";
     }

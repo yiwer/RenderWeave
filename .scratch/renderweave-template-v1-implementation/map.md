@@ -945,6 +945,12 @@ Label: wayfinder:map
   `diagnostics.sidecarItems=25000` request-total atomic reservation；第 25001 项须以 MATERIALIZATION /
   RENDER_DIAGNOSTIC_LIMIT_EXCEEDED / exact limitId 零文档失败。focused 112/112、Rendering 229/229 与 render/fast
   metadata 全绿；A1、无 ticket-specific A2、J0，不推进 sidecar bytes 或 LayoutTrace。
+- [T155 — authored Asset occurrences 预算](issues/155-authored-asset-occurrences-capacity.md)
+  — **resolved / automated_verified**；按 `RW-T19-S8-001` 与 cap-025 将 AssetAdmission 私有 4096 手写计数迁入唯一
+  production guard；重复 assetId 逐 authored occurrence 收费，external PUBLIC override 不收费，第 4097 项须在
+  Asset-owned precheck 前以 ASSET_ADMISSION / ASSET_BUDGET_EXCEEDED / exact limitId 零文档失败。focused 95/95、
+  Rendering 232/232 与 render/fast metadata 全绿；A1、无 ticket-specific A2、J0。cap-024 因最终 sidecar
+  canonical locator shape 尚未物化而 deferred。
 
 - 改写或重解释现有 Schema/Inference v1 已提交历史，或在 dirty main 上直接实施 Template。
 - Workspace、组织/成员/分享/协作、跨 ownerScope 复制、通用 connector、任意 SQL/HTTP/文件/脚本、插件节点或运行时代码注册。

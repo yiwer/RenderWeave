@@ -3964,3 +3964,26 @@
   T154-specific A2/A3；J0 pending、J1 未批准。未重复 server/full，provider attempts/API Key reads/真实数据/
   Profile registration/push/tag/PR 均为 0。
 - 状态回填后的 resolution `fast` `.sdlc/evidence/20260829-064003-fast/` metadata 为 passed，3/3 steps 全绿。
+
+# 2026-08-29 Template-v1 T155 authored Asset occurrences（resolved / automated_verified）
+
+- T154 已以 verified commit `e0179e13` 收口，worktree clean、ahead 145 且 DAG 无其他 active claim。cap-024
+  `diagnostics.sidecarBytes` 只有数值/oracle，当前 sidecar 尚未物化 ADR-0044 的 opaque occurrence/resource
+  locator 与最终 canonical shape；不按临时二字段对象发明格式，转向另一个 unblocked frontier cap-025 并 claim T155。
+- `RW-T19-S8-001` / cap-025 固定 `assetsAndFetch.authoredAssetOccurrences` MAX_INCLUSIVE `4096`，observed
+  `4095/4096/4097`，ASSET_ADMISSION_AND_RESOLUTION / public ASSET_ADMISSION / ASSET_BUDGET_EXCEEDED /
+  ZERO_DOCUMENT_OUTPUT。
+- 当前 `AssetAdmission` 已按全部 authored atom 的实际 occurrence 顺序 precheck，但使用私有常量与手写 counter；
+  本票迁入唯一 request tracker，并冻结重复 assetId 重计、external PUBLIC override 零收费与第 4097 项 precheck 前
+  first-fail。claim 时 A0、J0；provider/API Key/真实数据/费用/Profile registration/push/tag/PR 均为 0。
+- tests 先精确产生 9 个 compile RED（6 个 missing enum、3 个 missing tracker overload）；唯一 catalog 与真实 seam
+  接线后 guard 17/17、AssetAdmission 4/4，共 21/21 GREEN。旧私有常量与手写 counter 已移除。
+- prefix 4094 + 两个同 assetId authored defaults 均 precheck；prefix 4095 时第一项到达 4096，第二项在 port 前
+  exact reject；prefix 4096 + 仅 external PUBLIC override 仍成功，冻结重复 occurrence 收费与 override 零收费。
+- focused guard/AssetAdmission/Evaluator/architecture 95/95；受影响 reactor Schema 20、Validation 13、Template 84、
+  Asset 92、Rendering 232 全绿，`git diff --check` 通过。
+- A1 `render` `.sdlc/evidence/20260829-064628-render/`（2/2）与 `fast`
+  `.sdlc/evidence/20260829-064814-fast/`（3/3）metadata 均 passed。cap-025 fixture 只执行 guard，故无
+  T155-specific A2/A3；J0 pending、J1 未批准。未重复 server/full；cap-024 继续 deferred；provider attempts/
+  API Key reads/真实数据/Profile registration/push/tag/PR 均为 0。
+- 状态回填后的 resolution `fast` `.sdlc/evidence/20260829-064949-fast/` metadata 为 passed，3/3 steps 全绿。

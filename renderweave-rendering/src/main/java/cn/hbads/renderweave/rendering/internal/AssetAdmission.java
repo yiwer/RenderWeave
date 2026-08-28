@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 
 /**
@@ -29,7 +30,8 @@ import java.util.Optional;
  */
 final class AssetAdmission {
 
-    private static final int MAX_AUTHORED_ASSET_OCCURRENCES = 4_096;
+    private static final RenderingPipelineCapacityGuard CAPACITY_GUARD =
+            new RenderingPipelineCapacityGuard();
 
     sealed interface Outcome permits Admitted, Rejected {
     }
@@ -47,18 +49,20 @@ final class AssetAdmission {
     private final DesignSemanticAuthority semantics;
     private final AssetResolutionPort assets;
     private final String ownerScope;
+    private final RenderingPipelineCapacityGuard.RequestTracker requestCapacity;
     private final Map<String, ObjectNode> documentsByTemplate = new HashMap<>();
-    private int authoredAtomCount;
 
     private AssetAdmission(
             ClosureSnapshot closure,
             DesignSemanticAuthority semantics,
-            AssetResolutionPort assets
+            AssetResolutionPort assets,
+            RenderingPipelineCapacityGuard.RequestTracker requestCapacity
     ) {
         this.closure = closure;
         this.semantics = semantics;
         this.assets = assets;
         this.ownerScope = closure.ownerScope().value();
+        this.requestCapacity = Objects.requireNonNull(requestCapacity, "requestCapacity");
     }
 
     static Outcome admit(
@@ -68,7 +72,24 @@ final class AssetAdmission {
             AdmittedRenderInput admittedInput,
             ExternalAssetReadAuthorization externalAssetReadAuthorization
     ) {
-        var admission = new AssetAdmission(closure, semantics, assets);
+        return admit(
+                closure,
+                semantics,
+                assets,
+                admittedInput,
+                externalAssetReadAuthorization,
+                CAPACITY_GUARD.newRequestTracker());
+    }
+
+    static Outcome admit(
+            ClosureSnapshot closure,
+            DesignSemanticAuthority semantics,
+            AssetResolutionPort assets,
+            AdmittedRenderInput admittedInput,
+            ExternalAssetReadAuthorization externalAssetReadAuthorization,
+            RenderingPipelineCapacityGuard.RequestTracker requestCapacity
+    ) {
+        var admission = new AssetAdmission(closure, semantics, assets, requestCapacity);
         return admission.admit(admittedInput, externalAssetReadAuthorization);
     }
 
@@ -218,12 +239,12 @@ final class AssetAdmission {
     }
 
     private Rejected reserveAuthoredAtom() {
-        authoredAtomCount++;
-        return authoredAtomCount > MAX_AUTHORED_ASSET_OCCURRENCES
-                ? rejected(EvaluationStage.ASSET_ADMISSION,
-                        ProblemCode.ASSET_BUDGET_EXCEEDED,
-                        "assetsAndFetch.authoredAssetOccurrences")
-                : null;
+        return requestCapacity.reserve(
+                        RenderingPipelineCapacityGuard.Limit
+                                .ASSETS_AND_FETCH_AUTHORED_ASSET_OCCURRENCES,
+                        1)
+                .map(problem -> new Rejected(problem.stage(), problem))
+                .orElse(null);
     }
 
     private static Rejected precheck(AssetResolutionPort.PrecheckOutcome outcome) {
