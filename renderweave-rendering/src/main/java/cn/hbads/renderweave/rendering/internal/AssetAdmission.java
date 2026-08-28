@@ -18,10 +18,12 @@ import cn.hbads.renderweave.template.api.TemplateClosureAuthority.ClosureSnapsho
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * Evaluator stage 5 deep module. It admits every authored and effective external AssetRef before
@@ -51,6 +53,7 @@ final class AssetAdmission {
     private final String ownerScope;
     private final RenderingPipelineCapacityGuard.RequestTracker requestCapacity;
     private final Map<String, ObjectNode> documentsByTemplate = new HashMap<>();
+    private final Set<String> logicalAssetIds = new HashSet<>();
 
     private AssetAdmission(
             ClosureSnapshot closure,
@@ -120,6 +123,10 @@ final class AssetAdmission {
             if (capacityFailure != null) {
                 return capacityFailure;
             }
+            capacityFailure = reserveLogicalAsset(atom);
+            if (capacityFailure != null) {
+                return capacityFailure;
+            }
             if (assets == null) {
                 return rejected(
                         EvaluationStage.ASSET_ADMISSION,
@@ -142,6 +149,10 @@ final class AssetAdmission {
             return rejected(EvaluationStage.ASSET_ADMISSION, ProblemCode.EVALUATION_FAILED, null);
         }
         for (var atom : externalAtoms) {
+            var capacityFailure = reserveLogicalAsset(atom);
+            if (capacityFailure != null) {
+                return capacityFailure;
+            }
             var failure = precheck(atom);
             if (failure != null) {
                 return failure;
@@ -245,6 +256,22 @@ final class AssetAdmission {
                         1)
                 .map(problem -> new Rejected(problem.stage(), problem))
                 .orElse(null);
+    }
+
+    private Rejected reserveLogicalAsset(AssetAtom atom) {
+        if (logicalAssetIds.contains(atom.assetId())) {
+            return null;
+        }
+        var capacityFailure = requestCapacity.reserve(
+                        RenderingPipelineCapacityGuard.Limit
+                                .ASSETS_AND_FETCH_UNIQUE_LOGICAL_ASSETS,
+                        1)
+                .map(problem -> new Rejected(problem.stage(), problem))
+                .orElse(null);
+        if (capacityFailure == null) {
+            logicalAssetIds.add(atom.assetId());
+        }
+        return capacityFailure;
     }
 
     private static Rejected precheck(AssetResolutionPort.PrecheckOutcome outcome) {

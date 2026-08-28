@@ -83,6 +83,11 @@ final class RenderingPipelineCapacityGuard {
                 "assetsAndFetch.authoredAssetOccurrences",
                 4_096,
                 ProblemCode.ASSET_BUDGET_EXCEEDED,
+                EvaluationStage.ASSET_ADMISSION),
+        ASSETS_AND_FETCH_UNIQUE_LOGICAL_ASSETS(
+                "assetsAndFetch.uniqueLogicalAssets",
+                512,
+                ProblemCode.ASSET_BUDGET_EXCEEDED,
                 EvaluationStage.ASSET_ADMISSION);
 
         private final String id;

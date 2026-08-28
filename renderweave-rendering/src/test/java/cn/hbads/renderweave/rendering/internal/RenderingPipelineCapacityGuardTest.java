@@ -399,4 +399,28 @@ class RenderingPipelineCapacityGuardTest {
         assertEquals("assetsAndFetch.authoredAssetOccurrences",
                 problem.limitId().orElseThrow().value());
     }
+
+    @Test
+    void uniqueLogicalAssetsBoundaryUsesTheFrozenProductionGuardContract() {
+        var guard = new RenderingPipelineCapacityGuard();
+
+        assertTrue(guard.admit(
+                RenderingPipelineCapacityGuard.Limit
+                        .ASSETS_AND_FETCH_UNIQUE_LOGICAL_ASSETS,
+                511).isEmpty());
+        assertTrue(guard.admit(
+                RenderingPipelineCapacityGuard.Limit
+                        .ASSETS_AND_FETCH_UNIQUE_LOGICAL_ASSETS,
+                512).isEmpty());
+
+        var problem = guard.admit(
+                        RenderingPipelineCapacityGuard.Limit
+                                .ASSETS_AND_FETCH_UNIQUE_LOGICAL_ASSETS,
+                        513)
+                .orElseThrow();
+        assertEquals(EvaluationStage.ASSET_ADMISSION, problem.stage());
+        assertEquals(ProblemCode.ASSET_BUDGET_EXCEEDED, problem.code());
+        assertEquals("assetsAndFetch.uniqueLogicalAssets",
+                problem.limitId().orElseThrow().value());
+    }
 }

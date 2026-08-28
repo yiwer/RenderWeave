@@ -3987,3 +3987,25 @@
   T155-specific A2/A3；J0 pending、J1 未批准。未重复 server/full；cap-024 继续 deferred；provider attempts/
   API Key reads/真实数据/Profile registration/push/tag/PR 均为 0。
 - 状态回填后的 resolution `fast` `.sdlc/evidence/20260829-064949-fast/` metadata 为 passed，3/3 steps 全绿。
+
+# 2026-08-29 Template-v1 T156 unique logical Assets（resolved / automated_verified）
+
+- T155 已以 verified commit `10dea0d7` 收口，worktree clean、ahead 146 且 DAG 无其他 active claim；冻结
+  `RW-T19-S8-002` / cap-026 是下一个 unblocked frontier，现按 single-writer claim T156。
+- `assetsAndFetch.uniqueLogicalAssets` 固定 MAX_INCLUSIVE `512`、observed `511/512/513`，
+  ASSET_ADMISSION_AND_RESOLUTION / public ASSET_ADMISSION / ASSET_BUDGET_EXCEEDED / ZERO_DOCUMENT_OUTPUT，
+  reservation point 为下一 authored/resolved Asset unit 与任何 external fetch 前。
+- request 内按 ownerScope + assetId 形成唯一集合；authored 与通过授权门控的 external override 共享，重复 occurrence
+  不重复收费但仍逐次 precheck。第 513 个新 Asset 必须在 port 前 first-fail；与 authored occurrence 轴独立。
+- claim 时 A0、J0；cap-024 继续 deferred；provider/API Key/真实数据/费用/Profile registration/push/tag/PR 均为 0。
+- tests 先精确产生 7 个 missing-enum compile RED；catalog 后 guard 18/18 GREEN、AssetAdmission 精确保留 2 个
+  behavioral RED（authored/external 第 513 个新 id 均错误成功），真实共享 set 接线后 24/24 GREEN。
+- prefix 511 + 两个同 id authored occurrence exact-at 且两次 precheck；第三个新 id 在 port 前 exact reject。
+  authored + 同 id external 也 exact-at，external 新 id 同样在 port 前 reject，冻结跨来源去重与 occurrence 检查隔离。
+- focused guard/AssetAdmission/Evaluator/architecture 98/98；受影响 reactor Schema 20、Validation 13、Template 84、
+  Asset 92、Rendering 235 全绿，`git diff --check` 通过。
+- A1 `render` `.sdlc/evidence/20260829-065635-render/`（2/2）与 `fast`
+  `.sdlc/evidence/20260829-065722-fast/`（3/3）metadata 均 passed。cap-026 fixture 只执行 guard，故无
+  T156-specific A2/A3；J0 pending、J1 未批准。未重复 server/full；cap-024 继续 deferred；provider attempts/
+  API Key reads/真实数据/Profile registration/push/tag/PR 均为 0。
+- 状态回填后的 resolution `fast` `.sdlc/evidence/20260829-065828-fast/` metadata 为 passed，3/3 steps 全绿。

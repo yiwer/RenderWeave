@@ -951,6 +951,13 @@ Label: wayfinder:map
   Asset-owned precheck 前以 ASSET_ADMISSION / ASSET_BUDGET_EXCEEDED / exact limitId 零文档失败。focused 95/95、
   Rendering 232/232 与 render/fast metadata 全绿；A1、无 ticket-specific A2、J0。cap-024 因最终 sidecar
   canonical locator shape 尚未物化而 deferred。
+- [T156 — unique logical Assets 预算](issues/156-unique-logical-assets-capacity.md)
+  — **resolved / automated_verified**；按 `RW-T19-S8-002` 与 cap-026 将 request-total unique logical Asset
+  `511/512/513`
+  接入同一 production guard；按 ownerScope + assetId 去重，authored 与已授权 external override 共享集合，重复
+  occurrence 仍逐次 precheck，第 513 个新 Asset 须在 port 前以 ASSET_ADMISSION / ASSET_BUDGET_EXCEEDED /
+  exact limitId 零文档失败。focused 98/98、Rendering 235/235 与 render/fast metadata 全绿；A1、无
+  ticket-specific A2、J0。
 
 - 改写或重解释现有 Schema/Inference v1 已提交历史，或在 dirty main 上直接实施 Template。
 - Workspace、组织/成员/分享/协作、跨 ownerScope 复制、通用 connector、任意 SQL/HTTP/文件/脚本、插件节点或运行时代码注册。
