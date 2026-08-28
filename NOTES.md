@@ -3601,3 +3601,28 @@
   provider attempts/API Key reads/reservations/cost/真实数据/Profile registration/push/tag/PR 均为 0。
 - 状态回填后的 resolution `fast` `.sdlc/evidence/20260829-032929-fast/` metadata 仍为 passed，3/3 steps
   全绿。
+
+# 2026-08-29 Template-v1 T140 Repeat collection capacity（resolved / automated_verified）
+
+- T139 已以 verified commit `f44eac71` 收口，worktree clean 且 DAG 无其他 active claim；现按 single-writer 登记并
+  claim T140。
+- 机器 authority 固定 `closureAndExpansion.repeatCollectionItemsPerOccurrence` 为 MAX_INCLUSIVE `1000`，
+  observed `999/1000/1001`，SERIAL_MATERIALIZATION / public MATERIALIZATION /
+  EVALUATION_BUDGET_EXCEEDED / ZERO_DOCUMENT_OUTPUT，requirement `RW-T19-S7-076`。
+- 每个 actual Repeat occurrence 独立检查完整 collection length；items resolve/ABSENT policy 后、首个 Loop frame/
+  materialized node/descendant demand 前 first-fail。沿用 T139 唯一 internal guard；不新增产品 API/SPI/config。
+- claim 时 A0、J0；不运行 provider、不读取 API Key、不发送真实数据，不 push/tag/PR。
+- behavioral RED：生产未改时，公开 Evaluator 的 1001-item tracer 预期 `Rejected`、实际 `SealedDocument`。最小
+  扩展唯一 `RenderingPipelineCapacityGuard` 并在 `expandRepeat` 接线后，999/1000 seal，1001 exact
+  MATERIALIZATION / EVALUATION_BUDGET_EXCEEDED / full limitId，且首个 loop-domain capability supply 为 0；guard
+  覆盖 0/999/1000/1001。
+- 原 10,000-item 单 Repeat node-limit fixture 改为 9×1000 + 995 sibling Repeat；每个 occurrence 独立合法，仍在
+  materialized node 20,001 失败，证明 collection budget 不跨 sibling 累计并保持旧测试目标。
+- focused Evaluator/Materializer/guard 73/73；受影响 reactor Schema 20、Validation 13、Template 84、Asset 92、
+  Rendering 184 全绿；`git diff --check` 通过。
+- A1 `render` `.sdlc/evidence/20260829-033642-render/` 2/2 与 `fast`
+  `.sdlc/evidence/20260829-033733-fast/` 3/3 metadata 均 passed。无 app wiring/API/Web/migration/Profile 变化，按
+  快速迭代节奏未重复 server/full。
+- 无正式 Ticket 19 product target/executor，故无 T140-specific A2；A3 无，J0 pending、J1 未批准。provider
+  attempts/API Key reads/真实数据/Profile registration/push/tag/PR 均为 0。
+- 状态回填后的 resolution `fast` `.sdlc/evidence/20260829-033936-fast/` metadata 为 passed，3/3 steps 全绿。

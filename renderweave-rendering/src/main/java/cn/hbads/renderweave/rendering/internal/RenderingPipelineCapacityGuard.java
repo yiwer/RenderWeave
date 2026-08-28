@@ -23,7 +23,9 @@ final class RenderingPipelineCapacityGuard {
         INVOCATION_DEPTH(
                 "closureAndExpansion.invocationDepth", 16),
         COMPOSITION_VIEWPORTS(
-                "closureAndExpansion.compositionViewports", 256);
+                "closureAndExpansion.compositionViewports", 256),
+        REPEAT_COLLECTION_ITEMS_PER_OCCURRENCE(
+                "closureAndExpansion.repeatCollectionItemsPerOccurrence", 1_000);
 
         private final String id;
         private final long maximumInclusive;

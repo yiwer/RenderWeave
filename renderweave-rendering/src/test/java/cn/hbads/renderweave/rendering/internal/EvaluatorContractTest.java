@@ -806,6 +806,49 @@ class EvaluatorContractTest {
     }
 
     @Test
+    void repeatCollectionAboveLimitRejectsBeforeTheFirstLoopFrame() {
+        var runtime = new SupplyingCapabilityRuntime();
+        var evaluator = evaluator(
+                closureWith(loopRandomCapabilityDocument(repeatedTextItems(1_001))),
+                resolver(),
+                new RecordingCapabilityStateStore(),
+                runtime);
+
+        var rejected = assertInstanceOf(EvaluationOutcome.Rejected.class,
+                evaluator.evaluate(command("{\"rootDocument\":{}}")));
+
+        assertEquals(EvaluationStage.MATERIALIZATION, rejected.stage());
+        assertEquals(RenderingProblem.ProblemCode.EVALUATION_BUDGET_EXCEEDED,
+                rejected.problem().code());
+        assertEquals("closureAndExpansion.repeatCollectionItemsPerOccurrence",
+                rejected.problem().limitId().orElseThrow().value());
+        assertEquals(0, runtime.supplyCalls);
+    }
+
+    @Test
+    void repeatCollectionBelowLimitIsAccepted() {
+        assertRepeatCollectionAccepted(999);
+    }
+
+    @Test
+    void repeatCollectionAtLimitIsAccepted() {
+        assertRepeatCollectionAccepted(1_000);
+    }
+
+    private static void assertRepeatCollectionAccepted(int itemCount) {
+        var runtime = new SupplyingCapabilityRuntime();
+        var evaluator = evaluator(
+                closureWith(loopRandomCapabilityDocument(repeatedTextItems(itemCount))),
+                resolver(),
+                new RecordingCapabilityStateStore(),
+                runtime);
+
+        assertInstanceOf(EvaluationOutcome.SealedDocument.class,
+                evaluator.evaluate(command("{\"rootDocument\":{}}")));
+        assertEquals(itemCount, runtime.supplyCalls);
+    }
+
+    @Test
     void evaluateSealsDocumentEndToEnd() {
         var evaluator = evaluator(closureWith(canvasWithRect()), resolver());
 
@@ -1885,6 +1928,11 @@ class EvaluatorContractTest {
                 + definitionId + "\"}}],\"placement\":{\"type\":\"PACK\","
                 + "\"widthMode\":\"FIXED\",\"widthMm\":10,\"heightMode\":\"FIXED\","
                 + "\"heightMm\":10},\"fill\":{\"color\":\"#FF000000\"}}]}]}}";
+    }
+
+    private static String repeatedTextItems(int count) {
+        return "[" + String.join(",",
+                java.util.Collections.nCopies(count, "\"x\"")) + "]";
     }
 
     private static String invocationRandomCapabilityDocument(String items) {

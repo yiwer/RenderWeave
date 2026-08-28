@@ -103,8 +103,14 @@ class MaterializerTest {
 
     @Test
     void repeatGeneratedContainersCountTowardStaticNodeLimit() {
-        var items = String.join(",", java.util.Collections.nCopies(10_000, "\"x\""));
-        var document = repeatDocument(items);
+        var atCollectionLimit = String.join(",",
+                java.util.Collections.nCopies(1_000, "\"x\""));
+        var finalCollection = String.join(",",
+                java.util.Collections.nCopies(995, "\"x\""));
+        var itemLists = new ArrayList<String>();
+        itemLists.addAll(java.util.Collections.nCopies(9, atCollectionLimit));
+        itemLists.add(finalCollection);
+        var document = repeatDocument(itemLists);
 
         var outcome = materialize(document, Map.of(), null);
 
@@ -115,22 +121,34 @@ class MaterializerTest {
                 failed.problem().limitId().orElseThrow().value());
     }
 
-    private static String repeatDocument(String items) {
+    private static String repeatDocument(List<String> itemLists) {
+        var repeats = new ArrayList<String>(itemLists.size());
+        for (var index = 0; index < itemLists.size(); index++) {
+            repeats.add(repeatNode(index, itemLists.get(index)));
+        }
         return "{\"dslVersion\":\"renderweave-design/1.0\","
                 + "\"expressionProfile\":\"renderweave-expression/1.0\","
                 + "\"displayName\":\"R\",\"definitions\":[],"
                 + "\"designRoot\":{\"nodeId\":\"00000000-0000-4000-8000-000000000001\","
                 + "\"kind\":\"canvas\",\"widthMm\":210,\"heightMm\":297,\"bindings\":[],"
-                + "\"children\":[{\"nodeId\":\"00000000-0000-4000-8000-000000000021\","
+                + "\"children\":[" + String.join(",", repeats) + "]}}";
+    }
+
+    private static String repeatNode(int index, String items) {
+        return "{\"nodeId\":\"" + capacityUuid(1, index) + "\","
                 + "\"kind\":\"repeat\",\"bindings\":[],\"placement\":" + absolute() + ","
-                + "\"loopId\":\"00000000-0000-4000-8000-0000000000b1\","
+                + "\"loopId\":\"" + capacityUuid(2, index) + "\","
                 + "\"absentPolicy\":\"ERROR\",\"items\":{\"kind\":\"literal\","
                 + "\"valueType\":{\"type\":\"list\",\"items\":\"text\"},"
                 + "\"value\":[" + items + "]},"
                 + "\"itemLayout\":{\"kind\":\"STACK\",\"direction\":\"ROW\",\"gapMm\":1},"
                 + "\"instanceLayout\":{\"kind\":\"STACK\",\"direction\":\"ROW\",\"gapMm\":2},"
-                + "\"children\":[" + packRect("00000000-0000-4000-8000-000000000031")
-                + "]}]}}";
+                + "\"children\":[" + packRect(capacityUuid(3, index)) + "]}";
+    }
+
+    private static String capacityUuid(int namespace, int ordinal) {
+        return String.format(java.util.Locale.ROOT,
+                "%d0000000-0000-4000-8000-%012x", namespace, ordinal);
     }
 
     private static String packRect(String nodeId) {

@@ -26,4 +26,29 @@ class RenderingPipelineCapacityGuardTest {
         assertEquals("closureAndExpansion.compositionViewports",
                 problem.limitId().orElseThrow().value());
     }
+
+    @Test
+    void repeatCollectionBoundaryUsesTheFrozenProductionGuardContract() {
+        var guard = new RenderingPipelineCapacityGuard();
+
+        assertTrue(guard.admit(
+                RenderingPipelineCapacityGuard.Limit.REPEAT_COLLECTION_ITEMS_PER_OCCURRENCE,
+                0).isEmpty());
+        assertTrue(guard.admit(
+                RenderingPipelineCapacityGuard.Limit.REPEAT_COLLECTION_ITEMS_PER_OCCURRENCE,
+                999).isEmpty());
+        assertTrue(guard.admit(
+                RenderingPipelineCapacityGuard.Limit.REPEAT_COLLECTION_ITEMS_PER_OCCURRENCE,
+                1_000).isEmpty());
+
+        var problem = guard.admit(
+                        RenderingPipelineCapacityGuard.Limit
+                                .REPEAT_COLLECTION_ITEMS_PER_OCCURRENCE,
+                        1_001)
+                .orElseThrow();
+        assertEquals(EvaluationStage.MATERIALIZATION, problem.stage());
+        assertEquals(ProblemCode.EVALUATION_BUDGET_EXCEEDED, problem.code());
+        assertEquals("closureAndExpansion.repeatCollectionItemsPerOccurrence",
+                problem.limitId().orElseThrow().value());
+    }
 }

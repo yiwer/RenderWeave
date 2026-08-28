@@ -870,6 +870,11 @@ Label: wayfinder:map
   隔离重放被 actual-invocation 轴支配的 compositionViewports `255/256/257`，并把 Materializer authoritative
   counter、T137/T138 已有判断接入唯一 catalog。guard/Evaluator/architecture 61/61、Rendering 180/180，render/
   fast metadata 全绿；无正式 product executor/A2，J0。
+- [T140 — 强制 Repeat collection per-occurrence 容量](issues/140-repeat-collection-items-capacity.md)
+  — **resolved / automated_verified**；按 `RW-T19-S7-076` 在首个 Loop frame/materialized node 前 admission 每个
+  actual Repeat 的完整 collection length，MAX_INCLUSIVE `1000`，公开 Evaluator seam 重放 `999/1000/1001`，
+  guard 同时覆盖 zero。9×1000 + 995 sibling 回归证明不跨 occurrence 累计；focused 73/73、Rendering 184/184
+  与 render/fast metadata 全绿。A1、无 ticket-specific A2、J0。
 
 - 改写或重解释现有 Schema/Inference v1 已提交历史，或在 dirty main 上直接实施 Template。
 - Workspace、组织/成员/分享/协作、跨 ownerScope 复制、通用 connector、任意 SQL/HTTP/文件/脚本、插件节点或运行时代码注册。

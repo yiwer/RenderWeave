@@ -5065,3 +5065,41 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
   provider attempts/API Key reads/真实数据/Profile registration/push/tag/PR 均为 0。
 - 状态回填后的 resolution `fast` `.sdlc/evidence/20260829-032929-fast/` metadata 为 `passed`，3/3 steps
   全绿。
+
+## 140. TV1-T140 执行卡
+
+- 状态：`resolved / automated_verified`；single writer: Codex；blocked by T21/T139（均 resolved）。
+- authority：`closureAndExpansion.repeatCollectionItemsPerOccurrence` 为 MAX_INCLUSIVE `1000`，observed
+  `999/1000/1001`，contract stage SERIAL_MATERIALIZATION、public stage MATERIALIZATION、code
+  EVALUATION_BUDGET_EXCEEDED、zero boundary ZERO_DOCUMENT_OUTPUT；requirements 包含 `RW-T19-S7-076`。
+- 语义：每个 actual Repeat occurrence 独立 admission 一次完整 collection length，不跨 sibling/nested occurrence
+  累计；EMPTY→0。检查位于 items resolve/type/absentPolicy 后、首个 Loop frame/item occurrence/materialized node/
+  descendant demand 前；不截断、分页、跳项或 partial output。
+- seam：扩展 T139 package-internal 唯一 `RenderingPipelineCapacityGuard` catalog；公开产品行为只经
+  `Evaluator.evaluate` 观察。旧 10,000-item 单 Repeat node-limit 测试改为 9×1,000 + 995 sibling Repeat，保持原
+  目标且不依赖违反新 guard 的 payload。
+- TDD：先让 1001-item Evaluator tracer 错误 seal 形成 behavioral RED，再最小接线，补 999/1000 success 与 guard/
+  zero/sibling 回归。验证 focused、受影响 reactor、render/fast；无 app wiring/API/Web/migration/Profile 变化，
+  不重复 full，server 留到周期性批次。
+- 禁止影响：其余 Repeat/materialization 容量轴、正式 Ticket 19 records/product executor、provider/API Key/
+  真实数据/Profile registration/push/tag/PR；最高 `automated_verified`，当前 A1、J0。
+
+### TV1-T140 resolution evidence
+
+- 实现：唯一 package-internal `RenderingPipelineCapacityGuard` 增加
+  `REPEAT_COLLECTION_ITEMS_PER_OCCURRENCE=1000`；`Materializer.expandRepeat` 在 items resolve/type/ABSENT policy
+  后、item layout 与首个 Loop frame/materialized node 前检查当前 occurrence 的完整 collection length。EMPTY→0
+  继续立即剪枝；guard 无跨 sibling/nested 状态。
+- TDD：生产未改时，1001-item 公开 Evaluator tracer 预期 `Rejected`、实际 `SealedDocument`，形成 behavioral RED；
+  最小接线后 999/1000 success，1001 exact MATERIALIZATION / EVALUATION_BUDGET_EXCEEDED / full limitId，且首个
+  loop-domain capability demand 为 0。guard 覆盖 0/999/1000/1001。
+- 原 10,000-item 单 Repeat node-limit 测试改为 9×1000 + 995 sibling Repeat；每个 occurrence 独立合法，仍命中
+  materializedStaticNodes 20,001，证明本轴不跨 sibling 累计并保持旧测试目标。focused Evaluator/Materializer/guard
+  73/73；受影响 reactor Schema 20、Validation 13、Template 84、Asset 92、Rendering 184 全绿；
+  `git diff --check` 通过。
+- A1 `render` `.sdlc/evidence/20260829-033642-render/`（2/2）与 `fast`
+  `.sdlc/evidence/20260829-033733-fast/`（3/3）metadata 均 `passed`。无 app wiring/API/Web/migration/Profile 变化，
+  按快速迭代约定未重复 server/full。
+- 无正式 Ticket 19 product target/executor，故无 T140-specific A2；A3 无，J0 pending、J1 未批准。provider
+  attempts/API Key reads/真实数据/Profile registration/push/tag/PR 均为 0。
+- 状态回填后的 resolution `fast` `.sdlc/evidence/20260829-033936-fast/` metadata 为 `passed`，3/3 steps 全绿。

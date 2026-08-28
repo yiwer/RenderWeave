@@ -288,6 +288,12 @@ final class Materializer {
         } else {
             return failed(EvaluationStage.MATERIALIZATION, ProblemCode.EVALUATION_FAILED, null);
         }
+        MaterializationOutcome capacityFailure = capacityFailure(CAPACITY_GUARD.admit(
+                RenderingPipelineCapacityGuard.Limit.REPEAT_COLLECTION_ITEMS_PER_OCCURRENCE,
+                itemList.size()));
+        if (capacityFailure != null) {
+            return capacityFailure;
+        }
         if (!(node.members().get("itemLayout") instanceof ObjectNode itemLayout)
                 || !(node.members().get("instanceLayout") instanceof ObjectNode instanceLayout)) {
             return failed(EvaluationStage.MATERIALIZATION, ProblemCode.RENDER_INTERNAL_ERROR, null);
@@ -295,7 +301,7 @@ final class Materializer {
         if (itemList.isEmpty()) {
             return null;
         }
-        var capacityFailure = reserveMaterializedNode();
+        capacityFailure = reserveMaterializedNode();
         if (capacityFailure != null) {
             return capacityFailure;
         }
