@@ -328,6 +328,7 @@ class RenderingApplicationContractTest {
     private static RenderingAuthority.Authorized granted(RenderPurpose purpose) {
         return new RenderingAuthority.Authorized(
                 new Evaluator.OwnerScope("owner-a"),
+                "sha256:" + "5".repeat(64),
                 new RenderingAuthority.RecheckIdentity("recheck-1"),
                 purpose == RenderPurpose.AUTHORITATIVE_PREVIEW
                         ? RenderingAuthority.Disclosure.READABLE

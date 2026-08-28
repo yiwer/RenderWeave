@@ -12,10 +12,29 @@ import java.util.Objects;
 public interface RenderingCapabilityRuntime {
 
     /** 为一次 Evaluation 建立运行时（单一 Clock snapshot + 单一 nonce）。 */
-    Runtime establish();
+    Established establish();
+
+    /** Restore the exact Clock snapshot and nonce committed for this render request. */
+    Runtime restore(byte[] sealedState);
 
     /** 本部署声明的 exact capability contracts（canonical 标识，fingerprint 输入）。 */
     String capabilityContracts();
+
+    /** Runtime plus opaque, store-ready state. The bytes are never exposed outside trusted adapters. */
+    record Established(Runtime runtime, byte[] sealedState) {
+        public Established {
+            Objects.requireNonNull(runtime, "runtime");
+            Objects.requireNonNull(sealedState, "sealedState");
+            if (sealedState.length == 0) {
+                throw new IllegalArgumentException("sealedState must not be empty");
+            }
+            sealedState = sealedState.clone();
+        }
+
+        public byte[] sealedState() {
+            return sealedState.clone();
+        }
+    }
 
     interface Runtime {
         CapabilityOutcome supply(String capability, String operation, byte[] callPosition);

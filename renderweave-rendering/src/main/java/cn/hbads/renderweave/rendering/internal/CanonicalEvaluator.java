@@ -6,6 +6,7 @@ import cn.hbads.renderweave.rendering.api.RenderingProblem;
 import cn.hbads.renderweave.rendering.api.RenderingProblem.LimitId;
 import cn.hbads.renderweave.rendering.api.RenderingProblem.ProblemCode;
 import cn.hbads.renderweave.rendering.spi.AssetResolutionPort;
+import cn.hbads.renderweave.rendering.spi.CapabilityStateStore;
 import cn.hbads.renderweave.template.api.DesignDslAuthority;
 import cn.hbads.renderweave.template.api.DesignSemanticAuthority;
 import cn.hbads.renderweave.template.api.TemplateClosureAuthority;
@@ -30,6 +31,8 @@ final class CanonicalEvaluator implements Evaluator {
     private final DesignDslAuthority dslAuthority;
     private final AssetResolutionPort assets;
     private final cn.hbads.renderweave.rendering.spi.RenderingCapabilityRuntime capabilities;
+    private final CapabilityStateStore capabilityStates;
+    private final String effectiveBudgetVector;
     private final ValidationTargetResolver validationResolver;
     private final Clock clock;
 
@@ -39,6 +42,8 @@ final class CanonicalEvaluator implements Evaluator {
             DesignDslAuthority dslAuthority,
             AssetResolutionPort assets,
             cn.hbads.renderweave.rendering.spi.RenderingCapabilityRuntime capabilities,
+            CapabilityStateStore capabilityStates,
+            String effectiveBudgetVector,
             ValidationTargetResolver validationResolver,
             Clock clock
     ) {
@@ -47,6 +52,8 @@ final class CanonicalEvaluator implements Evaluator {
         this.dslAuthority = Objects.requireNonNull(dslAuthority, "dslAuthority");
         this.assets = assets;
         this.capabilities = Objects.requireNonNull(capabilities, "capabilities");
+        this.capabilityStates = Objects.requireNonNull(capabilityStates, "capabilityStates");
+        this.effectiveBudgetVector = Objects.requireNonNull(effectiveBudgetVector, "effectiveBudgetVector");
         this.validationResolver = Objects.requireNonNull(validationResolver, "validationResolver");
         this.clock = Objects.requireNonNull(clock, "clock");
     }
@@ -118,7 +125,12 @@ final class CanonicalEvaluator implements Evaluator {
                     ProblemCode.RENDER_INTERNAL_ERROR, null);
         }
 
-        var runtime = CapabilityValues.wrapping(capabilities.establish());
+        var runtimeOutcome = capabilityRuntime(command, closure, admitted.input());
+        if (runtimeOutcome instanceof CapabilityRuntimeRejected rejected) {
+            return rejected(EvaluationStage.CAPABILITY_STATE, rejected.code(), null);
+        }
+        var runtime = CapabilityValues.wrapping(
+                ((CapabilityRuntimeReady) runtimeOutcome).runtime());
         var audience = new AssetResolutionPort.RendererAudience(command.rendererProfile());
         var materialization = Materializer.materialize(
                 closure,
@@ -143,7 +155,7 @@ final class CanonicalEvaluator implements Evaluator {
                 admitted.input(),
                 materialized.tree(),
                 runtime.capabilityResultDigest());
-        // capabilityContracts 进入 fingerprint（S8 已实现）；此处 runtime 只承载 demand 供给。
+        // Capability state is established or restored before materialization can demand it.
         if (seal instanceof Sealer.SealRejected sealRejected) {
             return new EvaluationOutcome.Rejected(EvaluationStage.DOCUMENT_SEAL,
                     new RenderingProblem(
@@ -161,6 +173,102 @@ final class CanonicalEvaluator implements Evaluator {
                 Sealer.LAYOUT_PROFILE,
                 command.outputSelection());
     }
+
+    private CapabilityRuntimeOutcome capabilityRuntime(
+            EvaluationCommand command,
+            TemplateClosureAuthority.ClosureSnapshot closure,
+            AdmittedRenderInput admittedInput
+    ) {
+        var declaredContracts = declaredCapabilityContracts(closure);
+        if (declaredContracts.isEmpty()) {
+            return new CapabilityRuntimeReady((capability, operation, position) ->
+                    new cn.hbads.renderweave.rendering.spi.RenderingCapabilityRuntime.ProviderUnavailable());
+        }
+        var supportedContracts = capabilities.capabilityContracts();
+        for (var contract : declaredContracts.split(",")) {
+            if (!java.util.Arrays.asList(supportedContracts.split(",")).contains(contract)) {
+                return new CapabilityRuntimeRejected(ProblemCode.CAPABILITY_PROFILE_UNAVAILABLE);
+            }
+        }
+        var fingerprint = CapabilityValues.evaluationFingerprint(
+                command.ownerScope().value(),
+                command.authorizationContextDigest(),
+                ClosureManifests.digest(closure),
+                AdmittedInputCanonicalizer.digest(admittedInput),
+                Sealer.RENDER_DSL_VERSION,
+                Sealer.LAYOUT_PROFILE,
+                declaredContracts,
+                "renderweave-asset-acceptance/1.0",
+                effectiveBudgetVector);
+        var loaded = capabilityStates.load(command.renderRequestId(), fingerprint);
+        if (loaded instanceof CapabilityStateStore.LoadOutcome.Loaded state) {
+            try {
+                return new CapabilityRuntimeReady(capabilities.restore(state.sealedState()));
+            } catch (RuntimeException invalid) {
+                return new CapabilityRuntimeRejected(ProblemCode.CAPABILITY_STATE_UNAVAILABLE);
+            }
+        }
+        if (loaded instanceof CapabilityStateStore.LoadOutcome.LoadFingerprintConflict) {
+            return new CapabilityRuntimeRejected(ProblemCode.CAPABILITY_STATE_CONFLICT);
+        }
+        if (loaded instanceof CapabilityStateStore.LoadOutcome.LoadUnavailable) {
+            return new CapabilityRuntimeRejected(ProblemCode.CAPABILITY_STATE_UNAVAILABLE);
+        }
+        final cn.hbads.renderweave.rendering.spi.RenderingCapabilityRuntime.Established established;
+        try {
+            established = capabilities.establish();
+        } catch (RuntimeException unavailable) {
+            return new CapabilityRuntimeRejected(ProblemCode.CAPABILITY_STATE_UNAVAILABLE);
+        }
+        var issuedAt = clock.instant().getEpochSecond();
+        var deadlineMillis = command.deadlineAtEpochMilli();
+        var deadlineSecond = Math.floorDiv(deadlineMillis, 1_000L)
+                + (Math.floorMod(deadlineMillis, 1_000L) == 0L ? 0L : 1L);
+        var expiresAt = Math.max(issuedAt + 1L, deadlineSecond + 300L);
+        var saved = capabilityStates.save(new CapabilityStateStore.SaveRequest(
+                command.renderRequestId(), fingerprint, established.sealedState(), issuedAt, expiresAt));
+        if (saved instanceof CapabilityStateStore.SaveOutcome.Stored) {
+            return new CapabilityRuntimeReady(established.runtime());
+        }
+        if (saved instanceof CapabilityStateStore.SaveOutcome.FingerprintConflict) {
+            return new CapabilityRuntimeRejected(ProblemCode.CAPABILITY_STATE_CONFLICT);
+        }
+        if (saved instanceof CapabilityStateStore.SaveOutcome.Replayed) {
+            var replay = capabilityStates.load(command.renderRequestId(), fingerprint);
+            if (replay instanceof CapabilityStateStore.LoadOutcome.Loaded state) {
+                try {
+                    return new CapabilityRuntimeReady(capabilities.restore(state.sealedState()));
+                } catch (RuntimeException invalid) {
+                    return new CapabilityRuntimeRejected(ProblemCode.CAPABILITY_STATE_UNAVAILABLE);
+                }
+            }
+        }
+        return new CapabilityRuntimeRejected(ProblemCode.CAPABILITY_STATE_UNAVAILABLE);
+    }
+
+    private static String declaredCapabilityContracts(
+            TemplateClosureAuthority.ClosureSnapshot closure) {
+        var clockDeclared = false;
+        var randomDeclared = false;
+        for (var snapshot : closure.snapshots()) {
+            var canonical = new String(snapshot.canonicalDesignDslUtf8(), java.nio.charset.StandardCharsets.UTF_8);
+            clockDeclared |= canonical.contains("\"capability\":\"CLOCK\"");
+            randomDeclared |= canonical.contains("\"capability\":\"RANDOM\"");
+        }
+        if (clockDeclared && randomDeclared) {
+            return "renderweave-capability-clock/1.0,renderweave-capability-random/1.0";
+        }
+        if (clockDeclared) {
+            return "renderweave-capability-clock/1.0";
+        }
+        return randomDeclared ? "renderweave-capability-random/1.0" : "";
+    }
+
+    private sealed interface CapabilityRuntimeOutcome permits CapabilityRuntimeReady, CapabilityRuntimeRejected { }
+    private record CapabilityRuntimeReady(
+            cn.hbads.renderweave.rendering.spi.RenderingCapabilityRuntime.Runtime runtime)
+            implements CapabilityRuntimeOutcome { }
+    private record CapabilityRuntimeRejected(ProblemCode code) implements CapabilityRuntimeOutcome { }
 
     private static EvaluationOutcome.Rejected rejected(
             EvaluationStage stage, ProblemCode code, String limitId) {

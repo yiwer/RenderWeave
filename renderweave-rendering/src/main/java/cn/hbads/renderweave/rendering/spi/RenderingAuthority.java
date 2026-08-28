@@ -23,11 +23,16 @@ public interface RenderingAuthority {
 
     record Authorized(
             OwnerScope ownerScope,
+            String authorizationContextDigest,
             RecheckIdentity recheckIdentity,
             Disclosure disclosure
     ) implements AuthorizationDecision {
         public Authorized {
             Objects.requireNonNull(ownerScope, "ownerScope");
+            Objects.requireNonNull(authorizationContextDigest, "authorizationContextDigest");
+            if (!authorizationContextDigest.matches("sha256:[0-9a-f]{64}")) {
+                throw new IllegalArgumentException("authorizationContextDigest must be sha256");
+            }
             Objects.requireNonNull(recheckIdentity, "recheckIdentity");
             Objects.requireNonNull(disclosure, "disclosure");
         }

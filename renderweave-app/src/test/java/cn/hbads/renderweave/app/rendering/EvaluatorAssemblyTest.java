@@ -91,6 +91,7 @@ class EvaluatorAssemblyTest {
         var outcome = evaluator.evaluate(new EvaluationCommand(
                 new RenderRequestId("00000000-0000-4000-8000-000000000101"),
                 new OwnerScope("owner-a"),
+                "sha256:" + "5".repeat(64),
                 created.current().templateId(),
                 "{\"rootDocument\":{}}".getBytes(StandardCharsets.UTF_8),
                 OutputSelection.defaultPng(),
@@ -114,6 +115,7 @@ class EvaluatorAssemblyTest {
         var outcome = evaluator.evaluate(new EvaluationCommand(
                 new RenderRequestId("00000000-0000-4000-8000-000000000102"),
                 new OwnerScope("owner-a"),
+                "sha256:" + "5".repeat(64),
                 new TemplateApplication.TemplateId("00000000-0000-4000-8000-0000000000f9"),
                 "{\"rootDocument\":{}}".getBytes(StandardCharsets.UTF_8),
                 OutputSelection.defaultPng(),

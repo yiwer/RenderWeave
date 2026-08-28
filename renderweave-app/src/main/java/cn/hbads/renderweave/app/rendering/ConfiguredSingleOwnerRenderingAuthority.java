@@ -13,6 +13,10 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.HexFormat;
 
 /** Dev/test single-owner Host adapter for the closed Template capability catalog. */
 final class ConfiguredSingleOwnerRenderingAuthority implements RenderingAuthority {
@@ -75,8 +79,28 @@ final class ConfiguredSingleOwnerRenderingAuthority implements RenderingAuthorit
         issuedRechecks.put(identity.value(), new IssuedGrant(rootTemplateId, purpose));
         return new Authorized(
                 ownerScope,
+                authorizationContextDigest(invocation, purpose),
                 identity,
                 capabilities.contains(READ) ? Disclosure.READABLE : Disclosure.OPAQUE);
+    }
+
+    private String authorizationContextDigest(RenderInvocationRef invocation, RenderPurpose purpose) {
+        try {
+            var digest = MessageDigest.getInstance("SHA-256");
+            digest.update("renderweave-authorization-context/1\0".getBytes(StandardCharsets.UTF_8));
+            digest.update(invocation.value().getBytes(StandardCharsets.UTF_8));
+            digest.update((byte) 0);
+            digest.update(ownerScope.value().getBytes(StandardCharsets.UTF_8));
+            digest.update((byte) 0);
+            digest.update(purpose.name().getBytes(StandardCharsets.UTF_8));
+            for (var capability : capabilities.stream().sorted().toList()) {
+                digest.update((byte) 0);
+                digest.update(capability.getBytes(StandardCharsets.UTF_8));
+            }
+            return "sha256:" + HexFormat.of().formatHex(digest.digest());
+        } catch (NoSuchAlgorithmException impossible) {
+            throw new IllegalStateException("SHA-256 unavailable", impossible);
+        }
     }
 
     @Override

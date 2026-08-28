@@ -9,6 +9,7 @@ import cn.hbads.renderweave.rendering.api.Evaluator.OwnerScope;
 import cn.hbads.renderweave.rendering.api.Evaluator.RenderRequestId;
 import cn.hbads.renderweave.rendering.api.RenderingProblem;
 import cn.hbads.renderweave.rendering.spi.AssetResolutionPort;
+import cn.hbads.renderweave.rendering.spi.CapabilityStateStore;
 import cn.hbads.renderweave.rendering.spi.RenderingCapabilityRuntime;
 import cn.hbads.renderweave.schema.definition.StaticSchemaRef;
 import cn.hbads.renderweave.schema.identity.SchemaKey;
@@ -44,6 +45,58 @@ class EvaluatorContractTest {
     private static final StaticSchemaRef SCHEMA = new StaticSchemaRef(
             SchemaKey.systemProvided("system-empty"), VersionTag.of("v1"));
     private static final String ROOT_ID = "00000000-0000-4000-8000-0000000000a1";
+    private static final String AUTH_DIGEST = "sha256:" + "5".repeat(64);
+
+    @Test
+    void sameRequestAndFingerprintRestoresCommittedCapabilityStateWithoutResampling() {
+        var stateStore = new RecordingCapabilityStateStore();
+        var runtime = new RecordingCapabilityRuntime();
+        var evaluator = evaluator(closureWith(canvasWithUnusedRandom()), resolver(), stateStore, runtime);
+
+        assertInstanceOf(EvaluationOutcome.SealedDocument.class,
+                evaluator.evaluate(command("{\"rootDocument\":{}}")));
+        assertInstanceOf(EvaluationOutcome.SealedDocument.class,
+                evaluator.evaluate(command("{\"rootDocument\":{}}")));
+
+        assertEquals(1, runtime.establishCalls);
+        assertEquals(1, runtime.restoreCalls);
+        assertEquals(1, stateStore.saveCalls);
+        assertEquals(2, stateStore.loadCalls);
+    }
+
+    @Test
+    void sameRequestWithDifferentAuthorizationFingerprintRejectsAtCapabilityState() {
+        var stateStore = new RecordingCapabilityStateStore();
+        var evaluator = evaluator(
+                closureWith(canvasWithUnusedRandom()), resolver(), stateStore,
+                new RecordingCapabilityRuntime());
+        assertInstanceOf(EvaluationOutcome.SealedDocument.class,
+                evaluator.evaluate(command("{\"rootDocument\":{}}")));
+
+        var changed = command("{\"rootDocument\":{}}", 61_000L, "sha256:" + "6".repeat(64));
+        var rejected = assertInstanceOf(EvaluationOutcome.Rejected.class,
+                evaluator.evaluate(changed));
+
+        assertEquals(EvaluationStage.CAPABILITY_STATE, rejected.stage());
+        assertEquals(RenderingProblem.ProblemCode.CAPABILITY_STATE_CONFLICT,
+                rejected.problem().code());
+    }
+
+    @Test
+    void capabilityStateDependencyUnavailableFailsBeforeMaterialization() {
+        var unavailable = new RecordingCapabilityStateStore();
+        unavailable.unavailable = true;
+        var evaluator = evaluator(
+                closureWith(canvasWithUnusedRandom()), resolver(), unavailable,
+                new RecordingCapabilityRuntime());
+
+        var rejected = assertInstanceOf(EvaluationOutcome.Rejected.class,
+                evaluator.evaluate(command("{\"rootDocument\":{}}")));
+
+        assertEquals(EvaluationStage.CAPABILITY_STATE, rejected.stage());
+        assertEquals(RenderingProblem.ProblemCode.CAPABILITY_STATE_UNAVAILABLE,
+                rejected.problem().code());
+    }
 
     @Test
     void evaluateSealsDocumentEndToEnd() {
@@ -82,12 +135,15 @@ class EvaluatorContractTest {
                 TemplateModule.designDslAuthority(),
                 null,
                 scriptedRuntime(),
+                new RecordingCapabilityStateStore(),
+                "{}",
                 resolver(),
                 Clock.fixed(Instant.ofEpochMilli(1_000L), ZoneOffset.UTC));
 
         var outcome = evaluator.evaluate(new EvaluationCommand(
                 new RenderRequestId("00000000-0000-4000-8000-000000000001"),
                 new OwnerScope("intruder-scope"),
+                AUTH_DIGEST,
                 new TemplateApplication.TemplateId(ROOT_ID),
                 "{\"rootDocument\":{}}".getBytes(StandardCharsets.UTF_8),
                 OutputSelection.defaultPng(),
@@ -106,6 +162,8 @@ class EvaluatorContractTest {
                 TemplateModule.designDslAuthority(),
                 null,
                 scriptedRuntime(),
+                new RecordingCapabilityStateStore(),
+                "{}",
                 resolver(),
                 Clock.fixed(Instant.ofEpochMilli(1_000L), ZoneOffset.UTC));
 
@@ -138,6 +196,8 @@ class EvaluatorContractTest {
                 TemplateModule.designDslAuthority(),
                 assets,
                 scriptedRuntime(),
+                new RecordingCapabilityStateStore(),
+                "{}",
                 resolver(),
                 Clock.fixed(now, ZoneOffset.UTC));
 
@@ -157,9 +217,15 @@ class EvaluatorContractTest {
     }
 
     private static EvaluationCommand command(String envelope, long deadlineAtEpochMilli) {
+        return command(envelope, deadlineAtEpochMilli, AUTH_DIGEST);
+    }
+
+    private static EvaluationCommand command(
+            String envelope, long deadlineAtEpochMilli, String authorizationDigest) {
         return new EvaluationCommand(
                 new RenderRequestId("00000000-0000-4000-8000-000000000001"),
                 new OwnerScope("owner-a"),
+                authorizationDigest,
                 new TemplateApplication.TemplateId(ROOT_ID),
                 envelope.getBytes(StandardCharsets.UTF_8),
                 OutputSelection.defaultPng(),
@@ -169,14 +235,82 @@ class EvaluatorContractTest {
 
     private static cn.hbads.renderweave.rendering.internal.CanonicalEvaluator evaluator(
             ClosureSnapshot closure, ValidationTargetResolver resolver) {
+        return evaluator(closure, resolver, new RecordingCapabilityStateStore(), scriptedRuntime());
+    }
+
+    private static cn.hbads.renderweave.rendering.internal.CanonicalEvaluator evaluator(
+            ClosureSnapshot closure,
+            ValidationTargetResolver resolver,
+            CapabilityStateStore stateStore,
+            RenderingCapabilityRuntime runtime) {
         return new cn.hbads.renderweave.rendering.internal.CanonicalEvaluator(
                 scriptedClosure(closure),
                 TemplateModule.designSemanticAuthority(),
                 TemplateModule.designDslAuthority(),
                 null,
-                scriptedRuntime(),
+                runtime,
+                stateStore,
+                "{\"capabilityRuntime\":{\"initializationAttempts\":3}}",
                 resolver,
                 Clock.fixed(Instant.ofEpochMilli(1_000L), ZoneOffset.UTC));
+    }
+
+    private static final class RecordingCapabilityRuntime implements RenderingCapabilityRuntime {
+        private int establishCalls;
+        private int restoreCalls;
+
+        @Override
+        public Established establish() {
+            establishCalls++;
+            return new Established(scriptedProvider(), new byte[]{1, 2, 3});
+        }
+
+        @Override
+        public Runtime restore(byte[] sealedState) {
+            restoreCalls++;
+            return scriptedProvider();
+        }
+
+        @Override
+        public String capabilityContracts() {
+            return "renderweave-capability-clock/1.0,renderweave-capability-random/1.0";
+        }
+
+        private static Runtime scriptedProvider() {
+            return (capability, operation, callPosition) -> new ProviderUnavailable();
+        }
+    }
+
+    private static final class RecordingCapabilityStateStore implements CapabilityStateStore {
+        private SaveRequest committed;
+        private boolean unavailable;
+        private int saveCalls;
+        private int loadCalls;
+
+        @Override
+        public SaveOutcome save(SaveRequest request) {
+            saveCalls++;
+            if (unavailable) {
+                return new SaveOutcome.SaveUnavailable();
+            }
+            committed = request;
+            return new SaveOutcome.Stored(new CapabilityStateId("state-1"));
+        }
+
+        @Override
+        public LoadOutcome load(RenderRequestId requestId, String evaluationFingerprint) {
+            loadCalls++;
+            if (unavailable) {
+                return new LoadOutcome.LoadUnavailable();
+            }
+            if (committed == null) {
+                return new LoadOutcome.Missing();
+            }
+            if (!committed.evaluationFingerprint().equals(evaluationFingerprint)) {
+                return new LoadOutcome.LoadFingerprintConflict();
+            }
+            return new LoadOutcome.Loaded(committed.sealedState(), committed.expiresAtEpochSecond());
+        }
     }
 
     private static TemplateClosureAuthority scriptedClosure(ClosureSnapshot closure) {
@@ -186,13 +320,22 @@ class EvaluatorContractTest {
     private static RenderingCapabilityRuntime scriptedRuntime() {
         return new RenderingCapabilityRuntime() {
             @Override
-            public Runtime establish() {
-                return (capability, operation, callPosition) -> new ProviderUnavailable();
+            public Established establish() {
+                return new Established(provider(), new byte[]{1});
+            }
+
+            @Override
+            public Runtime restore(byte[] sealedState) {
+                return provider();
             }
 
             @Override
             public String capabilityContracts() {
                 return "renderweave-capability-clock/1.0,renderweave-capability-random/1.0";
+            }
+
+            private Runtime provider() {
+                return (capability, operation, callPosition) -> new ProviderUnavailable();
             }
         };
     }
@@ -242,6 +385,16 @@ class EvaluatorContractTest {
                 + "\"xMm\":0,\"yMm\":0,\"widthMode\":\"FIXED\",\"widthMm\":10,"
                 + "\"heightMode\":\"FIXED\",\"heightMm\":10},"
                 + "\"imageRef\":{\"assetId\":\"00000000-0000-4000-8000-0000000000aa\"}}]}}";
+    }
+
+    private static String canvasWithUnusedRandom() {
+        return canvasWithRect().replace("\"definitions\":[]", "\"definitions\":[{"
+                + "\"definitionId\":\"00000000-0000-4000-8000-0000000000e1\","
+                + "\"kind\":\"expression\",\"displayName\":\"Draw\","
+                + "\"domain\":\"invocation\",\"output\":\"text\","
+                + "\"inputs\":[{\"alias\":\"draw\",\"source\":{\"kind\":\"capability\","
+                + "\"capability\":\"RANDOM\",\"operation\":\"UNIFORM_DECIMAL_0_1\"}}],"
+                + "\"source\":\"if(input.draw < 0.5, 'A', 'B')\"}]");
     }
 
     private static final class CapturingAssetPort implements AssetResolutionPort {

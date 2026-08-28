@@ -15,7 +15,7 @@ public interface CapabilityStateStore {
 
     SaveOutcome save(SaveRequest request);
 
-    LoadOutcome load(CapabilityStateId id, String evaluationFingerprint);
+    LoadOutcome load(RenderRequestId renderRequestId, String evaluationFingerprint);
 
     /** store 返回的不透明短期记录身份。 */
     record CapabilityStateId(String value) {

@@ -56,6 +56,7 @@ public interface Evaluator {
     record EvaluationCommand(
             RenderRequestId renderRequestId,
             OwnerScope ownerScope,
+            String authorizationContextDigest,
             cn.hbads.renderweave.template.api.TemplateApplication.TemplateId rootTemplateId,
             byte[] rawRenderInputUtf8,
             OutputSelection outputSelection,
@@ -65,6 +66,10 @@ public interface Evaluator {
         public EvaluationCommand {
             Objects.requireNonNull(renderRequestId, "renderRequestId");
             Objects.requireNonNull(ownerScope, "ownerScope");
+            Objects.requireNonNull(authorizationContextDigest, "authorizationContextDigest");
+            if (!authorizationContextDigest.matches("sha256:[0-9a-f]{64}")) {
+                throw new IllegalArgumentException("authorizationContextDigest must be sha256");
+            }
             Objects.requireNonNull(rootTemplateId, "rootTemplateId");
             Objects.requireNonNull(rawRenderInputUtf8, "rawRenderInputUtf8");
             Objects.requireNonNull(outputSelection, "outputSelection");

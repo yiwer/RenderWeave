@@ -3254,3 +3254,22 @@
 - 本票仍不实现 shaping/scene/raster/RESULT/Profile registration 或 Product Editor route；Profile
   `NOT_REGISTERED`、certification `NOT_CERTIFIED`、raster `ABSENT`、daemon output `UNWIRED`、product route
   `CLOSED`。provider/API Key/费用/真实数据=0，不 push/tag/PR，`/prototype` 不计交付。
+# 2026-08-28 Template-v1 T125 CapabilityState orchestration（claimed）
+
+- T124 已以 verified commit `2bbf3382` 收口且 worktree clean。复核 T21 遗留后确认 stage 6 尚未接线：
+  当前授权结果不产出 authorizationContextDigest，EvaluationCommand 不携带它，capability runtime 也不能
+  导出/恢复 clock+nonce；直接 save 会迫使伪造 fingerprint 或 replay 重采样。
+- 已按 single-writer 登记并 claim T125：在一个真实纵切内同时补齐授权摘要传递、冻结 effective budget
+  vector、opaque runtime establish/restore 与 store save/replay/conflict 编排。先以 Evaluator 公共 Interface
+  做 RED；不新增 route/Profile/placeholder，不运行 provider，不 push/tag/PR。当前 A0，J0。
+
+# 2026-08-28 Template-v1 T125 CapabilityState orchestration（resolved / automated_verified）
+
+- 已完成 authorization digest → complete evaluation fingerprint → encrypted linearized
+  CapabilityState save/replay/conflict → opaque runtime restore 纵切；replay 不重采样，冲突与 unavailable
+  均在 CAPABILITY_STATE stage fail closed。
+- focused Rendering 122 tests 与 PostgreSQL store 8 tests 全绿；A1：asset
+  `.sdlc/evidence/20260828-140900-asset/`、web `.sdlc/evidence/20260828-140922-web/`、fast
+  `.sdlc/evidence/20260828-141009-fast/`、server `.sdlc/evidence/20260828-135801-server/`、full
+  `.sdlc/evidence/20260828-141041-full/` 17/17 passed；resolution fast
+  `.sdlc/evidence/20260828-144008-fast/` 亦通过。A2 未签发；A3 未外部强制；J0。

@@ -3,6 +3,7 @@ package cn.hbads.renderweave.rendering.internal;
 import cn.hbads.renderweave.rendering.api.Evaluator;
 import cn.hbads.renderweave.rendering.api.RenderingApplication;
 import cn.hbads.renderweave.rendering.spi.AssetResolutionPort;
+import cn.hbads.renderweave.rendering.spi.CapabilityStateStore;
 import cn.hbads.renderweave.rendering.spi.RenderEngine;
 import cn.hbads.renderweave.rendering.spi.RendererProfileAuthority;
 import cn.hbads.renderweave.rendering.spi.RenderingAuthority;
@@ -37,6 +38,8 @@ public final class RenderingModule {
             DesignDslAuthority dslAuthority,
             AssetResolutionPort assets,
             RenderingCapabilityRuntime capabilities,
+            CapabilityStateStore capabilityStates,
+            String effectiveBudgetVector,
             ValidationTargetResolver validationResolver,
             Clock clock
     ) {
@@ -46,6 +49,8 @@ public final class RenderingModule {
                 Objects.requireNonNull(dslAuthority, "dslAuthority"),
                 assets,
                 Objects.requireNonNull(capabilities, "capabilities"),
+                Objects.requireNonNull(capabilityStates, "capabilityStates"),
+                Objects.requireNonNull(effectiveBudgetVector, "effectiveBudgetVector"),
                 Objects.requireNonNull(validationResolver, "validationResolver"),
                 Objects.requireNonNull(clock, "clock"));
     }

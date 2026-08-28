@@ -2,7 +2,6 @@ package cn.hbads.renderweave.app.rendering;
 
 import cn.hbads.renderweave.rendering.api.Evaluator.RenderRequestId;
 import cn.hbads.renderweave.rendering.spi.CapabilityStateStore;
-import cn.hbads.renderweave.rendering.spi.CapabilityStateStore.CapabilityStateId;
 import cn.hbads.renderweave.rendering.spi.CapabilityStateStore.SaveRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -15,6 +14,7 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.nio.charset.StandardCharsets;
+import java.util.concurrent.Executors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -58,7 +58,7 @@ class CapabilityStateStoreAdapterTest {
                 request("00000000-0000-4000-8000-000000000001", "sha256:fp-1", 9_999_999_999L));
 
         var loaded = (CapabilityStateStore.LoadOutcome.Loaded) store.load(
-                saved.id(), "sha256:fp-1");
+                new RenderRequestId("00000000-0000-4000-8000-000000000001"), "sha256:fp-1");
 
         assertThat(new String(loaded.sealedState(), StandardCharsets.UTF_8))
                 .isEqualTo("{\"clock\":1750000000}");
@@ -93,6 +93,22 @@ class CapabilityStateStoreAdapterTest {
     }
 
     @Test
+    void concurrentSameRequestLinearizesToStoredAndReplayed() throws Exception {
+        var request = request(
+                "00000000-0000-4000-8000-000000000007",
+                "sha256:fp-7",
+                9_999_999_999L);
+        try (var executor = Executors.newFixedThreadPool(2)) {
+            var first = executor.submit(() -> store.save(request));
+            var second = executor.submit(() -> store.save(request));
+            var outcomes = java.util.List.of(first.get(), second.get());
+
+            assertThat(outcomes).anyMatch(CapabilityStateStore.SaveOutcome.Stored.class::isInstance);
+            assertThat(outcomes).anyMatch(CapabilityStateStore.SaveOutcome.Replayed.class::isInstance);
+        }
+    }
+
+    @Test
     void sameKeyDifferentFingerprintConflicts() {
         store.save(request("00000000-0000-4000-8000-000000000004", "sha256:fp-4", 9_999_999_999L));
 
@@ -107,15 +123,19 @@ class CapabilityStateStoreAdapterTest {
         var saved = (CapabilityStateStore.SaveOutcome.Stored) store.save(
                 request("00000000-0000-4000-8000-000000000005", "sha256:fp-5", 9_999_999_999L));
 
-        var outcome = store.load(saved.id(), "sha256:intruder");
+        var outcome = store.load(
+                new RenderRequestId("00000000-0000-4000-8000-000000000005"),
+                "sha256:intruder");
 
         assertThat(outcome)
                 .isInstanceOf(CapabilityStateStore.LoadOutcome.LoadFingerprintConflict.class);
     }
 
     @Test
-    void unknownIdIsMissing() {
-        var outcome = store.load(new CapabilityStateId("absent"), "sha256:fp");
+    void unknownRequestIsMissing() {
+        var outcome = store.load(
+                new RenderRequestId("00000000-0000-4000-8000-000000000099"),
+                "sha256:fp");
         assertThat(outcome).isInstanceOf(CapabilityStateStore.LoadOutcome.Missing.class);
     }
 
@@ -129,7 +149,9 @@ class CapabilityStateStoreAdapterTest {
                         0L,
                         1L));
 
-        var loadOutcome = store.load(saved.id(), "sha256:fp-6");
+        var loadOutcome = store.load(
+                new RenderRequestId("00000000-0000-4000-8000-000000000006"),
+                "sha256:fp-6");
         assertThat(loadOutcome).isInstanceOf(CapabilityStateStore.LoadOutcome.Missing.class);
 
         var swept = store.sweepExpired();

@@ -4600,3 +4600,22 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
 - 验证：focused Rust/Python、fmt、clippy `-D warnings`、workspace tests、`py_compile`、JSON inventory/SHA/unique、
   `git diff --check`；再依次 `render`、affected `fast`、顺序 `server`、Goal `full`、resolution `fast`。最高只可
   `automated_verified`；不推进 A3/J1/READY，不 push/tag/PR，不运行 provider，不读取 API Key。
+## 125. TV1-T125 执行卡
+
+- 状态：`resolved / automated_verified`；single writer: Codex；blocked by T21/T122（均 resolved）。
+- 纵切：`RenderingAuthority` 授权摘要 → `EvaluationCommand` → Evaluator 完整 fingerprint →
+  `CapabilityStateStore` save/replay/conflict → opaque capability runtime establish/restore。
+- 验证：Evaluator public seam RED/GREEN、Rendering/app focused、fast、顺序 server、full；最高状态
+  `automated_verified`，A3/J1/READY 不推进，不 push/tag/PR。
+
+### TV1-T125 resolution evidence
+
+- 授权权威摘要 → complete fingerprint → encrypted linearized state → opaque runtime restore
+  纵切已完成；同 request/同 fingerprint 不重采样，异 fingerprint 与 unavailable fail closed。
+- A1：`asset` `.sdlc/evidence/20260828-140900-asset/`、`web`
+  `.sdlc/evidence/20260828-140922-web/`、`fast` `.sdlc/evidence/20260828-141009-fast/`、
+  `server` `.sdlc/evidence/20260828-135801-server/`、`full`
+  `.sdlc/evidence/20260828-141041-full/` 17/17 steps passed（983.407 秒）；状态回填后
+  resolution `fast` `.sdlc/evidence/20260828-144008-fast/` 亦通过。
+- A2 未签发 ticket-specific independent implementation replay；A3 未外部强制；J0。
+  provider attempts/API Key reads/real data/Profile registration/push/tag/PR = 0。

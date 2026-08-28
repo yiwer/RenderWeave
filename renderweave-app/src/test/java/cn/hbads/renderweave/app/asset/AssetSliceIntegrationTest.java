@@ -634,6 +634,7 @@ class AssetSliceIntegrationTest {
         return new Evaluator.EvaluationCommand(
                 new Evaluator.RenderRequestId(renderRequestId),
                 new Evaluator.OwnerScope("it-scope"),
+                "sha256:" + "5".repeat(64),
                 templateId,
                 "{\"rootDocument\":{}}".getBytes(StandardCharsets.UTF_8),
                 Evaluator.OutputSelection.defaultPng(),

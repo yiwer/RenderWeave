@@ -8,6 +8,7 @@ import cn.hbads.renderweave.rendering.api.RenderingApplication;
 import cn.hbads.renderweave.rendering.api.RenderingProblem;
 import cn.hbads.renderweave.rendering.internal.RenderingModule;
 import cn.hbads.renderweave.rendering.spi.AssetResolutionPort;
+import cn.hbads.renderweave.rendering.spi.CapabilityStateStore;
 import cn.hbads.renderweave.rendering.spi.RenderEngine;
 import cn.hbads.renderweave.rendering.spi.RendererProfileAuthority;
 import cn.hbads.renderweave.rendering.spi.RenderingAuthority;
@@ -28,10 +29,12 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.transaction.PlatformTransactionManager;
 
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 import java.math.BigDecimal;
+import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.security.SecureRandom;
 import java.time.Clock;
@@ -106,8 +109,12 @@ class RenderingApplicationConfiguration {
 
     @Bean
     @ConditionalOnBean(SecretKey.class)
-    PostgresCapabilityStateStore postgresCapabilityStateStore(JdbcClient jdbc, SecretKey key) {
-        return new PostgresCapabilityStateStore(jdbc, key);
+    PostgresCapabilityStateStore postgresCapabilityStateStore(
+            JdbcClient jdbc,
+            SecretKey key,
+            PlatformTransactionManager transactionManager
+    ) {
+        return new PostgresCapabilityStateStore(jdbc, key, transactionManager);
     }
 
     @Bean
@@ -136,6 +143,7 @@ class RenderingApplicationConfiguration {
             DesignDslAuthority dslAuthority,
             ObjectProvider<AssetResolutionPort> assets,
             RenderingCapabilityRuntime capabilities,
+            ObjectProvider<CapabilityStateStore> capabilityStates,
             ValidationTargetResolver validationResolver,
             @Qualifier("renderingClock") Clock renderingClock
     ) {
@@ -145,8 +153,24 @@ class RenderingApplicationConfiguration {
                 dslAuthority,
                 assets.getIfAvailable(),
                 capabilities,
+                capabilityStates.getIfAvailable(RenderingApplicationConfiguration::unavailableCapabilityStateStore),
+                EffectiveBudgetVector.load(),
                 validationResolver,
                 renderingClock);
+    }
+
+    private static CapabilityStateStore unavailableCapabilityStateStore() {
+        return new CapabilityStateStore() {
+            @Override
+            public SaveOutcome save(SaveRequest request) {
+                return new SaveOutcome.SaveUnavailable();
+            }
+
+            @Override
+            public LoadOutcome load(Evaluator.RenderRequestId requestId, String fingerprint) {
+                return new LoadOutcome.LoadUnavailable();
+            }
+        };
     }
 
     @Bean
@@ -236,10 +260,28 @@ class RenderingApplicationConfiguration {
         private final SecureRandom entropy = new SecureRandom();
 
         @Override
-        public Runtime establish() {
+        public Established establish() {
             var clockSecond = Instant.now(Clock.systemUTC()).getEpochSecond();
             var nonce = new byte[32];
             entropy.nextBytes(nonce);
+            return new Established(runtime(clockSecond, nonce), ByteBuffer.allocate(41)
+                    .put((byte) 1).putLong(clockSecond).put(nonce).array());
+        }
+
+        @Override
+        public Runtime restore(byte[] sealedState) {
+            if (sealedState == null || sealedState.length != 41 || sealedState[0] != 1) {
+                throw new IllegalArgumentException("invalid capability state");
+            }
+            var state = ByteBuffer.wrap(sealedState);
+            state.get();
+            var clockSecond = state.getLong();
+            var nonce = new byte[32];
+            state.get(nonce);
+            return runtime(clockSecond, nonce);
+        }
+
+        private static Runtime runtime(long clockSecond, byte[] nonce) {
             return (capability, operation, callPosition) -> {
                 switch (capability + "/" + operation) {
                     case "CLOCK/UTC_DATE":

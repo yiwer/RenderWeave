@@ -104,6 +104,7 @@ final class CanonicalRenderingApplication implements RenderingApplication {
         var evaluation = evaluator.evaluate(new EvaluationCommand(
                 requestId,
                 authorized.ownerScope(),
+                authorized.authorizationContextDigest(),
                 command.rootTemplateId(),
                 command.rawRenderInputUtf8(),
                 command.outputSelection(),
