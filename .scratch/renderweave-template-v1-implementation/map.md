@@ -844,6 +844,11 @@ Label: wayfinder:map
   `randomRejectionAttempts=128`，HMAC exhaustion 以 exact MATERIALIZATION/CAPABILITY_RESULT_INVALID/limitId
   first-fail；focused 45/45、Rendering 170/170、App 12/12 与 render/fast/server metadata 全绿；正式 Ticket 19
   records 与 fault-schedule executor 继续另票。
+- [T135 — 校正 CapabilityState initializationAttempts exact profile](issues/135-capability-initialization-exact-profile.md)
+  — **resolved / automated_verified**；机器 capacity coverage 将该轴固定为 comparator `EXACT`、value `3`，现已
+  纠正 T133 的 deployment-tightening 解释：effective profile `2/4` fail closed，持续 transient failure 恰好执行
+  三次 establish 后以 CAPABILITY_STATE/CAPABILITY_STATE_UNAVAILABLE/exact limitId 零文档终止。公开 seam
+  46/46、Rendering 171/171、App 12/12 与 render/fast/server metadata 全绿。
 
 - 改写或重解释现有 Schema/Inference v1 已提交历史，或在 dirty main 上直接实施 Template。
 - Workspace、组织/成员/分享/协作、跨 ownerScope 复制、通用 connector、任意 SQL/HTTP/文件/脚本、插件节点或运行时代码注册。

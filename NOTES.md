@@ -3478,3 +3478,29 @@
   registration/push/tag/PR 均为 0。
 - 状态回填后的 resolution `fast` `.sdlc/evidence/20260829-011629-fast/` metadata 仍为 `passed`，3/3 steps
   全绿。
+
+# 2026-08-29 Template-v1 T135 CapabilityState initialization exact profile（resolved / automated_verified）
+
+- T134 已以 verified commit `ed8f1523` 收口且 worktree clean；DAG 无其他 active claim。机器 capacity coverage
+  明确 `capabilityRuntime.initializationAttempts` 是 comparator `EXACT`、value `3`，而 T133 当前仍错误接受
+  deployment tightening `1/2`。
+- 已按 single-writer 登记并 claim T135：只纠正 fingerprint-bound effective profile identity，并把 exhaustion
+  tracer 固定为三次 transient establish 后 exact CAPABILITY_STATE/CAPABILITY_STATE_UNAVAILABLE/limitId、零
+  save/document/Engine。T133 的 load-before-sample、unknown-commit、expiry、deadline、fingerprint 与 SPI 不变。
+- 先经公开 Evaluator seam 取得 profile `2` 被错误接受的真实 RED，再做最小 GREEN；不发行正式 Ticket 19 records，
+  不改 API/OpenAPI/Web/migration/Profile，不运行 provider、不读取 API Key、不发送真实数据，不 push/tag/PR。
+  登记时 A0、J0。
+- `CapabilityBudget` 现只接受 canonical `initializationAttempts=3`；profile `2/4` 均 fail closed。持续 transient
+  failure 恰好执行三次 establish，第四次前以 CAPABILITY_STATE/CAPABILITY_STATE_UNAVAILABLE/exact limitId
+  零 save/document/Engine 终止；第三次成功与 T133 的 unknown-commit/expiry/deadline 语义保持不变。
+- 真实 behavioral RED 为 Evaluator 46 tests 中 value `2` 未抛异常的唯一 failure；最小一行生产改动后 focused
+  Evaluator 46/46、Rendering 171/171、生产 assembly/architecture 12/12。
+- A1 `render` `.sdlc/evidence/20260829-012706-render/`、`fast`
+  `.sdlc/evidence/20260829-012758-fast/`、顺序 `server`
+  `.sdlc/evidence/20260829-012836-server/` metadata 全部 `passed`；server BUILD SUCCESS，App 372/0/0/15。无
+  API/OpenAPI/Web/migration/Profile 变化，未重复 `full`。
+- A2 仅未变 Renderer 轴独立 replay，无 T135-specific issued record；A3 无，J0 pending、J1 未批准。正式 Ticket 19
+  records/fault executor 仍阻塞；provider attempts/API Key reads/reservations/cost/真实数据/Profile registration/
+  push/tag/PR 均为 0。
+- 状态回填后的 resolution `fast` `.sdlc/evidence/20260829-014454-fast/` metadata 仍为 `passed`，3/3 steps
+  全绿。

@@ -4904,3 +4904,36 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
   正式 Ticket 19 records/fault executor 仍阻塞；provider/API Key/真实数据/Profile/push/tag/PR 均为 0。
 - 状态回填后的 resolution `fast` `.sdlc/evidence/20260829-011629-fast/` metadata 为 `passed`，3/3 steps
   全绿。
+
+## 135. TV1-T135 执行卡
+
+- 状态：`resolved / automated_verified`；single writer: Codex；blocked by T21/T125/T129/T131/T133/T134（均
+  resolved）。
+- 决策：T134 verified commit `ed8f1523` 后 worktree clean 且无其他 active claim；机器 authority 将
+  `capabilityRuntime.initializationAttempts` 定义为 comparator `EXACT`、value `3`。T133 把 `1/2` 当作 deployment
+  tightening 的解释违反 Ticket 14 的 exact Profile/不可协商纪律，故登记独立 corrective ticket，不改写历史提交。
+- seam：唯一产品行为测试 seam 仍为公开 `Evaluator.evaluate`；既有 runtime/store 是 system-boundary adapter。
+  `CapabilityBudget` 集中拥有 exact profile admission，Evaluator 不持有散落配置值或新 public seam。
+- 语义：effective profile 只接受 canonical `3`，`2/4` 均 fail closed；连续 transient establish failure 允许三次
+  attempt，第四次前返回 CAPABILITY_STATE/CAPABILITY_STATE_UNAVAILABLE/exact limitId，零 save/document/Engine。
+  T133 的 load-before-sample、unknown-commit query、固定 expiry/deadline/fingerprint 语义不变。
+- TDD：先让 profile `2` 的错误接受产生真实 RED，再最小改为 exact parser；更新 exhaustion tracer 为三次 establish，
+  保留第三次成功与 unknown-commit 回归。focused Rendering/app 后运行 render/fast/顺序 server。
+- 禁止影响：正式 Ticket 19 records/fault executor、SPI/DB/state wire、route/OpenAPI/Web/migration/Profile、provider/
+  API Key/真实数据/push/tag/PR；最高 `automated_verified`，A3/J1/READY 不推进。
+
+### TV1-T135 resolution evidence
+
+- 实现：`CapabilityBudget` 将 `initializationAttempts` 从通用 maximum parser 切换到既有 exact-profile authority，
+  只接受 canonical `3`；`2/4` 均 fail closed。Evaluator 重试状态机未改，持续 transient failure 三次后在第四次前
+  返回 CAPABILITY_STATE/CAPABILITY_STATE_UNAVAILABLE/exact limitId，零 save/document/Engine；第三次成功保留。
+- TDD：公开 seam 先取得 value `2` 被接受的真实 behavioral RED（46 tests 中 1 failure），最小一行生产改动后
+  Evaluator 46/46、Rendering 171/171、生产 app assembly/architecture 12/12；`git diff --check` 通过。
+- A1：`render` `.sdlc/evidence/20260829-012706-render/`、`fast`
+  `.sdlc/evidence/20260829-012758-fast/`、顺序 clean `server`
+  `.sdlc/evidence/20260829-012836-server/` metadata 均 `passed`；server 8-module reactor BUILD SUCCESS，App
+  372/0/0/15。无 API/OpenAPI/Web/migration/Profile 变化，未重复 `full`。
+- A2 仅未变 Renderer 独立 replay，无 T135-specific issued record；A3 无，J0 pending、J1 未批准。provider/API Key/
+  费用/真实数据/Profile registration/push/tag/PR 均为 0。
+- 状态回填后的 resolution `fast` `.sdlc/evidence/20260829-014454-fast/` metadata 仍为 `passed`，3/3 steps
+  全绿。

@@ -66,7 +66,7 @@ final class CapabilityBudget {
                         MAX_CAPABILITY_STATE_RECORD_BYTES),
                 limit(limits, "resultDigestStreamingBytes",
                         MAX_RESULT_DIGEST_STREAMING_BYTES),
-                limit(limits, "initializationAttempts", MAX_INITIALIZATION_ATTEMPTS)));
+                exactLimit(limits, "initializationAttempts", MAX_INITIALIZATION_ATTEMPTS)));
     }
 
     LimitExceeded admitStaticSources(long sourceCount) {

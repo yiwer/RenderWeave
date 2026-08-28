@@ -374,16 +374,29 @@ class EvaluatorContractTest {
     }
 
     @Test
-    void deploymentInitializationAttemptLimitRejectsBeforeStartingAnotherAttempt() {
+    void initializationAttemptProfileRejectsNonExactValues() {
+        for (long value : List.of(2L, 4L)) {
+            var vector = budgetVector(
+                    1, 8, 4, 4, 2_048, 16_777_216, 1_048_576,
+                    16_777_216, value);
+            assertThrows(IllegalArgumentException.class, () -> evaluator(
+                    closureWith(withUnusedClock(canvasWithRect())),
+                    resolver(),
+                    new RecordingCapabilityStateStore(),
+                    new RecordingCapabilityRuntime(),
+                    vector));
+        }
+    }
+
+    @Test
+    void initializationAttemptLimitRejectsBeforeFourthFrozenAttempt() {
         var stateStore = new RecordingCapabilityStateStore();
         var runtime = new TransientEstablishRuntime(Integer.MAX_VALUE);
         var evaluator = evaluator(
                 closureWith(withUnusedClock(canvasWithRect())),
                 resolver(),
                 stateStore,
-                runtime,
-                budgetVector(1, 8, 4, 4, 2_048, 16_777_216, 1_048_576,
-                        16_777_216, 2));
+                runtime);
 
         var rejected = assertInstanceOf(EvaluationOutcome.Rejected.class,
                 evaluator.evaluate(command("{\"rootDocument\":{}}")));
@@ -393,7 +406,7 @@ class EvaluatorContractTest {
                 rejected.problem().code());
         assertEquals("capabilityRuntime.initializationAttempts",
                 rejected.problem().limitId().orElseThrow().value());
-        assertEquals(2, runtime.establishCalls);
+        assertEquals(3, runtime.establishCalls);
         assertEquals(0, stateStore.saveCalls);
     }
 
