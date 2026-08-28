@@ -351,6 +351,38 @@ class SealerTest {
         assertRunLimit(rejected);
     }
 
+    @Test
+    void finalTextScalarsUseTheRequestTotalFrozenBoundary() {
+        var emptyAtCapacity = new RenderingPipelineCapacityGuard().newRequestTracker();
+        assertTrue(emptyAtCapacity.reserve(
+                RenderingPipelineCapacityGuard.Limit.RENDER_DOCUMENT_TEXT_SCALARS,
+                1_000_000).isEmpty());
+        assertInstanceOf(Sealer.Sealed.class, Sealer.seal(
+                closure(), admitted(), minimalTree(), "sha256:" + "c".repeat(64),
+                emptyAtCapacity));
+
+        var atCapacity = new RenderingPipelineCapacityGuard().newRequestTracker();
+        assertTrue(atCapacity.reserve(
+                RenderingPipelineCapacityGuard.Limit.RENDER_DOCUMENT_TEXT_SCALARS,
+                999_996).isEmpty());
+        var sealed = assertInstanceOf(Sealer.Sealed.class, Sealer.seal(
+                closure(), admitted(), twoTextRunsTree(), "sha256:" + "c".repeat(64),
+                atCapacity));
+        var document = new String(
+                sealed.evaluation().renderDocumentCanonicalUtf8(), StandardCharsets.UTF_8);
+        assertTrue(document.contains("\uD83D\uDE00"));
+        assertTrue(document.contains("e\u0301\\n"));
+
+        var aboveCapacity = new RenderingPipelineCapacityGuard().newRequestTracker();
+        assertTrue(aboveCapacity.reserve(
+                RenderingPipelineCapacityGuard.Limit.RENDER_DOCUMENT_TEXT_SCALARS,
+                999_997).isEmpty());
+        var rejected = assertInstanceOf(Sealer.SealRejected.class, Sealer.seal(
+                closure(), admitted(), twoTextRunsTree(), "sha256:" + "c".repeat(64),
+                aboveCapacity));
+        assertTextScalarLimit(rejected);
+    }
+
     // ------------------------------------------------------------------
     // fixtures
     // ------------------------------------------------------------------
@@ -439,8 +471,8 @@ class SealerTest {
     private static Materializer.MaterializedTree twoTextRunsTree() {
         var firstResourceId = "rwres_" + "a".repeat(64);
         var secondResourceId = "rwres_" + "b".repeat(64);
-        var first = textNode("A", firstResourceId, "/text-1", false, "1");
-        var second = textNode("B", secondResourceId, "/text-2", true, "0");
+        var first = textNode("\uD83D\uDE00", firstResourceId, "/text-1", false, "1");
+        var second = textNode("e\u0301\n", secondResourceId, "/text-2", true, "0");
         var root = new Materializer.MaterializedNode(
                 "canvas",
                 new ObjectNode(Map.of(
@@ -530,6 +562,14 @@ class SealerTest {
         assertEquals(ProblemCode.RENDER_DOCUMENT_LIMIT_EXCEEDED,
                 rejected.problem().code());
         assertEquals("renderDocument.runs",
+                rejected.problem().limitId().orElseThrow().value());
+    }
+
+    private static void assertTextScalarLimit(Sealer.SealRejected rejected) {
+        assertEquals(EvaluationStage.DOCUMENT_SEAL, rejected.problem().stage());
+        assertEquals(ProblemCode.RENDER_DOCUMENT_LIMIT_EXCEEDED,
+                rejected.problem().code());
+        assertEquals("renderDocument.textScalars",
                 rejected.problem().limitId().orElseThrow().value());
     }
 

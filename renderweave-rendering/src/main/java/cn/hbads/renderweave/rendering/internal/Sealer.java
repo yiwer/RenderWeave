@@ -436,15 +436,34 @@ final class Sealer {
         var items = new ArrayList<CanonicalJson.CanonicalValue>();
         for (var run : runs.items()) {
             reserveRun();
-            items.add(lowerValue(run));
+            items.add(lowerRun(run));
         }
         return CanonicalJson.arrayValue(items);
+    }
+
+    private CanonicalJson.CanonicalValue lowerRun(DesignNodeValue value) {
+        if (!(value instanceof ObjectNode run)
+                || !(run.members().get("text") instanceof Text text)) {
+            throw new IllegalStateException("Text Run requires text at document seal");
+        }
+        reserveTextScalars(text.value());
+        return lowerValue(run);
     }
 
     private void reserveRun() {
         var capacityProblem = requestCapacity.reserve(
                 RenderingPipelineCapacityGuard.Limit.RENDER_DOCUMENT_RUNS,
                 1);
+        if (capacityProblem.isPresent()) {
+            throw new SealCapacityExceeded(capacityProblem.orElseThrow());
+        }
+    }
+
+    private void reserveTextScalars(String text) {
+        var scalarCount = text.codePointCount(0, text.length());
+        var capacityProblem = requestCapacity.reserve(
+                RenderingPipelineCapacityGuard.Limit.RENDER_DOCUMENT_TEXT_SCALARS,
+                scalarCount);
         if (capacityProblem.isPresent()) {
             throw new SealCapacityExceeded(capacityProblem.orElseThrow());
         }

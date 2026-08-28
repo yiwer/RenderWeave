@@ -312,4 +312,25 @@ class RenderingPipelineCapacityGuardTest {
         assertEquals("renderDocument.runs",
                 problem.limitId().orElseThrow().value());
     }
+
+    @Test
+    void renderDocumentTextScalarsBoundaryUsesTheFrozenProductionGuardContract() {
+        var guard = new RenderingPipelineCapacityGuard();
+
+        assertTrue(guard.admit(
+                RenderingPipelineCapacityGuard.Limit.RENDER_DOCUMENT_TEXT_SCALARS,
+                999_999).isEmpty());
+        assertTrue(guard.admit(
+                RenderingPipelineCapacityGuard.Limit.RENDER_DOCUMENT_TEXT_SCALARS,
+                1_000_000).isEmpty());
+
+        var problem = guard.admit(
+                        RenderingPipelineCapacityGuard.Limit.RENDER_DOCUMENT_TEXT_SCALARS,
+                        1_000_001)
+                .orElseThrow();
+        assertEquals(EvaluationStage.DOCUMENT_SEAL, problem.stage());
+        assertEquals(ProblemCode.RENDER_DOCUMENT_LIMIT_EXCEEDED, problem.code());
+        assertEquals("renderDocument.textScalars",
+                problem.limitId().orElseThrow().value());
+    }
 }

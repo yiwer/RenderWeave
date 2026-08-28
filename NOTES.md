@@ -3893,3 +3893,27 @@
 - cap-020 不执行 Evaluator/Sealer，故无 T151-specific A2/A3；J0 pending、J1 未批准。未重复 server/full，provider
   attempts/API Key reads/真实数据/Profile registration/push/tag/PR 均为 0。
 - 状态回填后的 resolution `fast` `.sdlc/evidence/20260829-061156-fast/` metadata 为 passed，3/3 steps 全绿。
+
+# 2026-08-29 Template-v1 T152 RenderDocument text scalars（resolved / automated_verified）
+
+- T151 已以 verified commit `107af256` 收口，worktree clean、ahead 142 且 DAG 无其他 active claim；现按
+  single-writer 登记并 claim T152。
+- `RW-T19-S7-094` / cap-021 固定 `renderDocument.textScalars` MAX_INCLUSIVE `1000000`，observed
+  `999999/1000000/1000001`，DOCUMENT_SEAL_COUNTING / public DOCUMENT_SEAL /
+  RENDER_DOCUMENT_LIMIT_EXCEEDED / ZERO_DOCUMENT_OUTPUT。
+- 仅 final surviving `text.runs[*].text` 计数；非 BMP scalar 为 1、组合序列逐 scalar、LF 为 1、空 Run 为 0，
+  不 normalization；pruned 为 0，`visible:false/opacity:0` 仍计。QR/Barcode 内容不属于本轴。
+- scalar reservation 在 T151 Run unit 成功后、canonical Run object/string growth 前按 occurrence/Run index 原子执行，
+  并与 authored text、Runs、Nodes/edges、Engine grapheme/glyph 独立。
+- 本票最高 automated_verified/J0；无 app wiring、Profile registration、provider/API Key/真实数据、push/tag/PR。
+- guard/Sealer tests 先精确产生 6 个 missing-enum compile RED；catalog 后 guard 14/14 GREEN、Sealer 恰好保留
+  1 个 above-boundary RED，真正 `sealNode` Text Run scalar reservation 后 Sealer 12/12 GREEN。
+- empty Canvas prefix 1000000 仍 seal；一个非 BMP scalar + `e`/combining acute/LF 三个 scalars 在 prefix 999996
+  后 exact 到达上限，prefix 999997 后于第二个 Run exact reject；同时证明不按 UTF-16、不 normalization、LF
+  与 `visible:false/opacity:0` 均照常计数。
+- focused 101/101；受影响 reactor Schema 20、Validation 13、Template 84、Asset 92、Rendering 225 全绿，
+  `git diff --check` 通过。A1 `render` `.sdlc/evidence/20260829-062042-render/`（2/2）与 `fast`
+  `.sdlc/evidence/20260829-062129-fast/`（3/3）metadata 均 passed，既有 RenderDocument replay 83/83。
+- cap-021 不执行 Evaluator/Sealer，故无 T152-specific A2/A3；J0 pending、J1 未批准。未重复 server/full，provider
+  attempts/API Key reads/真实数据/Profile registration/push/tag/PR 均为 0。
+- 状态回填后的 resolution `fast` `.sdlc/evidence/20260829-062243-fast/` metadata 为 passed，3/3 steps 全绿。
