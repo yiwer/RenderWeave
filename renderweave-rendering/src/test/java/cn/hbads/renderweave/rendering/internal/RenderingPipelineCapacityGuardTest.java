@@ -72,4 +72,25 @@ class RenderingPipelineCapacityGuardTest {
         assertEquals("closureAndExpansion.repeatNestingDepth",
                 problem.limitId().orElseThrow().value());
     }
+
+    @Test
+    void loopFramesBoundaryUsesTheFrozenProductionGuardContract() {
+        var guard = new RenderingPipelineCapacityGuard();
+
+        assertTrue(guard.admit(
+                RenderingPipelineCapacityGuard.Limit.LOOP_FRAMES_TOTAL,
+                9_999).isEmpty());
+        assertTrue(guard.admit(
+                RenderingPipelineCapacityGuard.Limit.LOOP_FRAMES_TOTAL,
+                10_000).isEmpty());
+
+        var problem = guard.admit(
+                        RenderingPipelineCapacityGuard.Limit.LOOP_FRAMES_TOTAL,
+                        10_001)
+                .orElseThrow();
+        assertEquals(EvaluationStage.MATERIALIZATION, problem.stage());
+        assertEquals(ProblemCode.EVALUATION_BUDGET_EXCEEDED, problem.code());
+        assertEquals("closureAndExpansion.loopFramesTotal",
+                problem.limitId().orElseThrow().value());
+    }
 }

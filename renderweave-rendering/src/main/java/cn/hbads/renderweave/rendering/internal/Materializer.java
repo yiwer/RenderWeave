@@ -111,6 +111,7 @@ final class Materializer {
     private int nodes;
     private int invocations;
     private int compositionViewports;
+    private int loopFrames;
     private int resolves;
 
     private Materializer(
@@ -315,6 +316,10 @@ final class Materializer {
         var itemNodes = new ArrayList<MaterializedNode>(itemList.size());
         var index = 0;
         for (var item : itemList) {
+            capacityFailure = reserveLoopFrame();
+            if (capacityFailure != null) {
+                return capacityFailure;
+            }
             capacityFailure = reserveMaterializedNode();
             if (capacityFailure != null) {
                 return capacityFailure;
@@ -719,6 +724,13 @@ final class Materializer {
         return capacityFailure(CAPACITY_GUARD.admit(
                 RenderingPipelineCapacityGuard.Limit.COMPOSITION_VIEWPORTS,
                 compositionViewports));
+    }
+
+    private MaterializationOutcome reserveLoopFrame() {
+        loopFrames++;
+        return capacityFailure(CAPACITY_GUARD.admit(
+                RenderingPipelineCapacityGuard.Limit.LOOP_FRAMES_TOTAL,
+                loopFrames));
     }
 
     private static MaterializationFailed capacityFailure(

@@ -3651,3 +3651,28 @@
 - frozen candidate fixture 尚无正式 product target/executor replay，故无 T141-specific A2；A3 无，J0 pending、
   J1 未批准。provider attempts/API Key reads/真实数据/Profile registration/push/tag/PR 均为 0。
 - 状态回填后的 resolution `fast` `.sdlc/evidence/20260829-035052-fast/` metadata 为 passed，3/3 steps 全绿。
+
+# 2026-08-29 Template-v1 T142 request-total Loop frames（resolved / automated_verified）
+
+- T141 已以 verified commit `4932ff27` 收口，worktree clean 且 DAG 无其他 active claim；现按 single-writer 登记并
+  claim T142。
+- 机器 authority 固定 `closureAndExpansion.loopFramesTotal` 为 MAX_INCLUSIVE `10000`，observed
+  `9999/10000/10001`，SERIAL_MATERIALIZATION / public MATERIALIZATION / EVALUATION_BUDGET_EXCEEDED /
+  ZERO_DOCUMENT_OUTPUT，primary requirement `RW-T19-S7-078`。
+- 每个 actual Repeat item 在 frame 创建、generated node 与 descendant pruning/demand 前 request-global 计数；
+  zero collection 为 0，sibling/nested/TemplateUse child 累计。第 10001 item 必须零 partial document，final
+  loop-domain capability supply 为 0。沿用唯一 internal guard，不新增产品 API/SPI/config。
+- `RW-T19-S7-079` 的 logical-operation half 仍留给后续 exact axis；claim 时 A0、J0，不运行 provider、不读取 API Key、
+  不发送真实数据，不 push/tag/PR。
+- behavioral RED：10001-frame public tracer 在生产未改时预期 `Rejected`、实际 `SealedDocument`。唯一 internal
+  guard 现含 `LOOP_FRAMES_TOTAL=10000`，`Materializer` request-local counter 在 frame/node/descendant work 前预留；
+  9999/10000 seal，第 10001 个 exact MATERIALIZATION / EVALUATION_BUDGET_EXCEEDED /
+  `closureAndExpansion.loopFramesTotal`，final loop-domain Random supply 为 0，零 document/output。
+- zero-prefix + 10000 actual frames 成功；1000 outer ×10 inner exact overflow 且不返回前缀；isolated guard 重放
+  9999/10000/10001。focused 72/72；受影响 reactor Schema 20、Validation 13、Template 84、Asset 92、Rendering
+  197 全绿；`git diff --check` 通过。
+- A1 `render` `.sdlc/evidence/20260829-035916-render/`（2/2）与 `fast`
+  `.sdlc/evidence/20260829-040003-fast/`（3/3）metadata 均 `passed`。无 T142-specific A2/A3，J0 pending、J1
+  未批准；logical-operation half 仍明确 deferred。未重复 server/full，provider attempts/API Key reads/真实数据/
+  Profile registration/push/tag/PR 均为 0。
+- 状态回填后的 resolution `fast` `.sdlc/evidence/20260829-040209-fast/` metadata 为 passed，3/3 steps 全绿。

@@ -27,7 +27,9 @@ final class RenderingPipelineCapacityGuard {
         REPEAT_COLLECTION_ITEMS_PER_OCCURRENCE(
                 "closureAndExpansion.repeatCollectionItemsPerOccurrence", 1_000),
         REPEAT_NESTING_DEPTH(
-                "closureAndExpansion.repeatNestingDepth", 8);
+                "closureAndExpansion.repeatNestingDepth", 8),
+        LOOP_FRAMES_TOTAL(
+                "closureAndExpansion.loopFramesTotal", 10_000);
 
         private final String id;
         private final long maximumInclusive;

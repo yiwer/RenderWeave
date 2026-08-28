@@ -907,6 +907,56 @@ class EvaluatorContractTest {
     }
 
     @Test
+    void loopFramesAboveLimitRejectsBeforeTheTenThousandAndFirstFrame() {
+        var runtime = new SupplyingCapabilityRuntime();
+        var evaluator = evaluator(
+                closureWith(loopFrameCapacityDocument(10_001, true)),
+                resolver(),
+                new RecordingCapabilityStateStore(),
+                runtime);
+
+        assertLoopFrameRejected(evaluator);
+        assertEquals(0, runtime.supplyCalls);
+    }
+
+    @Test
+    void loopFramesBelowLimitIsAccepted() {
+        assertLoopFramesAccepted(loopFrameCapacityDocument(9_999, false));
+    }
+
+    @Test
+    void loopFramesAtLimitIsAccepted() {
+        assertLoopFramesAccepted(loopFrameCapacityDocument(10_000, false));
+    }
+
+    @Test
+    void zeroCollectionDoesNotConsumeALoopFrame() {
+        assertLoopFramesAccepted(loopFrameCapacityDocument(10_000, false, true));
+    }
+
+    @Test
+    void nestedLoopFramesShareTheRequestTotalAndNeverReturnAPrefix() {
+        assertLoopFrameRejected(evaluator(
+                closureWith(nestedLoopFrameOverflowDocument()), resolver()));
+    }
+
+    private static void assertLoopFramesAccepted(String document) {
+        assertInstanceOf(EvaluationOutcome.SealedDocument.class,
+                evaluator(closureWith(document), resolver())
+                        .evaluate(command("{\"rootDocument\":{}}")));
+    }
+
+    private static void assertLoopFrameRejected(CanonicalEvaluator evaluator) {
+        var rejected = assertInstanceOf(EvaluationOutcome.Rejected.class,
+                evaluator.evaluate(command("{\"rootDocument\":{}}")));
+        assertEquals(EvaluationStage.MATERIALIZATION, rejected.stage());
+        assertEquals(RenderingProblem.ProblemCode.EVALUATION_BUDGET_EXCEEDED,
+                rejected.problem().code());
+        assertEquals("closureAndExpansion.loopFramesTotal",
+                rejected.problem().limitId().orElseThrow().value());
+    }
+
+    @Test
     void evaluateSealsDocumentEndToEnd() {
         var evaluator = evaluator(closureWith(canvasWithRect()), resolver());
 
@@ -1985,6 +2035,89 @@ class EvaluatorContractTest {
     private static String capacityPackPlacement() {
         return "{\"type\":\"PACK\",\"widthMode\":\"FIXED\",\"widthMm\":10,"
                 + "\"heightMode\":\"FIXED\",\"heightMm\":10}";
+    }
+
+    private static String loopFrameCapacityDocument(
+            int totalFrames, boolean demandInLastFrame) {
+        return loopFrameCapacityDocument(totalFrames, demandInLastFrame, false);
+    }
+
+    private static String loopFrameCapacityDocument(
+            int totalFrames, boolean demandInLastFrame, boolean includeZeroPrefix) {
+        if (totalFrames < 1) {
+            throw new IllegalArgumentException("totalFrames must be positive");
+        }
+        var repeatCount = Math.ceilDiv(totalFrames, 1_000);
+        var finalLoopId = capacityUuid(5, repeatCount);
+        var definitionId = capacityUuid(7, 999);
+        var repeats = new ArrayList<String>(repeatCount + (includeZeroPrefix ? 1 : 0));
+        if (includeZeroPrefix) {
+            repeats.add(loopFrameRepeat(900, 0, prunedCapacityRect(900)));
+        }
+        var remaining = totalFrames;
+        for (var identity = 1; identity <= repeatCount; identity++) {
+            var itemCount = Math.min(1_000, remaining);
+            var finalRepeat = identity == repeatCount;
+            var child = demandInLastFrame && finalRepeat
+                    ? demandedCapacityRect(identity, definitionId)
+                    : prunedCapacityRect(identity);
+            repeats.add(loopFrameRepeat(identity, itemCount, child));
+            remaining -= itemCount;
+        }
+        var document = canvasWithChildren(String.join(",", repeats));
+        if (!demandInLastFrame) {
+            return document;
+        }
+        var definition = "{\"definitionId\":\"" + definitionId
+                + "\",\"kind\":\"expression\",\"displayName\":\"Final draw\","
+                + "\"domain\":{\"kind\":\"loop\",\"loopId\":\"" + finalLoopId
+                + "\"},\"output\":\"decimal\",\"inputs\":[{\"alias\":\"draw\","
+                + "\"source\":{\"kind\":\"capability\",\"capability\":\"RANDOM\","
+                + "\"operation\":\"UNIFORM_DECIMAL_0_1\"}}],\"source\":\"input.draw\"}";
+        return document.replace("\"definitions\":[]", "\"definitions\":[" + definition + "]");
+    }
+
+    private static String nestedLoopFrameOverflowDocument() {
+        var inner = loopFrameRepeat(2, 10, prunedCapacityRect(3), false);
+        var outer = loopFrameRepeat(1, 1_000, inner, true);
+        return canvasWithChildren(outer);
+    }
+
+    private static String loopFrameRepeat(int identity, int itemCount, String child) {
+        return loopFrameRepeat(identity, itemCount, child, true);
+    }
+
+    private static String loopFrameRepeat(
+            int identity, int itemCount, String child, boolean absolutePlacement) {
+        return "{\"nodeId\":\"" + capacityUuid(4, identity)
+                + "\",\"kind\":\"repeat\",\"bindings\":[],"
+                + "\"placement\":"
+                + (absolutePlacement ? capacityAbsolutePlacement() : capacityPackPlacement()) + ","
+                + "\"loopId\":\"" + capacityUuid(5, identity) + "\","
+                + "\"absentPolicy\":\"ERROR\",\"items\":{\"kind\":\"literal\","
+                + "\"valueType\":{\"type\":\"list\",\"items\":\"text\"},"
+                + "\"value\":" + repeatedTextItems(itemCount) + "},"
+                + "\"itemLayout\":{\"kind\":\"STACK\",\"direction\":\"ROW\"},"
+                + "\"instanceLayout\":{\"kind\":\"STACK\",\"direction\":\"ROW\"},"
+                + "\"children\":[" + child + "]}";
+    }
+
+    private static String prunedCapacityRect(int identity) {
+        return "{\"nodeId\":\"" + capacityUuid(3, identity)
+                + "\",\"kind\":\"rect\",\"render\":false,\"bindings\":[],"
+                + "\"placement\":" + capacityPackPlacement() + ","
+                + "\"fill\":{\"color\":\"#FF000000\"}}";
+    }
+
+    private static String demandedCapacityRect(int identity, String definitionId) {
+        return "{\"nodeId\":\"" + capacityUuid(3, identity)
+                + "\",\"kind\":\"rect\",\"bindings\":[{\"bindingId\":\""
+                + capacityUuid(8, identity) + "\",\"targetPropertyRef\":{"
+                + "\"rootPropertyId\":\"placement\",\"selectors\":[{\"kind\":\"member\","
+                + "\"name\":\"widthMm\"}]},\"source\":{\"kind\":\"definition\","
+                + "\"definitionId\":\"" + definitionId + "\"}}],"
+                + "\"placement\":" + capacityPackPlacement() + ","
+                + "\"fill\":{\"color\":\"#FF000000\"}}";
     }
 
     private static String canvasWithRect() {

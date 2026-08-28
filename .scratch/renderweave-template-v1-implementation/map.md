@@ -880,6 +880,11 @@ Label: wayfinder:map
   `+1`、MAX_INCLUSIVE `8`，公开 Evaluator seam 重放 `7/8/9`；sibling 不累计、render:false 不进入，TemplateUse
   只隔离 lexical frame 而不能重置物理 depth。focused 66/66、Rendering 191/191 与 render/fast metadata 全绿；
   A1、无 ticket-specific A2、J0。
+- [T142 — 强制 request-total Loop frames 容量](issues/142-loop-frames-total-capacity.md)
+  — **resolved / automated_verified**；按 `RW-T19-S7-078` 在每个 Repeat item frame 创建和 descendant pruning 前执行
+  request-global reservation，MAX_INCLUSIVE `10000`，公开 Evaluator seam 重放 `9999/10000/10001` 与 nested
+  overflow；零项不收费，第 10001 个在 capability supply 前 exact fail。focused 72/72、Rendering 197/197 与
+  render/fast metadata 全绿；A1、无 ticket-specific A2、J0。
 
 - 改写或重解释现有 Schema/Inference v1 已提交历史，或在 dirty main 上直接实施 Template。
 - Workspace、组织/成员/分享/协作、跨 ownerScope 复制、通用 connector、任意 SQL/HTTP/文件/脚本、插件节点或运行时代码注册。

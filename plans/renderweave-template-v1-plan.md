@@ -5139,3 +5139,34 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
 - frozen candidate fixture 尚无正式 product target/executor replay，故无 T141-specific A2；A3 无，J0 pending、
   J1 未批准。provider attempts/API Key reads/真实数据/Profile registration/push/tag/PR 均为 0。
 - 状态回填后的 resolution `fast` `.sdlc/evidence/20260829-035052-fast/` metadata 为 `passed`，3/3 steps 全绿。
+
+## 142. TV1-T142 执行卡
+
+- 状态：`resolved / automated_verified`；single writer: Codex；blocked by T21/T141（均 resolved）。
+- authority：`closureAndExpansion.loopFramesTotal` 为 MAX_INCLUSIVE `10000`，observed `9999/10000/10001`，
+  contract stage SERIAL_MATERIALIZATION、public stage MATERIALIZATION、code EVALUATION_BUDGET_EXCEEDED、zero
+  boundary ZERO_DOCUMENT_OUTPUT；primary requirement `RW-T19-S7-078`。
+- 语义：每个 actual Repeat item 在 frame construction、generated node、descendant pruning/demand 前消费一个
+  request-global单位；即使 item 最终零 surviving children 也计数。zero collection 为 0；sibling/nested Repeat 与
+  TemplateUse child invocation 累计；第 10001 个必须零 partial document first-fail。
+- seam：扩展唯一 package-internal `RenderingPipelineCapacityGuard`；`Materializer` request-local counter 通过
+  `reserveLoopFrame()` 先于 `withLoopFrame`。平铺 fixture 用每 occurrence ≤1000 的多个 Repeat；above final item
+  capability supply 必须为 0；1000×10 nested fixture 证明不按 occurrence 或 depth 重置。
+- TDD：先让 10001-frame public tracer 错误 seal 形成 behavioral RED，再最小接线；补 9999/10000 success、nested
+  overflow 与 isolated guard 9999/10000/10001。`RW-T19-S7-079` 的 logical-operation half 留给后续 exact axis，
+  本票不提前宣称完成。
+- 验证 focused、受影响 reactor、render/fast；无 app wiring/API/Web/migration/Profile 变化，不重复 full，server
+  留到周期性容量批次。禁止影响后续容量轴、正式 Ticket 19 records/product executor、provider/API Key/真实数据/
+  Profile registration/push/tag/PR；最高 `automated_verified`，当前 A1、J0。
+- behavioral RED 已证明生产缺口：10001-frame tracer 预期 `Rejected`、实际 `SealedDocument`。唯一 guard 增加
+  `LOOP_FRAMES_TOTAL=10000`，`Materializer.reserveLoopFrame()` 在 frame/node/descendant work 前做 request-global
+  reservation；9999/10000 seal，第 10001 个 exact MATERIALIZATION / EVALUATION_BUDGET_EXCEEDED /
+  `closureAndExpansion.loopFramesTotal`，final loop-domain Random supply 为 0。
+- zero-prefix + 10000 actual frames 成功；1000×10 nested fixture exact overflow 且无 partial document；isolated guard
+  重放 9999/10000/10001。focused 72/72；受影响 reactor Schema 20、Validation 13、Template 84、Asset 92、
+  Rendering 197 全绿；`git diff --check` 通过。
+- A1 `render` `.sdlc/evidence/20260829-035916-render/`（2/2）与 `fast`
+  `.sdlc/evidence/20260829-040003-fast/`（3/3）metadata 均 `passed`。无 T142-specific A2/A3，J0 pending、J1
+  未批准；`RW-T19-S7-079` logical-operation half 仍留给后续 exact axis。未重复 server/full，provider attempts/API
+  Key reads/真实数据/Profile registration/push/tag/PR 均为 0。
+- 状态回填后的 resolution `fast` `.sdlc/evidence/20260829-040209-fast/` metadata 为 `passed`，3/3 steps 全绿。
