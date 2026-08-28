@@ -865,6 +865,11 @@ Label: wayfinder:map
   Repeat、sibling 与 SKIP 不累计。MAX_INCLUSIVE `16`；公开 Evaluator seam 以 scripted frozen chain 取得 depth 17
   错误 seal RED，再实现 exact MATERIALIZATION / EVALUATION_BUDGET_EXCEEDED / full limitId 零文档边界；depth
   15/16 成功。Evaluator 54/54、Rendering 179/179 与 render/fast/server metadata 全绿。A1、J0。
+- [T139 — 强制 compositionViewport 容量与生产 guard seam](issues/139-composition-viewport-capacity.md)
+  — **resolved / automated_verified**；已物化冻结 `renderweave-rendering-pipeline-capacity-guard/1.0` internal seam，
+  隔离重放被 actual-invocation 轴支配的 compositionViewports `255/256/257`，并把 Materializer authoritative
+  counter、T137/T138 已有判断接入唯一 catalog。guard/Evaluator/architecture 61/61、Rendering 180/180，render/
+  fast metadata 全绿；无正式 product executor/A2，J0。
 
 - 改写或重解释现有 Schema/Inference v1 已提交历史，或在 dirty main 上直接实施 Template。
 - Workspace、组织/成员/分享/协作、跨 ownerScope 复制、通用 connector、任意 SQL/HTTP/文件/脚本、插件节点或运行时代码注册。

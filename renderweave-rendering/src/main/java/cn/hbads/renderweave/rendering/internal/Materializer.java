@@ -44,8 +44,9 @@ final class Materializer {
     static final int MAX_SIDECAR_ITEMS = 25_000;
     static final int MAX_ACTUAL_RESOLVE_OCCURRENCES = 2_048;
     static final int MAX_RESOURCE_ENTRIES = 2_048;
-    static final int MAX_TEMPLATE_INVOCATIONS = 256;
-    static final int MAX_INVOCATION_DEPTH = 16;
+
+    private static final RenderingPipelineCapacityGuard CAPACITY_GUARD =
+            new RenderingPipelineCapacityGuard();
 
     record MaterializedTree(
             MaterializedNode root,
@@ -109,6 +110,7 @@ final class Materializer {
     private int occurrences;
     private int nodes;
     private int invocations;
+    private int compositionViewports;
     private int resolves;
 
     private Materializer(
@@ -611,7 +613,11 @@ final class Materializer {
             return failed(EvaluationStage.MATERIALIZATION, ProblemCode.RENDER_INTERNAL_ERROR, null);
         }
         var usePath = path + "/templateUse(" + targetId.value() + ")";
-        var capacityFailure = reserveMaterializedNode();
+        var capacityFailure = reserveCompositionViewport();
+        if (capacityFailure != null) {
+            return capacityFailure;
+        }
+        capacityFailure = reserveMaterializedNode();
         if (capacityFailure != null) {
             return capacityFailure;
         }
@@ -682,18 +688,28 @@ final class Materializer {
     }
 
     private MaterializationOutcome reserveTemplateInvocation(int invocationDepth) {
-        if (invocationDepth > MAX_INVOCATION_DEPTH) {
-            return failed(EvaluationStage.MATERIALIZATION,
-                    ProblemCode.EVALUATION_BUDGET_EXCEEDED,
-                    "closureAndExpansion.invocationDepth");
+        var capacityFailure = capacityFailure(CAPACITY_GUARD.admit(
+                RenderingPipelineCapacityGuard.Limit.INVOCATION_DEPTH,
+                invocationDepth));
+        if (capacityFailure != null) {
+            return capacityFailure;
         }
         invocations++;
-        if (invocations > MAX_TEMPLATE_INVOCATIONS) {
-            return failed(EvaluationStage.MATERIALIZATION,
-                    ProblemCode.EVALUATION_BUDGET_EXCEEDED,
-                    "closureAndExpansion.actualTemplateInvocations");
-        }
-        return null;
+        return capacityFailure(CAPACITY_GUARD.admit(
+                RenderingPipelineCapacityGuard.Limit.ACTUAL_TEMPLATE_INVOCATIONS,
+                invocations));
+    }
+
+    private MaterializationOutcome reserveCompositionViewport() {
+        compositionViewports++;
+        return capacityFailure(CAPACITY_GUARD.admit(
+                RenderingPipelineCapacityGuard.Limit.COMPOSITION_VIEWPORTS,
+                compositionViewports));
+    }
+
+    private static MaterializationFailed capacityFailure(
+            Optional<RenderingProblem> problem) {
+        return problem.map(value -> new MaterializationFailed(value.stage(), value)).orElse(null);
     }
 
     // ------------------------------------------------------------------

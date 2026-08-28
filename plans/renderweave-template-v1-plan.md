@@ -5030,3 +5030,38 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
 - candidate oracles `ORC::CAPACITY::000184..000186` 非正式 issued product executor 记录，不声明 ticket-specific
   A2；A3 无，J0 pending、J1 未批准。provider/API Key/费用/真实数据/Profile registration/push/tag/PR 均为 0。
 - 状态回填后的 resolution `fast` `.sdlc/evidence/20260829-031714-fast/` metadata 仍为 `passed`。
+
+## 139. TV1-T139 执行卡
+
+- 状态：`resolved / automated_verified`；single writer: Codex；blocked by T21/T137/T138（均 resolved）。
+- 决策：机器 authority 将 `closureAndExpansion.compositionViewports` 固定为 MAX_INCLUSIVE `256`、contract stage
+  `SERIAL_MATERIALIZATION`、public stage `MATERIALIZATION`、code `EVALUATION_BUDGET_EXCEEDED`、zero boundary
+  `ZERO_DOCUMENT_OUTPUT`，requirement 为 `RW-T19-S7-075`。
+- 被支配关系：root-counted `actualTemplateInvocations=256` 会在完整 Evaluation 中先于第 256 个 child viewport
+  拒绝。冻结夹具因此指定 `RENDERING_PIPELINE_CAPACITY_GUARD` 隔离 entrypoint，并明确不运行 Evaluator/Sealer；
+  本票不伪造跨轴非法 payload，也不改上游 limit。
+- seam：新增 package-internal、无 I/O 的 `renderweave-rendering-pipeline-capacity-guard/1.0` 深模块；隔离 fixture 与
+  `Materializer` authoritative counter 调用同一窄 Interface。T137/T138 已有判断机械迁入，避免重复 guard；不新增
+  产品 API/SPI/config/test override/正式 executor。
+- TDD：先让 `255/256/257` contract tracer 因 seam 缺失 RED，再最小实现；随后接入 viewport reservation，复跑
+  现有 255-viewports、SKIP、invocation total/depth 产品回归。验证 focused Rendering、`render`、`fast`；无 app
+  wiring/API/Web/migration/Profile 变化，本内部容量票不重复 full，server 留到周期性批次。
+- 禁止影响：正式 Ticket 19 records/product target、其他容量轴、route/OpenAPI/Web/Profile、provider/API Key/
+  真实数据/push/tag/PR；最高 `automated_verified`，当前 A0、J0。
+
+### TV1-T139 resolution evidence
+
+- 实现：package-internal `RenderingPipelineCapacityGuard` 是冻结 contract 的唯一 catalog；compositionViewports
+  MAX_INCLUSIVE `256`，`255/256` admitted，`257` 返回 exact MATERIALIZATION /
+  EVALUATION_BUDGET_EXCEEDED / full limitId。`Materializer` 在 viewport node reservation 前累计并调用该 seam；
+  T137/T138 的 actual-invocation/depth 内联判断同步机械迁入，避免 duplicate guard。
+- TDD：生产 seam 缺失时新 tracer 以 4 个 javac symbol error RED；最小 GREEN 后 boundary 1/1。guard + Evaluator +
+  architecture 61/61；受影响 reactor Schema 20、Validation 13、Template 84、Asset 92、Rendering 180 全绿，
+  `git diff --check` 通过。
+- A1 `render` `.sdlc/evidence/20260829-032705-render/`（2/2）与 `fast`
+  `.sdlc/evidence/20260829-032818-fast/`（3/3）metadata 均 `passed`。无 app wiring/API/Web/migration/Profile 变化，
+  按快速迭代约定未重复 server/full。
+- candidate fixture 尚无正式 product target/executor replay，故无 T139-specific A2；A3 无，J0 pending、J1 未批准。
+  provider attempts/API Key reads/真实数据/Profile registration/push/tag/PR 均为 0。
+- 状态回填后的 resolution `fast` `.sdlc/evidence/20260829-032929-fast/` metadata 为 `passed`，3/3 steps
+  全绿。
