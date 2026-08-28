@@ -167,6 +167,10 @@ final class Materializer {
             return failed(EvaluationStage.TEMPLATE_CLOSURE, ProblemCode.RENDER_INTERNAL_ERROR, null);
         }
 
+        var invocationFailure = materializer.reserveTemplateInvocation();
+        if (invocationFailure != null) {
+            return invocationFailure;
+        }
         var rootScope = new InvocationScope(
                 admittedInput.rootDocument(),
                 admittedInput.customs(),
@@ -511,12 +515,6 @@ final class Materializer {
     private MaterializationOutcome expandTemplateUse(
             ObjectNode node, TemplateSnapshot snapshot, InvocationScope scope,
             String path, List<MaterializedNode> output) {
-        invocations++;
-        if (invocations > MAX_TEMPLATE_INVOCATIONS) {
-            return failed(EvaluationStage.MATERIALIZATION,
-                    ProblemCode.TEMPLATE_CLOSURE_LIMIT_EXCEEDED,
-                    "closureAndExpansion.actualTemplateInvocations");
-        }
         var templateRef = node.members().get("templateRef");
         if (!(templateRef instanceof ObjectNode refObject)
                 || !(refObject.members().get("templateId") instanceof Text targetId)
@@ -595,6 +593,10 @@ final class Materializer {
                 childCustoms.put(target.value(), ((EvalValue) value).value());
             }
         }
+        var invocationFailure = reserveTemplateInvocation();
+        if (invocationFailure != null) {
+            return invocationFailure;
+        }
         var childScope = new InvocationScope(
                 childContext, Map.copyOf(childCustoms), childEngine,
                 DefinitionEngine.LoopFrames.EMPTY, capabilities,
@@ -629,7 +631,9 @@ final class Materializer {
     }
 
     private MaterializationOutcome contextFailure(ObjectNode node, String path) {
-        if ("SKIP".equals(textMember(node, "contextAbsentPolicy"))) {
+        var selector = node.members().get("contextSelector");
+        if (selector instanceof ObjectNode selectorObject
+                && "SKIP".equals(textMember(selectorObject, "contextAbsentPolicy"))) {
             return null;
         }
         return failed(EvaluationStage.MATERIALIZATION, ProblemCode.EVALUATION_FAILED, null);
@@ -669,6 +673,16 @@ final class Materializer {
             return failed(EvaluationStage.MATERIALIZATION,
                     ProblemCode.RENDER_DOCUMENT_LIMIT_EXCEEDED,
                     "closureAndExpansion.renderOccurrences");
+        }
+        return null;
+    }
+
+    private MaterializationOutcome reserveTemplateInvocation() {
+        invocations++;
+        if (invocations > MAX_TEMPLATE_INVOCATIONS) {
+            return failed(EvaluationStage.MATERIALIZATION,
+                    ProblemCode.EVALUATION_BUDGET_EXCEEDED,
+                    "closureAndExpansion.actualTemplateInvocations");
         }
         return null;
     }

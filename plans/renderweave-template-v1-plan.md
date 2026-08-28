@@ -4969,3 +4969,35 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
   API Key reads/reservations/cost/真实数据/Profile registration/push/tag/PR 均为 0。
 - 状态回填后的 resolution `fast` `.sdlc/evidence/20260829-021815-fast/` metadata 仍为 `passed`，3/3 steps
   全绿。
+
+## 137. TV1-T137 执行卡
+
+- 状态：`resolved / automated_verified`；single writer: Codex；blocked by T21/T136（均 resolved）。
+- 决策：T136 verified commit `e6f88e48` 后 worktree clean 且无其他 active claim。机器 capacity coverage 将
+  `closureAndExpansion.actualTemplateInvocations` 固定为 MAX_INCLUSIVE `256`、contract stage
+  `SERIAL_MATERIALIZATION`、public stage `MATERIALIZATION`、code `EVALUATION_BUDGET_EXCEEDED`，reservation point
+  是创建下一 invocation/frame 前，zero boundary 为 `ZERO_DOCUMENT_OUTPUT`。
+- 计数语义：root invocation/frame 计一份；每个 surviving TemplateUse 在 selector 非 SKIP、fills 成功后、child
+  frame 创建前计一份。render:false/false/empty/SKIP 不消费；shared snapshot 的实际 occurrence 不共享计数。
+- seam：沿用 ADR-0044 公开 `Evaluator.evaluate`。root+254/255/256 child 隔离 observed `255/256/257`；再以
+  Repeat 中大量 SKIP + 一个实际 child 固定 SKIP 零计费。不新增 API/SPI/config/probe。
+- TDD：先取得 above-limit 错误成功 RED，最小加入 root reservation 并纠正 code；再取得 SKIP 被错误计费 RED，
+  后移 child reservation。focused 后跑 Rendering、render/fast/顺序 server。
+- 禁止影响：正式 Ticket 19 records/executor、其余动态容量轴、route/OpenAPI/Web/migration/Profile、provider/
+  API Key/真实数据/push/tag/PR；最高 `automated_verified`，当前 A1、J0。
+- 实现：root frame 与 surviving child frame 共用 request-local exact reservation；child reservation 在 selector 非
+  SKIP、fills 成功后、`InvocationScope` 前执行。同步纠正 canonical
+  `contextSelector.contextAbsentPolicy` 的 nested 读取，SKIP 不创建 frame、不计费。第 257 次 exact
+  MATERIALIZATION / EVALUATION_BUDGET_EXCEEDED / full limitId fail closed。
+- TDD：48-test above-limit 错误 seal 形成首个真实 RED，root/code 最小修复后 48/48；SKIP tracer 先暴露 policy
+  读取错误，纠正后精确形成 invocation-budget RED，后移 reservation 后 49/49；补 below/at 后 Evaluator
+  51/51。受影响 reactor Schema 20、Validation 13、Template 84、Asset 92、Rendering 176 均零失败，
+  `git diff --check` 通过。
+- A1：`render` `.sdlc/evidence/20260829-023216-render/`、`fast`
+  `.sdlc/evidence/20260829-023305-fast/`、顺序 `server`
+  `.sdlc/evidence/20260829-023333-server/` metadata 均 `passed`；server 8-module reactor BUILD SUCCESS，App
+  372/0/0/15。无 API/OpenAPI/Web/migration/Profile 变化，未跑发布级 `full`。
+- 无 T137-specific issued record，故不声明 ticket-specific A2；A3 无，J0 pending、J1 未批准。provider/API Key/
+  费用/真实数据/Profile registration/push/tag/PR 均为 0。
+- 状态回填后的 resolution `fast` `.sdlc/evidence/20260829-025035-fast/` metadata 仍为 `passed`，3/3 steps
+  全绿。

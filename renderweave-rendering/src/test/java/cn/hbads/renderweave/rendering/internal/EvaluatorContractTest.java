@@ -19,6 +19,7 @@ import cn.hbads.renderweave.schema.identity.VersionTag;
 import cn.hbads.renderweave.template.api.DesignDslAuthority;
 import cn.hbads.renderweave.template.api.TemplateApplication;
 import cn.hbads.renderweave.template.api.TemplateClosureAuthority;
+import cn.hbads.renderweave.template.api.TemplateClosureAuthority.ClosureEdge;
 import cn.hbads.renderweave.template.api.TemplateClosureAuthority.ClosureOutcome;
 import cn.hbads.renderweave.template.api.TemplateClosureAuthority.ClosureSnapshot;
 import cn.hbads.renderweave.template.api.TemplateClosureAuthority.TemplateSnapshot;
@@ -35,7 +36,9 @@ import java.nio.charset.StandardCharsets;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
@@ -49,6 +52,7 @@ class EvaluatorContractTest {
     private static final StaticSchemaRef SCHEMA = new StaticSchemaRef(
             SchemaKey.systemProvided("system-empty"), VersionTag.of("v1"));
     private static final String ROOT_ID = "00000000-0000-4000-8000-0000000000a1";
+    private static final String CHILD_ID = "00000000-0000-4000-8000-0000000000c1";
     private static final String AUTH_DIGEST = "sha256:" + "5".repeat(64);
     private static final String DEFAULT_BUDGET_VECTOR = budgetVector(
             4_096, 8_192, 4_096, 4_096, 2_048, 16_777_216, 1_048_576,
@@ -730,6 +734,45 @@ class EvaluatorContractTest {
                 evaluator.evaluate(command(
                         envelope,
                         ExternalAssetReadAuthorization.DENIED)));
+    }
+
+    @Test
+    void actualTemplateInvocationAboveLimitRejectsBeforeTheNextChildFrame() {
+        var evaluator = evaluator(closureWithTemplateUseChildren(256), resolver());
+
+        var rejected = assertInstanceOf(EvaluationOutcome.Rejected.class,
+                evaluator.evaluate(command("{\"rootDocument\":{}}")));
+
+        assertEquals(EvaluationStage.MATERIALIZATION, rejected.stage());
+        assertEquals(RenderingProblem.ProblemCode.EVALUATION_BUDGET_EXCEEDED,
+                rejected.problem().code());
+        assertEquals("closureAndExpansion.actualTemplateInvocations",
+                rejected.problem().limitId().orElseThrow().value());
+    }
+
+    @Test
+    void actualTemplateInvocationBelowLimitIsAccepted() {
+        var evaluator = evaluator(closureWithTemplateUseChildren(254), resolver());
+
+        assertInstanceOf(EvaluationOutcome.SealedDocument.class,
+                evaluator.evaluate(command("{\"rootDocument\":{}}")));
+    }
+
+    @Test
+    void actualTemplateInvocationAtLimitIsAccepted() {
+        var evaluator = evaluator(closureWithTemplateUseChildren(255), resolver());
+
+        assertInstanceOf(EvaluationOutcome.SealedDocument.class,
+                evaluator.evaluate(command("{\"rootDocument\":{}}")));
+    }
+
+    @Test
+    void skippedTemplateUsesDoNotConsumeActualInvocationBudget() {
+        var evaluator = evaluator(closureWithSkippedTemplateUses(256), resolver());
+        var outcome = evaluator.evaluate(command("{\"rootDocument\":{}}"));
+
+        assertInstanceOf(EvaluationOutcome.SealedDocument.class,
+                outcome, outcome::toString);
     }
 
     @Test
@@ -1560,6 +1603,116 @@ class EvaluatorContractTest {
                 1,
                 List.of(snapshot),
                 List.of());
+    }
+
+    private static ClosureSnapshot closureWithTemplateUseChildren(int childCount) {
+        var uses = new ArrayList<String>(childCount);
+        var edges = new ArrayList<ClosureEdge>(childCount);
+        for (var index = 0; index < childCount; index++) {
+            var nodeId = capacityUuid(1, index);
+            var useId = capacityUuid(2, index);
+            uses.add("{\"nodeId\":\"" + nodeId + "\",\"kind\":\"templateUse\","
+                    + "\"bindings\":[],\"useId\":\"" + useId + "\","
+                    + "\"templateRef\":{\"templateId\":\"" + CHILD_ID + "\"},"
+                    + "\"contextSelector\":{\"kind\":\"empty\"},\"fills\":[],"
+                    + "\"placement\":{\"type\":\"ABSOLUTE\",\"xMm\":0,\"yMm\":0,"
+                    + "\"widthMode\":\"FIXED\",\"widthMm\":10,"
+                    + "\"heightMode\":\"FIXED\",\"heightMm\":10}}");
+            edges.add(new ClosureEdge(
+                    new TemplateApplication.TemplateId(ROOT_ID),
+                    1,
+                    useId,
+                    new TemplateApplication.TemplateId(CHILD_ID),
+                    1));
+        }
+        var rootSnapshot = snapshot(ROOT_ID, canvasWithChildren(String.join(",", uses)));
+        var childSnapshot = snapshot(CHILD_ID, canvasWithChildren(""));
+        return new ClosureSnapshot(
+                new TemplateClosureAuthority.OwnerScope("owner-a"),
+                rootSnapshot.templateId(),
+                1,
+                List.of(rootSnapshot, childSnapshot),
+                List.copyOf(edges));
+    }
+
+    private static ClosureSnapshot closureWithSkippedTemplateUses(int skippedCount) {
+        var skippedUseId = capacityUuid(4, 1);
+        var actualUseId = capacityUuid(4, 2);
+        var items = String.join(",",
+                java.util.Collections.nCopies(skippedCount, "\"x\""));
+        var skippedUse = "{\"nodeId\":\"" + capacityUuid(3, 2)
+                + "\",\"kind\":\"templateUse\",\"bindings\":[],"
+                + "\"useId\":\"" + skippedUseId + "\","
+                + "\"templateRef\":{\"templateId\":\"" + CHILD_ID + "\"},"
+                + "\"contextSelector\":{\"kind\":\"context\","
+                + "\"domain\":{\"kind\":\"invocation\"},\"pointer\":\"/missing\","
+                + "\"contextAbsentPolicy\":\"SKIP\"},\"fills\":[],"
+                + "\"placement\":{\"type\":\"PACK\",\"widthMode\":\"FIXED\","
+                + "\"widthMm\":10,\"heightMode\":\"FIXED\",\"heightMm\":10}}";
+        var repeat = "{\"nodeId\":\"" + capacityUuid(3, 1)
+                + "\",\"kind\":\"repeat\",\"bindings\":[],"
+                + "\"placement\":{\"type\":\"ABSOLUTE\",\"xMm\":0,\"yMm\":0,"
+                + "\"widthMode\":\"FIXED\",\"widthMm\":10,"
+                + "\"heightMode\":\"FIXED\",\"heightMm\":10},"
+                + "\"loopId\":\"" + capacityUuid(5, 1) + "\","
+                + "\"absentPolicy\":\"ERROR\",\"items\":{\"kind\":\"literal\","
+                + "\"valueType\":{\"type\":\"list\",\"items\":\"text\"},"
+                + "\"value\":[" + items + "]},"
+                + "\"itemLayout\":{\"kind\":\"STACK\",\"direction\":\"ROW\"},"
+                + "\"instanceLayout\":{\"kind\":\"STACK\",\"direction\":\"ROW\"},"
+                + "\"children\":[" + skippedUse + "]}";
+        var actualUse = "{\"nodeId\":\"" + capacityUuid(3, 3)
+                + "\",\"kind\":\"templateUse\",\"bindings\":[],"
+                + "\"useId\":\"" + actualUseId + "\","
+                + "\"templateRef\":{\"templateId\":\"" + CHILD_ID + "\"},"
+                + "\"contextSelector\":{\"kind\":\"empty\"},\"fills\":[],"
+                + "\"placement\":{\"type\":\"ABSOLUTE\",\"xMm\":0,\"yMm\":0,"
+                + "\"widthMode\":\"FIXED\",\"widthMm\":10,"
+                + "\"heightMode\":\"FIXED\",\"heightMm\":10}}";
+        var rootSnapshot = snapshot(
+                ROOT_ID, canvasWithChildren(repeat + "," + actualUse));
+        var childSnapshot = snapshot(CHILD_ID, canvasWithChildren(""));
+        var rootTemplateId = new TemplateApplication.TemplateId(ROOT_ID);
+        var childTemplateId = new TemplateApplication.TemplateId(CHILD_ID);
+        return new ClosureSnapshot(
+                new TemplateClosureAuthority.OwnerScope("owner-a"),
+                rootTemplateId,
+                1,
+                List.of(rootSnapshot, childSnapshot),
+                List.of(
+                        new ClosureEdge(rootTemplateId, 1, skippedUseId, childTemplateId, 1),
+                        new ClosureEdge(rootTemplateId, 1, actualUseId, childTemplateId, 1)));
+    }
+
+    private static TemplateSnapshot snapshot(String templateId, String designDocument) {
+        var admission = TemplateModule.designDslAuthority()
+                .admit(designDocument.getBytes(StandardCharsets.UTF_8));
+        if (!(admission instanceof DesignDslAuthority.Admitted admitted)) {
+            throw new AssertionError("capacity fixture must be admitted: " + admission);
+        }
+        return new TemplateSnapshot(
+                new TemplateApplication.TemplateId(templateId),
+                1,
+                new TemplateClosureAuthority.OwnerScope("owner-a"),
+                SCHEMA,
+                "renderweave-design/1.0",
+                "renderweave-expression/1.0",
+                admitted.canonicalUtf8(),
+                admitted.contentHash());
+    }
+
+    private static String canvasWithChildren(String children) {
+        return "{\"dslVersion\":\"renderweave-design/1.0\","
+                + "\"expressionProfile\":\"renderweave-expression/1.0\","
+                + "\"displayName\":\"R\",\"definitions\":[],"
+                + "\"designRoot\":{\"nodeId\":\"00000000-0000-4000-8000-000000000001\","
+                + "\"kind\":\"canvas\",\"widthMm\":210,\"heightMm\":297,"
+                + "\"bindings\":[],\"children\":[" + children + "]}}";
+    }
+
+    private static String capacityUuid(int namespace, int ordinal) {
+        return String.format(Locale.ROOT,
+                "%d0000000-0000-4000-8000-%012x", namespace, ordinal);
     }
 
     private static String canvasWithRect() {

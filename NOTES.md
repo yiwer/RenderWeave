@@ -3525,3 +3525,30 @@
   API/SPI/DB/Profile，不运行 provider、不读取 API Key、不发送真实数据，不 push/tag/PR。
 - 状态回填后的 resolution `fast` `.sdlc/evidence/20260829-021815-fast/` metadata 仍为 `passed`，3/3 steps
   全绿。
+
+# 2026-08-29 Template-v1 T137 actual Template invocations capacity（resolved / automated_verified）
+
+- T136 已以 verified commit `e6f88e48` 收口且 worktree clean；DAG 无其他 active claim。机器 authority 固定
+  `closureAndExpansion.actualTemplateInvocations` 为 MAX_INCLUSIVE `256`、MATERIALIZATION /
+  EVALUATION_BUDGET_EXCEEDED / ZERO_DOCUMENT_OUTPUT；现有 Materializer 只计 child、在 selector/SKIP 前计费，且
+  错用 `TEMPLATE_CLOSURE_LIMIT_EXCEEDED`。
+- 已按 single-writer 登记并 claim T137：root frame 前预留一次；surviving TemplateUse 在 fills 成功后、child frame
+  前预留，SKIP 不计费。公开 `Evaluator.evaluate` seam 固定 root+254/255/256 child 的 observed 255/256/257，
+  并以大量 SKIP 隔离 reservation point。
+- 不新增 API/SPI/DB/Profile，不发行 Ticket 19 正式 records，不运行 provider、不读取 API Key、不发送真实数据，
+  不 push/tag/PR。当前 A1、J0。
+- 公开 seam TDD 取得两轮真实 RED：48-test 首轮证明 root+256 child 被错误 seal；加入 root reservation 并修正
+  stable code 后 48/48。SKIP tracer 先暴露 `contextAbsentPolicy` 被错误从 TemplateUse 外层读取；按 canonical
+  `contextSelector.contextAbsentPolicy` 纠正后，测试精确转为 invocation-budget RED，再把 child reservation 后移到
+  fills 与 frame 之间后 49/49；补 below/at 后 Evaluator 51/51。
+- 最终实现将 root 与 surviving child 全部纳入 MAX_INCLUSIVE `256`；第 257 个在 frame 创建前以 exact
+  MATERIALIZATION / EVALUATION_BUDGET_EXCEEDED / full limitId 零文档失败，SKIP 零计费。受影响 reactor Schema
+  20、Validation 13、Template 84、Asset 92、Rendering 176 tests 均零失败，`git diff --check` 通过。
+- A1：`render` `.sdlc/evidence/20260829-023216-render/`、`fast`
+  `.sdlc/evidence/20260829-023305-fast/`、顺序 `server`
+  `.sdlc/evidence/20260829-023333-server/` metadata 均 `passed`；server 8-module BUILD SUCCESS，App 372 tests /
+  0 failures / 0 errors / 15 controlled skips。无 API/OpenAPI/Web/migration/Profile 变化，未跑发布级 `full`。
+- 无 T137-specific formally issued record，故不声明 ticket-specific A2；A3 无，J0 pending、J1 未批准。
+  provider attempts/API Key reads/reservations/cost/真实数据/Profile registration/push/tag/PR 均为 0。
+- 状态回填后的 resolution `fast` `.sdlc/evidence/20260829-025035-fast/` metadata 仍为 `passed`，3/3 steps
+  全绿。
