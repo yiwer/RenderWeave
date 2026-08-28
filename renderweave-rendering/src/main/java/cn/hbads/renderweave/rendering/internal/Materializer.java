@@ -1173,14 +1173,21 @@ final class Materializer {
         if (exactContents.contains(identity)) {
             return null;
         }
-        var capacityFailure = capacityFailure(requestCapacity.reserve(
+        var exactContentCountFailure = capacityFailure(requestCapacity.reserve(
                 RenderingPipelineCapacityGuard.Limit
                         .ASSETS_AND_FETCH_UNIQUE_EXACT_CONTENTS,
                 1));
-        if (capacityFailure == null) {
-            exactContents.add(identity);
+        if (exactContentCountFailure != null) {
+            return exactContentCountFailure;
         }
-        return capacityFailure;
+        var uniqueRawByteFailure = capacityFailure(requestCapacity.reserve(
+                RenderingPipelineCapacityGuard.Limit.ASSETS_AND_FETCH_UNIQUE_RAW_BYTES,
+                fact.byteLength()));
+        if (uniqueRawByteFailure != null) {
+            return uniqueRawByteFailure;
+        }
+        exactContents.add(identity);
+        return null;
     }
 
     // ------------------------------------------------------------------

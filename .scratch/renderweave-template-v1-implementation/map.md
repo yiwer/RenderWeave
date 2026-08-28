@@ -979,6 +979,12 @@ Label: wayfinder:map
   超过 2 GiB 的 occurrence 须在 unique-content/RenderResource append/external fetch 前以 ASSET_ADMISSION /
   ASSET_BUDGET_EXCEEDED / exact limitId 零文档失败。focused 122/122、Rendering 243/243 与 render/fast metadata
   全绿；A1、无 ticket-specific A2、J0。
+- [T161 — unique raw bytes 预算](issues/161-unique-raw-bytes-capacity.md)
+  — **resolved / automated_verified**；按 `RW-T19-S8-007` 与 cap-031，将新 exact-content identity 的声明 `byteLength`
+  request-total 累计接入唯一 production guard；相同 identity 的后续 occurrence 不重复收费，第一个使 unique total
+  超过 256 MiB 的 identity 须在 RenderResource append/external fetch 前以 ASSET_ADMISSION /
+  ASSET_BUDGET_EXCEEDED / exact limitId 零文档失败。focused 124/124、Rendering 245/245 与 render/fast metadata
+  全绿；A1、无 ticket-specific A2、J0。
 
 - 改写或重解释现有 Schema/Inference v1 已提交历史，或在 dirty main 上直接实施 Template。
 - Workspace、组织/成员/分享/协作、跨 ownerScope 复制、通用 connector、任意 SQL/HTTP/文件/脚本、插件节点或运行时代码注册。

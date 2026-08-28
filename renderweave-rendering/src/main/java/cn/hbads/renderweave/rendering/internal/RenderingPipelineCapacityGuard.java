@@ -108,6 +108,11 @@ final class RenderingPipelineCapacityGuard {
                 "assetsAndFetch.occurrenceDeclaredRawBytes",
                 2_147_483_648L,
                 ProblemCode.ASSET_BUDGET_EXCEEDED,
+                EvaluationStage.ASSET_ADMISSION),
+        ASSETS_AND_FETCH_UNIQUE_RAW_BYTES(
+                "assetsAndFetch.uniqueRawBytes",
+                268_435_456L,
+                ProblemCode.ASSET_BUDGET_EXCEEDED,
                 EvaluationStage.ASSET_ADMISSION);
 
         private final String id;

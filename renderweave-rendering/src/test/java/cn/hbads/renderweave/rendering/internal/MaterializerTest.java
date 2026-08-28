@@ -709,6 +709,50 @@ class MaterializerTest {
     }
 
     @Test
+    void uniqueRawByteBudgetDeduplicatesExactContentBeforeResourceAppend() {
+        var document = canvasWith(
+                imageNode("00000000-0000-4000-8000-000000000065") + ","
+                        + imageNode("00000000-0000-4000-8000-000000000066"));
+        var exactCapacity = new RenderingPipelineCapacityGuard().newRequestTracker();
+        assertTrue(exactCapacity.reserve(
+                RenderingPipelineCapacityGuard.Limit.ASSETS_AND_FETCH_UNIQUE_RAW_BYTES,
+                268_435_455L).isEmpty());
+        var exactPort = new SequencedContentPort(List.of(
+                new ResolvedContent("content-version-1", "sha256:" + "e".repeat(64), 1),
+                new ResolvedContent("content-version-2", "sha256:" + "e".repeat(64), 1)));
+
+        var exact = materialize(
+                document, Map.of(), exactPort, absentCapability(), exactCapacity);
+
+        var exactTree = assertInstanceOf(Materializer.Materialized.class, exact).tree();
+        assertEquals(2, exactPort.resolves);
+        assertEquals(2, exactTree.resources().size());
+
+        var exceededCapacity = new RenderingPipelineCapacityGuard().newRequestTracker();
+        assertTrue(exceededCapacity.reserve(
+                RenderingPipelineCapacityGuard.Limit.ASSETS_AND_FETCH_UNIQUE_RAW_BYTES,
+                268_435_455L).isEmpty());
+        var exceededPort = new SequencedContentPort(List.of(
+                new ResolvedContent("content-version-1", "sha256:" + "e".repeat(64), 1),
+                new ResolvedContent("content-version-2", "sha256:" + "f".repeat(64), 1)));
+
+        var exceeded = materialize(
+                document, Map.of(), exceededPort, absentCapability(), exceededCapacity);
+
+        var failed = assertInstanceOf(Materializer.MaterializationFailed.class, exceeded);
+        assertEquals(EvaluationStage.ASSET_ADMISSION, failed.stage());
+        assertEquals(RenderingProblem.ProblemCode.ASSET_BUDGET_EXCEEDED,
+                failed.problem().code());
+        assertEquals("assetsAndFetch.uniqueRawBytes",
+                failed.problem().limitId().orElseThrow().value());
+        assertEquals(2, exceededPort.resolves);
+        assertTrue(exceededCapacity.reserve(
+                RenderingPipelineCapacityGuard.Limit
+                        .ASSETS_AND_FETCH_RENDER_RESOURCE_ENTRIES,
+                2_047).isEmpty());
+    }
+
+    @Test
     void missingAssetPortFailsClosedAtAssetAdmission() {
         var document = canvasWith(imageNode());
         var outcome = materialize(document, Map.of(), null);

@@ -4102,3 +4102,26 @@
   T160-specific A2/A3；J0 pending、J1 未批准。未重复 server/full；cap-024 继续 deferred；provider attempts/
   API Key reads/真实数据/Profile registration/push/tag/PR 均为 0。
 - 状态回填后的 resolution `fast` `.sdlc/evidence/20260829-073109-fast/` metadata 为 passed，3/3 steps 全绿。
+
+# 2026-08-29 Template-v1 T161 unique raw bytes（resolved / automated_verified）
+
+- T160 已以 verified commit `fbd9db82` 收口，worktree clean、ahead 151 且 DAG 无其他 current active claim；冻结
+  `RW-T19-S8-007` / cap-031 是下一个 unblocked frontier，现按 single-writer claim T161。
+- `assetsAndFetch.uniqueRawBytes` 固定 MAX_INCLUSIVE `268435456`、observed
+  `268435455/268435456/268435457`，ASSET_ADMISSION_AND_RESOLUTION / public ASSET_ADMISSION /
+  ASSET_BUDGET_EXCEEDED / ZERO_DOCUMENT_OUTPUT，reservation point 为下一 resolved Asset unit 与 external fetch 前。
+- 沿 T159 `(kind, sha256, byteLength, mediaType)` exact identity：新 identity 按声明 bytes 收费一次，duplicate
+  identity 不重复收费但继续消费 occurrence bytes；unique count 成功后、set/resource entry 前预留 raw bytes。
+- claim 时 A0、J0；cap-024 继续 deferred；provider/API Key/真实数据/费用/Profile registration/push/tag/PR 均为 0。
+- guard/Materializer TDD 先得到 5 个缺失 catalog enum 的 compile RED；补唯一 guard 项后 guard 23/23 绿，
+  Materializer 精确保留 1 个 behavioral RED，证明尚未累计 unique raw bytes。
+- `reserveExactContent` 现对新 identity 先预留 count、再按 `byteLength` 预留 unique bytes，均成功才入 set。prefix
+  `268435455` + 两个相同 one-byte identity exact-at；第二项改 hash 时第二次 Resolver 仍执行但新 identity
+  exact reject。失败后 entry tracker 仅含首项，证明 duplicate 零重复收费且下游未消费。
+- focused guard 23 + Materializer 27 + Evaluator 68 + architecture 6 = 124/124；受影响 reactor Schema 20、
+  Validation 13、Template 84、Asset 92、Rendering 245 全绿，零 failure/error；`git diff --check` 通过。
+- A1 `render` `.sdlc/evidence/20260829-073600-render/`（2/2）与 `fast`
+  `.sdlc/evidence/20260829-073649-fast/`（3/3）metadata 均 passed。cap-031 fixture 只执行 guard，故无
+  T161-specific A2/A3；J0 pending、J1 未批准。未重复 server/full；cap-024 继续 deferred；provider attempts/
+  API Key reads/真实数据/Profile registration/push/tag/PR 均为 0。
+- 状态回填后的 resolution `fast` `.sdlc/evidence/20260829-073758-fast/` metadata 为 passed，3/3 steps 全绿。
