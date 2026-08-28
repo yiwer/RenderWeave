@@ -102,29 +102,60 @@ class MaterializerTest {
     }
 
     @Test
-    void repeatGeneratedContainersCountTowardStaticNodeLimit() {
-        var atCollectionLimit = String.join(",",
-                java.util.Collections.nCopies(1_000, "\"x\""));
-        var finalCollection = String.join(",",
-                java.util.Collections.nCopies(995, "\"x\""));
-        var itemLists = new ArrayList<String>();
-        itemLists.addAll(java.util.Collections.nCopies(9, atCollectionLimit));
-        itemLists.add(finalCollection);
-        var document = repeatDocument(itemLists);
+    void materializedStaticNodesBelowLimitAreAccepted() {
+        var tree = materializeOk(
+                repeatDocument(materializedNodeBoundaryItemLists(994)), Map.of(), null);
+
+        assertEquals(19_999, countNodes(tree.root()));
+    }
+
+    @Test
+    void materializedStaticNodesAtLimitAreAccepted() {
+        var tree = materializeOk(
+                repeatDocument(
+                        materializedNodeBoundaryItemLists(994),
+                        rect(capacityUuid(4, 1))),
+                Map.of(), null);
+
+        assertEquals(20_000, countNodes(tree.root()));
+    }
+
+    @Test
+    void repeatGeneratedContainersAboveStaticNodeLimitAreRejected() {
+        var document = repeatDocument(materializedNodeBoundaryItemLists(995));
 
         var outcome = materialize(document, Map.of(), null);
 
         var failed = assertInstanceOf(Materializer.MaterializationFailed.class, outcome);
-        assertEquals(RenderingProblem.ProblemCode.RENDER_DOCUMENT_LIMIT_EXCEEDED,
+        assertEquals(EvaluationStage.MATERIALIZATION, failed.stage());
+        assertEquals(RenderingProblem.ProblemCode.EVALUATION_BUDGET_EXCEEDED,
                 failed.problem().code());
         assertEquals("closureAndExpansion.materializedStaticNodes",
                 failed.problem().limitId().orElseThrow().value());
     }
 
+    private static List<String> materializedNodeBoundaryItemLists(int finalItemCount) {
+        var atCollectionLimit = String.join(",",
+                java.util.Collections.nCopies(1_000, "\"x\""));
+        var finalCollection = String.join(",",
+                java.util.Collections.nCopies(finalItemCount, "\"x\""));
+        var itemLists = new ArrayList<String>();
+        itemLists.addAll(java.util.Collections.nCopies(9, atCollectionLimit));
+        itemLists.add(finalCollection);
+        return List.copyOf(itemLists);
+    }
+
     private static String repeatDocument(List<String> itemLists) {
+        return repeatDocument(itemLists, null);
+    }
+
+    private static String repeatDocument(List<String> itemLists, String trailingNode) {
         var repeats = new ArrayList<String>(itemLists.size());
         for (var index = 0; index < itemLists.size(); index++) {
             repeats.add(repeatNode(index, itemLists.get(index)));
+        }
+        if (trailingNode != null) {
+            repeats.add(trailingNode);
         }
         return "{\"dslVersion\":\"renderweave-design/1.0\","
                 + "\"expressionProfile\":\"renderweave-expression/1.0\","
@@ -132,6 +163,14 @@ class MaterializerTest {
                 + "\"designRoot\":{\"nodeId\":\"00000000-0000-4000-8000-000000000001\","
                 + "\"kind\":\"canvas\",\"widthMm\":210,\"heightMm\":297,\"bindings\":[],"
                 + "\"children\":[" + String.join(",", repeats) + "]}}";
+    }
+
+    private static int countNodes(Materializer.MaterializedNode node) {
+        var count = 1;
+        for (var child : node.children()) {
+            count += countNodes(child);
+        }
+        return count;
     }
 
     private static String repeatNode(int index, String items) {

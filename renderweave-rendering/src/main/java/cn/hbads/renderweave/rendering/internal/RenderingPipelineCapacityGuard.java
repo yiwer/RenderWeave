@@ -31,7 +31,9 @@ final class RenderingPipelineCapacityGuard {
         LOOP_FRAMES_TOTAL(
                 "closureAndExpansion.loopFramesTotal", 10_000),
         RENDER_OCCURRENCES(
-                "closureAndExpansion.renderOccurrences", 25_000);
+                "closureAndExpansion.renderOccurrences", 25_000),
+        MATERIALIZED_STATIC_NODES(
+                "closureAndExpansion.materializedStaticNodes", 20_000);
 
         private final String id;
         private final long maximumInclusive;

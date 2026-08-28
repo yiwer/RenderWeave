@@ -5198,3 +5198,33 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
   明确不执行 Evaluator/Sealer，故无 T143-specific A2/A3；J0 pending、J1 未批准。未重复 server/full，provider
   attempts/API Key reads/真实数据/Profile registration/push/tag/PR 均为 0。
 - 状态回填后的 resolution `fast` `.sdlc/evidence/20260829-041737-fast/` metadata 为 `passed`，3/3 steps 全绿。
+
+## 144. TV1-T144 执行卡
+
+- 状态：`resolved / automated_verified`；single writer: Codex；blocked by T21/T143（均 resolved）。
+- authority：`closureAndExpansion.materializedStaticNodes` 为 MAX_INCLUSIVE `20000`，observed
+  `19999/20000/20001`，contract stage SERIAL_MATERIALIZATION、public stage MATERIALIZATION、code
+  EVALUATION_BUDGET_EXCEEDED、zero boundary ZERO_DOCUMENT_OUTPUT；primary requirement `RW-T19-S7-083`。
+- 现状缺口：最终真实/合成 static Node 已经经 `reserveMaterializedNode()` 计数，但
+  `MAX_MATERIALIZED_NODES` 与手写比较重复拥有上限并错误返回 RENDER_DOCUMENT_LIMIT_EXCEEDED。必须迁入唯一
+  Rendering guard，并与同值但 DOCUMENT_SEAL-owned 的 `renderDocument.staticNodes` 保持 stage/code 分离。
+- exact product boundary：10 个合法 Repeat、9994 total items 产生 19999 Nodes；追加普通 Rect 为 20000；9995
+  items 产生 20001。per occurrence ≤1000、Loop frames <10000、Render occurrences <25000、literal-list total
+  <16384，保证 materializedStaticNodes first-fail。
+- TDD：先把现有 20001-node test expected code 改为 EVALUATION_BUDGET_EXCEEDED，捕获 actual wrong-code RED；再
+  最小接线并补 19999/20000 success tree count 与 isolated guard exact。focused Materializer/guard、受影响 reactor、
+  render/fast；无 app wiring/API/Web/migration/Profile 变化，不重复 full，server 留到周期性容量批次。
+- 禁止影响：generated/logical/RenderDocument 等后续轴、正式 Ticket 19 records/product executor、provider/API
+  Key/真实数据/Profile registration/push/tag/PR；最高 `automated_verified`，claim 时 A0、J0。
+- TDD behavioral RED：只校正既有 20001-node production test 的 expected code 后，MaterializerTest 14 tests 恰好
+  1 个失败，actual 为旧 RENDER_DOCUMENT_LIMIT_EXCEEDED、expected 为 EVALUATION_BUDGET_EXCEEDED。
+- 唯一 guard 已增加 MATERIALIZED_STATIC_NODES=20000；重复 `MAX_MATERIALIZED_NODES` 与手写 wrong-code 分支已
+  删除。真实 Materializer seam 的 19999/20000 tree count 成功，20001 返回 exact MATERIALIZATION /
+  EVALUATION_BUDGET_EXCEEDED / full limitId；isolated guard 同步覆盖三点。focused Materializer/guard 22/22。
+- 受影响 reactor Schema 20、Validation 13、Template 84、Asset 92、Rendering 201 全绿；`git diff --check` 通过。
+  A1 `render` `.sdlc/evidence/20260829-042440-render/`（2/2）与 `fast`
+  `.sdlc/evidence/20260829-042528-fast/`（3/3）metadata 均 `passed`。
+- cap-013 candidate 无正式 product target/executor 且明确不执行 Evaluator/Sealer，故无 T144-specific A2/A3；
+  J0 pending、J1 未批准。未重复 server/full，provider attempts/API Key reads/真实数据/Profile registration/
+  push/tag/PR 均为 0。
+- 状态回填后的 resolution `fast` `.sdlc/evidence/20260829-042717-fast/` metadata 为 `passed`，3/3 steps 全绿。

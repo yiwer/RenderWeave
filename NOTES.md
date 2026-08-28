@@ -3699,3 +3699,28 @@
   明确不执行 Evaluator/Sealer，故无 T143-specific A2/A3；J0 pending、J1 未批准。未重复 server/full，provider
   attempts/API Key reads/真实数据/Profile registration/push/tag/PR 均为 0。
 - 状态回填后的 resolution `fast` `.sdlc/evidence/20260829-041737-fast/` metadata 为 passed，3/3 steps 全绿。
+
+# 2026-08-29 Template-v1 T144 materialized static Nodes（resolved / automated_verified）
+
+- T143 已以 verified commit `be4346a1` 收口，worktree clean、ahead 134 且 DAG 无其他 active claim；现按
+  single-writer 登记并 claim T144。
+- 机器 authority 固定 `closureAndExpansion.materializedStaticNodes` 为 MAX_INCLUSIVE `20000`，observed
+  `19999/20000/20001`，SERIAL_MATERIALIZATION / public MATERIALIZATION / EVALUATION_BUDGET_EXCEEDED /
+  ZERO_DOCUMENT_OUTPUT，primary requirement `RW-T19-S7-083`。
+- 当前真实/合成 static Node 已在 production Materializer 计数，但仍由 `MAX_MATERIALIZED_NODES` 与手写错误 code
+  重复拥有；本票迁入唯一 guard，并明确不与 DOCUMENT_SEAL-owned `renderDocument.staticNodes` 混用。
+- exact fixture 用 10 个合法 Repeat：9994 items →19999 Nodes，加普通 Rect →20000，9995 items →20001；保持
+  per-occurrence、loopFrames、renderOccurrences 与 literal-list 轴均未超限。当前 A0、J0；不运行 provider、不读取
+  API Key、不发送真实数据，不 push/tag/PR。
+- TDD behavioral RED 已真实捕获：只校正既有 20001-node production test expected code 后，MaterializerTest 14 tests
+  恰好 1 个失败，actual RENDER_DOCUMENT_LIMIT_EXCEEDED、expected EVALUATION_BUDGET_EXCEEDED。
+- 唯一 guard 已加入 MATERIALIZED_STATIC_NODES=20000；重复 `MAX_MATERIALIZED_NODES` 与手写 wrong-code 分支已删除。
+  真实 Materializer seam 证明 19999/20000 成功、20001 exact MATERIALIZATION / EVALUATION_BUDGET_EXCEEDED /
+  full limitId 失败；isolated guard 同步重放三点。focused Materializer 16 + guard 6 = 22/22。
+- 受影响 reactor Schema 20、Validation 13、Template 84、Asset 92、Rendering 201 全绿；`git diff --check` 通过。
+  A1 `render` `.sdlc/evidence/20260829-042440-render/`（2/2）与 `fast`
+  `.sdlc/evidence/20260829-042528-fast/`（3/3）metadata 均 passed。
+- cap-013 candidate 无正式 product target/executor 且明确不执行 Evaluator/Sealer，故无 T144-specific A2/A3；
+  J0 pending、J1 未批准。未重复 server/full，provider attempts/API Key reads/真实数据/Profile registration/
+  push/tag/PR 均为 0。
+- 状态回填后的 resolution `fast` `.sdlc/evidence/20260829-042717-fast/` metadata 为 passed，3/3 steps 全绿。
