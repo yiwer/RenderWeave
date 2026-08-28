@@ -274,6 +274,10 @@ final class Sealer {
                     || "kind".equals(entry.getKey())) {
                 continue;
             }
+            if ("text".equals(node.kind()) && "runs".equals(entry.getKey())) {
+                members.put("runs", lowerRuns(entry.getValue()));
+                continue;
+            }
             putLowered(members, entry.getKey(), entry.getValue());
         }
         if (nodeContracts.isContainer(node.kind())) {
@@ -419,6 +423,27 @@ final class Sealer {
     private void reserveChildEdge() {
         var capacityProblem = requestCapacity.reserve(
                 RenderingPipelineCapacityGuard.Limit.RENDER_DOCUMENT_CHILD_EDGES,
+                1);
+        if (capacityProblem.isPresent()) {
+            throw new SealCapacityExceeded(capacityProblem.orElseThrow());
+        }
+    }
+
+    private CanonicalJson.CanonicalValue lowerRuns(DesignNodeValue value) {
+        if (!(value instanceof ArrayNode runs)) {
+            throw new IllegalStateException("Text runs must be an array at document seal");
+        }
+        var items = new ArrayList<CanonicalJson.CanonicalValue>();
+        for (var run : runs.items()) {
+            reserveRun();
+            items.add(lowerValue(run));
+        }
+        return CanonicalJson.arrayValue(items);
+    }
+
+    private void reserveRun() {
+        var capacityProblem = requestCapacity.reserve(
+                RenderingPipelineCapacityGuard.Limit.RENDER_DOCUMENT_RUNS,
                 1);
         if (capacityProblem.isPresent()) {
             throw new SealCapacityExceeded(capacityProblem.orElseThrow());

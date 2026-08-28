@@ -58,6 +58,11 @@ final class RenderingPipelineCapacityGuard {
                 "renderDocument.childEdges",
                 19_999,
                 ProblemCode.RENDER_DOCUMENT_LIMIT_EXCEEDED,
+                EvaluationStage.DOCUMENT_SEAL),
+        RENDER_DOCUMENT_RUNS(
+                "renderDocument.runs",
+                10_000,
+                ProblemCode.RENDER_DOCUMENT_LIMIT_EXCEEDED,
                 EvaluationStage.DOCUMENT_SEAL);
 
         private final String id;

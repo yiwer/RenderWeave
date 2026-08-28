@@ -5432,3 +5432,32 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
   83/83 仍 byte-identical。cap-019 不执行 Evaluator/Sealer，故无 T150-specific A2/A3；未重复 server/full，
   provider attempts/API Key reads/真实数据/Profile registration/push/tag/PR 均为 0。
 - 状态回填后的 resolution `fast` `.sdlc/evidence/20260829-060138-fast/` metadata 为 `passed`，3/3 steps 全绿。
+
+## 151. TV1-T151 执行卡
+
+- 状态：`resolved / automated_verified`；single writer: Codex；blocked by T21/T150（均 resolved）。
+- authority：`RW-T19-S7-093` / cap-020 固定 `renderDocument.runs` 为 MAX_INCLUSIVE `10000`，observed
+  `9999/10000/10001`，DOCUMENT_SEAL_COUNTING / public DOCUMENT_SEAL / RENDER_DOCUMENT_LIMIT_EXCEEDED /
+  ZERO_DOCUMENT_OUTPUT；reservation point 为 atomic canonical-byte/digest commit 与任何 Engine Command 前。
+- domain：每个 final surviving Text occurrence 的每个 `runs[]` item 计 `1`；实际 occurrence 重复计数；pruned Text、
+  非 Text 与 empty array 为 `0`，`visible:false/opacity:0` 仍计。
+- seam：在 `sealNode` 已取得 final expanded Text、但尚未创建对应 canonical Run object/list growth 前，按 Run index
+  逐项原子 reserve；与 authored Runs、textScalars、staticNodes/childEdges 和 FONT Asset occurrence 使用独立 counter。
+- 验证范围：guard missing-enum compile RED；Sealer empty Canvas + two one-Run Text occurrence 以 prefix `9998/9999`
+  exact at/above behavioral RED，随后最小接线。focused guard/Sealer/RenderDocument/Evaluator、受影响 reactor、
+  render/fast；无 app wiring，不重复 server/full。
+- honesty：cap-020 target 不执行 Evaluator/Sealer，isolated guard 不冒充正式 records/A2；textScalars/vectorEntries、
+  diagnostics 与 Engine 继续后续票。provider/API Key/真实数据/Profile registration/push/tag/PR 均不推进；
+  J0 pending、J1 未批准。
+- TDD：guard/Sealer tests 精确产生 6 个 missing-enum compile RED，catalog 接线后 guard 13/13 GREEN 且 Sealer
+  只剩 1 个 above-boundary behavioral RED；真正 `sealNode` Text lowering 按 Run index reserve 后 Sealer 11/11 GREEN。
+- exact product boundary：empty Canvas 在 prefix 10000 后仍成功；`visible:false` 与 `opacity:0` 两个 one-Run Text
+  occurrence 在 prefix 9998 后 exact 到达 10000，prefix 9999 后于第二个 Run exact reject。canonical Run object/list
+  growth 均晚于对应 reservation。
+- focused Evaluator 68 + writer 3 + RenderDocument 4 + guard 13 + Sealer 11 = 99/99；受影响 reactor Schema 20、
+  Validation 13、Template 84、Asset 92、Rendering 223 全绿，`git diff --check` 通过。
+- A1 `render` `.sdlc/evidence/20260829-060958-render/`（2/2）与 `fast`
+  `.sdlc/evidence/20260829-061045-fast/`（3/3）metadata 均 `passed`，既有 RenderDocument independent replay
+  83/83 仍 byte-identical。cap-020 不执行 Evaluator/Sealer，故无 T151-specific A2/A3；未重复 server/full，
+  provider attempts/API Key reads/真实数据/Profile registration/push/tag/PR 均为 0。
+- 状态回填后的 resolution `fast` `.sdlc/evidence/20260829-061156-fast/` metadata 为 `passed`，3/3 steps 全绿。

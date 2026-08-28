@@ -925,6 +925,11 @@ Label: wayfinder:map
   Sealer pre-child allocation seam；`children[]` item 与 compositionViewport→sourceCanvas link 均计 `1`，root/empty
   array 计 `0`，并与 T149 static Nodes 保持独立 counter。focused 97/97、Rendering 221/221 与 render/fast metadata
   全绿；A1、无 ticket-specific A2、J0。
+- [T151 — RenderDocument Runs 预算](issues/151-render-document-runs-capacity.md)
+  — **resolved / automated_verified**；按 `RW-T19-S7-093` 与 cap-020 将 final Text Run `9999/10000/10001` 接入
+  Sealer pre-Run allocation seam；按 surviving Text occurrence/Run index request-total 计数，`visible:false` 与
+  `opacity:0` 仍计，并与 authored Runs、textScalars、Nodes/edges、FONT Asset occurrence 保持独立 counter。
+  focused 99/99、Rendering 223/223 与 render/fast metadata 全绿；A1、无 ticket-specific A2、J0。
 
 - 改写或重解释现有 Schema/Inference v1 已提交历史，或在 dirty main 上直接实施 Template。
 - Workspace、组织/成员/分享/协作、跨 ownerScope 复制、通用 connector、任意 SQL/HTTP/文件/脚本、插件节点或运行时代码注册。

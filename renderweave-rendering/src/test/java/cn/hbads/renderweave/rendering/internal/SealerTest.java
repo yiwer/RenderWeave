@@ -5,6 +5,8 @@ import cn.hbads.renderweave.rendering.api.RenderingProblem.ProblemCode;
 import cn.hbads.renderweave.schema.definition.StaticSchemaRef;
 import cn.hbads.renderweave.schema.identity.SchemaKey;
 import cn.hbads.renderweave.schema.identity.VersionTag;
+import cn.hbads.renderweave.template.api.DesignSemanticAuthority.ArrayNode;
+import cn.hbads.renderweave.template.api.DesignSemanticAuthority.Bool;
 import cn.hbads.renderweave.template.api.DesignSemanticAuthority.DesignNodeValue;
 import cn.hbads.renderweave.template.api.DesignSemanticAuthority.NumberToken;
 import cn.hbads.renderweave.template.api.DesignSemanticAuthority.ObjectNode;
@@ -317,6 +319,38 @@ class SealerTest {
         assertChildEdgeLimit(rejected);
     }
 
+    @Test
+    void finalTextRunsUseTheRequestTotalFrozenBoundary() {
+        var emptyAtCapacity = new RenderingPipelineCapacityGuard().newRequestTracker();
+        assertTrue(emptyAtCapacity.reserve(
+                RenderingPipelineCapacityGuard.Limit.RENDER_DOCUMENT_RUNS,
+                10_000).isEmpty());
+        assertInstanceOf(Sealer.Sealed.class, Sealer.seal(
+                closure(), admitted(), minimalTree(), "sha256:" + "c".repeat(64),
+                emptyAtCapacity));
+
+        var atCapacity = new RenderingPipelineCapacityGuard().newRequestTracker();
+        assertTrue(atCapacity.reserve(
+                RenderingPipelineCapacityGuard.Limit.RENDER_DOCUMENT_RUNS,
+                9_998).isEmpty());
+        var sealed = assertInstanceOf(Sealer.Sealed.class, Sealer.seal(
+                closure(), admitted(), twoTextRunsTree(), "sha256:" + "c".repeat(64),
+                atCapacity));
+        var document = new String(
+                sealed.evaluation().renderDocumentCanonicalUtf8(), StandardCharsets.UTF_8);
+        assertTrue(document.contains("\"visible\":false"));
+        assertTrue(document.contains("\"opacity\":0"));
+
+        var aboveCapacity = new RenderingPipelineCapacityGuard().newRequestTracker();
+        assertTrue(aboveCapacity.reserve(
+                RenderingPipelineCapacityGuard.Limit.RENDER_DOCUMENT_RUNS,
+                9_999).isEmpty());
+        var rejected = assertInstanceOf(Sealer.SealRejected.class, Sealer.seal(
+                closure(), admitted(), twoTextRunsTree(), "sha256:" + "c".repeat(64),
+                aboveCapacity));
+        assertRunLimit(rejected);
+    }
+
     // ------------------------------------------------------------------
     // fixtures
     // ------------------------------------------------------------------
@@ -402,6 +436,79 @@ class SealerTest {
         return new Materializer.MaterializedTree(root, List.of(), List.of());
     }
 
+    private static Materializer.MaterializedTree twoTextRunsTree() {
+        var firstResourceId = "rwres_" + "a".repeat(64);
+        var secondResourceId = "rwres_" + "b".repeat(64);
+        var first = textNode("A", firstResourceId, "/text-1", false, "1");
+        var second = textNode("B", secondResourceId, "/text-2", true, "0");
+        var root = new Materializer.MaterializedNode(
+                "canvas",
+                new ObjectNode(Map.of(
+                        "kind", new Text("canvas"),
+                        "widthMm", new NumberToken("210"),
+                        "heightMm", new NumberToken("297"))),
+                List.of(first, second),
+                "");
+        return new Materializer.MaterializedTree(
+                root,
+                List.of(
+                        fontEntry(firstResourceId, "asset-font-1", "/text-1"),
+                        fontEntry(secondResourceId, "asset-font-2", "/text-2")),
+                List.of());
+    }
+
+    private static Materializer.MaterializedNode textNode(
+            String text,
+            String resourceId,
+            String occurrencePath,
+            boolean visible,
+            String opacity
+    ) {
+        var run = new ObjectNode(Map.of(
+                "text", new Text(text),
+                "fontRef", new ObjectNode(Map.of(
+                        "resourceId", new Text(resourceId))),
+                "fontSizePt", new NumberToken("12"),
+                "color", new Text("#000000FF"),
+                "decoration", new Text("NONE"),
+                "letterSpacingPt", new NumberToken("0")));
+        return new Materializer.MaterializedNode(
+                "text",
+                new ObjectNode(Map.of(
+                        "kind", new Text("text"),
+                        "placement", absoluteFixedPlacement("20", "10"),
+                        "visible", new Bool(visible),
+                        "opacity", new NumberToken(opacity),
+                        "runs", new ArrayNode(List.of(run)))),
+                List.of(),
+                occurrencePath);
+    }
+
+    private static Materializer.ResourceEntry fontEntry(
+            String resourceId,
+            String assetId,
+            String occurrencePath
+    ) {
+        return new Materializer.ResourceEntry(
+                resourceId,
+                "FONT",
+                "https://assets.internal/fetch/" + resourceId,
+                2_000L,
+                "sha256:" + "b".repeat(64),
+                "font/ttf",
+                1_234,
+                "renderweave-asset-acceptance/1.0",
+                assetId,
+                "content-version-1",
+                occurrencePath,
+                "fontRef",
+                new cn.hbads.renderweave.asset.api.AssetAcceptanceAuthority.FontDescriptor(
+                        0,
+                        cn.hbads.renderweave.asset.api.AssetAcceptanceAuthority.FontFlavor
+                                .TRUETYPE_GLYF,
+                        1_000));
+    }
+
     private static void assertStaticNodeLimit(Sealer.SealRejected rejected) {
         assertEquals(EvaluationStage.DOCUMENT_SEAL, rejected.problem().stage());
         assertEquals(ProblemCode.RENDER_DOCUMENT_LIMIT_EXCEEDED,
@@ -415,6 +522,14 @@ class SealerTest {
         assertEquals(ProblemCode.RENDER_DOCUMENT_LIMIT_EXCEEDED,
                 rejected.problem().code());
         assertEquals("renderDocument.childEdges",
+                rejected.problem().limitId().orElseThrow().value());
+    }
+
+    private static void assertRunLimit(Sealer.SealRejected rejected) {
+        assertEquals(EvaluationStage.DOCUMENT_SEAL, rejected.problem().stage());
+        assertEquals(ProblemCode.RENDER_DOCUMENT_LIMIT_EXCEEDED,
+                rejected.problem().code());
+        assertEquals("renderDocument.runs",
                 rejected.problem().limitId().orElseThrow().value());
     }
 

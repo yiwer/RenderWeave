@@ -3871,3 +3871,25 @@
 - cap-019 不执行 Evaluator/Sealer，故无 T150-specific A2/A3；J0 pending、J1 未批准。未重复 server/full，provider
   attempts/API Key reads/真实数据/Profile registration/push/tag/PR 均为 0。
 - 状态回填后的 resolution `fast` `.sdlc/evidence/20260829-060138-fast/` metadata 为 passed，3/3 steps 全绿。
+
+# 2026-08-29 Template-v1 T151 RenderDocument Runs（resolved / automated_verified）
+
+- T150 已以 verified commit `641f9305` 收口，worktree clean、ahead 141 且 DAG 无其他 active claim；现按
+  single-writer 登记并 claim T151。
+- `RW-T19-S7-093` / cap-020 固定 `renderDocument.runs` MAX_INCLUSIVE `10000`，observed
+  `9999/10000/10001`，DOCUMENT_SEAL_COUNTING / public DOCUMENT_SEAL / RENDER_DOCUMENT_LIMIT_EXCEEDED /
+  ZERO_DOCUMENT_OUTPUT。
+- 每个 final surviving Text occurrence 的每个 `runs[]` item 计 `1`；pruned/non-Text/empty 为 `0`，
+  `visible:false/opacity:0` 仍计。reservation 按 Run index 在 canonical Run object/list growth 前逐项执行，并与
+  authored Runs、textScalars、Nodes/edges、FONT Asset occurrence 保持独立。
+- 本票最高 automated_verified/J0；无 app wiring、Profile registration、provider/API Key/真实数据、push/tag/PR。
+- guard/Sealer tests 先精确产生 6 个 missing-enum compile RED；catalog 后 guard 13/13 GREEN、Sealer 恰好保留
+  1 个 above-boundary RED，真正 `sealNode` Text Run reservation 后 Sealer 11/11 GREEN。
+- empty Canvas prefix 10000 仍 seal；`visible:false` / `opacity:0` 两个 one-Run Text 在 prefix 9998 后到达 10000，
+  prefix 9999 后于第二个 Run exact reject；canonical object/list growth 均晚于逐 Run reservation。
+- focused 99/99；受影响 reactor Schema 20、Validation 13、Template 84、Asset 92、Rendering 223 全绿，
+  `git diff --check` 通过。A1 `render` `.sdlc/evidence/20260829-060958-render/`（2/2）与 `fast`
+  `.sdlc/evidence/20260829-061045-fast/`（3/3）metadata 均 passed，既有 RenderDocument replay 83/83。
+- cap-020 不执行 Evaluator/Sealer，故无 T151-specific A2/A3；J0 pending、J1 未批准。未重复 server/full，provider
+  attempts/API Key reads/真实数据/Profile registration/push/tag/PR 均为 0。
+- 状态回填后的 resolution `fast` `.sdlc/evidence/20260829-061156-fast/` metadata 为 passed，3/3 steps 全绿。
