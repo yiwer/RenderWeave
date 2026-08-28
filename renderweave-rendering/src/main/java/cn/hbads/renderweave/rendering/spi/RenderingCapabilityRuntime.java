@@ -74,7 +74,10 @@ public interface RenderingCapabilityRuntime {
         CapabilityOutcome supply(String capability, String operation, byte[] callPosition);
     }
 
-    sealed interface CapabilityOutcome permits Supplied, ProviderUnavailable {
+    sealed interface CapabilityOutcome permits
+            Supplied,
+            ProviderUnavailable,
+            RandomRejectionExhausted {
     }
 
     record Supplied(CapabilityValue value) implements CapabilityOutcome {
@@ -84,6 +87,10 @@ public interface RenderingCapabilityRuntime {
     }
 
     record ProviderUnavailable() implements CapabilityOutcome {
+    }
+
+    /** Random rejection sampling exhausted the frozen 128-attempt contract. */
+    record RandomRejectionExhausted() implements CapabilityOutcome {
     }
 
     sealed interface CapabilityValue permits

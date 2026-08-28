@@ -4864,3 +4864,43 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
   attempts/API Key reads/reservations/cost/真实数据/Profile registration/push/tag/PR 均为 0。Random rejection 与正式
   Ticket 19 records 留在后续 frontier。
 - 状态回填后的 resolution `fast` `.sdlc/evidence/20260829-003825-fast/` metadata 仍为 `passed`，3/3 steps 全绿。
+
+## 134. TV1-T134 执行卡
+
+- 状态：`resolved / automated_verified`；single writer: Codex；blocked by T21/T125/T128/T129/T131/T133（均
+  resolved）。
+- 决策：T133 verified commit `b7f4ef38` 后 worktree clean 且无其他 claimed writer；冻结 capability matrix 中首个
+  unblocked residual 是 `randomRejectionAttempts=128`。正式 Ticket 19 records/fault executor 尚受发行前置阻塞，
+  故本票只完成生产 HMAC guard 与公共终态。
+- seam：产品行为只经公开 `Evaluator.evaluate` 观察；`CapabilityBudget` 拥有 exact profile invariant，只有
+  canonical integer `128` 合法。nonce/counter/digest 不跨受信 runtime seam；state requirements/wire 不变，budget
+  identity 已由 evaluation fingerprint 线性化。
+- 语义：counter 从 0 起，固定只运行 `0…127`；每次下一 attempt 前受限。全部拒绝由 closed runtime outcome 映射为
+  stage MATERIALIZATION、code CAPABILITY_RESULT_INVALID、exact limitId，随后 demand/Asset/lowering/Engine 均停止。
+  provider unavailable、demand budget 与 expression decimal failure 保持独立终态。
+- TDD：公开 seam 先做 exhaustion exact terminal + first-fail RED→GREEN，再补 effective profile 127/129 均
+  fail-closed、128 正常与既有 known vector 不漂移。focused Rendering、app adapter/architecture 后跑
+  render/fast/顺序 server。
+- 禁止影响：正式 Case/Oracle、fault-schedule executor、route/OpenAPI/Web/migration/Profile、provider/API Key/真实数据/
+  push/tag/PR；最高 `automated_verified`，A3/J1/READY 不推进。
+
+### TV1-T134 resolution evidence
+
+- 权威校正：机器 capacity coverage 明确本轴 comparator 为 `EXACT`；发现中途“deployment 可收紧至 127”的解释不符
+  后立即撤回。`CapabilityBudget` 只接受 canonical `128`，`127/129` 与缺失/非 canonical profile 均 fail closed；
+  evaluation fingerprint、state wire 与初始化 retry 不变。
+- 实现：`CapabilityDerivation` 保持唯一固定 128 次 HMAC authority；app runtime 新增 closed
+  `RandomRejectionExhausted` outcome，Rendering 精确映射为 MATERIALIZATION /
+  CAPABILITY_RESULT_INVALID / `capabilityRuntime.randomRejectionAttempts`。首个 exhaustion 停止后续 demand 与
+  document/Engine work，provider unavailable、capacity 与 decimal taxonomy 不漂移。
+- TDD：公开 seam 先取得 outcome symbol 缺失的 compile RED，再取得 `127` 被错误接受的 behavioral RED；GREEN 后
+  exhaustion tracer 证明两 alias 只 supply 1 次且 zero document。最终 Evaluator 45/45、Rendering 170/170、生产
+  app assembly/architecture 12/12。
+- A1：`render` `.sdlc/evidence/20260829-005811-render/`、`fast`
+  `.sdlc/evidence/20260829-005906-fast/`、顺序 `server`
+  `.sdlc/evidence/20260829-005936-server/` metadata 均 `passed`；server BUILD SUCCESS，App 372/0/0/15。无
+  API/OpenAPI/Web/migration/Profile 变更，故不重复发布级 `full`。
+- A2 仅为 `render` 内未变 Renderer 轴独立 replay，无 T134-specific issued record；A3 无，J0 pending、J1 未批准。
+  正式 Ticket 19 records/fault executor 仍阻塞；provider/API Key/真实数据/Profile/push/tag/PR 均为 0。
+- 状态回填后的 resolution `fast` `.sdlc/evidence/20260829-011629-fast/` metadata 为 `passed`，3/3 steps
+  全绿。

@@ -3451,3 +3451,30 @@
   rejection/fault schedule 与正式 Ticket 19 records 另票；provider/API Key/真实数据/Profile registration/push/tag/PR
   均为 0。
 - 状态回填后的 resolution `fast` `.sdlc/evidence/20260829-003825-fast/` metadata 仍为 `passed`，3/3 steps 全绿。
+
+# 2026-08-29 Template-v1 T134 Random rejection bound（resolved / automated_verified）
+
+- T133 已以 verified commit `b7f4ef38` 收口且 worktree clean；DAG 无其他 claimed writer。复核 Ticket 14 §59、
+  Ticket 19 capability matrix 与现有 app runtime 后，确认首个 unblocked residual 是
+  `capabilityRuntime.randomRejectionAttempts=128` 的 fingerprint-bound production guard 与 result-invalid 终态。
+- 已按 single-writer 登记并 claim T134：只经公开 `Evaluator.evaluate` seam，深化现有 `CapabilityBudget` 与
+  `RenderingCapabilityRuntime`；机器 coverage 已确认该轴 comparator 为 `EXACT`，故 profile 仅 canonical `128`
+  合法而非 deployment-tightenable。HMAC exhaustion 必须精确折叠为
+  MATERIALIZATION/CAPABILITY_RESULT_INVALID/limitId 并 first-fail。
+- 正式 Ticket 19 records/fault-schedule executor 继续受发行前置阻塞；不新增 route/OpenAPI/Web/migration/Profile，
+  不运行 provider、不读取 API Key、不发送真实数据、不 push/tag/PR。
+- 机器 coverage 的 `EXACT` comparator 在实现中途纠正了错误的 deployment-tightening 假设；最终
+  `CapabilityBudget` 只接受 canonical `128`，固定 HMAC authority 仍只运行 counters `0…127`。closed
+  `RandomRejectionExhausted` outcome 将 128 次拒绝耗尽精确映射为 MATERIALIZATION /
+  CAPABILITY_RESULT_INVALID / `capabilityRuntime.randomRejectionAttempts`，并在首个 demand fail-fast、zero document。
+- 公开 seam 取得 outcome symbol compile RED 与 `127` 被错误接受的 behavioral RED 后最小 GREEN；最终 focused
+  Evaluator 45/45、Rendering 170/170、生产 app assembly/architecture 12/12。
+- A1 `render` `.sdlc/evidence/20260829-005811-render/`、`fast`
+  `.sdlc/evidence/20260829-005906-fast/`、顺序 `server`
+  `.sdlc/evidence/20260829-005936-server/` metadata 全部 `passed`；server reactor BUILD SUCCESS，App 372/0/0/15。
+  本票无 API/OpenAPI/Web/migration/Profile 变化，故不重复发布级 `full`。
+- A2 仅来自未变 Renderer 轴独立 replay，无 T134-specific issued record；A3 无，J0 pending、J1 未批准。正式
+  Ticket 19 records/fault executor 仍阻塞；provider attempts/API Key reads/reservations/cost/真实数据/Profile
+  registration/push/tag/PR 均为 0。
+- 状态回填后的 resolution `fast` `.sdlc/evidence/20260829-011629-fast/` metadata 仍为 `passed`，3/3 steps
+  全绿。

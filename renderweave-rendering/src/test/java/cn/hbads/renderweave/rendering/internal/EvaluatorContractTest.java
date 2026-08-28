@@ -41,6 +41,7 @@ import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class EvaluatorContractTest {
@@ -238,6 +239,41 @@ class EvaluatorContractTest {
         assertInstanceOf(EvaluationOutcome.SealedDocument.class,
                 evaluator.evaluate(command("{\"rootDocument\":{}}")));
         assertEquals(1, runtime.supplyCalls);
+    }
+
+    @Test
+    void randomRejectionExhaustionFailsClosedAtTheFirstDemand() {
+        var runtime = new RejectionExhaustedCapabilityRuntime();
+        var evaluator = evaluator(
+                closureWith(twoRandomAliasCapabilityDocument()),
+                resolver(),
+                new RecordingCapabilityStateStore(),
+                runtime);
+
+        var rejected = assertInstanceOf(EvaluationOutcome.Rejected.class,
+                evaluator.evaluate(command("{\"rootDocument\":{}}")));
+
+        assertEquals(EvaluationStage.MATERIALIZATION, rejected.stage());
+        assertEquals(RenderingProblem.ProblemCode.CAPABILITY_RESULT_INVALID,
+                rejected.problem().code());
+        assertEquals("capabilityRuntime.randomRejectionAttempts",
+                rejected.problem().limitId().orElseThrow().value());
+        assertEquals(1, runtime.supplyCalls);
+    }
+
+    @Test
+    void randomRejectionAttemptProfileRejectsNonExactValues() {
+        for (long value : List.of(127L, 129L)) {
+            var vector = budgetVector(
+                    1, 8, 4, 4, 2_048, 16_777_216, 1_048_576,
+                    16_777_216, 3, value);
+            assertThrows(IllegalArgumentException.class, () -> evaluator(
+                    closureWith(withUnusedRandom(canvasWithRect())),
+                    resolver(),
+                    new RecordingCapabilityStateStore(),
+                    new RecordingCapabilityRuntime(),
+                    vector));
+        }
     }
 
     private static void assertFirstDemandByteLimit(
@@ -996,7 +1032,8 @@ class EvaluatorContractTest {
                 positionBytesTotal,
                 capabilityStateRecordBytes,
                 resultDigestStreamingBytes,
-                3);
+                3,
+                128);
     }
 
     private static String budgetVector(
@@ -1010,6 +1047,31 @@ class EvaluatorContractTest {
             long resultDigestStreamingBytes,
             long initializationAttempts
     ) {
+        return budgetVector(
+                staticSources,
+                totalDemands,
+                clockDemands,
+                randomDemands,
+                positionBytesPerDemand,
+                positionBytesTotal,
+                capabilityStateRecordBytes,
+                resultDigestStreamingBytes,
+                initializationAttempts,
+                128);
+    }
+
+    private static String budgetVector(
+            long staticSources,
+            long totalDemands,
+            long clockDemands,
+            long randomDemands,
+            long positionBytesPerDemand,
+            long positionBytesTotal,
+            long capabilityStateRecordBytes,
+            long resultDigestStreamingBytes,
+            long initializationAttempts,
+            long randomRejectionAttempts
+    ) {
         return "{\"groups\":{\"capabilityRuntime\":{\"limits\":{"
                 + "\"staticCapabilitySources\":" + staticSources + ","
                 + "\"totalDemands\":" + totalDemands + ","
@@ -1019,7 +1081,8 @@ class EvaluatorContractTest {
                 + "\"positionCanonicalBytesTotal\":" + positionBytesTotal + ","
                 + "\"capabilityStateRecordBytes\":" + capabilityStateRecordBytes + ","
                 + "\"resultDigestStreamingBytes\":" + resultDigestStreamingBytes + ","
-                + "\"initializationAttempts\":" + initializationAttempts
+                + "\"initializationAttempts\":" + initializationAttempts + ","
+                + "\"randomRejectionAttempts\":" + randomRejectionAttempts
                 + "}}}}";
     }
 
@@ -1212,6 +1275,33 @@ class EvaluatorContractTest {
                             new Supplied(new DecimalResult(new BigDecimal("5")));
                     default -> new ProviderUnavailable();
                 };
+            };
+        }
+    }
+
+    private static final class RejectionExhaustedCapabilityRuntime
+            implements RenderingCapabilityRuntime {
+        private int supplyCalls;
+
+        @Override
+        public Established establish(CapabilityRequirements requirements) {
+            return new Established(provider(), new byte[]{1});
+        }
+
+        @Override
+        public Runtime restore(CapabilityRequirements requirements, byte[] sealedState) {
+            return provider();
+        }
+
+        @Override
+        public Set<CapabilityContract> supportedContracts() {
+            return Set.of(CapabilityContract.RANDOM_1_0);
+        }
+
+        private Runtime provider() {
+            return (capability, operation, callPosition) -> {
+                supplyCalls++;
+                return new RandomRejectionExhausted();
             };
         }
     }

@@ -389,7 +389,7 @@ class RenderingApplicationConfiguration {
                         BigDecimal derived = CapabilityDerivation.uniformDecimal(
                                 nonce, callPosition);
                         if (derived == null) {
-                            return new ProviderUnavailable();
+                            return new RandomRejectionExhausted();
                         }
                         return new Supplied(new DecimalResult(derived));
                     }

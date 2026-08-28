@@ -1108,6 +1108,10 @@ final class Materializer {
                     EvaluationStage.MATERIALIZATION,
                     ProblemCode.CAPABILITY_BUDGET_EXCEEDED,
                     error.failure().limitId());
+            case CAPABILITY_RESULT_INVALID -> failed(
+                    EvaluationStage.MATERIALIZATION,
+                    ProblemCode.CAPABILITY_RESULT_INVALID,
+                    error.failure().limitId());
             default -> failed(
                     EvaluationStage.MATERIALIZATION, ProblemCode.EVALUATION_FAILED, null);
         };

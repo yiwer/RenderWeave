@@ -839,6 +839,11 @@ Label: wayfinder:map
   deployment tightening、precommit transient retry、unknown-save query-before-resample、固定 expiry 与 deadline
   race 封闭。focused 43/43、Rendering 168/168、app assembly/architecture 12/12，render/fast/server metadata 全绿；
   resolution fast 亦 3/3 passed；Random rejection 与正式 Ticket 19 records 继续另票。
+- [T134 — 强制 Random rejection attempt bound 与 result-invalid 终态](issues/134-capability-random-rejection-bound.md)
+  — **resolved / automated_verified**；在公开 `Evaluator.evaluate` seam 下强制 fingerprint-bound profile exact
+  `randomRejectionAttempts=128`，HMAC exhaustion 以 exact MATERIALIZATION/CAPABILITY_RESULT_INVALID/limitId
+  first-fail；focused 45/45、Rendering 170/170、App 12/12 与 render/fast/server metadata 全绿；正式 Ticket 19
+  records 与 fault-schedule executor 继续另票。
 
 - 改写或重解释现有 Schema/Inference v1 已提交历史，或在 dirty main 上直接实施 Template。
 - Workspace、组织/成员/分享/协作、跨 ownerScope 复制、通用 connector、任意 SQL/HTTP/文件/脚本、插件节点或运行时代码注册。

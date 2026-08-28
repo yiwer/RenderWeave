@@ -19,6 +19,7 @@ final class CapabilityBudget {
     private static final long MAX_CAPABILITY_STATE_RECORD_BYTES = 1_048_576;
     private static final long MAX_RESULT_DIGEST_STREAMING_BYTES = 16_777_216;
     private static final long MAX_INITIALIZATION_ATTEMPTS = 3;
+    private static final long MAX_RANDOM_REJECTION_ATTEMPTS = 128;
 
     private final Limits limits;
 
@@ -52,6 +53,7 @@ final class CapabilityBudget {
         var groups = objectMember(root, "groups");
         var capabilityRuntime = objectMember(groups, "capabilityRuntime");
         var limits = objectMember(capabilityRuntime, "limits");
+        exactLimit(limits, "randomRejectionAttempts", MAX_RANDOM_REJECTION_ATTEMPTS);
         return new CapabilityBudget(new Limits(
                 limit(limits, "staticCapabilitySources", MAX_STATIC_SOURCES),
                 limit(limits, "totalDemands", MAX_TOTAL_DEMANDS),
@@ -111,6 +113,18 @@ final class CapabilityBudget {
             throw invalidVector();
         }
         if (!Long.toString(value).equals(number.rawToken())) {
+            throw invalidVector();
+        }
+        return value;
+    }
+
+    private static long exactLimit(
+            RenderJson.ObjectValue limits,
+            String member,
+            long frozenValue
+    ) {
+        var value = limit(limits, member, frozenValue);
+        if (value != frozenValue) {
             throw invalidVector();
         }
         return value;

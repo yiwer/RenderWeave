@@ -46,6 +46,7 @@ final class ExpressionEvaluator {
     enum RuntimeFailureKind {
         ABSENT_DEMANDED,
         CAPABILITY_BUDGET_EXCEEDED,
+        CAPABILITY_RESULT_INVALID,
         DIVISION_BY_ZERO,
         DECIMAL_LIMIT_EXCEEDED,
         TYPE_FAULT

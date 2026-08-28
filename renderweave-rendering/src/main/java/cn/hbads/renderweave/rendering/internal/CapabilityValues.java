@@ -7,7 +7,6 @@ import cn.hbads.renderweave.rendering.internal.ExpressionEvaluator.RuntimeFailur
 import cn.hbads.renderweave.rendering.internal.ExpressionEvaluator.RuntimeFailureKind;
 
 import java.math.BigDecimal;
-import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.time.Clock;
@@ -15,10 +14,7 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 
 /**
@@ -30,13 +26,8 @@ import java.util.Objects;
  */
 final class CapabilityValues {
 
-    static final String RANDOM_DOMAIN = "renderweave-capability-random-uniform-decimal/1\0";
     static final String RESULTS_DOMAIN = "renderweave-capability-results/1\0";
     static final String FINGERPRINT_DOMAIN = "renderweave-evaluation-fingerprint/1";
-    static final int MAX_REJECTION_ATTEMPTS = 128;
-
-    private static final BigInteger M = BigInteger.TEN.pow(18);
-    private static final BigInteger LIMIT = BigInteger.TWO.pow(256).divide(M).multiply(M);
     private static final DateTimeFormatter DATE_FORMAT =
             DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(ZoneOffset.UTC);
     private static final DateTimeFormatter TIME_FORMAT =
@@ -124,6 +115,10 @@ final class CapabilityValues {
                     instanceof cn.hbads.renderweave.rendering.spi.RenderingCapabilityRuntime.ProviderUnavailable) {
                 return new EvalError(new RuntimeFailure(RuntimeFailureKind.TYPE_FAULT, null));
             }
+            if (outcome instanceof cn.hbads.renderweave.rendering.spi.RenderingCapabilityRuntime
+                    .RandomRejectionExhausted) {
+                return capabilityResultInvalid();
+            }
             var value = ((cn.hbads.renderweave.rendering.spi.RenderingCapabilityRuntime.Supplied) outcome).value();
             return record(toDesignValue(value), capability, operation, callPosition);
         }
@@ -135,9 +130,7 @@ final class CapabilityValues {
             case "RANDOM/UNIFORM_DECIMAL_0_1" -> {
                 var derived = uniformDecimal(state.randomNonce(), callPosition);
                 if (derived == null) {
-                    yield new EvalError(new RuntimeFailure(
-                            RuntimeFailureKind.DECIMAL_LIMIT_EXCEEDED,
-                            "capabilityRuntime.randomRejectionAttempts"));
+                    yield capabilityResultInvalid();
                 }
                 yield record(new DesignValue.Decimal(derived), capability, operation, callPosition);
             }
@@ -178,6 +171,12 @@ final class CapabilityValues {
     private static EvalError capabilityBudgetExceeded(String limitId) {
         return new EvalError(new RuntimeFailure(
                 RuntimeFailureKind.CAPABILITY_BUDGET_EXCEEDED, limitId));
+    }
+
+    private static EvalError capabilityResultInvalid() {
+        return new EvalError(new RuntimeFailure(
+                RuntimeFailureKind.CAPABILITY_RESULT_INVALID,
+                "capabilityRuntime.randomRejectionAttempts"));
     }
 
     static String utcDate(long epochSecond) {
