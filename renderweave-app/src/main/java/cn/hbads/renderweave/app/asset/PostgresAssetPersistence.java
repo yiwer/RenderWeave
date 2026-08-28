@@ -1,5 +1,6 @@
 package cn.hbads.renderweave.app.asset;
 
+import cn.hbads.renderweave.app.coordination.PostgresAssetReferenceReservations;
 import cn.hbads.renderweave.asset.api.AssetAcceptanceAuthority;
 import cn.hbads.renderweave.asset.api.AssetApplication;
 import cn.hbads.renderweave.asset.spi.AssetPersistence;
@@ -42,6 +43,7 @@ public class PostgresAssetPersistence implements AssetPersistence {
     private final Duration idempotencyTtl;
     private final AssetReferencePort referencePort;
     private final ObjectProvider<AssetResolutionSecrets> resolutionSecrets;
+    private final PostgresAssetReferenceReservations assetReferenceReservations;
 
     PostgresAssetPersistence(
             JdbcClient jdbc,
@@ -50,7 +52,8 @@ public class PostgresAssetPersistence implements AssetPersistence {
             @Value("${renderweave.asset.capacity.hard-limit-bytes:107374182400}") long hardLimitBytes,
             @Value("${renderweave.asset.idempotency.ttl:PT24H}") Duration idempotencyTtl,
             AssetReferencePort referencePort,
-            ObjectProvider<AssetResolutionSecrets> resolutionSecrets
+            ObjectProvider<AssetResolutionSecrets> resolutionSecrets,
+            PostgresAssetReferenceReservations assetReferenceReservations
     ) {
         this.jdbc = jdbc;
         this.transactions = new TransactionTemplate(transactionManager);
@@ -59,6 +62,8 @@ public class PostgresAssetPersistence implements AssetPersistence {
         this.idempotencyTtl = idempotencyTtl;
         this.referencePort = Objects.requireNonNull(referencePort, "referencePort");
         this.resolutionSecrets = Objects.requireNonNull(resolutionSecrets, "resolutionSecrets");
+        this.assetReferenceReservations = Objects.requireNonNull(
+                assetReferenceReservations, "assetReferenceReservations");
     }
 
     @Override
@@ -484,9 +489,9 @@ public class PostgresAssetPersistence implements AssetPersistence {
     public DeleteOutcome delete(DeleteCommit commit) {
         try {
             return Objects.requireNonNull(transactions.execute(status -> {
-                // Exclusive reservation: the confirmed delete linearizes against every
-                // Template current change that references this Asset (they hold FOR SHARE
-                // on the same row in ascending assetId order).
+                // The coordination lock linearizes delete against Template current changes
+                // without making either transaction read the other context's tables.
+                assetReferenceReservations.acquireExclusive(commit.assetId().value());
                 var assetRow = jdbc.sql("""
                                 select lifecycle, asset_revision, current_content_version
                                 from asset_aggregate

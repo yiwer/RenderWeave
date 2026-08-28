@@ -279,10 +279,12 @@ class TemplateV1ArchitectureTest {
 
         assertFalse(templateAdapters.isEmpty(), "Template app adapters must be inspected");
         for (var source : templateAdapters) {
-            assertFalse(
-                    source.content().contains("asset_audit_event"),
-                    () -> source + " must consume Asset mutation facts through the owned Interface"
-            );
+            for (var assetOwnedTable : List.of("asset_audit_event", "asset_aggregate")) {
+                assertFalse(
+                        source.content().contains(assetOwnedTable),
+                        () -> source + " must not read Asset-owned table " + assetOwnedTable
+                );
+            }
         }
     }
 

@@ -1,6 +1,15 @@
 # NOTES.md
 
 ## 当前目标与进度
+- 2026-08-28 **Template v1 implementation TV1-T124 已由 Codex `/root` single-writer 完成，状态
+  `resolved/automated_verified`**：PostgreSQL transaction-scoped advisory lock seam 已让 Template current shared
+  reservation 与 Asset delete exclusive reservation 按 assetId 线性化；Asset dependency facts 由 Asset adapter 的
+  独立 `REQUIRES_NEW` 只读事务重取，Template production adapters 不再读取任何 Asset-owned table。focused 25/25、
+  `fast` `.sdlc/evidence/20260828-125749-fast/`、最终 `server`
+  `.sdlc/evidence/20260828-130911-server/`（365 tests）与 17-step `full`
+  `.sdlc/evidence/20260828-131919-full/`（17/17）均 passed/A1；J0，未推进 J1/A3/READY，未改产品 route/Profile/
+  native build；resolution `fast` `.sdlc/evidence/20260828-133630-fast/` 3/3 passed，provider/API Key/真实数据/
+  费用/push/tag/PR 均为 0。
 - 2026-08-28 **Template v1 implementation TV1-T123 已由 Codex `/root` single-writer 完成，状态
   `resolved/automated_verified`**：Asset-owned `AssetAuditEventSource` 与 Postgres Asset adapter 已替代 Template 对
   `asset_audit_event` 的直接读取；Template cursor/STALE 原子性、200 项有界 replay 与事件顺序不变，Asset API→SPI

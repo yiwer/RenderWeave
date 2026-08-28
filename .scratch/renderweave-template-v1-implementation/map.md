@@ -647,6 +647,11 @@ Label: wayfinder:map
   `asset_audit_event` SQL 由 Asset app adapter 独占；Template cursor/STALE 事务、有界 replay 与事件顺序保持不变，
   Asset API→SPI 残留 import 已删除。Asset 92/92、app focused 26/26、server 363 tests 与 17-step full 均绿；
   reservation/delete 线性化、Renderer/Profile/public route 不在本票范围。
+- [物化 AssetReferenceAuthority reservation seam](issues/124-asset-reference-reservation-seam.md) —
+  **resolved / automated_verified**；PostgreSQL transaction-scoped advisory shared/exclusive reservation 已替代
+  Template 对 Asset-owned `asset_aggregate` 的直接锁/读；Asset dependency facts 由 Asset adapter 在独立只读事务
+  重取，保留 Template current 与 confirmed delete 的 assetId 线性化及 proof-recompute，且不共享表或事务。
+  focused 25/25、server 365 tests 与 17-step full 均绿；产品 route/Profile/native build 不在本票范围。
 - [验证 Product Editor 状态、恢复与权威预览架构](issues/09-validate-product-editor-architecture.md) —
   throwaway 逻辑原型（`/prototype/editor-state-model`，不进产品 route）把冻结编辑器规则编码为确定性
   fixture 状态机：10 个引导走查场景 37/37 断言 + 自由操作冒烟 + 键盘焦点检查全部通过（Playwright A1，

@@ -1,5 +1,6 @@
 package cn.hbads.renderweave.app.template;
 
+import cn.hbads.renderweave.app.coordination.PostgresAssetReferenceReservations;
 import cn.hbads.renderweave.schema.definition.StaticSchemaRef;
 import cn.hbads.renderweave.schema.identity.SchemaKey;
 import cn.hbads.renderweave.schema.identity.VersionTag;
@@ -34,14 +35,22 @@ public class PostgresTemplatePersistence implements TemplatePersistence {
 
     private final JdbcClient jdbc;
     private final TransactionTemplate transactions;
+    private final PostgresAssetReferenceReservations assetReferenceReservations;
+    private final DependencyResolution dependencyResolution;
 
     PostgresTemplatePersistence(
             JdbcClient jdbc,
-            PlatformTransactionManager transactionManager
+            PlatformTransactionManager transactionManager,
+            PostgresAssetReferenceReservations assetReferenceReservations,
+            DependencyResolution dependencyResolution
     ) {
         this.jdbc = jdbc;
         this.transactions = new TransactionTemplate(transactionManager);
         this.transactions.setIsolationLevel(TransactionDefinition.ISOLATION_SERIALIZABLE);
+        this.assetReferenceReservations = Objects.requireNonNull(
+                assetReferenceReservations, "assetReferenceReservations");
+        this.dependencyResolution = Objects.requireNonNull(
+                dependencyResolution, "dependencyResolution");
     }
 
     @Override
@@ -153,6 +162,7 @@ public class PostgresTemplatePersistence implements TemplatePersistence {
     public CreateOutcome create(CreateCommit commit) {
         try {
             return executeSerializable(() -> {
+                acquireAssetReadReservations(commit.projection());
                 if (!snapshotMatches(commit.dependencySnapshot())) {
                     return new CreateDependencyDrift();
                 }
@@ -173,7 +183,6 @@ public class PostgresTemplatePersistence implements TemplatePersistence {
                         .param("readiness", commit.readiness().name())
                         .update();
                 insertRevision(commit);
-                acquireAssetReadReservations(commit.projection());
                 replaceProjection(commit.templateId(), commit.ownerScope(), commit.projection());
                 return new Created();
             });
@@ -212,12 +221,12 @@ public class PostgresTemplatePersistence implements TemplatePersistence {
                 if (metadata.currentRevision() != commit.expectedRevision()) {
                     return new AppendRevisionConflict(metadata.currentRevision());
                 }
+                acquireAssetReadReservations(commit.projection());
                 if (!snapshotMatches(commit.dependencySnapshot())) {
                     return new AppendDependencyDrift();
                 }
 
                 insertRevision(commit);
-                acquireAssetReadReservations(commit.projection());
                 replaceProjection(commit.templateId(), commit.ownerScope(), commit.projection());
                 var updated = jdbc.sql("""
                                 update template_aggregate
@@ -361,30 +370,14 @@ public class PostgresTemplatePersistence implements TemplatePersistence {
     private boolean snapshotMatches(TemplateDependencySnapshot expected) {
         var assetFacts = new ArrayList<TemplateDependencySnapshot.AssetFact>();
         for (var fact : expected.assets()) {
-            var state = jdbc.sql("""
-                            select owner_scope, kind, lifecycle, asset_revision,
-                                   current_content_version
-                            from asset_aggregate
-                            where asset_id = :assetId
-                            for share
-                            """)
-                    .param("assetId", fact.assetId())
-                    .query((resultSet, rowNumber) -> new DependencyResolution.AssetState(
-                            new OwnerScopeAuthority.OwnerScope(
-                                    resultSet.getString("owner_scope")),
-                            resultSet.getString("kind"),
-                            DependencyResolution.Lifecycle.valueOf(
-                                    resultSet.getString("lifecycle")),
-                            resultSet.getLong("asset_revision"),
-                            resultSet.getLong("current_content_version")
-                    ))
-                    .optional();
-            assetFacts.add(state
-                    .<TemplateDependencySnapshot.AssetFact>map(value ->
-                            TemplateDependencySnapshot.AssetFact.resolved(
-                                    fact.assetId(), value))
-                    .orElseGet(() -> TemplateDependencySnapshot.AssetFact.missing(
-                            fact.assetId())));
+            var resolution = dependencyResolution.resolveAsset(fact.assetId());
+            if (resolution instanceof DependencyResolution.AssetUnavailable) {
+                throw new PersistenceFault("Asset dependency recheck unavailable");
+            }
+            assetFacts.add(resolution instanceof DependencyResolution.AssetResolved resolved
+                    ? TemplateDependencySnapshot.AssetFact.resolved(
+                            fact.assetId(), resolved.state())
+                    : TemplateDependencySnapshot.AssetFact.missing(fact.assetId()));
         }
 
         var templateFacts = new ArrayList<TemplateDependencySnapshot.TemplateFact>();
@@ -459,31 +452,11 @@ public class PostgresTemplatePersistence implements TemplatePersistence {
         );
     }
 
-    /**
-     * T12b read reservations: FOR SHARE on every referenced Asset aggregate row, acquired
-     * in ascending assetId order, so a confirmed Asset delete's exclusive reservation
-     * serializes against Template current changes (CONTEXT AssetReferenceAuthority
-     * reservation contract). Missing Assets have no row to lock; they are INVALID anyway.
-     */
+    /** T12b shared reservations, acquired in canonical order by the coordination seam. */
     private void acquireAssetReadReservations(TemplateDependencyProjection projection) {
-        var assetIds = projection.assetAtoms().stream()
+        assetReferenceReservations.acquireShared(projection.assetAtoms().stream()
                 .map(TemplateDependencyProjection.AssetRefAtom::assetId)
-                .distinct()
-                .sorted()
-                .toList();
-        if (assetIds.isEmpty()) {
-            return;
-        }
-        jdbc.sql("""
-                        select asset_id
-                        from asset_aggregate
-                        where asset_id in (:assetIds)
-                        order by asset_id
-                        for share
-                        """)
-                .param("assetIds", assetIds)
-                .query((resultSet, rowNumber) -> resultSet.getString("asset_id"))
-                .list();
+                .toList());
     }
 
     /** Current-only projection replace: delete and re-insert within the same transaction. */

@@ -2447,6 +2447,24 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
   chunk reload 波动已由 `.sdlc/evidence/20260828-123048-e2e/` 和第二次完整 full 排除。状态为
   `resolved / automated_verified`、J0；reservation/delete 线性化保持独立，未推进 J1/A3/READY。
 
+## 124. TV1-T124 执行卡
+
+- 决策：T123 以 verified commit `d1250906` 收口且 worktree clean 后，产品 route 仍被 Profile/native completion
+  阻塞；standards audit 的剩余 hard violation 是 Template persistence 在自身事务内直接读取并锁定 Asset-owned
+  `asset_aggregate`。冻结 Ticket 05 又明确要求 reservation 线性化但不共享表/事务，因此登记为当前 frontier。
+- Interface/seam：app assembly 的 `PostgresAssetReferenceReservations` 在调用方既有 PostgreSQL transaction 内，
+  对 domain-separated canonical assetId 获取 transaction-scoped advisory lock；Template 为有序 shared，Asset
+  confirmed delete 为 exclusive。proof、aggregate 与 token 仍分别由 owning adapter 处理。
+- 禁止影响：产品语义、migration/OpenAPI/Web/Renderer/Profile/native build/product route、restore/resolve/audit、
+  provider/API Key/真实数据/费用、J1/A3/READY 与 push/tag/PR。
+- TDD/gates：architecture + Testcontainers reservation concurrency 先 RED，focused GREEN 后依次
+  `fast → server → full → resolution fast`，最高 `automated_verified`、J0。
+- 收口：focused 25/25；`fast` `.sdlc/evidence/20260828-125749-fast/`、最终 `server`
+  `.sdlc/evidence/20260828-130911-server/`（365 tests）与 17-step `full`
+  `.sdlc/evidence/20260828-131919-full/`（17/17）均 passed/A1。首次 architecture RED 与首次 server isolated
+  configuration RED 均保留证据；resolution `fast` `.sdlc/evidence/20260828-133630-fast/` 3/3 passed。状态为
+  `resolved / automated_verified`、J0，未推进 J1/A3/READY。
+
 ## 111. TV1-T111 执行卡
 
 - 决策：T110 以 verified commit `4cbc3b68` 收口且 worktree clean 后，复核 Ticket 10 §6、Ticket 16 §8 与

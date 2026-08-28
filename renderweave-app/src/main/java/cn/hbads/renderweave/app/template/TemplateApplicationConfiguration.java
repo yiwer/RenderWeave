@@ -1,5 +1,6 @@
 package cn.hbads.renderweave.app.template;
 
+import cn.hbads.renderweave.app.coordination.AssetDependencyFacts;
 import cn.hbads.renderweave.asset.spi.AssetReferencePort;
 import cn.hbads.renderweave.asset.spi.AssetAuditEventSource;
 import cn.hbads.renderweave.schema.api.StaticSchemaAuthority;
@@ -47,8 +48,11 @@ class TemplateApplicationConfiguration {
     }
 
     @Bean
-    DependencyResolution templateDependencyResolution(JdbcClient jdbc) {
-        return new TemplateDependencyResolutionAdapter(jdbc);
+    DependencyResolution templateDependencyResolution(
+            JdbcClient jdbc,
+            AssetDependencyFacts assetFacts
+    ) {
+        return new TemplateDependencyResolutionAdapter(jdbc, assetFacts);
     }
 
     @Bean
