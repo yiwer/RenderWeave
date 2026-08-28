@@ -171,4 +171,40 @@ class RenderingPipelineCapacityGuardTest {
         assertEquals("closureAndExpansion.generatedTrackAndCellEntries",
                 cumulativeProblem.limitId().orElseThrow().value());
     }
+
+    @Test
+    void logicalOperationsBoundaryUsesTheFrozenProductionGuardContract() {
+        var guard = new RenderingPipelineCapacityGuard();
+
+        assertTrue(guard.admit(
+                RenderingPipelineCapacityGuard.Limit.LOGICAL_OPERATIONS,
+                999_999).isEmpty());
+        assertTrue(guard.admit(
+                RenderingPipelineCapacityGuard.Limit.LOGICAL_OPERATIONS,
+                1_000_000).isEmpty());
+
+        var problem = guard.admit(
+                        RenderingPipelineCapacityGuard.Limit.LOGICAL_OPERATIONS,
+                        1_000_001)
+                .orElseThrow();
+        assertEquals(EvaluationStage.MATERIALIZATION, problem.stage());
+        assertEquals(ProblemCode.EVALUATION_BUDGET_EXCEEDED, problem.code());
+        assertEquals("closureAndExpansion.logicalOperations",
+                problem.limitId().orElseThrow().value());
+
+        var request = guard.newRequestTracker();
+        assertTrue(request.reserve(
+                RenderingPipelineCapacityGuard.Limit.LOGICAL_OPERATIONS,
+                600_000).isEmpty());
+        assertTrue(request.reserve(
+                RenderingPipelineCapacityGuard.Limit.LOGICAL_OPERATIONS,
+                400_000).isEmpty());
+        var cumulativeProblem = request.reserve(
+                        RenderingPipelineCapacityGuard.Limit.LOGICAL_OPERATIONS,
+                        1)
+                .orElseThrow();
+        assertEquals(ProblemCode.EVALUATION_BUDGET_EXCEEDED, cumulativeProblem.code());
+        assertEquals("closureAndExpansion.logicalOperations",
+                cumulativeProblem.limitId().orElseThrow().value());
+    }
 }

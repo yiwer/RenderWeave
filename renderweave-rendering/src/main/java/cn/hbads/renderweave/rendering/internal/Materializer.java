@@ -113,8 +113,7 @@ final class Materializer {
     private final Map<String, DefinitionEngine> enginesByTemplate = new HashMap<>();
     private final List<ResourceEntry> resources = new ArrayList<>();
     private final List<SidecarEntry> sidecar = new ArrayList<>();
-    private final RenderingPipelineCapacityGuard.RequestTracker requestCapacity =
-            CAPACITY_GUARD.newRequestTracker();
+    private final RenderingPipelineCapacityGuard.RequestTracker requestCapacity;
     private int occurrences;
     private int nodes;
     private int invocations;
@@ -131,7 +130,8 @@ final class Materializer {
             RenderRequestId renderRequestId,
             AssetResolutionPort.RendererAudience audience,
             long deadlineEpochMilli,
-            String ownerScope
+            String ownerScope,
+            RenderingPipelineCapacityGuard.RequestTracker requestCapacity
     ) {
         this.closure = closure;
         this.semantics = semantics;
@@ -142,6 +142,7 @@ final class Materializer {
         this.audience = audience;
         this.deadlineEpochMilli = deadlineEpochMilli;
         this.ownerScope = ownerScope;
+        this.requestCapacity = Objects.requireNonNull(requestCapacity, "requestCapacity");
     }
 
     static MaterializationOutcome materialize(
@@ -156,12 +157,39 @@ final class Materializer {
             AssetResolutionPort.RendererAudience audience,
             long deadlineEpochMilli
     ) {
+        return materialize(
+                assetAdmission,
+                closure,
+                semantics,
+                dslAuthority,
+                assets,
+                capabilities,
+                admittedInput,
+                renderRequestId,
+                audience,
+                deadlineEpochMilli,
+                CAPACITY_GUARD.newRequestTracker());
+    }
+
+    static MaterializationOutcome materialize(
+            AssetAdmission.Admitted assetAdmission,
+            ClosureSnapshot closure,
+            DesignSemanticAuthority semantics,
+            DesignDslAuthority dslAuthority,
+            AssetResolutionPort assets,
+            DefinitionEngine.CapabilityProvider capabilities,
+            AdmittedRenderInput admittedInput,
+            RenderRequestId renderRequestId,
+            AssetResolutionPort.RendererAudience audience,
+            long deadlineEpochMilli,
+            RenderingPipelineCapacityGuard.RequestTracker requestCapacity
+    ) {
         Objects.requireNonNull(assetAdmission, "assetAdmission");
         Objects.requireNonNull(closure, "closure");
         var materializer = new Materializer(
                 closure, semantics, dslAuthority, assets, capabilities,
                 renderRequestId, audience, deadlineEpochMilli,
-                closure.ownerScope().value());
+                closure.ownerScope().value(), requestCapacity);
 
         var rootSnapshot = closure.snapshots().stream()
                 .filter(snapshot -> snapshot.templateId().equals(closure.rootTemplateId()))
@@ -320,6 +348,10 @@ final class Materializer {
         var itemNodes = new ArrayList<MaterializedNode>(itemList.size());
         var index = 0;
         for (var item : itemList) {
+            capacityFailure = reserveLogicalOperation();
+            if (capacityFailure != null) {
+                return capacityFailure;
+            }
             capacityFailure = reserveLoopFrame();
             if (capacityFailure != null) {
                 return capacityFailure;
@@ -789,6 +821,12 @@ final class Materializer {
         return capacityFailure(requestCapacity.reserve(
                 RenderingPipelineCapacityGuard.Limit.GENERATED_TRACK_AND_CELL_ENTRIES,
                 shape.generatedEntries()));
+    }
+
+    private MaterializationOutcome reserveLogicalOperation() {
+        return capacityFailure(requestCapacity.reserve(
+                RenderingPipelineCapacityGuard.Limit.LOGICAL_OPERATIONS,
+                1));
     }
 
     private static MaterializationFailed capacityFailure(

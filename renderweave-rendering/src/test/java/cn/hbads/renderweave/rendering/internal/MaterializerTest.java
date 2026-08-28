@@ -133,6 +133,69 @@ class MaterializerTest {
         assertEquals(0, tree.root().children().size());
     }
 
+    @Test
+    void repeatItemReservesLogicalOperationBeforePruning() {
+        var capacity = new RenderingPipelineCapacityGuard().newRequestTracker();
+        assertTrue(capacity.reserve(
+                RenderingPipelineCapacityGuard.Limit.LOGICAL_OPERATIONS,
+                1_000_000).isEmpty());
+
+        var outcome = materialize(
+                booleanGridRepeat("[false,false]"),
+                Map.of(),
+                null,
+                absentCapability(),
+                capacity);
+
+        var failed = assertInstanceOf(Materializer.MaterializationFailed.class, outcome);
+        assertEquals(EvaluationStage.MATERIALIZATION, failed.stage());
+        assertEquals(RenderingProblem.ProblemCode.EVALUATION_BUDGET_EXCEEDED,
+                failed.problem().code());
+        assertEquals("closureAndExpansion.logicalOperations",
+                failed.problem().limitId().orElseThrow().value());
+    }
+
+    @Test
+    void emptyRepeatConsumesNoLogicalOperation() {
+        var capacity = new RenderingPipelineCapacityGuard().newRequestTracker();
+        assertTrue(capacity.reserve(
+                RenderingPipelineCapacityGuard.Limit.LOGICAL_OPERATIONS,
+                1_000_000).isEmpty());
+
+        var outcome = materialize(
+                booleanGridRepeat("[]"),
+                Map.of(),
+                null,
+                absentCapability(),
+                capacity);
+
+        assertInstanceOf(Materializer.Materialized.class, outcome);
+    }
+
+    @Test
+    void logicalOperationBudgetStopsBeforeTheNextItemDemand() {
+        var capacity = new RenderingPipelineCapacityGuard().newRequestTracker();
+        assertTrue(capacity.reserve(
+                RenderingPipelineCapacityGuard.Limit.LOGICAL_OPERATIONS,
+                999_999).isEmpty());
+        var capability = new CapturingCapability();
+        var document = capabilityDocument(
+                "{\"kind\":\"loop\",\"loopId\":\"" + LOOP_ID + "\"}",
+                repeatWithBoundRect("[\"first\",\"second\"]"));
+
+        var outcome = materialize(
+                document, Map.of(), null, capability, capacity);
+
+        var failed = assertInstanceOf(Materializer.MaterializationFailed.class, outcome);
+        assertEquals(EvaluationStage.MATERIALIZATION, failed.stage());
+        assertEquals(RenderingProblem.ProblemCode.EVALUATION_BUDGET_EXCEEDED,
+                failed.problem().code());
+        assertEquals("closureAndExpansion.logicalOperations",
+                failed.problem().limitId().orElseThrow().value());
+        assertEquals(1, capability.positions.size());
+        assertEquals(loopPosition(0), capability.position(0));
+    }
+
     private static String booleanGridRepeat(String items) {
         var loopId = capacityUuid(2, 900);
         var definitionId = capacityUuid(5, 900);
@@ -700,6 +763,16 @@ class MaterializerTest {
             AssetResolutionPort port,
             DefinitionEngine.CapabilityProvider capability
     ) {
+        return materialize(document, customs, port, capability, null);
+    }
+
+    private static Materializer.MaterializationOutcome materialize(
+            String document,
+            Map<String, DesignValue> customs,
+            AssetResolutionPort port,
+            DefinitionEngine.CapabilityProvider capability,
+            RenderingPipelineCapacityGuard.RequestTracker requestCapacity
+    ) {
         var snapshot = snapshot(ROOT_ID, canonical(document));
         var closure = new ClosureSnapshot(
                 new cn.hbads.renderweave.template.api.TemplateClosureAuthority.OwnerScope("owner-a"),
@@ -711,7 +784,8 @@ class MaterializerTest {
                 closure,
                 port,
                 capability,
-                admitted(customs));
+                admitted(customs),
+                requestCapacity);
     }
 
     private static Materializer.MaterializationOutcome admitThenMaterialize(
@@ -719,6 +793,16 @@ class MaterializerTest {
             AssetResolutionPort port,
             DefinitionEngine.CapabilityProvider capability,
             AdmittedRenderInput input
+    ) {
+        return admitThenMaterialize(closure, port, capability, input, null);
+    }
+
+    private static Materializer.MaterializationOutcome admitThenMaterialize(
+            ClosureSnapshot closure,
+            AssetResolutionPort port,
+            DefinitionEngine.CapabilityProvider capability,
+            AdmittedRenderInput input,
+            RenderingPipelineCapacityGuard.RequestTracker requestCapacity
     ) {
         var admission = AssetAdmission.admit(
                 closure,
@@ -730,6 +814,19 @@ class MaterializerTest {
         if (admission instanceof AssetAdmission.Rejected rejected) {
             return new Materializer.MaterializationFailed(rejected.stage(), rejected.problem());
         }
+        if (requestCapacity == null) {
+            return Materializer.materialize(
+                    (AssetAdmission.Admitted) admission,
+                    closure,
+                    TemplateModule.designSemanticAuthority(),
+                    DESIGNS,
+                    port,
+                    capability,
+                    input,
+                    new RenderRequestId("00000000-0000-4000-8000-000000000001"),
+                    new AssetResolutionPort.RendererAudience("test-audience"),
+                    1_000L);
+        }
         return Materializer.materialize(
                 (AssetAdmission.Admitted) admission,
                 closure,
@@ -740,7 +837,8 @@ class MaterializerTest {
                 input,
                 new RenderRequestId("00000000-0000-4000-8000-000000000001"),
                 new AssetResolutionPort.RendererAudience("test-audience"),
-                1_000L);
+                1_000L,
+                requestCapacity);
     }
 
     private static void assertResolutionProblem(

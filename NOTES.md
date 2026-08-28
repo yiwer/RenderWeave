@@ -3751,3 +3751,30 @@
   无 app wiring/API/Web/migration/Profile 变化，未重复 server/full；provider attempts/API Key reads/真实数据/
   Profile registration/push/tag/PR 均为 0。
 - 状态回填后的 resolution `fast` `.sdlc/evidence/20260829-045433-fast/` metadata 为 passed，3/3 steps 全绿。
+
+# 2026-08-29 Template-v1 T146 Repeat item logical-operation budget（resolved / automated_verified）
+
+- T145 已以 verified commit `b43b9500` 收口，worktree clean、ahead 136 且 DAG 无其他 active claim；现按
+  single-writer 登记并 claim T146。
+- `RW-T19-S7-079` 明文要求每个 Repeat item 在 pruning 前同时预留 frame 与 operation；cap-015 固定
+  `closureAndExpansion.logicalOperations` MAX_INCLUSIVE `1000000`，observed `999999/1000000/1000001`，
+  SERIAL_MATERIALIZATION / public MATERIALIZATION / EVALUATION_BUDGET_EXCEEDED / ZERO_DOCUMENT_OUTPUT。
+- 本票将每个 actual item 的 1 logical unit 在 frame allocation、Definition/capability demand 与 child expansion 前接入
+  唯一 request tracker；被剪枝 item 仍收费、空 collection 为 0、跨 sibling/nested/TemplateUse child 累计。
+- frozen authority 尚未定义 Expression AST/Mapping/ValueSource/Binding 等其余 logical-unit taxonomy；本票不虚报完整
+  `RW-T19-S7-085..088` 或整轴关闭，后续独立票继续。claim 时 A0、J0；provider/API Key/真实数据/费用/Profile/
+  push/tag/PR 均不推进。
+- TDD RED 顺序已保留：guard test 因 missing enum 产生 6 个 compile failures；Materializer tracker seam 因缺少 overload
+  产生 1 个 compile failure；只接 seam 未 reservation 时，Materializer 19 tests 精确 1 个 behavioral failure，actual
+  `Materialized`、expected `MaterializationFailed`。
+- 唯一 guard 已加入 `LOGICAL_OPERATIONS=1000000`；production 默认创建 request-local tracker。每个 actual item 在
+  frame/pruning/demand 前预留 1，空 collection 为 0；预留 999999 后，two-item capability 路径只 demand index 0，
+  index 1 在 demand 前 exact capacity fail。
+- focused Materializer 21 + guard 8 = 29/29；受影响 reactor Schema 20、Validation 13、Template 84、Asset 92、
+  Rendering 208 全绿，`git diff --check` 通过。A1 `render`
+  `.sdlc/evidence/20260829-050504-render/`（2/2）与 `fast`
+  `.sdlc/evidence/20260829-050552-fast/`（3/3）metadata 均 passed。
+- cap-015 不执行 Evaluator/Sealer 且没有正式 product executor，故无 T146-specific A2/A3；完整 taxonomy 与
+  `RW-T19-S7-085..088` 仍开放。J0 pending、J1 未批准；未重复 server/full，provider attempts/API Key reads/真实数据/
+  Profile registration/push/tag/PR 均为 0。
+- 状态回填后的 resolution `fast` `.sdlc/evidence/20260829-050800-fast/` metadata 为 passed，3/3 steps 全绿。

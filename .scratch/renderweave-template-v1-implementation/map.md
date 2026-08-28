@@ -900,6 +900,11 @@ Label: wayfinder:map
   guard/counter，并在 Repeat GRID lowering 校正 effectiveColumns、compact surviving cell 与 pruned zero-charge。
   exact guard 重放 `99999/100000/100001`；focused 25/25、Rendering 204/204 与 render/fast metadata 全绿；
   A1、无 ticket-specific A2、J0。
+- [T146 — Repeat item logical-operation 预算基础](issues/146-repeat-item-logical-operation-budget.md)
+  — **resolved / automated_verified**；按 `RW-T19-S7-079` 在每个 actual Repeat item 的 frame/pruning 前预留一个
+  request-global logical operation，并把 cap-015 `1000000` 接入唯一 production guard。focused 29/29、Rendering
+  208/208 与 render/fast metadata 全绿；其余 Evaluator logical-unit taxonomy 尚未被冻结，本票不虚报完整
+  `RW-T19-S7-085..088` 或整轴完成。A1、无 ticket-specific A2、J0。
 
 - 改写或重解释现有 Schema/Inference v1 已提交历史，或在 dirty main 上直接实施 Template。
 - Workspace、组织/成员/分享/协作、跨 ownerScope 复制、通用 connector、任意 SQL/HTTP/文件/脚本、插件节点或运行时代码注册。

@@ -36,7 +36,9 @@ final class RenderingPipelineCapacityGuard {
         MATERIALIZED_STATIC_NODES(
                 "closureAndExpansion.materializedStaticNodes", 20_000),
         GENERATED_TRACK_AND_CELL_ENTRIES(
-                "closureAndExpansion.generatedTrackAndCellEntries", 100_000);
+                "closureAndExpansion.generatedTrackAndCellEntries", 100_000),
+        LOGICAL_OPERATIONS(
+                "closureAndExpansion.logicalOperations", 1_000_000);
 
         private final String id;
         private final long maximumInclusive;

@@ -5264,3 +5264,39 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
   无 app wiring/API/Web/migration/Profile 变化，未重复 server/full；provider attempts/API Key reads/真实数据/
   Profile registration/push/tag/PR 均为 0。
 - 状态回填后的 resolution `fast` `.sdlc/evidence/20260829-045433-fast/` metadata 为 `passed`，3/3 steps 全绿。
+
+## 146. TV1-T146 执行卡
+
+- 状态：`resolved / automated_verified`；single writer: Codex；blocked by T21/T142/T145（均 resolved）。
+- authority：`RW-T19-S7-079` 明文要求每个 Repeat item 在 pruning 前预留 frame 与 operation；cap-015 的
+  `closureAndExpansion.logicalOperations` 为 MAX_INCLUSIVE `1000000`，observed `999999/1000000/1000001`，
+  SERIAL_MATERIALIZATION / public MATERIALIZATION / EVALUATION_BUDGET_EXCEEDED / ZERO_DOCUMENT_OUTPUT。
+- scope：每个 actual Repeat collection item 固定消费 1 logical unit，含最终被剪枝 item；空 collection 为 0，
+  sibling/nested/TemplateUse child request-global 累计。reservation 必须早于 frame allocation、Definition/capability
+  demand 与 child expansion。
+- honesty：冻结 authority 未定义 Expression AST/Mapping/ValueSource/Binding 等其余 logical-unit taxonomy。本票只完成
+  mandatory Repeat-item unit 与唯一 guard 基础，不宣称完整 `RW-T19-S7-085..088` 或 cap-015 product executor；其余
+  semantic units 与 retry/memo position 语义继续后续独立票。
+- seam/TDD：沿用 package-internal production guard + Materializer outcome；missing enum exact guard 先 RED，随后用
+  同一 precharged request tracker 让最终会剪枝的 item 在 pruning/frame 前 exact RED，再最小接线。focused
+  Materializer/guard、受影响 reactor、render/fast；无 app wiring/API/Web/migration/Profile 变化，不重复 server/full。
+- 禁止影响：外部 Interface/config/route、正式 Ticket 19 records/product executor、provider/API Key/真实数据/费用/
+  Profile registration/push/tag/PR；最高 `automated_verified`，当前 A1、J0。
+
+### TV1-T146 resolution evidence
+
+- missing-enum guard test 首先产生编译 RED：6 个引用均找不到 `LOGICAL_OPERATIONS`。补 enum 后，新 Materializer
+  tracker seam 先产生 1 个 missing-overload compile RED；只接入 tracker、尚未 reservation 时，Materializer 19 tests
+  精确 1 个 behavioral RED，actual `Materialized` 而 expected `MaterializationFailed`。
+- 唯一 guard 现含 `LOGICAL_OPERATIONS=1000000`；production 默认创建 request-local tracker，package-internal seam
+  复用同一实现。每个 actual Repeat item 在 Loop frame、pruning、Definition/capability demand 与 child expansion 前
+  原子预留 1；空 collection 为 0。预留 999999 后的 two-item 回归只观察到 index 0 capability position，index 1 在
+  demand 前 exact capacity fail。
+- focused Materializer 21 + guard 8 = 29/29；受影响 reactor Schema 20、Validation 13、Template 84、Asset 92、
+  Rendering 208 全绿，`git diff --check` 通过。A1 `render`
+  `.sdlc/evidence/20260829-050504-render/`（2/2）与 `fast`
+  `.sdlc/evidence/20260829-050552-fast/`（3/3）metadata 均 `passed`。
+- cap-015 不执行 Evaluator/Sealer 且无正式 product executor，故无 T146-specific A2/A3；完整 logical-unit taxonomy、
+  retry/memo position 与 `RW-T19-S7-085..088` 仍开放。J0 pending、J1 未批准；未重复 server/full，provider attempts/
+  API Key reads/真实数据/Profile registration/push/tag/PR 均为 0。
+- 状态回填后的 resolution `fast` `.sdlc/evidence/20260829-050800-fast/` metadata 为 `passed`，3/3 steps 全绿。
