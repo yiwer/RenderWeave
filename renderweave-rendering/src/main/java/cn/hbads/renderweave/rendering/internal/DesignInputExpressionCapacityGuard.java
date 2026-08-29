@@ -54,6 +54,11 @@ final class DesignInputExpressionCapacityGuard {
                 4_096,
                 ProblemCode.EXPRESSION_LIMIT_EXCEEDED,
                 EvaluationStage.TEMPLATE_CLOSURE),
+        AST_NODES_TOTAL(
+                "expression.astNodesTotal",
+                65_536,
+                ProblemCode.EXPRESSION_LIMIT_EXCEEDED,
+                EvaluationStage.TEMPLATE_CLOSURE),
         EXPLICIT_ROUNDING_SCALE_MAX(
                 "expression.explicitRoundingScaleMax",
                 64,
@@ -137,6 +142,27 @@ final class DesignInputExpressionCapacityGuard {
         }
     }
 
+    final class AstNodeBudget {
+        private BigInteger totalNodes = BigInteger.ZERO;
+
+        Optional<RenderingProblem> admitNode(long expressionNodes) {
+            var perExpressionProblem = DesignInputExpressionCapacityGuard.this.admit(
+                    Limit.AST_NODES_PER_EXPRESSION,
+                    expressionNodes);
+            if (perExpressionProblem.isPresent()) {
+                return perExpressionProblem;
+            }
+            var projectedTotal = totalNodes.add(BigInteger.ONE);
+            var totalProblem = DesignInputExpressionCapacityGuard.this.admit(
+                    Limit.AST_NODES_TOTAL,
+                    projectedTotal);
+            if (totalProblem.isEmpty()) {
+                totalNodes = projectedTotal;
+            }
+            return totalProblem;
+        }
+    }
+
     SourceBudget newSourceBudget() {
         return new SourceBudget();
     }
@@ -147,6 +173,10 @@ final class DesignInputExpressionCapacityGuard {
 
     MappingCaseBudget newMappingCaseBudget() {
         return new MappingCaseBudget();
+    }
+
+    AstNodeBudget newAstNodeBudget() {
+        return new AstNodeBudget();
     }
 
     Optional<RenderingProblem> admit(Limit limit, long observedValue) {

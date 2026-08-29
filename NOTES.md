@@ -1,5 +1,20 @@
 # NOTES.md
 
+# 2026-08-29 Template-v1 T194 Expression AST nodes total capacity（resolved / automated_verified）
+- cap-046 `expression.astNodesTotal=65536` 已合流到现有 Rendering.internal 单一 guard；per-DesignDSL
+  `AstNodeBudget` 对每个 AST node 先检查 cap-045、再检查 projected cap-046，并仅在两者成功后提交累计值。
+  Closure admission 为每个 frozen snapshot 新建共享预算，所有 unused ExpressionDefinition 静态计数且跨
+  snapshot 不泄漏；standalone/defensive parser 调用保留独立预算。
+- TDD 记录 missing-enum/missing-budget compile RED 与公共 Evaluator behavioral RED：65,537 个有效 unused
+  nodes 原错误到达 `SealedDocument`。合流后以 exact TEMPLATE_CLOSURE / EXPRESSION_LIMIT_EXCEEDED /
+  `expression.astNodesTotal` 拒绝，validation target resolution、capability establish/restore 与 state load/save
+  均为 0；16×4096 exact-at 与 root/child 各自 exact-at 均成功 seal。
+- Focused 148/148、受影响 reactor 555/555（Schema 20、Validation 13、Template 86、Asset 92、Rendering
+  344）；`render` `.sdlc/evidence/20260829-170856-render/metadata.json` 与 `fast`
+  `.sdlc/evidence/20260829-170947-fast/metadata.json` 均 passed/A1。cap-047+ deferred；T194-specific A2/A3
+  与 formal record issuance 均无，J0 pending、J1 未批准。无 public/app/OpenAPI/Web/Flyway/Profile/provider/
+  API Key/真实数据/费用/push/tag/PR 变化。
+
 # 2026-08-29 Template-v1 T193 Expression AST nodes per-expression capacity（resolved / automated_verified）
 - cap-045 `expression.astNodesPerExpression=4096` 已合流到现有 Rendering.internal 单一 guard；parser 删除重复
   `MAX_AST_NODES`、手写比较、literal limitId 与 AST-specific rejection kind，逐 AST node 经 guard admission，

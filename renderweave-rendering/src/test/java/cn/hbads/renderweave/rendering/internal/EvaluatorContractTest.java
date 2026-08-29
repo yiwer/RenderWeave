@@ -524,6 +524,73 @@ class EvaluatorContractTest {
     }
 
     @Test
+    void astNodesTotalOverBudgetRejectsBeforeAllDownstreamWork() {
+        var stateStore = new RecordingCapabilityStateStore();
+        var runtime = new RecordingCapabilityRuntime();
+        var inputResolutions = new AtomicInteger();
+        var targetResolver = resolver();
+        ValidationTargetResolver recordingResolver = target -> {
+            inputResolutions.incrementAndGet();
+            return targetResolver.resolve(target);
+        };
+        var evaluator = evaluator(
+                closureWith(withAstNodeTotal(canvasWithRect(), 65_537)),
+                recordingResolver,
+                stateStore,
+                runtime);
+
+        var rejected = assertInstanceOf(EvaluationOutcome.Rejected.class,
+                evaluator.evaluate(command("{\"rootDocument\":{}}")));
+
+        assertEquals(EvaluationStage.TEMPLATE_CLOSURE, rejected.stage());
+        assertEquals(RenderingProblem.ProblemCode.EXPRESSION_LIMIT_EXCEEDED,
+                rejected.problem().code());
+        assertEquals("expression.astNodesTotal",
+                rejected.problem().limitId().orElseThrow().value());
+        assertEquals(0, inputResolutions.get());
+        assertEquals(0, runtime.establishCalls);
+        assertEquals(0, runtime.restoreCalls);
+        assertEquals(0, stateStore.loadCalls);
+        assertEquals(0, stateStore.saveCalls);
+    }
+
+    @Test
+    void astNodesTotalAcceptsTheExactMaximumOnTheRealClosurePath() {
+        var stateStore = new RecordingCapabilityStateStore();
+        var runtime = new RecordingCapabilityRuntime();
+        var evaluator = evaluator(
+                closureWith(withAstNodeTotal(canvasWithRect(), 65_536)),
+                resolver(),
+                stateStore,
+                runtime);
+
+        assertInstanceOf(EvaluationOutcome.SealedDocument.class,
+                evaluator.evaluate(command("{\"rootDocument\":{}}")));
+        assertEquals(0, runtime.establishCalls);
+        assertEquals(0, runtime.restoreCalls);
+        assertEquals(0, stateStore.loadCalls);
+        assertEquals(0, stateStore.saveCalls);
+    }
+
+    @Test
+    void astNodesTotalResetsForEachDslAtTheFrozenMaximum() {
+        var stateStore = new RecordingCapabilityStateStore();
+        var runtime = new RecordingCapabilityRuntime();
+        var evaluator = evaluator(
+                closureWithAstNodeTotalAtLimitPerDsl(),
+                resolver(),
+                stateStore,
+                runtime);
+
+        assertInstanceOf(EvaluationOutcome.SealedDocument.class,
+                evaluator.evaluate(command("{\"rootDocument\":{}}")));
+        assertEquals(0, runtime.establishCalls);
+        assertEquals(0, runtime.restoreCalls);
+        assertEquals(0, stateStore.loadCalls);
+        assertEquals(0, stateStore.saveCalls);
+    }
+
+    @Test
     void randomDemandOverBudgetRejectsBeforeCallingProviderForTheNextPosition() {
         var runtime = new SupplyingCapabilityRuntime();
         var evaluator = evaluator(
@@ -3014,6 +3081,29 @@ class EvaluatorContractTest {
                         1)));
     }
 
+    private static ClosureSnapshot closureWithAstNodeTotalAtLimitPerDsl() {
+        var useId = capacityUuid(2, 703);
+        var rootSnapshot = snapshot(
+                ROOT_ID,
+                withAstNodeTotal(
+                        canvasWithChildren(templateUse(CHILD_ID, useId, 703)),
+                        65_536));
+        var childSnapshot = snapshot(
+                CHILD_ID,
+                withAstNodeTotal(canvasWithChildren(""), 65_536));
+        return new ClosureSnapshot(
+                new TemplateClosureAuthority.OwnerScope("owner-a"),
+                rootSnapshot.templateId(),
+                1,
+                List.of(rootSnapshot, childSnapshot),
+                List.of(new ClosureEdge(
+                        rootSnapshot.templateId(),
+                        1,
+                        useId,
+                        childSnapshot.templateId(),
+                        1)));
+    }
+
     private static ClosureSnapshot closureWithSkippedTemplateUses(int skippedCount) {
         var skippedUseId = capacityUuid(4, 1);
         var actualUseId = capacityUuid(4, 2);
@@ -3431,6 +3521,27 @@ class EvaluatorContractTest {
                 + "\"kind\":\"expression\",\"displayName\":\"AST capacity\","
                 + "\"domain\":\"invocation\",\"output\":\"decimal\","
                 + "\"inputs\":[],\"source\":\"" + source + "\"}]");
+    }
+
+    private static String withAstNodeTotal(String designDocument, int totalAstNodes) {
+        if (totalAstNodes < 0) {
+            throw new IllegalArgumentException("totalAstNodes must be non-negative");
+        }
+        var definitions = new ArrayList<String>();
+        var remainingNodes = totalAstNodes;
+        while (remainingNodes > 0) {
+            var astNodes = Math.min(4_096, remainingNodes);
+            var definitionIndex = definitions.size();
+            definitions.add("{\"definitionId\":\"" + capacityUuid(7, 50_000 + definitionIndex)
+                    + "\",\"kind\":\"expression\",\"displayName\":\"AST total "
+                    + definitionIndex + "\",\"domain\":\"invocation\","
+                    + "\"output\":\"decimal\",\"inputs\":[],\"source\":\""
+                    + balancedDecimalAstSource(astNodes) + "\"}");
+            remainingNodes -= astNodes;
+        }
+        return designDocument.replace(
+                "\"definitions\":[]",
+                "\"definitions\":[" + String.join(",", definitions) + "]");
     }
 
     private static String withUnusedSourceTotalOverflow(String designDocument) {

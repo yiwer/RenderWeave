@@ -42,29 +42,48 @@ final class ExpressionParser {
     }
 
     private final String source;
+    private final DesignInputExpressionCapacityGuard.AstNodeBudget astNodeBudget;
     private int position;
     private int nodeCount;
     private ParseFailure failure;
     private RenderingProblem capacityProblem;
 
-    private ExpressionParser(String source) {
+    private ExpressionParser(
+            String source,
+            DesignInputExpressionCapacityGuard.AstNodeBudget astNodeBudget
+    ) {
         this.source = source;
+        this.astNodeBudget = astNodeBudget;
     }
 
     static ParseResult parse(byte[] sourceUtf8) {
-        return parse(sourceUtf8, CAPACITY_GUARD.newSourceBudget());
+        return parse(
+                sourceUtf8,
+                CAPACITY_GUARD.newSourceBudget(),
+                CAPACITY_GUARD.newAstNodeBudget());
     }
 
     static ParseResult parse(
             byte[] sourceUtf8,
             DesignInputExpressionCapacityGuard.SourceBudget sourceBudget
     ) {
+        return parse(sourceUtf8, sourceBudget, CAPACITY_GUARD.newAstNodeBudget());
+    }
+
+    static ParseResult parse(
+            byte[] sourceUtf8,
+            DesignInputExpressionCapacityGuard.SourceBudget sourceBudget,
+            DesignInputExpressionCapacityGuard.AstNodeBudget astNodeBudget
+    ) {
         Objects.requireNonNull(sourceBudget, "sourceBudget");
+        Objects.requireNonNull(astNodeBudget, "astNodeBudget");
         var capacityProblem = sourceBudget.admit(sourceUtf8.length);
         if (capacityProblem.isPresent()) {
             return new ParseLimitExceeded(capacityProblem.orElseThrow());
         }
-        var parser = new ExpressionParser(new String(sourceUtf8, StandardCharsets.UTF_8));
+        var parser = new ExpressionParser(
+                new String(sourceUtf8, StandardCharsets.UTF_8),
+                astNodeBudget);
         var expression = parser.parseExpression();
         if (parser.capacityProblem != null) {
             return new ParseLimitExceeded(parser.capacityProblem);
@@ -92,9 +111,7 @@ final class ExpressionParser {
             return node;
         }
         nodeCount++;
-        CAPACITY_GUARD.admit(
-                        DesignInputExpressionCapacityGuard.Limit.AST_NODES_PER_EXPRESSION,
-                        nodeCount)
+        astNodeBudget.admitNode(nodeCount)
                 .ifPresent(problem -> capacityProblem = problem);
         return node;
     }

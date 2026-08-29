@@ -1183,6 +1183,13 @@ Label: wayfinder:map
   limitId 与 AST rejection kind 已删除，overflow 现在返回 `ParseLimitExceeded`。4095/4096/4097 平衡 AST、unused
   above exact closure problem/零 downstream 与 exact-at seal 均已覆盖；focused 143/143、受影响 reactor 550/550，
   `render`/`fast` 均 passed/A1。cap-046+ deferred；T193-specific A2/A3 无，J0 pending、J1 未批准。
+- [T194 — Expression AST nodes total capacity authority](issues/194-expression-ast-nodes-total-capacity.md)
+  — **resolved / automated_verified**；blocked by T21/T126/T193（均 resolved）。cap-046
+  `expression.astNodesTotal=65536` 已由现有 Rendering.internal guard 的 per-DesignDSL `AstNodeBudget` 承载；
+  parser 逐节点先 cap-045、再 cap-046，仅成功后提交累计值。65535/65536/65537 identity、unused above 的 exact
+  closure problem/零 downstream、16×4096 exact-at seal 与 root/child 各自 exact-at 重置均已覆盖；focused
+  148/148、受影响 reactor 555/555，`render`/`fast` 均 passed/A1。cap-047+ deferred；T194-specific A2/A3 无，
+  J0 pending、J1 未批准。
 
 - 改写或重解释现有 Schema/Inference v1 已提交历史，或在 dirty main 上直接实施 Template。
 - Workspace、组织/成员/分享/协作、跨 ownerScope 复制、通用 connector、任意 SQL/HTTP/文件/脚本、插件节点或运行时代码注册。

@@ -54,6 +54,7 @@ final class ExpressionCapacityAdmission {
                 var sourceBudget = CAPACITY_GUARD.newSourceBudget();
                 var inputBudget = CAPACITY_GUARD.newInputBudget();
                 var mappingCaseBudget = CAPACITY_GUARD.newMappingCaseBudget();
+                var astNodeBudget = CAPACITY_GUARD.newAstNodeBudget();
                 var interpretation = semantics.interpret(snapshot.canonicalDesignDslUtf8());
                 if (!(interpretation instanceof DesignSemanticAuthority.Interpreted interpreted)
                         || !(interpreted.document().members().get("definitions")
@@ -91,7 +92,8 @@ final class ExpressionCapacityAdmission {
                     }
                     var parsed = ExpressionParser.parse(
                             source.value().getBytes(StandardCharsets.UTF_8),
-                            sourceBudget);
+                            sourceBudget,
+                            astNodeBudget);
                     if (parsed instanceof ExpressionParser.ParseLimitExceeded limited) {
                         return new Rejected(limited.problem());
                     }

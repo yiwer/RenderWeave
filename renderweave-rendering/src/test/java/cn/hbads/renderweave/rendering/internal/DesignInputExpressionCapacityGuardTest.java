@@ -10,6 +10,41 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class DesignInputExpressionCapacityGuardTest {
 
     @Test
+    void astNodesTotalBoundaryUsesFrozenProductionGuardContract() {
+        var guard = new DesignInputExpressionCapacityGuard();
+        var limit = DesignInputExpressionCapacityGuard.Limit.AST_NODES_TOTAL;
+
+        assertTrue(guard.admit(limit, 65_535).isEmpty());
+        assertTrue(guard.admit(limit, 65_536).isEmpty());
+
+        var problem = guard.admit(limit, 65_537).orElseThrow();
+        assertEquals(EvaluationStage.TEMPLATE_CLOSURE, problem.stage());
+        assertEquals(ProblemCode.EXPRESSION_LIMIT_EXCEEDED, problem.code());
+        assertEquals("expression.astNodesTotal",
+                problem.limitId().orElseThrow().value());
+    }
+
+    @Test
+    void astNodeBudgetAccumulatesOneDslAndPreservesPerExpressionPrecedence() {
+        var guard = new DesignInputExpressionCapacityGuard();
+        var astNodeBudget = guard.newAstNodeBudget();
+
+        var perExpressionProblem = astNodeBudget.admitNode(4_097).orElseThrow();
+        assertEquals("expression.astNodesPerExpression",
+                perExpressionProblem.limitId().orElseThrow().value());
+
+        for (var expression = 0; expression < 16; expression++) {
+            for (var node = 1; node <= 4_096; node++) {
+                assertTrue(astNodeBudget.admitNode(node).isEmpty());
+            }
+        }
+
+        var totalProblem = astNodeBudget.admitNode(1).orElseThrow();
+        assertEquals("expression.astNodesTotal",
+                totalProblem.limitId().orElseThrow().value());
+    }
+
+    @Test
     void astNodesPerExpressionBoundaryUsesFrozenProductionGuardContract() {
         var guard = new DesignInputExpressionCapacityGuard();
         var limit = DesignInputExpressionCapacityGuard.Limit.AST_NODES_PER_EXPRESSION;

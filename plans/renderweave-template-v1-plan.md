@@ -1,5 +1,27 @@
 # RenderWeave Template v1 Implementation Plan
 
+## 194. TV1-T194 执行卡
+
+- 状态：`resolved / automated_verified`；single writer: Codex；blocked by T21/T126/T193（均 resolved）。
+- authority：Ticket 19 `RW-T19-S7-054` 与 DESIGN_INPUT_EXPRESSION cap-046；
+  `expression.astNodesTotal` MAX_INCLUSIVE `65536`，observed `65535/65536/65537`，
+  EXPRESSION_PARSE_AND_STATIC_ANALYSIS / public TEMPLATE_CLOSURE /
+  EXPRESSION_LIMIT_EXCEEDED / ZERO_WRITE_AND_DOWNSTREAM。
+- seam：深化 Rendering.internal 单一 `DesignInputExpressionCapacityGuard`，新增 per-DesignDSL
+  `AstNodeBudget`；parser 逐节点先 cap-045、再 cap-046，仅两者成功后提交累计值。新增 internal parser overload，
+  closure 每 frozen snapshot 新建共享预算，standalone/defensive parse 使用新预算；不新增 public API/SPI。
+- TDD：先取得 missing enum/budget compile RED，再取得 unused 65537-node total 的 Evaluator behavioral RED；
+  使用每 Expression 不超过 4096 的平衡 decimal AST，覆盖 exact-at、above、零 downstream 与跨 snapshot 重置。
+- 边界：不实现 cap-047+ graph/list/decimal axes、formal records 或完整 execution-class target；不实现
+  app/Profile/provider/真实数据，不 push/tag/PR；J0 pending、J1 未批准。
+- resolution：guard compile RED 与 65537 valid-unused nodes 错误 `SealedDocument` behavioral RED 均已记录；
+  integration 后 65537 以 exact TEMPLATE_CLOSURE / EXPRESSION_LIMIT_EXCEEDED /
+  `expression.astNodesTotal` 且零 downstream 拒绝，16×4096 exact-at 与 root/child 各自 65536 均 seal。
+  Focused 148/148、受影响 reactor 555/555；`render`
+  `.sdlc/evidence/20260829-170856-render/metadata.json` 与 `fast`
+  `.sdlc/evidence/20260829-170947-fast/metadata.json` 均 passed/A1。T194-specific A2/A3 与 formal records
+  均无；无 public/app/OpenAPI/Web/Flyway/Profile/provider/API Key/真实数据/费用/push/tag/PR 变化。
+
 ## 193. TV1-T193 执行卡
 
 - 状态：`resolved / automated_verified`；single writer: Codex；blocked by T21/T126/T192（均 resolved）。
