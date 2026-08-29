@@ -1,20 +1,20 @@
 {
-  "evidenceVersion": "renderweave-spec-registry-a2/1.3",
-  "evidenceId": "SPEC_REGISTRY_A2::2026-08-29::000004",
+  "evidenceVersion": "renderweave-spec-registry-a2/1.4",
+  "evidenceId": "SPEC_REGISTRY_A2::2026-08-29::000005",
   "status": "PASS",
   "grade": "A2_INDEPENDENTLY_REPLAYED",
   "scope": "EXEC::SPEC_REGISTRY::1.0 only",
-  "predecessorEvidenceId": "SPEC_REGISTRY_A2::2026-08-16::000001",
+  "predecessorEvidenceId": "SPEC_REGISTRY_A2::2026-08-29::000004",
   "specRevision": {
     "branch": "spec/template-v1",
     "baseCommit": "b14c2d7d4978c679e7ab8e7a2bace3da7af884de",
-    "implementationRevision": "spec-registry-bootstrap/1.15"
+    "implementationRevision": "spec-registry-bootstrap/1.16"
   },
   "authorityBindings": {
     "acceptanceManifest": {
       "path": "acceptance-manifest-v1.json",
-      "sha256": "sha256:3ff9d585dbbe315adb33b66f60408998c7e8c63a3375f60d8d25fe5d08192fd1",
-      "byteLength": 57104
+      "sha256": "sha256:ac04838ee197dfed579e6750a0d2cb7a86b079c7d8956b92a19ee08a228ebe3b",
+      "byteLength": 58308
     },
     "requirementsRegistry": {
       "path": "requirements-v1.json",
@@ -57,22 +57,22 @@
       "candidateCaseCount": 525,
       "candidateOracleCount": 525,
       "formallyIssued": true,
-      "formallyIssuedCaseCount": 207,
-      "formallyIssuedOracleCount": 207
+      "formallyIssuedCaseCount": 363,
+      "formallyIssuedOracleCount": 363
     },
     "targetManifest": {
       "path": "spec-registry/target-manifest-v1.json",
-      "sha256": "sha256:883469487d253371e8dc8e17ad127a9fcbd11e4eaa98282761b7e2a7be9bbf8a",
-      "byteLength": 83508
+      "sha256": "sha256:e4ccc2e1d6e08c73c19130e9bc5c0927849ea53d98137d17348d4c3aa0227033",
+      "byteLength": 84279
     },
     "primaryExecutorManifest": {
       "path": "spec-registry/primary-executor-manifest-v1.json",
-      "sha256": "sha256:6598feb69e17bc73255486c0ed0af5e2ed72cb4ba6fed0d2998af74351dc8118",
+      "sha256": "sha256:5a4116560a1e6bf60bc3c5f9ccf4e7ac8d497d59e46e8f4a1133e8ceaeb19f62",
       "byteLength": 950
     },
     "independentExecutorManifest": {
       "path": "spec-registry/independent-executor-manifest-v1.json",
-      "sha256": "sha256:d8b463b781332b2e0d0b82405eb4edadf3dddb8302187350067ba4c60d4e9857",
+      "sha256": "sha256:c9629d55f14fa704d7977f4d66e08b30c7ffa44a93e618531ce87495db724244",
       "byteLength": 973
     }
   },
@@ -85,9 +85,9 @@
     },
     "formalCases": {
       "path": "conformance-cases-v1.jsonl",
-      "sha256": "sha256:54704176be36d7e1ca5058eb987a17d42378bf157593cca9bc9e5c243935bcb7",
-      "byteLength": 851625,
-      "recordCount": 253,
+      "sha256": "sha256:48fc05a31c39387d425046f93b020b13c63af3dee3c325322b7f5a972d4c2efb",
+      "byteLength": 1380235,
+      "recordCount": 409,
       "byteIdenticalToCandidate": false,
       "byteIdenticalSpecPrefix": true
     },
@@ -99,9 +99,9 @@
     },
     "formalOracles": {
       "path": "conformance-oracles-v1.jsonl",
-      "sha256": "sha256:66ad0cb8e8580e66bef38b3e5e2ecd64da36813dfa84f8c0339fd97f7f306141",
-      "byteLength": 303185,
-      "recordCount": 253,
+      "sha256": "sha256:0e91bc817fc50fecae41d8e69527fe800f3c086a43915cfed00402152e3685e8",
+      "byteLength": 482367,
+      "recordCount": 409,
       "byteIdenticalToCandidate": false,
       "byteIdenticalSpecPrefix": true
     },
@@ -111,22 +111,22 @@
     "primary": {
       "result": {
         "path": "spec-registry/primary-result-v1.json",
-        "sha256": "sha256:ba2ec0675daae34dd712ffbaadb55f4676255bab4791112fc54388490adb183f",
+        "sha256": "sha256:f72283e7319a6cedd8f020b7eb38007169b05b31911c1137979e24a5058de4b4",
         "byteLength": 1081
       },
       "status": "PASS",
-      "checkCount": 23377,
+      "checkCount": 24519,
       "failureCount": 0,
       "runtime": "v24.12.0"
     },
     "independent": {
       "result": {
         "path": "spec-registry/independent-result-v1.json",
-        "sha256": "sha256:463f915ec815f87e94f18aeee61c5aa788f9561320812bcf96c6b519f668bd2c",
+        "sha256": "sha256:8be99bd54565cb801bc1671e1e25e5c8c928d8d7c7c349f0f18168d5e308f1cf",
         "byteLength": 1097
       },
       "status": "PASS",
-      "checkCount": 23285,
+      "checkCount": 24427,
       "failureCount": 0,
       "runtime": "3.13.13"
     },
@@ -137,12 +137,12 @@
     "snapshotCatalogClosureValid": true,
     "issuedSpecCaseCount": 46,
     "issuedSpecOracleCount": 46,
-    "totalFormalCaseCount": 253,
-    "totalFormalOracleCount": 253,
+    "totalFormalCaseCount": 409,
+    "totalFormalOracleCount": 409,
     "capacityAxisCount": 175,
     "capacityShapeCandidateCaseCount": 525,
     "capacityShapeCandidateOracleCount": 525,
-    "capacityRecordsIssued": 207,
+    "capacityRecordsIssued": 363,
     "capacityProductExecutionObserved": true
   },
   "sideEffects": {
@@ -156,8 +156,8 @@
   "boundary": {
     "currentIssuancePhase": "CAPACITY_BOUNDARY",
     "allOtherExecutionClassesExecutable": false,
-    "capacityExecutionClassesExecutable": 2,
-    "isolatedCapacityRecordsIssued": 207,
+    "capacityExecutionClassesExecutable": 3,
+    "isolatedCapacityRecordsIssued": 363,
     "combinedCapacityRecordsIssued": 0,
     "fullAutomatedCorpusExecutable": false,
     "rendererCertified": false,

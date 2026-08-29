@@ -14,7 +14,7 @@
     },
     "audit": {
       "path": "editor-automated/atomic-candidate-readiness-audit-v1.json",
-      "sha256": "sha256:62ba35de726c574c8ca8790cf7282500ba9c8b5b1ce7c162bf5ed6d7a31c4d3e",
+      "sha256": "sha256:e0b72151ef7ad25898668b46a0fd3d7f6cae8b45e9e963406dea93ed96e8ae16",
       "byteLength": 11206
     },
     "sourceAssignment": {
@@ -94,17 +94,17 @@
     },
     "formalCases": {
       "path": "conformance-cases-v1.jsonl",
-      "sha256": "sha256:54704176be36d7e1ca5058eb987a17d42378bf157593cca9bc9e5c243935bcb7",
-      "byteLength": 851625
+      "sha256": "sha256:48fc05a31c39387d425046f93b020b13c63af3dee3c325322b7f5a972d4c2efb",
+      "byteLength": 1380235
     },
     "formalOracles": {
       "path": "conformance-oracles-v1.jsonl",
-      "sha256": "sha256:66ad0cb8e8580e66bef38b3e5e2ecd64da36813dfa84f8c0339fd97f7f306141",
-      "byteLength": 303185
+      "sha256": "sha256:0e91bc817fc50fecae41d8e69527fe800f3c086a43915cfed00402152e3685e8",
+      "byteLength": 482367
     }
   },
   "status": "PASS_STATIC_CANDIDATE_DECOMPOSITION",
-  "checkCount": 21555,
+  "checkCount": 21867,
   "failureCount": 0,
   "observed": {
     "journeySeedCount": 12,
@@ -137,8 +137,8 @@
     "pendingTerminalBindingCount": 0,
     "faultArtifactBindingCount": 37,
     "faultNoneBindingCount": 71,
-    "formalCaseCount": 253,
-    "formalOracleCount": 253,
+    "formalCaseCount": 409,
+    "formalOracleCount": 409,
     "formalEditorCaseCount": 0,
     "formalEditorOracleCount": 0
   },

@@ -1,6 +1,6 @@
 {
   "artifactVersion": "renderweave-conformance-bootstrap-order/1.0",
-  "status": "DOMAIN_SERVICES_12_AND_DESIGN_INPUT_EXPRESSION_195_CAPACITY_RECORDS_ISSUED_A2_OTHER_CLASS_PRODUCT_GATES_PENDING",
+  "status": "DOMAIN_SERVICES_12_DESIGN_INPUT_EXPRESSION_195_AND_RENDERING_PIPELINE_156_CAPACITY_RECORDS_ISSUED_A2_RENDERER_EXACT_OUTPUT_PENDING",
   "authority": "Ticket19 conformance bootstrap and record-issuance order",
   "executionClassCatalog": "conformance-execution-classes-v1.json",
   "steps": [
@@ -130,12 +130,37 @@
       ],
       "safeBaselineFixtureStatus": "FROZEN_DUAL_VALIDATED_STATIC_ONLY",
       "generatorImplementationStatus": "FROZEN_DUAL_REPLAYED_STATIC_ONLY",
-      "observationAdapterStatus": "FROZEN_CONTRACT_TARGET_PENDING",
-      "executorManifestStatus": "PENDING",
-      "targetManifestStatus": "PENDING",
-      "assignedCorpusStatus": "156_CAPACITY_SHAPE_CANDIDATES_STATIC_ONLY_FORMAL_RECORDS_PENDING",
+      "observationAdapterStatus": "FROZEN",
+      "executorManifestStatus": "FROZEN",
+      "targetManifestStatus": "FROZEN",
+      "assignedCorpusStatus": "ISSUED_156_CASES_156_ORACLES",
       "staticFixtureEvidence": "rendering-pipeline/rendering-pipeline-fixture-static-a2-2026-08-17.json",
-      "executable": false
+      "executable": true,
+      "independentReplayStatus": "A2_PREISSUANCE_AND_POSTISSUANCE_REPLAYED",
+      "activeCorpusDigest": "sha256:a91ad6cc0a8a3e52f926004af9b4115f3d2ef9ac1a9fcbf5481e0a655365ad4c",
+      "targetManifest": {
+        "path": "rendering-pipeline/execution-class-target-v1.json",
+        "sha256": "sha256:a834125e93cd8debe2748b55a4f9b0d1dbd933214a15ca19a9068a70e1c99bd9",
+        "byteLength": 9911
+      },
+      "executorManifests": [
+        {
+          "path": "rendering-pipeline/java-evaluator-and-sealer-executor-manifest-v1.json",
+          "sha256": "sha256:fe68339fc8bdba2fbfe7b32cb123471061632bf80865ef01678dd19ed9989aa9",
+          "byteLength": 2783
+        },
+        {
+          "path": "rendering-pipeline/rust-render-document-parser-and-engine-executor-manifest-v1.json",
+          "sha256": "sha256:6325368251d470d8c7cc58881fb4cecf51358897f1870219ab9891931b54a48d",
+          "byteLength": 2077
+        }
+      ],
+      "recordIssuanceTarget": {
+        "path": "rendering-pipeline/capacity-record-issuance-target-v1.json",
+        "sha256": "sha256:eaa7a953445fe1d24fec55c7c165f7eb3e911ab6ae7be76a4cae35ab7da9c428",
+        "byteLength": 24670
+      },
+      "replayEvidence": "rendering-pipeline/rendering-pipeline-capacity-postissuance-a2-2026-08-29.json"
     },
     {
       "ordinal": 5,
@@ -238,9 +263,9 @@
       ],
       "shapeCandidateStatus": "A2_STATIC_MATERIALIZED_525_CASES_525_ORACLES",
       "shapeCandidateEvidence": "capacity-boundary/capacity-boundary-static-a2-2026-08-17.json",
-      "formalIssuedCaseCount": 207,
-      "formalIssuedOracleCount": 207,
-      "executionGateStatus": "DOMAIN_SERVICES_12_AND_DESIGN_INPUT_EXPRESSION_195_ISSUED_AND_EXECUTABLE_OTHER_TWO_ASSIGNED_CLASSES_PRODUCT_GATES_PENDING",
+      "formalIssuedCaseCount": 363,
+      "formalIssuedOracleCount": 363,
+      "executionGateStatus": "DOMAIN_SERVICES_12_DESIGN_INPUT_EXPRESSION_195_AND_RENDERING_PIPELINE_156_ISSUED_AND_EXECUTABLE_RENDERER_EXACT_OUTPUT_PRODUCT_GATE_PENDING",
       "jsonlMutationAllowed": "only after Phase 1 passes and every execution class assigned at least one capacity axis has its required generator target"
     },
     {
@@ -269,9 +294,9 @@
     }
   ],
   "currentPhase": "CAPACITY_BOUNDARY",
-  "currentPhaseStatus": "DOMAIN_SERVICES_AND_DESIGN_INPUT_EXPRESSION_EXECUTABLE_207_OF_525_ISSUED_OTHER_ASSIGNED_CLASSES_BLOCKED",
-  "caseRegistryRecordCount": 253,
-  "oracleRegistryRecordCount": 253,
-  "issuedRegistryInvariant": "The first 46 Case and 46 Oracle records remain the byte-identical SPEC_REGISTRY candidates; the next 12 Case and 12 Oracle records remain the byte-identical DOMAIN_SERVICES assigned capacity suffix; the next 195 Case and 195 Oracle records are the byte-identical DESIGN_INPUT_EXPRESSION assigned capacity suffix.",
+  "currentPhaseStatus": "DOMAIN_SERVICES_DESIGN_INPUT_EXPRESSION_AND_RENDERING_PIPELINE_EXECUTABLE_363_OF_525_ISSUED_RENDERER_EXACT_OUTPUT_BLOCKED",
+  "caseRegistryRecordCount": 409,
+  "oracleRegistryRecordCount": 409,
+  "issuedRegistryInvariant": "The first 46 Case and 46 Oracle records remain the byte-identical SPEC_REGISTRY candidates; the next 12 Case and 12 Oracle records remain the byte-identical DOMAIN_SERVICES assigned capacity suffix; the next 195 Case and 195 Oracle records remain the byte-identical DESIGN_INPUT_EXPRESSION assigned capacity suffix; the next 156 Case and 156 Oracle records are the byte-identical RENDERING_PIPELINE assigned capacity suffix.",
   "j1Rule": "Editor J1 is neither an execution-class bootstrap step nor a substitute for automated coverage."
 }

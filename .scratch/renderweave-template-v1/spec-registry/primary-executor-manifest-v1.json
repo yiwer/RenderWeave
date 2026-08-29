@@ -6,15 +6,15 @@
   "targetId": "SPEC_TARGET::REGISTRY::1.0",
   "targetManifest": {
     "path": "spec-registry/target-manifest-v1.json",
-    "sha256": "sha256:883469487d253371e8dc8e17ad127a9fcbd11e4eaa98282761b7e2a7be9bbf8a",
-    "byteLength": 83508
+    "sha256": "sha256:e4ccc2e1d6e08c73c19130e9bc5c0927849ea53d98137d17348d4c3aa0227033",
+    "byteLength": 84279
   },
-  "implementationRevision": "spec-registry-bootstrap/1.15",
+  "implementationRevision": "spec-registry-bootstrap/1.16",
   "runtime": "Node.js 24.x",
   "entrypoint": {
     "path": "spec-registry/validate-spec-registry-primary.mjs",
-    "sha256": "sha256:e1075d5337a284d5415550f14d2169c6990dcb2765fd042651c0cdc9593b8bd6",
-    "byteLength": 45152
+    "sha256": "sha256:496683cb05241276da236076e2b064b9f9c0d0fc6a8a53df3296c61ec35b3bfd",
+    "byteLength": 46642
   },
   "command": "node spec-registry/validate-spec-registry-primary.mjs --target spec-registry/target-manifest-v1.json",
   "sharedSemanticLibrary": null,

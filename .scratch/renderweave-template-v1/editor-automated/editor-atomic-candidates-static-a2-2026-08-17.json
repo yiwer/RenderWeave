@@ -18,7 +18,7 @@
     },
     "audit": {
       "path": "editor-automated/atomic-candidate-readiness-audit-v1.json",
-      "sha256": "sha256:62ba35de726c574c8ca8790cf7282500ba9c8b5b1ce7c162bf5ed6d7a31c4d3e",
+      "sha256": "sha256:e0b72151ef7ad25898668b46a0fd3d7f6cae8b45e9e963406dea93ed96e8ae16",
       "byteLength": 11206
     },
     "sourceAssignment": {
@@ -103,37 +103,37 @@
     },
     "formalCases": {
       "path": "conformance-cases-v1.jsonl",
-      "sha256": "sha256:54704176be36d7e1ca5058eb987a17d42378bf157593cca9bc9e5c243935bcb7",
-      "byteLength": 851625
+      "sha256": "sha256:48fc05a31c39387d425046f93b020b13c63af3dee3c325322b7f5a972d4c2efb",
+      "byteLength": 1380235
     },
     "formalOracles": {
       "path": "conformance-oracles-v1.jsonl",
-      "sha256": "sha256:66ad0cb8e8580e66bef38b3e5e2ecd64da36813dfa84f8c0339fd97f7f306141",
-      "byteLength": 303185
+      "sha256": "sha256:0e91bc817fc50fecae41d8e69527fe800f3c086a43915cfed00402152e3685e8",
+      "byteLength": 482367
     }
   },
   "implementations": {
     "primaryGeneratorAndValidator": {
       "path": "editor-automated/generate-editor-atomic-candidates.mjs",
-      "sha256": "sha256:2d9adfbf7ed4c187bd8db962c08275e6467d96cedaa0781c8d6f41235d62da27",
-      "byteLength": 164232
+      "sha256": "sha256:567ade3f696d32daeaf38cb6083fa5690060685f36265e9c9c1b67c823af92e6",
+      "byteLength": 164875
     },
     "independentValidator": {
       "path": "editor-automated/validate_editor_atomic_candidates_independent.py",
-      "sha256": "sha256:1eaac92e0b0b02e9c19d160382ee441719163686bebcf31fa77ee2e15c7203eb",
-      "byteLength": 71666
+      "sha256": "sha256:d8b901323e29e1412c76c9073be4aebc941438fea18a47080de3b06889fb1e63",
+      "byteLength": 72139
     }
   },
   "results": {
     "primary": {
       "path": "editor-automated/atomic-candidate-primary-result-v1.json",
-      "sha256": "sha256:98cf3e9fc19be8b11cc9ae89fcd9341323a79e6aa2c11a2a9a1c26f328d51011",
-      "byteLength": 20718
+      "sha256": "sha256:36fc2aeec1ccb98e5efab7690181f6010af130c1fcc76a7d9321c544296ba736",
+      "byteLength": 20691
     },
     "independent": {
       "path": "editor-automated/atomic-candidate-independent-result-v1.json",
-      "sha256": "sha256:d4a1e4c5af3dd2ec6b9ed39a0d129f1aa55d7dda82bce73cf989f5c60268f3ac",
-      "byteLength": 6158
+      "sha256": "sha256:abcf0e10414fbea2d80b967e18c5beccb6074dc1a32a73a13e9e579fc6daef10",
+      "byteLength": 6159
     }
   },
   "observed": {
@@ -168,9 +168,9 @@
     "candidateProfileBindingAssertionCount": 109,
     "candidateProfileBoundCandidateCount": 82,
     "primaryCheckCount": 38,
-    "independentCheckCount": 21555,
-    "formalCaseCount": 253,
-    "formalOracleCount": 253,
+    "independentCheckCount": 21867,
+    "formalCaseCount": 409,
+    "formalOracleCount": 409,
     "formalEditorCaseCount": 0,
     "formalEditorOracleCount": 0
   },

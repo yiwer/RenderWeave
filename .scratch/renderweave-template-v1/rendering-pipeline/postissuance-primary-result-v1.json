@@ -1,0 +1,29 @@
+{
+  "reportVersion": "renderweave-rendering-pipeline-postissuance-primary/1",
+  "engine": "node-primary-registry-replayer",
+  "runtime": "v24.12.0",
+  "status": "PASS",
+  "checkCount": 4567,
+  "failureCount": 0,
+  "failures": [],
+  "targetManifest": {
+    "path": ".scratch/renderweave-template-v1/rendering-pipeline/capacity-record-issuance-target-v1.json",
+    "sha256": "sha256:eaa7a953445fe1d24fec55c7c165f7eb3e911ab6ae7be76a4cae35ab7da9c428",
+    "byteLength": 24670
+  },
+  "implementationRevision": "5da2bd939bf98e662bbc38a5a4026acba73ba6c2",
+  "executionClass": "EXEC::RENDERING_PIPELINE::1.0",
+  "formalCaseCount": 409,
+  "formalOracleCount": 409,
+  "issuedRenderingPipelineCaseCount": 156,
+  "issuedRenderingPipelineOracleCount": 156,
+  "issuedCapacityCaseCount": 363,
+  "issuedCapacityOracleCount": 363,
+  "assignedCorpusDigest": "sha256:a91ad6cc0a8a3e52f926004af9b4115f3d2ef9ac1a9fcbf5481e0a655365ad4c",
+  "boundary": {
+    "productMutationPerformed": false,
+    "externalNetworkAllowed": false,
+    "rendererReady": false,
+    "ticket19Closed": false
+  }
+}

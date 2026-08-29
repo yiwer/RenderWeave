@@ -1,6 +1,6 @@
 {
   "artifactVersion": "renderweave-conformance-execution-classes/1.0",
-  "status": "SPEC_REGISTRY_DOMAIN_SERVICES_AND_DESIGN_INPUT_EXPRESSION_EXECUTABLE_OTHER_CLASS_PRODUCT_MANIFESTS_PENDING",
+  "status": "SPEC_REGISTRY_DOMAIN_SERVICES_DESIGN_INPUT_EXPRESSION_AND_RENDERING_PIPELINE_EXECUTABLE_RENDERER_EXACT_OUTPUT_PENDING",
   "authority": "Ticket19 execution-boundary catalog; only a class entry with an exact target, every required executor role, assigned corpus, adapter, and replay status may claim executable",
   "assignmentRule": "Every case declares exactly one most-downstream executionClass; concrete executor, target, implementation revision, run, and evidence grade remain manifest facts outside case identity.",
   "classes": [
@@ -134,7 +134,7 @@
         "rust-render-document-parser-and-engine"
       ],
       "targetKind": "one exact end-to-end root render target",
-      "status": "FIXTURE_GENERATOR_STATIC_A2_PRODUCT_TARGET_PENDING",
+      "status": "EXECUTABLE_A2_REPLAYED",
       "fixtureGeneratorTarget": {
         "path": "rendering-pipeline/generator-target-manifest-v1.json",
         "sha256": "sha256:8b792d30b96ad567fd01325ee1447d86b8b1f65737a4eef51fd51b5477800b8b"
@@ -144,10 +144,36 @@
         "sha256": "sha256:bc16d95de8cf80da63a071c246692ecbe37ad86a53ffa21500dcaf1c595c48fa"
       },
       "fixtureGeneratorEvidence": "rendering-pipeline/rendering-pipeline-fixture-static-a2-2026-08-17.json",
-      "exactProductTargetManifestStatus": "PENDING",
-      "executorManifestStatus": "PENDING",
-      "independentProductReplayStatus": "PENDING",
-      "executable": false
+      "exactProductTargetManifestStatus": "FROZEN",
+      "executorManifestStatus": "FROZEN",
+      "independentProductReplayStatus": "A2_PREISSUANCE_AND_POSTISSUANCE_REPLAYED",
+      "executable": true,
+      "exactProductTargetManifest": {
+        "path": "rendering-pipeline/execution-class-target-v1.json",
+        "sha256": "sha256:a834125e93cd8debe2748b55a4f9b0d1dbd933214a15ca19a9068a70e1c99bd9",
+        "byteLength": 9911
+      },
+      "executorManifests": [
+        {
+          "path": "rendering-pipeline/java-evaluator-and-sealer-executor-manifest-v1.json",
+          "sha256": "sha256:fe68339fc8bdba2fbfe7b32cb123471061632bf80865ef01678dd19ed9989aa9",
+          "byteLength": 2783
+        },
+        {
+          "path": "rendering-pipeline/rust-render-document-parser-and-engine-executor-manifest-v1.json",
+          "sha256": "sha256:6325368251d470d8c7cc58881fb4cecf51358897f1870219ab9891931b54a48d",
+          "byteLength": 2077
+        }
+      ],
+      "recordIssuanceTarget": {
+        "path": "rendering-pipeline/capacity-record-issuance-target-v1.json",
+        "sha256": "sha256:eaa7a953445fe1d24fec55c7c165f7eb3e911ab6ae7be76a4cae35ab7da9c428",
+        "byteLength": 24670
+      },
+      "assignedActiveCorpusDigest": "sha256:a91ad6cc0a8a3e52f926004af9b4115f3d2ef9ac1a9fcbf5481e0a655365ad4c",
+      "caseRecordCount": 156,
+      "oracleRecordCount": 156,
+      "replayEvidence": "rendering-pipeline/rendering-pipeline-capacity-postissuance-a2-2026-08-29.json"
     },
     {
       "executionClass": "EXEC::RENDERER_EXACT_OUTPUT::1.0",
@@ -219,18 +245,18 @@
   ],
   "classCount": 6,
   "capacityBoundaryMaterialization": {
-    "status": "STATIC_A2_SHAPES_DOMAIN_SERVICES_12_AND_DESIGN_INPUT_EXPRESSION_195_ISSUED_OTHER_CLASS_PRODUCT_GATES_PENDING",
+    "status": "STATIC_A2_SHAPES_DOMAIN_SERVICES_12_DESIGN_INPUT_EXPRESSION_195_AND_RENDERING_PIPELINE_156_ISSUED_RENDERER_EXACT_OUTPUT_PRODUCT_GATE_PENDING",
     "axisCount": 175,
     "candidateCaseCount": 525,
     "candidateOracleCount": 525,
     "assignedExecutionClassCount": 4,
     "evidence": "capacity-boundary/capacity-boundary-static-a2-2026-08-17.json",
-    "formalCapacityCaseCount": 207,
-    "formalCapacityOracleCount": 207,
+    "formalCapacityCaseCount": 363,
+    "formalCapacityOracleCount": 363,
     "recordIssuanceAllowed": false,
     "executionEvidence": true
   },
-  "executorManifestStatus": "SPEC_REGISTRY_DOMAIN_SERVICES_AND_DESIGN_INPUT_EXPRESSION_FROZEN_OTHER_CLASSES_PENDING",
-  "targetManifestStatus": "SPEC_REGISTRY_DOMAIN_SERVICES_AND_DESIGN_INPUT_EXPRESSION_FROZEN_OTHER_CLASSES_PENDING",
+  "executorManifestStatus": "SPEC_REGISTRY_DOMAIN_SERVICES_DESIGN_INPUT_EXPRESSION_AND_RENDERING_PIPELINE_FROZEN_RENDERER_EXACT_OUTPUT_PENDING",
+  "targetManifestStatus": "SPEC_REGISTRY_DOMAIN_SERVICES_DESIGN_INPUT_EXPRESSION_AND_RENDERING_PIPELINE_FROZEN_RENDERER_EXACT_OUTPUT_PENDING",
   "recordsMayClaimExecutableWithoutRequiredManifest": false
 }

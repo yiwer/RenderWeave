@@ -1,0 +1,121 @@
+{
+  "evidenceVersion": "renderweave-rendering-pipeline-capacity-postissuance-a2/1.0",
+  "evidenceId": "RENDERING_PIPELINE_CAPACITY_POSTISSUANCE_A2::2026-08-29::000001",
+  "status": "PASS",
+  "grade": "A2_INDEPENDENTLY_REPLAYED",
+  "executionClass": "EXEC::RENDERING_PIPELINE::1.0",
+  "implementationRevision": "5da2bd939bf98e662bbc38a5a4026acba73ba6c2",
+  "issuanceTarget": {
+    "path": "rendering-pipeline/capacity-record-issuance-target-v1.json",
+    "sha256": "sha256:eaa7a953445fe1d24fec55c7c165f7eb3e911ab6ae7be76a4cae35ab7da9c428",
+    "byteLength": 24670
+  },
+  "productExecutionClosure": {
+    "target": {
+      "path": "rendering-pipeline/execution-class-target-v1.json",
+      "sha256": "sha256:a834125e93cd8debe2748b55a4f9b0d1dbd933214a15ca19a9068a70e1c99bd9",
+      "byteLength": 9911
+    },
+    "executorManifests": [
+      {
+        "path": "rendering-pipeline/java-evaluator-and-sealer-executor-manifest-v1.json",
+        "sha256": "sha256:fe68339fc8bdba2fbfe7b32cb123471061632bf80865ef01678dd19ed9989aa9",
+        "byteLength": 2783
+      },
+      {
+        "path": "rendering-pipeline/rust-render-document-parser-and-engine-executor-manifest-v1.json",
+        "sha256": "sha256:6325368251d470d8c7cc58881fb4cecf51358897f1870219ab9891931b54a48d",
+        "byteLength": 2077
+      }
+    ],
+    "assignedCorpusDigest": "sha256:a91ad6cc0a8a3e52f926004af9b4115f3d2ef9ac1a9fcbf5481e0a655365ad4c",
+    "preissuanceReplayRequiredAndPassed": true,
+    "freshProductGateRequiredForResolution": true
+  },
+  "registryBindings": {
+    "formalCases": {
+      "path": "conformance-cases-v1.jsonl",
+      "sha256": "sha256:48fc05a31c39387d425046f93b020b13c63af3dee3c325322b7f5a972d4c2efb",
+      "byteLength": 1380235,
+      "recordCount": 409,
+      "exactPreservedPrefixSha256": "sha256:54704176be36d7e1ca5058eb987a17d42378bf157593cca9bc9e5c243935bcb7",
+      "appendedRecordCount": 156
+    },
+    "formalOracles": {
+      "path": "conformance-oracles-v1.jsonl",
+      "sha256": "sha256:0e91bc817fc50fecae41d8e69527fe800f3c086a43915cfed00402152e3685e8",
+      "byteLength": 482367,
+      "recordCount": 409,
+      "exactPreservedPrefixSha256": "sha256:66ad0cb8e8580e66bef38b3e5e2ecd64da36813dfa84f8c0339fd97f7f306141",
+      "appendedRecordCount": 156
+    },
+    "executionClassCatalog": {
+      "path": "conformance-execution-classes-v1.json",
+      "sha256": "sha256:54ce3c655ef6cfe8441cf18fc7ff50bd1831a9158d122565b921111efc52626f",
+      "byteLength": 13488
+    },
+    "bootstrapOrder": {
+      "path": "conformance-bootstrap-order-v1.json",
+      "sha256": "sha256:f4f42f8fd975144477094bb3a327e0c4d4233e4cc86764705d16cdb31dd482fc",
+      "byteLength": 13950
+    }
+  },
+  "replay": {
+    "primary": {
+      "result": {
+        "path": "rendering-pipeline/postissuance-primary-result-v1.json",
+        "sha256": "sha256:ba12165a48492ebd6eac0d885993eae8c3fe17e63344f66a73b3084c0aff7456",
+        "byteLength": 1069
+      },
+      "status": "PASS",
+      "checkCount": 4567,
+      "failureCount": 0,
+      "runtime": "v24.12.0"
+    },
+    "independent": {
+      "result": {
+        "path": "rendering-pipeline/postissuance-independent-result-v1.json",
+        "sha256": "sha256:0e47844227b1bafefb638455368ec2eed1d8ea5099b634e880590548607fb44b",
+        "byteLength": 1085
+      },
+      "status": "PASS",
+      "checkCount": 4567,
+      "failureCount": 0,
+      "runtime": "Python 3.13.13"
+    },
+    "sharedSemanticLibrary": null,
+    "differentRuntimeAndParserImplementations": true
+  },
+  "observedFrontier": {
+    "issuedSpecRegistryCaseCount": 46,
+    "issuedSpecRegistryOracleCount": 46,
+    "issuedDomainServicesCapacityCaseCount": 12,
+    "issuedDomainServicesCapacityOracleCount": 12,
+    "issuedDesignInputExpressionCapacityCaseCount": 195,
+    "issuedDesignInputExpressionCapacityOracleCount": 195,
+    "issuedRenderingPipelineCapacityCaseCount": 156,
+    "issuedRenderingPipelineCapacityOracleCount": 156,
+    "issuedCapacityCaseCount": 363,
+    "issuedCapacityOracleCount": 363,
+    "totalFormalCaseCount": 409,
+    "totalFormalOracleCount": 409,
+    "totalCapacityCandidateCount": 525,
+    "remainingUnissuedCapacityCaseCount": 162,
+    "currentPhase": "CAPACITY_BOUNDARY",
+    "renderingPipelineExecutable": true
+  },
+  "sideEffects": {
+    "historicalFormalRecordsMutated": 0,
+    "productApiChanges": 0,
+    "externalProviderAttempts": 0,
+    "externalNetworkAttempts": 0
+  },
+  "boundary": {
+    "allCapacityRecordsIssued": false,
+    "combinedCapacityRecordsIssued": 0,
+    "fullAutomatedCorpusExecutable": false,
+    "rendererCertified": false,
+    "rendererReady": false,
+    "ticket19Closed": false
+  }
+}

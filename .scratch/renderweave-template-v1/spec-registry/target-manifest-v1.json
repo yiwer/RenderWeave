@@ -2,7 +2,7 @@
   "artifactVersion": "renderweave-spec-registry-target-manifest/1.0",
   "targetId": "SPEC_TARGET::REGISTRY::1.0",
   "status": "ISSUED_APPEND_ONLY_EXACT_TARGET",
-  "implementationRevision": "spec-registry-bootstrap/1.15",
+  "implementationRevision": "spec-registry-bootstrap/1.16",
   "executionClass": "EXEC::SPEC_REGISTRY::1.0",
   "canonicalProfile": "renderweave-conformance-c14n/1.0",
   "probeProfile": "renderweave-conformance-probes/1.0",
@@ -25,8 +25,8 @@
     },
     {
       "path": "conformance-bootstrap-order-v1.json",
-      "sha256": "sha256:b1677b84cc408f0cd729e4a34de1cec16900519fd8222aa2b602f103284cdee1",
-      "byteLength": 12573
+      "sha256": "sha256:f4f42f8fd975144477094bb3a327e0c4d4233e4cc86764705d16cdb31dd482fc",
+      "byteLength": 13950
     },
     {
       "path": "conformance-canonical-profile-v1.json",
@@ -50,8 +50,8 @@
     },
     {
       "path": "conformance-execution-classes-v1.json",
-      "sha256": "sha256:dea2d2ae7796e2e8956b15d67408938d74e6d9729af7cef3043e6e88cc58f76c",
-      "byteLength": 12110
+      "sha256": "sha256:54ce3c655ef6cfe8441cf18fc7ff50bd1831a9158d122565b921111efc52626f",
+      "byteLength": 13488
     },
     {
       "path": "conformance-generator-manifests-v1.json",
@@ -275,17 +275,17 @@
     },
     {
       "path": "editor-automated/atomic-candidate-independent-result-v1.json",
-      "sha256": "sha256:d4a1e4c5af3dd2ec6b9ed39a0d129f1aa55d7dda82bce73cf989f5c60268f3ac",
-      "byteLength": 6158
+      "sha256": "sha256:abcf0e10414fbea2d80b967e18c5beccb6074dc1a32a73a13e9e579fc6daef10",
+      "byteLength": 6159
     },
     {
       "path": "editor-automated/atomic-candidate-primary-result-v1.json",
-      "sha256": "sha256:98cf3e9fc19be8b11cc9ae89fcd9341323a79e6aa2c11a2a9a1c26f328d51011",
-      "byteLength": 20718
+      "sha256": "sha256:36fc2aeec1ccb98e5efab7690181f6010af130c1fcc76a7d9321c544296ba736",
+      "byteLength": 20691
     },
     {
       "path": "editor-automated/atomic-candidate-readiness-audit-v1.json",
-      "sha256": "sha256:62ba35de726c574c8ca8790cf7282500ba9c8b5b1ce7c162bf5ed6d7a31c4d3e",
+      "sha256": "sha256:e0b72151ef7ad25898668b46a0fd3d7f6cae8b45e9e963406dea93ed96e8ae16",
       "byteLength": 11206
     },
     {
@@ -320,8 +320,8 @@
     },
     {
       "path": "editor-automated/editor-atomic-candidates-static-a2-2026-08-17.json",
-      "sha256": "sha256:d672684067a15ab1396323826e71d29169e68fa47596eaf4f9edb7e398de653a",
-      "byteLength": 10798
+      "sha256": "sha256:c6b4b0a3edc5e6b205ca63ab67eed9e0f65b31617d4814894e91e5c1a7211c60",
+      "byteLength": 10799
     },
     {
       "path": "editor-automated/editor-automation-admission-static-a2-2026-08-17.json",
@@ -535,8 +535,8 @@
     },
     {
       "path": "editor-automated/generate-editor-atomic-candidates.mjs",
-      "sha256": "sha256:2d9adfbf7ed4c187bd8db962c08275e6467d96cedaa0781c8d6f41235d62da27",
-      "byteLength": 164232
+      "sha256": "sha256:567ade3f696d32daeaf38cb6083fa5690060685f36265e9c9c1b67c823af92e6",
+      "byteLength": 164875
     },
     {
       "path": "editor-automated/generate-editor-automation-admission.mjs",
@@ -1710,8 +1710,8 @@
     },
     {
       "path": "editor-automated/validate_editor_atomic_candidates_independent.py",
-      "sha256": "sha256:1eaac92e0b0b02e9c19d160382ee441719163686bebcf31fa77ee2e15c7203eb",
-      "byteLength": 71666
+      "sha256": "sha256:d8b901323e29e1412c76c9073be4aebc941438fea18a47080de3b06889fb1e63",
+      "byteLength": 72139
     },
     {
       "path": "editor-automated/validate_editor_automation_admission_independent.py",
@@ -1725,8 +1725,8 @@
     },
     {
       "path": "editor-automated/write-editor-atomic-candidate-evidence.mjs",
-      "sha256": "sha256:e6a5d46182b7e82a0cca872ed500b61700ee2946a63ac647801d4c260d4f1cd2",
-      "byteLength": 10394
+      "sha256": "sha256:df8048b84441b436f7062301883b1de646e384908799962839f0703b9bb60157",
+      "byteLength": 10731
     },
     {
       "path": "editor-automated/write-editor-automation-admission-evidence.mjs",
@@ -2020,7 +2020,7 @@
     },
     {
       "path": "spec-registry/refresh-spec-registry-postissuance-target.mjs",
-      "sha256": "sha256:b6f432894da4051f9166881ae61e7758693c4d695254d904274ebff8fb2e266f",
+      "sha256": "sha256:67cae67626a009c45e8b729a36b12276b20333d96583ff3108ab7cc7054fb7a2",
       "byteLength": 8918
     },
     {
@@ -2042,40 +2042,53 @@
     },
     "formalCases": {
       "path": "conformance-cases-v1.jsonl",
-      "expectedSha256": "sha256:54704176be36d7e1ca5058eb987a17d42378bf157593cca9bc9e5c243935bcb7",
-      "observedSha256": "sha256:54704176be36d7e1ca5058eb987a17d42378bf157593cca9bc9e5c243935bcb7"
+      "expectedSha256": "sha256:48fc05a31c39387d425046f93b020b13c63af3dee3c325322b7f5a972d4c2efb",
+      "observedSha256": "sha256:48fc05a31c39387d425046f93b020b13c63af3dee3c325322b7f5a972d4c2efb"
     },
     "formalOracles": {
       "path": "conformance-oracles-v1.jsonl",
-      "expectedSha256": "sha256:66ad0cb8e8580e66bef38b3e5e2ecd64da36813dfa84f8c0339fd97f7f306141",
-      "observedSha256": "sha256:66ad0cb8e8580e66bef38b3e5e2ecd64da36813dfa84f8c0339fd97f7f306141"
+      "expectedSha256": "sha256:0e91bc817fc50fecae41d8e69527fe800f3c086a43915cfed00402152e3685e8",
+      "observedSha256": "sha256:0e91bc817fc50fecae41d8e69527fe800f3c086a43915cfed00402152e3685e8"
     },
     "formalStatus": "ISSUED_APPEND_ONLY_PREFIX",
     "appendOnlyIssuance": {
       "predecessorIssuance": {
-        "target": {
-          "path": "domain-services/capacity-record-issuance-target-v1.json",
-          "sha256": "sha256:44c1d878848ab87fc4e4485c4b6142f1710204f39b64578c0a95102a7b0288e2",
-          "byteLength": 11104
+        "predecessorIssuance": {
+          "target": {
+            "path": "domain-services/capacity-record-issuance-target-v1.json",
+            "sha256": "sha256:44c1d878848ab87fc4e4485c4b6142f1710204f39b64578c0a95102a7b0288e2",
+            "byteLength": 11104
+          },
+          "preservedCasePrefixSha256": "sha256:ebe58e84977ee84befe89f8c126f37fbec7076cd7725b29f1b7609448fe7ef16",
+          "preservedOraclePrefixSha256": "sha256:3825b9fb40c1b43c484da3ebdf29429ed749e622012212ca79f9cea5b9cb9339",
+          "appendedExecutionClass": "EXEC::DOMAIN_SERVICES::1.0",
+          "appendedCaseCount": 12,
+          "appendedOracleCount": 12,
+          "assignedCorpusDigest": "sha256:5a236de3cf36155df7244b049b045cefda55960cf16efe8212c3981e5463844f"
         },
-        "preservedCasePrefixSha256": "sha256:ebe58e84977ee84befe89f8c126f37fbec7076cd7725b29f1b7609448fe7ef16",
-        "preservedOraclePrefixSha256": "sha256:3825b9fb40c1b43c484da3ebdf29429ed749e622012212ca79f9cea5b9cb9339",
-        "appendedExecutionClass": "EXEC::DOMAIN_SERVICES::1.0",
-        "appendedCaseCount": 12,
-        "appendedOracleCount": 12,
-        "assignedCorpusDigest": "sha256:5a236de3cf36155df7244b049b045cefda55960cf16efe8212c3981e5463844f"
+        "target": {
+          "path": "design-input-expression/capacity-record-issuance-target-v1.json",
+          "sha256": "sha256:b5227039abe50a0b2f5f14ba90070e01dc28e34c783e141cd13ed67211dbed9d",
+          "byteLength": 27043
+        },
+        "preservedCasePrefixSha256": "sha256:bba2e350cc29c5fc8faae7f4bdb47c8bd0e2e60a3dd78d6f64d9d355b2440add",
+        "preservedOraclePrefixSha256": "sha256:a0f513b0d305d00b1797f32db38488b92e5775fa8c19a3fcb00d4e2394e3d2db",
+        "appendedExecutionClass": "EXEC::DESIGN_INPUT_EXPRESSION::1.0",
+        "appendedCaseCount": 195,
+        "appendedOracleCount": 195,
+        "assignedCorpusDigest": "sha256:d50b78e0bc2e6bf3bd3708784e4d90001d8d51e76f33068b10272a74ff3a4776"
       },
       "target": {
-        "path": "design-input-expression/capacity-record-issuance-target-v1.json",
-        "sha256": "sha256:b5227039abe50a0b2f5f14ba90070e01dc28e34c783e141cd13ed67211dbed9d",
-        "byteLength": 27043
+        "path": "rendering-pipeline/capacity-record-issuance-target-v1.json",
+        "sha256": "sha256:eaa7a953445fe1d24fec55c7c165f7eb3e911ab6ae7be76a4cae35ab7da9c428",
+        "byteLength": 24670
       },
-      "preservedCasePrefixSha256": "sha256:bba2e350cc29c5fc8faae7f4bdb47c8bd0e2e60a3dd78d6f64d9d355b2440add",
-      "preservedOraclePrefixSha256": "sha256:a0f513b0d305d00b1797f32db38488b92e5775fa8c19a3fcb00d4e2394e3d2db",
-      "appendedExecutionClass": "EXEC::DESIGN_INPUT_EXPRESSION::1.0",
-      "appendedCaseCount": 195,
-      "appendedOracleCount": 195,
-      "assignedCorpusDigest": "sha256:d50b78e0bc2e6bf3bd3708784e4d90001d8d51e76f33068b10272a74ff3a4776"
+      "preservedCasePrefixSha256": "sha256:54704176be36d7e1ca5058eb987a17d42378bf157593cca9bc9e5c243935bcb7",
+      "preservedOraclePrefixSha256": "sha256:66ad0cb8e8580e66bef38b3e5e2ecd64da36813dfa84f8c0339fd97f7f306141",
+      "appendedExecutionClass": "EXEC::RENDERING_PIPELINE::1.0",
+      "appendedCaseCount": 156,
+      "appendedOracleCount": 156,
+      "assignedCorpusDigest": "sha256:a91ad6cc0a8a3e52f926004af9b4115f3d2ef9ac1a9fcbf5481e0a655365ad4c"
     }
   },
   "networkReadsAllowed": false,
