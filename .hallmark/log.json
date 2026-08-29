@@ -1,5 +1,15 @@
 [
   {
+    "date": "2026-08-29",
+    "macrostructure": "Canvas Focus Workbench",
+    "theme": "locked Hum / formal Template product",
+    "theme_axes": "warm cream / dark technical rulers / spring-green actions / cyan selection",
+    "enrichment": "none (desktop authoring application)",
+    "scope": "product/template-editor-canvas-structure",
+    "brief": "Formal Template Editor authored geometry, pointer-anchored viewport, and virtual mind-map structure tree",
+    "variation_knobs": "physical mm artboard / pinned Canvas root / stable branch guides / session-only zoom and pan"
+  },
+  {
     "date": "2026-08-12",
     "macrostructure": "Workbench",
     "theme": "Hum (spring-green accent rgb(102 218 133))",

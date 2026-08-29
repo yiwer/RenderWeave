@@ -1,8 +1,8 @@
 # 补齐正式 Template Editor 首个节点创作纵切
 
 Type: task
-Status: implementation_complete / user_smoke_and_fast_pending
-Claimed by: Codex `/root`（single-writer）
+Status: resolved / automated_verified
+Claimed by: —（T126b follow-up verified 后已释放）
 Blocked by: 09, 14, 14b, 16, 28, 29, 126（均已 resolved）；136 已 implementation_complete 并释放 claim
 
 ## Question
@@ -48,6 +48,8 @@ TV1-T126 已把最终 `/templates/:templateId` 产品路由挂载并验收，但
   JAR，故在用户复验结束前按运行期稳定性边界延后；本票不提前标记 `automated_verified`，人工 smoke/J1 仍 pending。
 - 内置 Browser 控制层因 runtime kernel asset 路径错误未能连接；已使用仓库 Playwright 对实际 5173 服务复验，连接层
   故障不记为产品失败，也不冒充 visible/J1 验收。
+- 2026-08-29 follow-up TV1-T126b 已把人工 smoke 发现的 Canvas/结构树缺口收口；合并后的发布级 full 17/17、
+  resolution fast 与当前 Node 24 Web gate 均绿，因此本票升级为 `resolved / automated_verified`。J1 仍未批准。
 
 ## Boundary
 

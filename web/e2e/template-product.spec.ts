@@ -83,6 +83,38 @@ test.describe('formal Template final product', () => {
     await expect(page.getByRole('button', { name: '结构' })).toHaveAttribute('aria-current', 'page');
     await expect(page.getByRole('treeitem', { name: /矩形 1/ })).toHaveAttribute('aria-selected', 'true');
     await expect(page.getByRole('heading', { name: '矩形 1' })).toBeVisible();
+    const rectShape = page.locator('[data-template-canvas-node-kind="rect"]');
+    await expect(rectShape).toBeVisible();
+    const rectBeforeZoom = await rectShape.boundingBox();
+    expect(rectBeforeZoom).not.toBeNull();
+    expect(rectBeforeZoom?.width).toBeGreaterThan(20);
+    expect(rectBeforeZoom?.height).toBeGreaterThan(10);
+
+    const viewport = page.locator('[data-template-canvas-viewport]');
+    const scaleBefore = Number(await viewport.getAttribute('data-canvas-scale'));
+    const anchor = {
+      x: (rectBeforeZoom?.x ?? 0) + (rectBeforeZoom?.width ?? 0) / 2,
+      y: (rectBeforeZoom?.y ?? 0) + (rectBeforeZoom?.height ?? 0) / 2,
+    };
+    await page.mouse.move(anchor.x, anchor.y);
+    await page.mouse.wheel(0, -180);
+    await expect.poll(async () => Number(await viewport.getAttribute('data-canvas-scale')))
+      .toBeGreaterThan(scaleBefore);
+    const rectAfterZoom = await rectShape.boundingBox();
+    expect(Math.abs(
+      (rectAfterZoom?.x ?? 0) + (rectAfterZoom?.width ?? 0) / 2 - anchor.x,
+    )).toBeLessThan(2);
+    expect(Math.abs(
+      (rectAfterZoom?.y ?? 0) + (rectAfterZoom?.height ?? 0) / 2 - anchor.y,
+    )).toBeLessThan(2);
+    await expect(page.getByRole('button', { name: '适合画板' })).toBeVisible();
+
+    await page.getByRole('button', { name: '折叠画布子级' }).click();
+    await expect(page.getByRole('treeitem', { name: /矩形 1/ })).toHaveCount(0);
+    await page.getByRole('button', { name: '展开画布子级' }).click();
+    await page.getByRole('searchbox', { name: '搜索 DesignDSL 结构' }).fill('矩形 1');
+    await expect(page.getByRole('treeitem', { name: /画布/ })).toBeVisible();
+    await expect(page.getByRole('treeitem', { name: /矩形 1/ })).toBeVisible();
     await expect(page.getByText('Canonical 本地草稿')).toBeVisible();
     await page.getByRole('button', { name: '保存 canonical 本地草稿' }).click();
     await expect(page.getByText('revision 1')).toBeVisible();

@@ -84,6 +84,51 @@ describe('Template Editor E9 accessibility flow', () => {
     expect(screen.getAllByRole('treeitem').filter((item) => item.tabIndex === 0)).toHaveLength(1);
   });
 
+  it('exposes real hierarchy disclosure, left/right navigation and ancestor-preserving search', () => {
+    render(<TemplateEditorShell session={cleanSession(structuredBaseline())} />);
+
+    const frame = screen.getByRole('treeitem', { name: /内容区/ });
+    expect(frame.getAttribute('aria-expanded')).toBe('true');
+    const collapse = within(frame).getByRole('button', { name: '折叠内容区子级' });
+    fireEvent.click(collapse);
+    expect(frame.getAttribute('aria-expanded')).toBe('false');
+    expect(screen.queryByRole('treeitem', { name: /底色/ })).toBeNull();
+
+    frame.focus();
+    fireEvent.keyDown(frame, { key: 'ArrowRight' });
+    expect(frame.getAttribute('aria-expanded')).toBe('true');
+    fireEvent.keyDown(frame, { key: 'ArrowRight' });
+    const rect = screen.getByRole('treeitem', { name: /底色/ });
+    expect(document.activeElement).toBe(rect);
+    expect(rect.getAttribute('aria-selected')).toBe('true');
+
+    fireEvent.keyDown(rect, { key: 'ArrowLeft' });
+    expect(document.activeElement).toBe(frame);
+
+    fireEvent.click(within(frame).getByRole('button', { name: '折叠内容区子级' }));
+    expect(frame.getAttribute('aria-expanded')).toBe('false');
+
+    fireEvent.change(screen.getByRole('searchbox', { name: '搜索 DesignDSL 结构' }), {
+      target: { value: '底色' },
+    });
+    expect(screen.getByRole('treeitem', { name: /画布/ })).toBeTruthy();
+    expect(screen.getByRole('treeitem', { name: /内容区/ }).getAttribute('aria-expanded')).toBe('true');
+    expect(screen.getByRole('treeitem', { name: /底色/ })).toBeTruthy();
+  });
+
+  it('moves keyboard focus to a virtualized row outside the mounted window', async () => {
+    const baseline = await largeBaseline(55);
+    render(<TemplateEditorShell session={cleanSession(baseline)} />);
+
+    const root = screen.getByRole('treeitem', { name: /画布/ });
+    root.focus();
+    fireEvent.keyDown(root, { key: 'End' });
+
+    const target = await screen.findByRole('treeitem', { name: /节点 55/ });
+    await waitFor(() => expect(document.activeElement).toBe(target));
+    expect(target.getAttribute('aria-selected')).toBe('true');
+  });
+
   it('expands the bounded tree window before focusing a problem target past the first 50 nodes', async () => {
     const baseline = await largeBaseline(55);
     const session = dirtySession(baseline, '大型结构定位');

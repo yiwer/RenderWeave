@@ -45,6 +45,33 @@ describe('Template Editor E1/E2 Product shell', () => {
     expect(screen.getByRole('treeitem', { name: /矩形 2/ }).getAttribute('aria-selected')).toBe('true');
     expect(screen.getByRole('heading', { name: '矩形 2' })).toBeTruthy();
     expect(screen.getAllByText('矩形 2').length).toBeGreaterThanOrEqual(2);
+    const authoredRect = document.querySelector<HTMLElement>(
+      '[data-template-canvas-node-id="11111111-1111-4111-8111-111111111111"]',
+    );
+    expect(authoredRect).not.toBeNull();
+    expect(authoredRect?.dataset.templateCanvasNodeKind).toBe('rect');
+    expect(authoredRect?.style.left).toBe('40px');
+    expect(authoredRect?.style.top).toBe('40px');
+    expect(authoredRect?.style.width).toBe('120px');
+    expect(authoredRect?.style.height).toBe('80px');
+
+    fireEvent.click(screen.getByRole('treeitem', { name: /画布/ }));
+    expect(screen.getByRole('heading', { name: '画布' })).toBeTruthy();
+    fireEvent.click(authoredRect as HTMLElement);
+    expect(screen.getByRole('treeitem', { name: /矩形 2/ }).getAttribute('aria-selected')).toBe('true');
+    expect(screen.getByRole('heading', { name: '矩形 2' })).toBeTruthy();
+
+    const viewport = document.querySelector<HTMLElement>('[data-template-canvas-viewport]');
+    expect(viewport).not.toBeNull();
+    const beforeScale = Number(viewport?.dataset.canvasScale);
+    fireEvent.wheel(viewport as HTMLElement, {
+      deltaY: -120,
+      clientX: 240,
+      clientY: 180,
+    });
+    expect(Number(viewport?.dataset.canvasScale)).toBeGreaterThan(beforeScale);
+    expect(screen.getByRole('button', { name: '适合画板' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: '重置画布缩放到 100%' })).toBeTruthy();
     expect(screen.getByText('Canonical 本地草稿')).toBeTruthy();
     expect(screen.getByRole('button', { name: '保存 canonical 本地草稿' }).hasAttribute('disabled')).toBe(false);
 

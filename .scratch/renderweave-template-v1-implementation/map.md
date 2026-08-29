@@ -677,11 +677,18 @@ Label: wayfinder:map
   bundle、不证明 native Renderer success，`/prototype`、Profile registration/certification、J1/A3/READY 与外部副作用
   均未推进。
 - [补齐正式 Template Editor 首个节点创作纵切](issues/126a-formal-editor-node-authoring.md) —
-  **implementation_complete / user_smoke_and_fast_pending / claimed by Codex `/root`**；2026-08-27 人工 smoke 发现正式
+  **resolved / automated_verified / unclaimed**；2026-08-27 人工 smoke 发现正式
   Editor 只能修改名称、不能创建任何节点。本票已以 Rect 贯通 Node library → 同一 EditorSession/history → 自动选择 →
   tree/canvas/inspector → existing save/reopen；Node 24 Web 33 files/262 tests、2160-module build、formal E2E 3/3 与实际
   5173 create/save/reopen 1/1 均绿，证据 `.sdlc/evidence/20260827-110418-web/`。用户 smoke 与会改写挂载 JAR 的
-  `fast` 延后，不复用 prototype 状态模型，不新增 API/migration，也不冒充全节点/全属性设计器。
+  follow-up T126b、合并 full 17/17、resolution fast 与当前 Web gate 均已完成；不复用 prototype 状态模型，不新增
+  API/migration，也不冒充全节点/全属性设计器，J1 仍 pending。
+- [补齐正式 Template Editor 画布视口与结构树交互](issues/126b-formal-editor-canvas-structure.md) —
+  **resolved / automated_verified / unclaimed**；T126a 人工 smoke 确认新增 Rect 只存在于结构树，画布仍是标签缩影且无
+  滚轮缩放；本票已补齐 authored ABSOLUTE+FIXED Rect 几何、指针锚定缩放/平移，以及固定 Canvas 根行、折叠/搜索/
+  虚拟窗口/层级键盘结构树，同时保持 RenderWeave DesignDSL 与非权威投影边界。Node 24 Web 35 files/274 tests、
+  2164-module build 与 formal Template product 3/3 + a11y 4/4（Playwright 7/7）全绿，A1
+  `.sdlc/evidence/20260829-182815-web/`；J0 pending。
 - [物化 Domain Services 容量一致性产品执行目标](issues/127-domain-services-capacity-conformance-target.md) —
   **resolved / automated_verified**；Domain Services 的 4 个 Asset 容量轴与 12 个 frozen fixture 已绑定唯一生产
   capacity guard、closed Java executor、独立 Python replay 与 exact target manifest。实现 `96dcf3fd`、门控
@@ -894,9 +901,9 @@ Label: wayfinder:map
   T135 已完成 Expression AST 两轴：Template-owned 同一 grammar parser 在 AST node allocation 前调用共享
   capacity authority，Rendering 消费同一 immutable AST 派生值，重复 parser/AST 与硬编码阈值已删除；不可变 v6
   target 与发布级 17-step replay 全绿，当前 wired 48/65、remaining 17。T136 已完成 decimal 七轴实现与 v7 target，
-  当前 wired 55/65、remaining geometry 10；最终 server/full 因产品 smoke 延后且 claim 已释放。人工 smoke 同时发现
-  正式 Editor 无节点创建能力；独立纠偏 TV1-T126a 已完成首个 Rect 纵切，当前等待用户 smoke 与延后的 `fast`，仍是
-  single-writer。195 个
+  当前 wired 55/65、remaining geometry 10；其 ticket lifecycle 仍待独立 resolution closeout。人工 smoke 发现的正式
+  Editor 节点创建与本地画布/结构树缺口已分别由 TV1-T126a/T126b 收口并完成自动门控；当前无 claim，下一轮优先复算
+  T136 closeout。195 个
   capacity candidates 在全部真实接线、两个 required executor manifests 与独立产品 replay 完成前仍不得发行。其余
   execution-class target、Profile 发行、Editor J1、Renderer 双物理 Linux CPU-family
   认证与最终生命周期升级仍须以届时真实产品 artifact 和 executor 为输入另行切票；Ticket 19 保持 open。

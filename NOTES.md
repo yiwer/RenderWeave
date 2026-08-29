@@ -1,5 +1,18 @@
 # NOTES.md
 
+# 2026-08-29 Template-v1 T126b Formal Editor Canvas/structure tree（resolved / automated_verified）
+- 正式 Template Editor 已用 session-only deep module 物化 `fit / zoomAtPoint / wheelZoom / pan`，缩放固定
+  `0.25..4`，wheel 保持指针下 world point；Canvas 以 4 px/mm 投影可精确读取的 authored
+  `ABSOLUTE + FIXED` Rect x/y/width/height/fill，selection 与 tree/inspector 同源且持续标记“本地草稿 · 非权威”。
+- 结构树已从 authored preorder 建立稳定 parent/descendant，支持固定 Canvas 根、真实折叠、搜索保留祖先、
+  44px fixed-row 虚拟窗口、selected reveal、Up/Down/Home/End 与 Right/Left 层级导航；折叠和缩放控件均达到
+  44px 目标。未实现 visibility/lock/DnD/rename/resize/rotate 或浏览器 LayoutEngine。
+- Node 24 `web` `.sdlc/evidence/20260829-182815-web/metadata.json` passed/A1：35/35 test files、274/274 tests、
+  typecheck/lint、2164-module production build。formal Template product 3/3 + a11y 4/4（Playwright 7/7）通过，
+  覆盖 Rect DOM 几何、pointer-anchor wheel、collapse/search、canonical save/reload、44px targets、axe、
+  1024@2x 与窄屏降级；已有实际 5173 截图本轮复核。T126b-specific
+  A2/A3 无，J0 pending、J1 未批准；provider/API Key/真实数据/生产/Profile/push/tag/PR 均未推进。
+
 # 2026-08-29 Template-v1 T194 Expression AST nodes total capacity（resolved / automated_verified）
 - cap-046 `expression.astNodesTotal=65536` 已合流到现有 Rendering.internal 单一 guard；per-DesignDSL
   `AstNodeBudget` 对每个 AST node 先检查 cap-045、再检查 projected cap-046，并仅在两者成功后提交累计值。

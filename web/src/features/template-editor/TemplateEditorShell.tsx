@@ -3,7 +3,6 @@ import {
   Box,
   Braces,
   CheckCircle2,
-  ChevronRight,
   Download,
   FileJson,
   FolderTree,
@@ -31,7 +30,6 @@ import {
   projectStructuredNodes,
   SUPPORTED_NODE_KIND_COUNT,
   templateDisplayName,
-  type CanonicalDesignWorkingCopy,
   type CanonicalTemplateBaseline,
   type EditorNodeProjection,
   type EditorReadiness,
@@ -114,6 +112,8 @@ import {
   type TemplatePreviewRequest,
   type TemplatePreviewTransport,
 } from './template-preview';
+import { TemplateEditorCanvas } from './TemplateEditorCanvas';
+import { TemplateEditorStructureTree } from './TemplateEditorStructureTree';
 import './template-editor.css';
 
 type EditorEntry = TemplateRecoveryEntry;
@@ -1401,10 +1401,11 @@ function StructuredShell({
               onCancel={cancelSaveOffer}
             />
           ) : null}
-          <CanvasProjection
+          <TemplateEditorCanvas
             workingCopy={session.workingCopy}
             nodes={nodes}
             selectedNodeId={effectiveSelectedNodeId}
+            onSelectNode={setSelectedNodeId}
           />
           {preview.enabled ? (
             <TemplatePreviewPanel
@@ -2130,7 +2131,7 @@ function EntryPanel({
   switch (entry) {
     case 'structure':
       return (
-        <NodeTree
+        <TemplateEditorStructureTree
           nodes={nodes}
           selectedNodeId={selectedNodeId}
           onSelectNode={onSelectNode}
@@ -2166,83 +2167,6 @@ function EntryPanel({
         />
       );
   }
-}
-
-function NodeTree({
-  nodes,
-  selectedNodeId,
-  onSelectNode,
-}: {
-  nodes: EditorNodeProjection[];
-  selectedNodeId: string;
-  onSelectNode: (nodeId: string) => void;
-}) {
-  const [visibleCount, setVisibleCount] = useState(50);
-  const buttonRefs = useRef(new Map<string, HTMLButtonElement>());
-  const selectedIndex = nodes.findIndex((node) => node.nodeId === selectedNodeId);
-  const effectiveVisibleCount = selectedIndex >= 0
-    ? Math.max(visibleCount, selectedIndex + 1)
-    : visibleCount;
-  const visibleNodes = nodes.slice(0, effectiveVisibleCount);
-
-  const moveFocus = (currentNodeId: string, key: string) => {
-    const currentIndex = visibleNodes.findIndex((node) => node.nodeId === currentNodeId);
-    if (currentIndex < 0) return;
-    let nextIndex: number;
-    if (key === 'ArrowDown') nextIndex = Math.min(visibleNodes.length - 1, currentIndex + 1);
-    else if (key === 'ArrowUp') nextIndex = Math.max(0, currentIndex - 1);
-    else if (key === 'Home') nextIndex = 0;
-    else if (key === 'End') nextIndex = visibleNodes.length - 1;
-    else return;
-    const next = visibleNodes[nextIndex];
-    if (!next) return;
-    onSelectNode(next.nodeId);
-    buttonRefs.current.get(next.nodeId)?.focus();
-  };
-
-  return (
-    <>
-      <PanelHeading title="结构" detail={`${nodes.length} 个节点`} />
-      <ul className="te-tree" role="tree" aria-label="DesignDSL 结构">
-        {visibleNodes.map((node) => (
-          <li key={node.nodeId} role="none">
-            <button
-              ref={(element) => {
-                if (element) buttonRefs.current.set(node.nodeId, element);
-                else buttonRefs.current.delete(node.nodeId);
-              }}
-              type="button"
-              role="treeitem"
-              data-template-editor-node-id={node.nodeId}
-              aria-level={node.depth + 1}
-              aria-selected={node.nodeId === selectedNodeId}
-              tabIndex={node.nodeId === selectedNodeId ? 0 : -1}
-              style={{ paddingInlineStart: `${12 + node.depth * 16}px` }}
-              onClick={() => onSelectNode(node.nodeId)}
-              onKeyDown={(event) => {
-                if (!['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) return;
-                event.preventDefault();
-                moveFocus(node.nodeId, event.key);
-              }}
-            >
-              <ChevronRight aria-hidden="true" size={13} />
-              <span>{node.displayName}</span>
-              <small>{node.kind}</small>
-            </button>
-          </li>
-        ))}
-      </ul>
-      {effectiveVisibleCount < nodes.length ? (
-        <button
-          className="te-more-button"
-          type="button"
-          onClick={() => setVisibleCount((count) => Math.min(nodes.length, count + 50))}
-        >
-          再显示 {Math.min(50, nodes.length - effectiveVisibleCount)} 个节点
-        </button>
-      ) : null}
-    </>
-  );
 }
 
 function NodeCatalogSummary({
@@ -2523,42 +2447,6 @@ function PanelHeading({
       <h2>{title}</h2>
       <span>{detail}</span>
     </header>
-  );
-}
-
-function CanvasProjection({
-  workingCopy,
-  nodes,
-  selectedNodeId,
-}: {
-  workingCopy: CanonicalDesignWorkingCopy;
-  nodes: EditorNodeProjection[];
-  selectedNodeId: string;
-}) {
-  const canvas = objectOrNull(workingCopy.designDsl.designRoot);
-  const width = positiveNumber(canvas?.widthMm) ?? 210;
-  const height = positiveNumber(canvas?.heightMm) ?? 297;
-  return (
-    <div className="te-canvas-viewport" tabIndex={0} aria-label="本地草稿画布视口">
-      <div className="te-artboard" style={{ aspectRatio: `${width} / ${height}` }}>
-        <div className="te-artboard-meta">
-          <span>{formatNumber(width)} × {formatNumber(height)} mm</span>
-          <small>结构缩影 · 不计算 Layout</small>
-        </div>
-        <div className="te-node-silhouettes" aria-hidden="true">
-          {nodes.slice(1, 13).map((node) => (
-            <span
-              key={node.nodeId}
-              className={node.nodeId === selectedNodeId ? 'is-selected' : undefined}
-              data-kind={node.kind}
-            >
-              {node.displayName}
-            </span>
-          ))}
-        </div>
-        {nodes.length > 13 ? <small className="te-node-overflow">另有 {nodes.length - 13} 个节点</small> : null}
-      </div>
-    </div>
   );
 }
 
@@ -2920,16 +2808,6 @@ function authoredAssetIds(value: unknown): string[] {
   };
   visit(value);
   return [...ids].sort();
-}
-
-function positiveNumber(value: unknown): number | null {
-  if (typeof value !== 'number' && typeof value !== 'bigint' && typeof value !== 'object') return null;
-  const parsed = Number(String(value));
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
-}
-
-function formatNumber(value: number): string {
-  return new Intl.NumberFormat('zh-CN', { maximumFractionDigits: 3 }).format(value);
 }
 
 function shortIdentity(value: string): string {
