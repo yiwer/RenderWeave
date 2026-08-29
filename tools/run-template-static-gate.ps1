@@ -136,8 +136,8 @@ try {
     [Environment]::SetEnvironmentVariable('GIT_WORK_TREE', $repoRoot, 'Process')
     Push-Location $tempSpecRoot
     try {
-        Invoke-Checked 'template-design-input-expression-postissuance-replay' {
-            & node.exe 'design-input-expression\write-design-input-expression-postissuance-a2-evidence.mjs'
+        Invoke-Checked 'template-rendering-pipeline-postissuance-replay' {
+            & node.exe 'rendering-pipeline\write-rendering-pipeline-postissuance-a2-evidence.mjs'
         }
         Invoke-Checked 'template-registry-refresh-target' {
             & node.exe 'spec-registry\refresh-spec-registry-postissuance-target.mjs'
@@ -193,6 +193,15 @@ try {
     ) | ConvertFrom-Json
     $designA2 = Get-Content -Raw -Encoding UTF8 -LiteralPath (
         Join-Path $tempSpecRoot 'design-input-expression\design-input-expression-capacity-postissuance-a2-2026-08-29.json'
+    ) | ConvertFrom-Json
+    $renderingPrimary = Get-Content -Raw -Encoding UTF8 -LiteralPath (
+        Join-Path $tempSpecRoot 'rendering-pipeline\postissuance-primary-result-v1.json'
+    ) | ConvertFrom-Json
+    $renderingIndependent = Get-Content -Raw -Encoding UTF8 -LiteralPath (
+        Join-Path $tempSpecRoot 'rendering-pipeline\postissuance-independent-result-v1.json'
+    ) | ConvertFrom-Json
+    $renderingA2 = Get-Content -Raw -Encoding UTF8 -LiteralPath (
+        Join-Path $tempSpecRoot 'rendering-pipeline\rendering-pipeline-capacity-postissuance-a2-2026-08-29.json'
     ) | ConvertFrom-Json
     $targetManifest = Get-Content -Raw -Encoding UTF8 -LiteralPath (
         Join-Path $tempSpecRoot 'spec-registry\target-manifest-v1.json'
@@ -264,6 +273,20 @@ try {
             -or $designA2.observedFrontier.totalFormalOracleCount -ne 253) {
         throw 'Template Design/Input/Expression post-issuance replay did not pass.'
     }
+    if ($renderingPrimary.status -ne 'PASS' -or $renderingPrimary.failureCount -ne 0 `
+            -or $renderingPrimary.issuedRenderingPipelineCaseCount -ne 156 `
+            -or $renderingPrimary.issuedRenderingPipelineOracleCount -ne 156 `
+            -or $renderingPrimary.issuedCapacityCaseCount -ne 363 `
+            -or $renderingIndependent.status -ne 'PASS' -or $renderingIndependent.failureCount -ne 0 `
+            -or $renderingIndependent.issuedRenderingPipelineCaseCount -ne 156 `
+            -or $renderingIndependent.issuedRenderingPipelineOracleCount -ne 156 `
+            -or $renderingIndependent.issuedCapacityCaseCount -ne 363 `
+            -or $renderingA2.status -ne 'PASS' -or $renderingA2.grade -ne 'A2_INDEPENDENTLY_REPLAYED' `
+            -or -not $renderingA2.observedFrontier.renderingPipelineExecutable `
+            -or $renderingA2.observedFrontier.totalFormalCaseCount -ne 409 `
+            -or $renderingA2.observedFrontier.totalFormalOracleCount -ne 409) {
+        throw 'Template Rendering Pipeline postissuance replay did not pass.'
+    }
     if ($registryPrimary.status -ne 'PASS' -or $registryPrimary.checkCount -lt 22838 `
             -or $registryPrimary.failureCount -ne 0 `
             -or $registryIndependent.status -ne 'PASS' `
@@ -284,7 +307,7 @@ try {
             -or $registryA2.observedFrontier.capacityAxisCount -ne 175 `
             -or $registryA2.observedFrontier.capacityShapeCandidateCaseCount -ne 525 `
             -or $registryA2.observedFrontier.capacityShapeCandidateOracleCount -ne 525 `
-            -or $registryA2.observedFrontier.capacityRecordsIssued -ne 207 `
+            -or $registryA2.observedFrontier.capacityRecordsIssued -ne 363 `
             -or $registryA2.boundary.rendererCertified `
             -or $registryA2.boundary.rendererReady `
             -or $registryA2.boundary.ticket19Closed) {
@@ -294,7 +317,7 @@ try {
             -or $acceptanceManifest.counts.plannedContractBoundaryCases -ne 525 `
             -or $acceptanceManifest.counts.minimumCombinedWorstPathCases -ne 18 `
             -or $acceptanceManifest.counts.strictContractBoundaryFloor -ne 543 `
-            -or $acceptanceManifest.counts.executableContractBoundaryCases -ne 207) {
+            -or $acceptanceManifest.counts.executableContractBoundaryCases -ne 363) {
         throw 'Template requirement or capacity planning counts drifted.'
     }
 
@@ -343,6 +366,15 @@ try {
             formalCaseCount = $designA2.observedFrontier.totalFormalCaseCount
             formalOracleCount = $designA2.observedFrontier.totalFormalOracleCount
             executable = [bool]$designA2.observedFrontier.designInputExpressionExecutable
+        }
+        renderingPipeline = [ordered]@{
+            primaryCheckCount = $renderingPrimary.checkCount
+            independentCheckCount = $renderingIndependent.checkCount
+            issuedCaseCount = $renderingPrimary.issuedRenderingPipelineCaseCount
+            issuedOracleCount = $renderingPrimary.issuedRenderingPipelineOracleCount
+            formalCaseCount = $renderingA2.observedFrontier.totalFormalCaseCount
+            formalOracleCount = $renderingA2.observedFrontier.totalFormalOracleCount
+            executable = [bool]$renderingA2.observedFrontier.renderingPipelineExecutable
         }
         boundary = [ordered]@{
             productCodeExecuted = $false
