@@ -4510,3 +4510,31 @@
   authority 搜索通过。cap-045 无 T175 专属 A2/A3，既有独立 replay 不冒充本票证据；J0 pending、J1 未批准，
   未重复 server/full。
 - 无 app wiring/API/Web/migration/Profile/provider/API Key/真实数据/费用/Profile registration/push/tag/PR。
+
+# 2026-08-29 Template-v1 T177 total Render deadline monotonic guard（resolved / automated_verified）
+
+- T176 已以 verified commit `bf9918c1` 收口，worktree clean、ahead 167 且 DAG 无其他 active claim；冻结
+  `RW-T19-S8-052`、`RW-T19-S9-015/018/019` / cap-047 是下一个 unblocked frontier，现按 single-writer
+  claim T177。
+- cap-047 固定 `deadlineAndRetention.totalDeadlineMillis` EXACT `60000`、observed `59999/60000/60001`，
+  REQUEST_CONTROL / public ENGINE / RENDER_DEADLINE_EXCEEDED / ALGORITHM_INVARIANT，reservation point 为公共
+  Render admission 固定一次并转换一次为 monotonic remaining time。
+- T122 已有真实 RenderingApplication absolute deadline 与 same-command Unknown/BUSY retry，但当前重复定义
+  `60000` 且每次检查/等待重读 wall clock；本票将 catalog 与产品控制流同时合流，保持 wire absolute deadline，
+  以 request-local monotonic 时钟控制后续到期，wall drift 不得延长或缩短请求。
+- `RenderingPipelineCapacityGuard` 现独占 total-deadline id/value/comparator/problem/public-stage；公共 admission 仅读取一次
+  wall clock 与 monotonic origin。Java `EvaluationCommand` 携带 process-local monotonic deadline 供 Evaluator cooperative
+  control，Renderer Command 的 absolute wire deadline 不变，该值不进入 HTTP/OpenAPI/digest/log/persistence。
+- TDD：guard compile RED；application 3 个 behavioral RED（wall 二次读取、pre-evaluation monotonic 未生效、Unknown retry
+  未按 monotonic 收口）；evaluator 5 个 behavioral RED（wall jump 与 establish/save/load/unknown-commit monotonic 边界）。
+  GREEN 后 focused 132/132，受影响 reactor 为 Schema 20 / Validation 13 / Template 84 / Asset 92 / Rendering 277。
+- A1：asset `.sdlc/evidence/20260829-101926-asset/` 2/2；首次 server
+  `.sdlc/evidence/20260829-101947-server/` 因遗漏一个 app test fixture 构造器在 testCompile 失败，明确不采信；修复后的
+  server `.sdlc/evidence/20260829-103151-server/` 1/1、web `.sdlc/evidence/20260829-104823-web/` 1/1、
+  full `.sdlc/evidence/20260829-104909-full/` 17/17、render `.sdlc/evidence/20260829-111255-render/` 2/2
+  均 passed。full 覆盖 Node 24、runtime canary、Windows/Linux Renderer 与浏览器旅程，provider attempts/API key reads 为 0。
+- 状态回填后的 resolution fast `.sdlc/evidence/20260829-111501-fast/` metadata 为 passed、3/3；stderr 仅既有 npm
+  配置 warning，step exit code 与 metadata truth 均成功。
+- cap-047 isolated guard 不冒充正式 Ticket 19 record；T177-specific A2/A3 无，J0 pending、J1 未批准。cap-048+ 阶段
+  deadline 与 Renderer-owned registry/cancel/fetch/layout 继续 deferred；无 HTTP/OpenAPI/Web/migration/Profile/provider/
+  API Key/真实数据/费用/Profile registration/push/tag/PR。

@@ -98,7 +98,8 @@ class EvaluatorAssemblyTest {
                 "{\"rootDocument\":{}}".getBytes(StandardCharsets.UTF_8),
                 OutputSelection.defaultPng(),
                 "renderweave-renderer/1.0",
-                System.currentTimeMillis() + 60_000L));
+                System.currentTimeMillis() + 60_000L,
+                System.nanoTime() + 60_000_000_000L));
 
         assertThat(outcome).isInstanceOf(EvaluationOutcome.SealedDocument.class);
         var sealed = (EvaluationOutcome.SealedDocument) outcome;
@@ -123,7 +124,8 @@ class EvaluatorAssemblyTest {
                 "{\"rootDocument\":{}}".getBytes(StandardCharsets.UTF_8),
                 OutputSelection.defaultPng(),
                 "renderweave-renderer/1.0",
-                System.currentTimeMillis() + 60_000L));
+                System.currentTimeMillis() + 60_000L,
+                System.nanoTime() + 60_000_000_000L));
 
         assertThat(outcome).isInstanceOf(EvaluationOutcome.Rejected.class);
         var rejected = (EvaluationOutcome.Rejected) outcome;

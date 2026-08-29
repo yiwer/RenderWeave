@@ -923,4 +923,29 @@ class RenderingPipelineCapacityGuardTest {
         assertEquals("capabilityRuntime.randomRejectionAttempts",
                 next.limitId().orElseThrow().value());
     }
+
+    @Test
+    void totalDeadlineRequiresFrozenExactDurationAndEngineTaxonomy() {
+        var guard = new RenderingPipelineCapacityGuard();
+        var limit = RenderingPipelineCapacityGuard.Limit
+                .DEADLINE_AND_RETENTION_TOTAL_DEADLINE_MILLIS;
+
+        var below = guard.admit(limit, 59_999L).orElseThrow();
+        assertEquals(EvaluationStage.ENGINE, below.stage());
+        assertEquals(ProblemCode.RENDER_DEADLINE_EXCEEDED, below.code());
+        assertEquals("deadlineAndRetention.totalDeadlineMillis",
+                below.limitId().orElseThrow().value());
+        assertTrue(guard.admit(limit, 60_000L).isEmpty());
+        var above = guard.admit(limit, 60_001L).orElseThrow();
+        assertEquals(EvaluationStage.ENGINE, above.stage());
+        assertEquals(ProblemCode.RENDER_DEADLINE_EXCEEDED, above.code());
+        assertEquals("deadlineAndRetention.totalDeadlineMillis",
+                above.limitId().orElseThrow().value());
+
+        assertEquals(60_000L, guard.exactValue(limit));
+        assertThrows(IllegalArgumentException.class,
+                () -> guard.maximumInclusive(limit));
+        assertThrows(IllegalArgumentException.class,
+                () -> guard.admit(limit, 60_000L, 60_000L));
+    }
 }

@@ -196,7 +196,13 @@ final class RenderingPipelineCapacityGuard {
                 CapabilityDerivation.MAX_REJECTION_ATTEMPTS,
                 Comparison.EXACT,
                 ProblemCode.CAPABILITY_RESULT_INVALID,
-                EvaluationStage.MATERIALIZATION);
+                EvaluationStage.MATERIALIZATION),
+        DEADLINE_AND_RETENTION_TOTAL_DEADLINE_MILLIS(
+                "deadlineAndRetention.totalDeadlineMillis",
+                60_000L,
+                Comparison.EXACT,
+                ProblemCode.RENDER_DEADLINE_EXCEEDED,
+                EvaluationStage.ENGINE);
 
         private final String id;
         private final long frozenValue;
@@ -242,6 +248,14 @@ final class RenderingPipelineCapacityGuard {
             case EXACT -> observedValue == limit.frozenValue;
         };
         return admitted ? Optional.empty() : problem(limit);
+    }
+
+    RenderingProblem rejection(Limit limit) {
+        Objects.requireNonNull(limit, "limit");
+        return RenderingProblem.ofLimit(
+                limit.problemCode,
+                limit.publicStage,
+                new LimitId(limit.id));
     }
 
     Optional<RenderingProblem> admit(
@@ -301,11 +315,8 @@ final class RenderingPipelineCapacityGuard {
         }
     }
 
-    private static Optional<RenderingProblem> problem(Limit limit) {
-        return Optional.of(RenderingProblem.ofLimit(
-                limit.problemCode,
-                limit.publicStage,
-                new LimitId(limit.id)));
+    private Optional<RenderingProblem> problem(Limit limit) {
+        return Optional.of(rejection(limit));
     }
 
     /** Request-local atomic accumulator backed by the same frozen limit catalog. */

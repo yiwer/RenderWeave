@@ -30,6 +30,7 @@ import java.time.ZoneOffset;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.LongSupplier;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -241,8 +242,9 @@ class RenderingApplicationContractTest {
                 engine,
                 authority,
                 availableProfiles(),
-                new AdvancingClock(NOW, 20_000L),
-                Duration.ZERO);
+                Clock.fixed(Instant.ofEpochMilli(NOW), ZoneOffset.UTC),
+                Duration.ZERO,
+                new AdvancingTicker(0L, Duration.ofSeconds(20).toNanos()));
 
         var outcome = application.render(INVOCATION, command(RenderPurpose.FORMAL_OUTPUT));
 
@@ -253,6 +255,62 @@ class RenderingApplicationContractTest {
         assertEquals(1, evaluator.seen.size());
         assertEquals(NOW + 60_000L, evaluator.seen.get(0).deadlineAtEpochMilli());
         assertEquals(1, engine.seen.size());
+        assertEquals(1, authority.recheckCalls);
+    }
+
+    @Test
+    void wallClockIsReadOnlyAtAdmissionAndCannotDriftTheDeadline() {
+        var evaluator = new ScriptedEvaluator();
+        var engine = new ScriptedEngine(
+                new EngineOutcome.Unknown(),
+                new EngineOutcome.Joined(output(OUTPUT)));
+        var authority = grantedAuthority(RenderPurpose.FORMAL_OUTPUT);
+        var wallClock = new OneShotClock(NOW);
+        var application = new CanonicalRenderingApplication(
+                evaluator,
+                engine,
+                authority,
+                availableProfiles(),
+                wallClock,
+                Duration.ofNanos(1L),
+                () -> 7L);
+
+        var outcome = application.render(INVOCATION, command(RenderPurpose.FORMAL_OUTPUT));
+
+        assertInstanceOf(RenderOutcome.Rendered.class, outcome);
+        assertEquals(1, wallClock.reads);
+        assertEquals(NOW + 60_000L, evaluator.seen.get(0).deadlineAtEpochMilli());
+        assertEquals(60_000_000_007L,
+                evaluator.seen.get(0).deadlineAtMonotonicNanos());
+        assertEquals(evaluator.seen.get(0).deadlineAtEpochMilli(),
+                engine.seen.get(0).deadlineAtEpochMilli());
+        assertEquals(2, engine.seen.size());
+    }
+
+    @Test
+    void monotonicDeadlineExhaustionBeforeEvaluationUsesFrozenPublicTaxonomy() {
+        var evaluator = new ScriptedEvaluator();
+        var engine = new ScriptedEngine(new EngineOutcome.SealedOutput(output(OUTPUT)));
+        var authority = grantedAuthority(RenderPurpose.FORMAL_OUTPUT);
+        var application = new CanonicalRenderingApplication(
+                evaluator,
+                engine,
+                authority,
+                availableProfiles(),
+                Clock.fixed(Instant.ofEpochMilli(NOW), ZoneOffset.UTC),
+                Duration.ZERO,
+                new AdvancingTicker(0L, Duration.ofSeconds(60).toNanos()));
+
+        var outcome = application.render(INVOCATION, command(RenderPurpose.FORMAL_OUTPUT));
+
+        var rejected = assertInstanceOf(RenderOutcome.Rejected.class, outcome);
+        assertEquals(RenderingProblem.ProblemCode.RENDER_DEADLINE_EXCEEDED,
+                rejected.problem().code());
+        assertEquals(EvaluationStage.ENGINE, rejected.problem().stage());
+        assertEquals("deadlineAndRetention.totalDeadlineMillis",
+                rejected.problem().limitId().orElseThrow().value());
+        assertEquals(0, evaluator.seen.size());
+        assertEquals(0, engine.seen.size());
         assertEquals(1, authority.recheckCalls);
     }
 
@@ -427,13 +485,12 @@ class RenderingApplicationContractTest {
         }
     }
 
-    private static final class AdvancingClock extends Clock {
-        private long currentMillis;
-        private final long stepMillis;
+    private static final class OneShotClock extends Clock {
+        private final long currentMillis;
+        private int reads;
 
-        private AdvancingClock(long currentMillis, long stepMillis) {
+        private OneShotClock(long currentMillis) {
             this.currentMillis = currentMillis;
-            this.stepMillis = stepMillis;
         }
 
         @Override
@@ -453,8 +510,26 @@ class RenderingApplicationContractTest {
 
         @Override
         public long millis() {
-            long result = currentMillis;
-            currentMillis += stepMillis;
+            if (++reads > 1) {
+                throw new IllegalStateException("wall clock read after admission");
+            }
+            return currentMillis;
+        }
+    }
+
+    private static final class AdvancingTicker implements LongSupplier {
+        private long currentNanos;
+        private final long stepNanos;
+
+        private AdvancingTicker(long currentNanos, long stepNanos) {
+            this.currentNanos = currentNanos;
+            this.stepNanos = stepNanos;
+        }
+
+        @Override
+        public long getAsLong() {
+            var result = currentNanos;
+            currentNanos += stepNanos;
             return result;
         }
     }

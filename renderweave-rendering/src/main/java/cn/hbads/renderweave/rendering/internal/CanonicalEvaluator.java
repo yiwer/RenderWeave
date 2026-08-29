@@ -18,6 +18,7 @@ import cn.hbads.renderweave.validation.ValidationTargetResolver;
 import java.time.Clock;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.LongSupplier;
 
 /**
  * Rendering 唯一动态语义权威（ADR-0044 §2）：单一窄 {@code evaluate} 按 first-fail 串行
@@ -27,6 +28,12 @@ import java.util.Optional;
  * 由 RenderingApplication 接线，本 evaluate 终止于 SealedDocument。
  */
 final class CanonicalEvaluator implements Evaluator {
+
+    private static final RenderingPipelineCapacityGuard CAPACITY_GUARD =
+            new RenderingPipelineCapacityGuard();
+    private static final RenderingPipelineCapacityGuard.Limit TOTAL_DEADLINE_LIMIT =
+            RenderingPipelineCapacityGuard.Limit
+                    .DEADLINE_AND_RETENTION_TOTAL_DEADLINE_MILLIS;
 
     private final TemplateClosureAuthority closureAuthority;
     private final DesignSemanticAuthority semantics;
@@ -38,6 +45,7 @@ final class CanonicalEvaluator implements Evaluator {
     private final CapabilityBudget capabilityBudget;
     private final ValidationTargetResolver validationResolver;
     private final Clock clock;
+    private final LongSupplier monotonicNanos;
 
     CanonicalEvaluator(
             TemplateClosureAuthority closureAuthority,
@@ -50,6 +58,23 @@ final class CanonicalEvaluator implements Evaluator {
             ValidationTargetResolver validationResolver,
             Clock clock
     ) {
+        this(closureAuthority, semantics, dslAuthority, assets, capabilities,
+                capabilityStates, effectiveBudgetVector, validationResolver, clock,
+                System::nanoTime);
+    }
+
+    CanonicalEvaluator(
+            TemplateClosureAuthority closureAuthority,
+            DesignSemanticAuthority semantics,
+            DesignDslAuthority dslAuthority,
+            AssetResolutionPort assets,
+            RenderingCapabilityRuntime capabilities,
+            CapabilityStateStore capabilityStates,
+            String effectiveBudgetVector,
+            ValidationTargetResolver validationResolver,
+            Clock clock,
+            LongSupplier monotonicNanos
+    ) {
         this.closureAuthority = Objects.requireNonNull(closureAuthority, "closureAuthority");
         this.semantics = Objects.requireNonNull(semantics, "semantics");
         this.dslAuthority = Objects.requireNonNull(dslAuthority, "dslAuthority");
@@ -60,15 +85,16 @@ final class CanonicalEvaluator implements Evaluator {
         this.capabilityBudget = CapabilityBudget.fromEffectiveVector(effectiveBudgetVector);
         this.validationResolver = Objects.requireNonNull(validationResolver, "validationResolver");
         this.clock = Objects.requireNonNull(clock, "clock");
+        this.monotonicNanos = Objects.requireNonNull(monotonicNanos, "monotonicNanos");
     }
 
     @Override
     public EvaluationOutcome evaluate(EvaluationCommand command) {
         Objects.requireNonNull(command, "command");
 
-        if (clock.millis() >= command.deadlineAtEpochMilli()) {
-            return rejected(EvaluationStage.REQUEST_ADMISSION,
-                    ProblemCode.RENDER_DEADLINE_EXCEEDED, null);
+        if (deadlineExpired(command.deadlineAtMonotonicNanos())) {
+            var problem = CAPACITY_GUARD.rejection(TOTAL_DEADLINE_LIMIT);
+            return new EvaluationOutcome.Rejected(problem.stage(), problem);
         }
 
         var closureOutcome = closureAuthority.freezeClosure(
@@ -240,7 +266,7 @@ final class CanonicalEvaluator implements Evaluator {
         var loaded = capabilityStates.load(command.renderRequestId(), fingerprint);
         if (loaded instanceof CapabilityStateStore.LoadOutcome.Loaded state) {
             return restoreCapabilityRuntime(
-                    requirements, state, command.deadlineAtEpochMilli());
+                    requirements, state, command.deadlineAtMonotonicNanos());
         }
         if (loaded instanceof CapabilityStateStore.LoadOutcome.LoadFingerprintConflict) {
             return new CapabilityRuntimeRejected(ProblemCode.CAPABILITY_STATE_CONFLICT);
@@ -250,12 +276,13 @@ final class CanonicalEvaluator implements Evaluator {
         }
         var issuedAt = clock.instant().getEpochSecond();
         var deadlineMillis = command.deadlineAtEpochMilli();
+        var deadlineAtMonotonicNanos = command.deadlineAtMonotonicNanos();
         var deadlineSecond = Math.floorDiv(deadlineMillis, 1_000L)
                 + (Math.floorMod(deadlineMillis, 1_000L) == 0L ? 0L : 1L);
         var expiresAt = Math.max(issuedAt + 1L, deadlineSecond + 300L);
         var initializationAttempts = capabilityBudget.newInitializationAttempts();
         while (true) {
-            if (clock.millis() >= deadlineMillis) {
+            if (deadlineExpired(deadlineAtMonotonicNanos)) {
                 return new CapabilityRuntimeRejected(ProblemCode.CAPABILITY_DEADLINE_EXCEEDED);
             }
             var attemptLimit = initializationAttempts.reserve();
@@ -271,7 +298,7 @@ final class CanonicalEvaluator implements Evaluator {
                 // No state can have committed before establish returns; a bounded resample is safe.
                 continue;
             }
-            if (clock.millis() >= deadlineMillis) {
+            if (deadlineExpired(deadlineAtMonotonicNanos)) {
                 return new CapabilityRuntimeRejected(ProblemCode.CAPABILITY_DEADLINE_EXCEEDED);
             }
             var stateRecordLimit = capabilityBudget.admitStateRecord(
@@ -284,7 +311,7 @@ final class CanonicalEvaluator implements Evaluator {
                     command.renderRequestId(), fingerprint, established.sealedState(),
                     issuedAt, expiresAt));
             if (saved instanceof CapabilityStateStore.SaveOutcome.Stored) {
-                if (clock.millis() >= deadlineMillis) {
+                if (deadlineExpired(deadlineAtMonotonicNanos)) {
                     return new CapabilityRuntimeRejected(
                             ProblemCode.CAPABILITY_DEADLINE_EXCEEDED);
                 }
@@ -297,7 +324,8 @@ final class CanonicalEvaluator implements Evaluator {
                     || saved instanceof CapabilityStateStore.SaveOutcome.SaveUnavailable) {
                 var replay = capabilityStates.load(command.renderRequestId(), fingerprint);
                 if (replay instanceof CapabilityStateStore.LoadOutcome.Loaded state) {
-                    return restoreCapabilityRuntime(requirements, state, deadlineMillis);
+                    return restoreCapabilityRuntime(
+                            requirements, state, deadlineAtMonotonicNanos);
                 }
                 if (replay instanceof CapabilityStateStore.LoadOutcome.LoadFingerprintConflict) {
                     return new CapabilityRuntimeRejected(ProblemCode.CAPABILITY_STATE_CONFLICT);
@@ -315,21 +343,26 @@ final class CanonicalEvaluator implements Evaluator {
     private CapabilityRuntimeOutcome restoreCapabilityRuntime(
             CapabilityRequirements requirements,
             CapabilityStateStore.LoadOutcome.Loaded state,
-            long deadlineMillis
+            long deadlineAtMonotonicNanos
     ) {
-        if (clock.millis() >= deadlineMillis) {
+        if (deadlineExpired(deadlineAtMonotonicNanos)) {
             return new CapabilityRuntimeRejected(ProblemCode.CAPABILITY_DEADLINE_EXCEEDED);
         }
         try {
             var restored = Objects.requireNonNull(
                     capabilities.restore(requirements, state.sealedState()), "restored");
-            if (clock.millis() >= deadlineMillis) {
+            if (deadlineExpired(deadlineAtMonotonicNanos)) {
                 return new CapabilityRuntimeRejected(ProblemCode.CAPABILITY_DEADLINE_EXCEEDED);
             }
             return new CapabilityRuntimeReady(restored);
         } catch (RuntimeException invalid) {
             return new CapabilityRuntimeRejected(ProblemCode.CAPABILITY_STATE_UNAVAILABLE);
         }
+    }
+
+    private boolean deadlineExpired(long deadlineAtMonotonicNanos) {
+        // Signed subtraction is wrap-safe for System.nanoTime intervals below 2^63 ns.
+        return deadlineAtMonotonicNanos - monotonicNanos.getAsLong() <= 0;
     }
 
     private sealed interface CapabilityRuntimeOutcome permits CapabilityRuntimeReady, CapabilityRuntimeRejected { }

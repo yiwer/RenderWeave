@@ -41,6 +41,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.LongSupplier;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
@@ -449,18 +450,21 @@ class EvaluatorContractTest {
     @Test
     void initializationThatReachesTheDeadlineDoesNotCommitState() {
         var clock = new MutableClock(1_000L);
+        var ticker = new MutableTicker(0L);
         var stateStore = new RecordingCapabilityStateStore();
-        var runtime = new DeadlineAdvancingRuntime(clock, 2_000L);
+        var runtime = new DeadlineAdvancingRuntime(ticker, 1_000L);
         var evaluator = evaluator(
                 closureWith(withUnusedClock(canvasWithRect())),
                 resolver(),
                 stateStore,
                 runtime,
                 DEFAULT_BUDGET_VECTOR,
-                clock);
+                clock,
+                ticker);
 
         var rejected = assertInstanceOf(EvaluationOutcome.Rejected.class,
-                evaluator.evaluate(command("{\"rootDocument\":{}}", 2_000L)));
+                evaluator.evaluate(command(
+                        "{\"rootDocument\":{}}", 2_000L, 1_000L)));
 
         assertEquals(EvaluationStage.CAPABILITY_STATE, rejected.stage());
         assertEquals(RenderingProblem.ProblemCode.CAPABILITY_DEADLINE_EXCEEDED,
@@ -473,7 +477,8 @@ class EvaluatorContractTest {
     @Test
     void stateCommitThatReachesTheDeadlineDoesNotEnterTheRootFrame() {
         var clock = new MutableClock(1_000L);
-        var stateStore = new DeadlineAdvancingCapabilityStateStore(clock, 2_000L);
+        var ticker = new MutableTicker(0L);
+        var stateStore = new DeadlineAdvancingCapabilityStateStore(ticker, 1_000L);
         var runtime = new RecordingCapabilityRuntime();
         var evaluator = evaluator(
                 closureWith(withUnusedClock(canvasWithRect())),
@@ -481,10 +486,12 @@ class EvaluatorContractTest {
                 stateStore,
                 runtime,
                 DEFAULT_BUDGET_VECTOR,
-                clock);
+                clock,
+                ticker);
 
         var rejected = assertInstanceOf(EvaluationOutcome.Rejected.class,
-                evaluator.evaluate(command("{\"rootDocument\":{}}", 2_000L)));
+                evaluator.evaluate(command(
+                        "{\"rootDocument\":{}}", 2_000L, 1_000L)));
 
         assertEquals(EvaluationStage.CAPABILITY_STATE, rejected.stage());
         assertEquals(RenderingProblem.ProblemCode.CAPABILITY_DEADLINE_EXCEEDED,
@@ -518,7 +525,8 @@ class EvaluatorContractTest {
     @Test
     void loadedStateThatReachesTheDeadlineIsNotRestored() {
         var clock = new MutableClock(1_000L);
-        var stateStore = new DeadlineLoadedCapabilityStateStore(clock, 2_000L);
+        var ticker = new MutableTicker(0L);
+        var stateStore = new DeadlineLoadedCapabilityStateStore(ticker, 1_000L);
         var runtime = new RecordingCapabilityRuntime();
         var evaluator = evaluator(
                 closureWith(withUnusedClock(canvasWithRect())),
@@ -526,10 +534,12 @@ class EvaluatorContractTest {
                 stateStore,
                 runtime,
                 DEFAULT_BUDGET_VECTOR,
-                clock);
+                clock,
+                ticker);
 
         var rejected = assertInstanceOf(EvaluationOutcome.Rejected.class,
-                evaluator.evaluate(command("{\"rootDocument\":{}}", 2_000L)));
+                evaluator.evaluate(command(
+                        "{\"rootDocument\":{}}", 2_000L, 1_000L)));
 
         assertEquals(EvaluationStage.CAPABILITY_STATE, rejected.stage());
         assertEquals(RenderingProblem.ProblemCode.CAPABILITY_DEADLINE_EXCEEDED,
@@ -541,7 +551,8 @@ class EvaluatorContractTest {
     @Test
     void unknownCommitResolvedAtTheDeadlineIsNotRestored() {
         var clock = new MutableClock(1_000L);
-        var stateStore = new UnknownCommittedDeadlineStateStore(clock, 2_000L);
+        var ticker = new MutableTicker(0L);
+        var stateStore = new UnknownCommittedDeadlineStateStore(ticker, 1_000L);
         var runtime = new RecordingCapabilityRuntime();
         var evaluator = evaluator(
                 closureWith(withUnusedClock(canvasWithRect())),
@@ -549,10 +560,12 @@ class EvaluatorContractTest {
                 stateStore,
                 runtime,
                 DEFAULT_BUDGET_VECTOR,
-                clock);
+                clock,
+                ticker);
 
         var rejected = assertInstanceOf(EvaluationOutcome.Rejected.class,
-                evaluator.evaluate(command("{\"rootDocument\":{}}", 2_000L)));
+                evaluator.evaluate(command(
+                        "{\"rootDocument\":{}}", 2_000L, 1_000L)));
 
         assertEquals(EvaluationStage.CAPABILITY_STATE, rejected.stage());
         assertEquals(RenderingProblem.ProblemCode.CAPABILITY_DEADLINE_EXCEEDED,
@@ -975,6 +988,46 @@ class EvaluatorContractTest {
     }
 
     @Test
+    void wallClockJumpAfterAdmissionCannotExpireEvaluation() {
+        var wallClockAfterJump = new MutableClock(100_000L);
+        var evaluator = evaluator(
+                closureWith(canvasWithRect()),
+                resolver(),
+                new RecordingCapabilityStateStore(),
+                scriptedRuntime(),
+                DEFAULT_BUDGET_VECTOR,
+                wallClockAfterJump,
+                () -> 0L);
+
+        var outcome = evaluator.evaluate(command(
+                "{\"rootDocument\":{}}", 61_000L, 1_000L));
+
+        assertInstanceOf(EvaluationOutcome.SealedDocument.class, outcome);
+    }
+
+    @Test
+    void expiredMonotonicDeadlineUsesFrozenTotalDeadlineTaxonomyAtEntry() {
+        var evaluator = evaluator(
+                closureWith(canvasWithRect()),
+                resolver(),
+                new RecordingCapabilityStateStore(),
+                scriptedRuntime(),
+                DEFAULT_BUDGET_VECTOR,
+                new MutableClock(1_000L),
+                () -> 1_000L);
+
+        var outcome = evaluator.evaluate(command(
+                "{\"rootDocument\":{}}", 61_000L, 1_000L));
+
+        var rejected = assertInstanceOf(EvaluationOutcome.Rejected.class, outcome);
+        assertEquals(EvaluationStage.ENGINE, rejected.stage());
+        assertEquals(RenderingProblem.ProblemCode.RENDER_DEADLINE_EXCEEDED,
+                rejected.problem().code());
+        assertEquals("deadlineAndRetention.totalDeadlineMillis",
+                rejected.problem().limitId().orElseThrow().value());
+    }
+
+    @Test
     void malformedEnvelopeRejectsAtRequestAdmission() {
         var evaluator = evaluator(closureWith(canvasWithRect()), resolver());
 
@@ -1007,7 +1060,8 @@ class EvaluatorContractTest {
                 "{\"rootDocument\":{}}".getBytes(StandardCharsets.UTF_8),
                 OutputSelection.defaultPng(),
                 "renderweave-renderer/1.0",
-                61_000L));
+                61_000L,
+                System.nanoTime() + 60_000_000_000L));
 
         var rejected = assertInstanceOf(EvaluationOutcome.Rejected.class, outcome);
         assertEquals(EvaluationStage.REQUEST_ADMISSION, rejected.stage());
@@ -1159,7 +1213,17 @@ class EvaluatorContractTest {
     }
 
     private static EvaluationCommand command(String envelope, long deadlineAtEpochMilli) {
-        return command(envelope, deadlineAtEpochMilli, AUTH_DIGEST);
+        return command(envelope, deadlineAtEpochMilli, AUTH_DIGEST,
+                ExternalAssetReadAuthorization.GRANTED);
+    }
+
+    private static EvaluationCommand command(
+            String envelope,
+            long deadlineAtEpochMilli,
+            long deadlineAtMonotonicNanos
+    ) {
+        return command(envelope, deadlineAtEpochMilli, deadlineAtMonotonicNanos,
+                AUTH_DIGEST, ExternalAssetReadAuthorization.GRANTED);
     }
 
     private static EvaluationCommand command(
@@ -1174,6 +1238,21 @@ class EvaluatorContractTest {
             String authorizationDigest,
             ExternalAssetReadAuthorization externalAssetReadAuthorization
     ) {
+        return command(
+                envelope,
+                deadlineAtEpochMilli,
+                System.nanoTime() + 60_000_000_000L,
+                authorizationDigest,
+                externalAssetReadAuthorization);
+    }
+
+    private static EvaluationCommand command(
+            String envelope,
+            long deadlineAtEpochMilli,
+            long deadlineAtMonotonicNanos,
+            String authorizationDigest,
+            ExternalAssetReadAuthorization externalAssetReadAuthorization
+    ) {
         return new EvaluationCommand(
                 new RenderRequestId("00000000-0000-4000-8000-000000000001"),
                 new OwnerScope("owner-a"),
@@ -1183,7 +1262,8 @@ class EvaluatorContractTest {
                 envelope.getBytes(StandardCharsets.UTF_8),
                 OutputSelection.defaultPng(),
                 "renderweave-renderer/1.0",
-                deadlineAtEpochMilli);
+                deadlineAtEpochMilli,
+                deadlineAtMonotonicNanos);
     }
 
     private static cn.hbads.renderweave.rendering.internal.CanonicalEvaluator evaluator(
@@ -1254,6 +1334,18 @@ class EvaluatorContractTest {
             RenderingCapabilityRuntime runtime,
             String effectiveBudgetVector,
             Clock clock) {
+        return evaluator(closure, resolver, stateStore, runtime,
+                effectiveBudgetVector, clock, System::nanoTime);
+    }
+
+    private static cn.hbads.renderweave.rendering.internal.CanonicalEvaluator evaluator(
+            ClosureSnapshot closure,
+            ValidationTargetResolver resolver,
+            CapabilityStateStore stateStore,
+            RenderingCapabilityRuntime runtime,
+            String effectiveBudgetVector,
+            Clock clock,
+            LongSupplier monotonicNanos) {
         return new cn.hbads.renderweave.rendering.internal.CanonicalEvaluator(
                 scriptedClosure(closure),
                 TemplateModule.designSemanticAuthority(),
@@ -1263,7 +1355,8 @@ class EvaluatorContractTest {
                 stateStore,
                 effectiveBudgetVector,
                 resolver,
-                clock);
+                clock,
+                monotonicNanos);
     }
 
     private static String budgetVector(
@@ -1395,19 +1488,19 @@ class EvaluatorContractTest {
     }
 
     private static final class DeadlineAdvancingRuntime implements RenderingCapabilityRuntime {
-        private final MutableClock clock;
-        private final long deadlineMillis;
+        private final MutableTicker ticker;
+        private final long deadlineNanos;
         private int establishCalls;
 
-        private DeadlineAdvancingRuntime(MutableClock clock, long deadlineMillis) {
-            this.clock = clock;
-            this.deadlineMillis = deadlineMillis;
+        private DeadlineAdvancingRuntime(MutableTicker ticker, long deadlineNanos) {
+            this.ticker = ticker;
+            this.deadlineNanos = deadlineNanos;
         }
 
         @Override
         public Established establish(CapabilityRequirements requirements) {
             establishCalls++;
-            clock.setMillis(deadlineMillis);
+            ticker.setNanos(deadlineNanos);
             return new Established(RecordingCapabilityRuntime.scriptedProvider(),
                     new byte[]{1, 2, 3});
         }
@@ -1455,6 +1548,23 @@ class EvaluatorContractTest {
         @Override
         public long millis() {
             return epochMillis;
+        }
+    }
+
+    private static final class MutableTicker implements LongSupplier {
+        private long nanos;
+
+        private MutableTicker(long nanos) {
+            this.nanos = nanos;
+        }
+
+        private void setNanos(long nanos) {
+            this.nanos = nanos;
+        }
+
+        @Override
+        public long getAsLong() {
+            return nanos;
         }
     }
 
@@ -1638,20 +1748,20 @@ class EvaluatorContractTest {
 
     private static final class DeadlineAdvancingCapabilityStateStore
             implements CapabilityStateStore {
-        private final MutableClock clock;
-        private final long deadlineMillis;
+        private final MutableTicker ticker;
+        private final long deadlineNanos;
         private int saveCalls;
 
         private DeadlineAdvancingCapabilityStateStore(
-                MutableClock clock, long deadlineMillis) {
-            this.clock = clock;
-            this.deadlineMillis = deadlineMillis;
+                MutableTicker ticker, long deadlineNanos) {
+            this.ticker = ticker;
+            this.deadlineNanos = deadlineNanos;
         }
 
         @Override
         public SaveOutcome save(SaveRequest request) {
             saveCalls++;
-            clock.setMillis(deadlineMillis);
+            ticker.setNanos(deadlineNanos);
             return new SaveOutcome.Stored(new CapabilityStateId("state-deadline"));
         }
 
@@ -1688,12 +1798,13 @@ class EvaluatorContractTest {
 
     private static final class DeadlineLoadedCapabilityStateStore
             implements CapabilityStateStore {
-        private final MutableClock clock;
-        private final long deadlineMillis;
+        private final MutableTicker ticker;
+        private final long deadlineNanos;
 
-        private DeadlineLoadedCapabilityStateStore(MutableClock clock, long deadlineMillis) {
-            this.clock = clock;
-            this.deadlineMillis = deadlineMillis;
+        private DeadlineLoadedCapabilityStateStore(
+                MutableTicker ticker, long deadlineNanos) {
+            this.ticker = ticker;
+            this.deadlineNanos = deadlineNanos;
         }
 
         @Override
@@ -1703,21 +1814,22 @@ class EvaluatorContractTest {
 
         @Override
         public LoadOutcome load(RenderRequestId requestId, String evaluationFingerprint) {
-            clock.setMillis(deadlineMillis);
+            ticker.setNanos(deadlineNanos);
             return new LoadOutcome.Loaded(new byte[]{1, 2, 3}, 361L);
         }
     }
 
     private static final class UnknownCommittedDeadlineStateStore
             implements CapabilityStateStore {
-        private final MutableClock clock;
-        private final long deadlineMillis;
+        private final MutableTicker ticker;
+        private final long deadlineNanos;
         private SaveRequest committed;
         private int loadCalls;
 
-        private UnknownCommittedDeadlineStateStore(MutableClock clock, long deadlineMillis) {
-            this.clock = clock;
-            this.deadlineMillis = deadlineMillis;
+        private UnknownCommittedDeadlineStateStore(
+                MutableTicker ticker, long deadlineNanos) {
+            this.ticker = ticker;
+            this.deadlineNanos = deadlineNanos;
         }
 
         @Override
@@ -1732,7 +1844,7 @@ class EvaluatorContractTest {
             if (committed == null) {
                 return new LoadOutcome.Missing();
             }
-            clock.setMillis(deadlineMillis);
+            ticker.setNanos(deadlineNanos);
             return new LoadOutcome.Loaded(
                     committed.sealedState(), committed.expiresAtEpochSecond());
         }

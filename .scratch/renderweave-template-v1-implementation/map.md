@@ -1076,6 +1076,14 @@ Label: wayfinder:map
   唯一 production guard；删除 budget/result projection 的重复 frozen value/比较/手写 limitId，guard 直接引用
   唯一 HMAC 算法 constant 并保持首 demand fail-closed 边界。focused 132/132、受影响 reactor
   20/13/84/92/272 与 render/fast metadata 全绿；A1、无 T176 专属 A2/A3、J0。
+- [T177 — total Render deadline production guard 与 monotonic admission 合流](issues/177-total-render-deadline-monotonic-guard.md)
+  — **resolved / automated_verified**；blocked by T21/T122/T176（均 resolved）。按 `RW-T19-S8-052`、
+  `RW-T19-S9-015/018/019` 与 cap-047，将 EXACT `60000` profile/taxonomy 合流到唯一 production guard，删除
+  application 重复 constant，并把公共准入时一次 wall deadline 转换为贯穿 Java Evaluation seam、不可重置的
+  request-local monotonic deadline；wire absolute deadline 保持不变。focused 132/132、受影响 reactor
+  20/13/84/92/277，asset/server/web、17-step full、render 与 resolution fast 均 passed/A1；T177-specific
+  A2/A3 无，J0 pending。
+  cap-048+ 继续 deferred；无 HTTP/OpenAPI/Web/migration/Profile/provider/push/tag/PR 变化。
 
 - 改写或重解释现有 Schema/Inference v1 已提交历史，或在 dirty main 上直接实施 Template。
 - Workspace、组织/成员/分享/协作、跨 ownerScope 复制、通用 connector、任意 SQL/HTTP/文件/脚本、插件节点或运行时代码注册。
