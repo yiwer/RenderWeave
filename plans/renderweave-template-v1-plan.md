@@ -6703,3 +6703,18 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
 - closure：Provider/network/API-key/真实数据 attempts 0；无 product/API/OpenAPI/Web/Flyway/Profile/Renderer
   deployment delta，未 push/tag/PR，用户 dirty work/stash 未触碰。claim 已释放；Renderer Exact Output 162 条
   preissuance 为下一安全 frontier，尚未登记或 claim，Ticket 19 保持 open。
+
+## 209. TV1-T209 执行卡
+
+- 状态：`active / claimed`；Blocked by T208（resolved）。
+- authority：portable tricky-font policy 要求每个 Certified Renderer target 的 face 被 FreeType 分类为
+  `FT_IS_TRICKY`；exact FreeType 2.14.3 只在 `TT_USE_BYTECODE_INTERPRETER` 编译路径中执行分类并设置
+  `FT_FACE_FLAG_TRICKY`，当前 candidate custom options 同时显式 `#undef` 该派生宏。
+- seam/scope：新增闭合 compatibility decision；Python stdlib verifier 只读取 exact source/candidate/policy/header/
+  prerequisites/process manifests，重算文件 SHA-256、严格解析 JSON/LF/duplicate members、词法确认宏状态并输出
+  payload-free report。PowerShell focused gate 与 `template` 组合必须重放同一 false lifecycle。
+- test-first：先取得 verifier/decision absent RED；随后加入 malformed/mutated fixture tests，focused gate 与 fresh
+  `template`。本票不执行或下载 proprietary font，不保留 vendor source，不 build/link/run FreeType/Skia。
+- boundary：只机器化现状矛盾，不选择新 candidate 或改 portable semantics；`buildAuthorized/certified/ready/`
+  `recordIssuanceAllowed` 全 false，Renderer Exact Output 162 条不发行，Ticket 19 open。无 API/OpenAPI/Web/Flyway/
+  Profile/provider/API Key/真实数据/生产/push/tag/PR；A0 claim，A1/A2/A3/J1 待证据。

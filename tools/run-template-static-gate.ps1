@@ -96,6 +96,24 @@ function Get-TreeManifest {
 $env:RENDERWEAVE_LIVE_AI_ENABLED = 'false'
 $env:RENDERWEAVE_LIVE_UPLOAD_ENABLED = 'false'
 
+$trickyFontReportPath = Join-Path $resolvedEvidenceDir 'renderer-tricky-font-compatibility.json'
+Invoke-Checked 'renderer-tricky-font-compatibility' {
+    & (Join-Path $PSScriptRoot 'run-renderer-tricky-font-compatibility-gate.ps1') `
+        -EvidenceDir $resolvedEvidenceDir
+}
+$trickyFontReport = Get-Content -Raw -Encoding UTF8 -LiteralPath $trickyFontReportPath |
+    ConvertFrom-Json
+if ($trickyFontReport.status -ne 'PASS_FAIL_CLOSED' `
+        -or $trickyFontReport.decisionStatus -ne 'BLOCKED_CANDIDATE_SEMANTIC_CONTRADICTION' `
+        -or $trickyFontReport.failureCount -ne 0 `
+        -or $trickyFontReport.boundary.exactRendererTargetMayMaterialize `
+        -or $trickyFontReport.boundary.rendererExactOutputRecordIssuanceAllowed `
+        -or $trickyFontReport.boundary.certified `
+        -or $trickyFontReport.boundary.ready `
+        -or $trickyFontReport.boundary.ticket19MayClose) {
+    throw 'Renderer tricky-font compatibility did not remain fail closed.'
+}
+
 $sourceManifest = @(Get-TreeManifest -Root $sourceSpecRoot)
 $tempSpecRoot = $null
 try {
@@ -326,6 +344,17 @@ try {
         status = 'PASS'
         sourceFileCount = $sourceManifest.Count
         authorityByteIdenticalAfterReplay = $true
+        rendererTrickyFontCompatibility = [ordered]@{
+            status = $trickyFontReport.status
+            decisionStatus = $trickyFontReport.decisionStatus
+            candidateId = $trickyFontReport.candidateId
+            checkCount = $trickyFontReport.checkCount
+            exactRendererTargetMayMaterialize = [bool]$trickyFontReport.boundary.exactRendererTargetMayMaterialize
+            recordIssuanceAllowed = [bool]$trickyFontReport.boundary.rendererExactOutputRecordIssuanceAllowed
+            certified = [bool]$trickyFontReport.boundary.certified
+            ready = [bool]$trickyFontReport.boundary.ready
+            ticket19MayClose = [bool]$trickyFontReport.boundary.ticket19MayClose
+        }
         editor = [ordered]@{
             candidateCount = $editorIndependent.observed.candidateCount
             assertionPlanCount = $editorIndependent.observed.assertionPlanCount

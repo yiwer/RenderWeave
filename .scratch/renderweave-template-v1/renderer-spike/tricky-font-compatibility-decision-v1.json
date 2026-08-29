@@ -1,0 +1,75 @@
+{
+  "artifactVersion": "renderweave-renderer-tricky-font-compatibility-decision/1.0",
+  "decisionId": "rw-renderer-tricky-font-compatibility-000001",
+  "status": "BLOCKED_CANDIDATE_SEMANTIC_CONTRADICTION",
+  "candidateId": "rw-renderer-spike-linux-x86_64-v2-000001",
+  "sourceFact": {
+    "upstream": "FreeType",
+    "commit": "0a0221a1347e2f1e07c395263540026e9a0aa7c7",
+    "tree": "589225074ab1eb876682820c482069693c251e88",
+    "path": "src/truetype/ttobjs.c",
+    "rawMirror": "https://raw.githubusercontent.com/freetype/freetype/0a0221a1347e2f1e07c395263540026e9a0aa7c7/src/truetype/ttobjs.c",
+    "sha256": "sha256:c381554e81a00f9d5c430e7c51e1d6c289958867426b021a6165eb12b451922d",
+    "byteLength": 40600,
+    "classificationCompileGuard": "TT_USE_BYTECODE_INTERPRETER",
+    "classificationFunction": "tt_check_trickyness",
+    "assignedFaceFlag": "FT_FACE_FLAG_TRICKY",
+    "reviewedAt": "2026-08-29",
+    "sourceRetained": false
+  },
+  "inputs": [
+    {
+      "path": ".scratch/renderweave-template-v1/renderer-spike-candidate-v1.json",
+      "sha256": "sha256:c649e60e94bd56785074a8bbf514af856885e615d32ecd1ea680cb27fb0358f8",
+      "byteLength": 9619
+    },
+    {
+      "path": ".scratch/renderweave-template-v1/renderer-spike/source-integrity-target-manifest-v1.json",
+      "sha256": "sha256:d51bf5bf279a18d43604da90d21e0762c8151398555eae5e5243c3c6fe94962e",
+      "byteLength": 2029
+    },
+    {
+      "path": ".scratch/renderweave-template-v1/renderer-spike/tricky-font-fixture-policy-v1.json",
+      "sha256": "sha256:0517e8e4e08b13b39f8d8947439d382796a8a997628f605859a95382ae200d71",
+      "byteLength": 1069
+    },
+    {
+      "path": ".scratch/renderweave-template-v1/renderer-spike/rw-freetype-ftoption.h",
+      "sha256": "sha256:ad7c496b8290e32026ededb9322f420d424b3d025256b7f29086b67fa1190011",
+      "byteLength": 968
+    },
+    {
+      "path": ".scratch/renderweave-template-v1/renderer-spike/hermetic-linux-build-prerequisites-v1.json",
+      "sha256": "sha256:db79db2b39df447309547dc09ac254527e6ac2853d2e61d6cbb0780f1f5aab58",
+      "byteLength": 4802
+    },
+    {
+      "path": "renderer/process-manifest.json",
+      "sha256": "sha256:f814c98e415e1bee96af198bb36a2eefd91726f3264f26909217e4270afbdeeb",
+      "byteLength": 1246
+    }
+  ],
+  "observedContradiction": {
+    "portableAuthorityRequiresFtIsTricky": true,
+    "candidateUndefinesTtConfigOptionBytecodeInterpreter": true,
+    "candidateUndefinesTtUseBytecodeInterpreter": true,
+    "classificationImplementationCompiled": false,
+    "currentCandidateCanSatisfyPortableAuthority": false
+  },
+  "enforcedBoundary": {
+    "buildAuthorized": false,
+    "buildAttemptedByThisDecision": false,
+    "exactRendererTargetMayMaterialize": false,
+    "rendererExactOutputPreissuanceReady": false,
+    "rendererExactOutputRecordIssuanceAllowed": false,
+    "certified": false,
+    "ready": false,
+    "ticket19MayClose": false
+  },
+  "unresolvedDecision": {
+    "required": true,
+    "authority": "product-semantics-owner",
+    "choiceMadeByThisArtifact": false,
+    "nextAction": "Issue a new candidate configuration or revise the portable-authority contract before exact target materialization."
+  }
+}
