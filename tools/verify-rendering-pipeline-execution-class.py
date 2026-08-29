@@ -94,6 +94,10 @@ def sha256(data: bytes) -> str:
     return "sha256:" + hashlib.sha256(data).hexdigest()
 
 
+def raw_sha256(data: bytes) -> str:
+    return hashlib.sha256(data).hexdigest()
+
+
 def domain_digest(domain: bytes, data: bytes) -> str:
     return "sha256:" + hashlib.sha256(domain + data).hexdigest()
 
@@ -511,7 +515,7 @@ def validate_rust_report(
             and metadata["widthPx"] == width
             and metadata["heightPx"] == height
             and metadata["byteLength"] == len(image)
-            and metadata["contentSha256"] == sha256(image),
+            and metadata["contentSha256"] == raw_sha256(image),
             "RUST_METADATA", metadata)
     require(report["boundary"] == {
         "networkAttempts": 0, "externalProviderAttempts": 0,

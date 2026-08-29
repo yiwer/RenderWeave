@@ -56,10 +56,11 @@ fn replays_java_seal_through_public_parser_document_engine_and_result_chain() {
     let image_bytes = &image_payload[16..];
     assert_eq!(&image_bytes[..8], b"\x89PNG\r\n\x1a\n");
     assert_eq!(image_bytes.len() as u64, sealed.byte_length());
-    let content_sha256 = format!("sha256:{}", sealed.content_sha256());
+    let result_content_sha256 = sealed.content_sha256().to_owned();
+    let artifact_sha256 = format!("sha256:{result_content_sha256}");
     let metadata: Value =
         serde_json::from_slice(&metadata_bytes).expect("terminal metadata must be strict JSON");
-    assert_eq!(metadata["contentSha256"], content_sha256);
+    assert_eq!(metadata["contentSha256"], result_content_sha256);
     assert_eq!(metadata["byteLength"], sealed.byte_length());
     assert_eq!(metadata["format"], "PNG");
 
@@ -87,7 +88,7 @@ fn replays_java_seal_through_public_parser_document_engine_and_result_chain() {
         "metadata": metadata,
         "imageArtifact": {
             "path": file_name(&paths.image),
-            "sha256": content_sha256,
+            "sha256": artifact_sha256,
             "byteLength": image_bytes.len(),
         },
         "boundary": {
