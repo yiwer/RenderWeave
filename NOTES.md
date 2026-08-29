@@ -1,5 +1,28 @@
 # NOTES.md
 
+# 2026-08-29 Template-v1 T203 rotation degrees minimum capacity（resolved / automated_verified）
+- T202 已以实现 `93ad46fb`、治理 `13822c0b` 收口并释放 claim；DAG 无其他 active claim。现按 single-writer
+  claim cap-064 `geometry.rotationDegreesMin=-360`，关联 `RW-T19-S7-113` 与 `RW-T19-S9-017/019`，目标
+  wired 64/65、remaining geometry 1。
+- 只深化已确认的公共 `DesignDslAuthority.admit(rawUtf8)` 与既有 Template-owned capacity authority；每个
+  present non-Canvas Transform 复用一次 parsed `rotationDeg`，按 frozen member order 在 scaleX/scaleY 前观察
+  canonical degree value，不做 modulo normalization。Binding overlay 继续复用同一 re-admission seam；cap-065
+  deferred。
+- 本票按 `tdd` skill 从真实 Transform 公共 seam 写 tracer 先取 cap-064 observation 缺失 RED，再逐纵切推进。
+  claim 时 A0、J0 pending、J1 未批准；无 app wiring/Profile/Renderer/provider/API Key/真实数据/生产/push/tag/PR，
+  用户 Image/Inference dirty work 与 stash 保持不动。
+- 实现 `c235ca09` 已接入 once-parsed canonical `rotationDeg` minimum reservation，并保持
+  `rotationDeg→scaleX→scaleY` frozen order 与零 modulo normalization；below/at/above、negative-zero/
+  trailing-zero、exact pointer、absent Transform、parser/canonical precedence 与 authority reject/invalid/throw
+  均已覆盖。focused 45/45、Template module 181/181。
+- immutable v16 target SHA-256 `abedd1ddc9ffe07b4a3b032e6aa23bcc85046ce541c42be12dde44f3650653f9`、
+  21603 bytes；component `.sdlc/evidence/20260829-211202-template-t203-component/` Java primary 195/195（A1）、
+  TypeScript independent 195/195、2692 checks（A2），wired 64/65、remaining geometry 1、formal records 0。
+- `template` `.sdlc/evidence/20260829-211232-template/metadata.json` 与 `fast`
+  `.sdlc/evidence/20260829-211310-fast/metadata.json` passed/A1，Template Java/Python 211/211。claim 已释放；
+  A3 absent、J0 pending、J1 未批准；本票无 app wiring，未重复 server/full。用户 dirty work/stash 未改，未
+  push/tag/PR。下一 frontier 为 cap-065 `geometry.rotationDegreesMax`，尚未登记或 claim。
+
 # 2026-08-29 Template-v1 T202 transform scale absolute maximum capacity（resolved / automated_verified）
 - T201 已以实现 `1f8fc359`、治理 `fd5c7c28` 收口并释放 claim；DAG 无其他 active claim。现按 single-writer
   claim cap-063 `geometry.transformScaleAbsoluteMax=100`，关联 `RW-T19-S7-112` 与

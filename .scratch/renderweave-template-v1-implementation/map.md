@@ -925,6 +925,15 @@ Label: wayfinder:map
 
 ## Current frontier
 
+- [T203 — 接线 rotation degrees minimum 产品容量](issues/203-wire-rotation-degrees-minimum-capacity.md)
+  — **resolved / automated_verified / unclaimed**；实现 `c235ca09` 已把 cap-064
+  `geometry.rotationDegreesMin=-360` 接入公共 admission seam，并在 scale reservations 前观察 once-parsed
+  canonical degree value，不做 modulo normalization。immutable component v16 SHA-256
+  `abedd1ddc9ffe07b4a3b032e6aa23bcc85046ce541c42be12dde44f3650653f9`、21603 bytes；component
+  Java/TypeScript 195/195、2692 independent checks、wired 64/65、remaining geometry 1、formal records 0。
+  focused 45/45、Template module 181/181，`template`/`fast` passed/A1，Template Java/Python 211/211。
+  A3 absent、J0 pending、J1 未批准；本票无 app wiring，未重复 server/full。claim 已释放；下一 frontier 为
+  cap-065 `geometry.rotationDegreesMax`，尚未登记或 claim。
 - [T202 — 接线 transform scale absolute maximum 产品容量](issues/202-wire-transform-scale-absolute-maximum-capacity.md)
   — **resolved / automated_verified / unclaimed**；Blocked by T201（resolved）。实现 `93ad46fb` 已把 cap-063
   `geometry.transformScaleAbsoluteMax=100` 接入公共 admission seam；immutable component v15 SHA-256

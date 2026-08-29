@@ -6547,3 +6547,34 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
   module 176/176；`template` `.sdlc/evidence/20260829-205551-template/` 与 `fast`
   `.sdlc/evidence/20260829-205622-fast/` passed/A1，Template Java/Python 211/211。A3 absent、J0 pending、J1
   未批准；本票无 app wiring，未重复 server/full。claim 已释放；下一 frontier 为 cap-064，尚未登记或 claim。
+
+## 203. TV1-T203 执行卡
+
+- 状态：`resolved / automated_verified / unclaimed`；Blocked by T202（resolved）。
+- authority：Ticket 19 `RW-T19-S7-113 / RW-T19-S9-017 / RW-T19-S9-019` 与 cap-064 固定
+  `geometry.rotationDegreesMin=-360`、MIN_INCLUSIVE / CANONICAL_DECIMAL；terminal 为
+  `DESIGN_PROPERTY_CONSTRAINT_INVALID / DESIGN_PROPERTY_AND_AGGREGATE_VALIDATION`，public stage
+  TEMPLATE_CLOSURE，reservation point 为 persisted write/Evaluation 前，zero boundary 为
+  ZERO_WRITE_AND_DOWNSTREAM。
+- seam/scope：只深化已确认的 `DesignDslAuthority.admit(rawUtf8)` 与同一 Template-owned capacity authority；
+  每个 present non-Canvas Transform 只解析一次 `rotationDeg`，按 frozen member order 在 scaleX/scaleY 前观察
+  canonical degree value，不作 modulo-360 normalization。Binding overlay 继续复用同一 re-admission seam；
+  cap-065 保持 deferred。
+- TDD：先经真实 Transform 公共 seam 要求 cap-064 canonical observation 位于既有 scale observations 前并取得
+  缺失 RED，再逐纵切覆盖 scale-64 below/at/above、negative-zero/trailing-zero canonicalization、exact pointer、
+  absent Transform、parser/canonical precedence 与 authority reject/invalid/throw。
+- target/gates：成功后冻结 immutable component target v16，目标 wired 64/65、remaining geometry 1；执行
+  focused Template、Template module、component Java/TypeScript、canonical vectors、`template`、`fast`。无 app
+  wiring，不重复 server/full。
+- boundary：不接线 cap-065，不发行 formal records/class manifests，不运行 Renderer/Profile/provider/API Key/
+  真实数据/生产/J1/A3/READY，不改用户 dirty work/stash，不 push/tag/PR。claim 时 A0、J0 pending。
+- 实现/证据：实现基线 `c235ca095f2c518cb9736a8158064c276a0f9d73`；真实公共 seam tracer 先取得缺失
+  observation RED，随后完成 once-parsed canonical `rotationDeg`、frozen order、below/at/above、negative-zero/
+  trailing-zero、exact pointer、absent Transform、parser/canonical precedence 与 authority reject/invalid/throw
+  覆盖。focused 45/45、Template module 181/181。immutable v16 target SHA-256
+  `abedd1ddc9ffe07b4a3b032e6aa23bcc85046ce541c42be12dde44f3650653f9`、21603 bytes；component
+  `.sdlc/evidence/20260829-211202-template-t203-component/` Java primary 195/195（A1）、TypeScript independent
+  195/195、2692 checks（A2），wired 64/65、remaining geometry 1、formal records 0。`template`
+  `.sdlc/evidence/20260829-211232-template/` 与 `fast` `.sdlc/evidence/20260829-211310-fast/` passed/A1，
+  Template Java/Python 211/211。A3 absent、J0 pending、J1 未批准；无 app wiring，未重复 server/full。claim 已
+  释放；下一 frontier 为 cap-065 `geometry.rotationDegreesMax`，尚未登记或 claim。
