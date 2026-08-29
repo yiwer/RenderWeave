@@ -1632,7 +1632,7 @@ final class CanonicalDesignDslAuthority implements DesignDslAuthority {
             }
             validateAssetRef(required(run, "fontRef", runPointer + "/fontRef"),
                     runPointer + "/fontRef");
-            positiveDecimal(run, "fontSizePt", runPointer + "/fontSizePt");
+            fontSizePtDecimal(run, "fontSizePt", runPointer + "/fontSizePt");
             colorMember(run, "color", runPointer + "/color");
             enumMember(run, "decoration", NodeContractCatalog.DECORATION_TOKENS,
                     runPointer + "/decoration");
@@ -2510,6 +2510,22 @@ final class CanonicalDesignDslAuthority implements DesignDslAuthority {
                 pointer,
                 Limit.GEOMETRY_AUTHORED_COORDINATE_OR_LENGTH_MM_ABSOLUTE_MAX
         );
+    }
+
+    private void fontSizePtDecimal(
+            JsonValue.ObjectValue object,
+            String name,
+            String pointer
+    ) throws DesignDslFailureException {
+        var value = decimalValue(required(object, name, pointer), pointer);
+        reserveCapacityDecimal(
+                value,
+                pointer,
+                Limit.GEOMETRY_FONT_SIZE_PT_EXCLUSIVE_MIN
+        );
+        if (value.signum() <= 0) {
+            throw failure(FailureCode.DESIGN_VALUE_INVALID, pointer);
+        }
     }
 
     private void canvasTrimDecimal(

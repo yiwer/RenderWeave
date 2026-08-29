@@ -35,6 +35,140 @@ class GeometryCapacityReservationTest {
             "10000.0000000000000000000000000000000000000000000000000000000000000001";
 
     @Test
+    void textRunFontSizesObserveCanonicalValuesAtThePublicAdmissionSeam() throws Exception {
+        var recording = new RecordingAuthority();
+
+        assertInstanceOf(
+                DesignDslAuthority.Admitted.class,
+                new CanonicalDesignDslAuthority(recording)
+                        .admit(canonicalVector("admit-text-with-runs"))
+        );
+
+        assertEquals(
+                List.of(fontSizeMinimumObservation("12"), fontSizeMinimumObservation("12")),
+                recording.fontSizeMinimumObservations()
+        );
+    }
+
+    @Test
+    void defaultAuthorityEnforcesFontSizeBelowAtAndScale64AboveAtExactRunPointers() {
+        assertInstanceOf(
+                DesignDslAuthority.Admitted.class,
+                new CanonicalDesignDslAuthority().admit(textWithFontSizes(
+                        MIN_POSITIVE_SCALE_64,
+                        "12.000"
+                ))
+        );
+        assertFontSizeMinimumRejected(
+                textWithFontSizes(MIN_NEGATIVE_SCALE_64, "12"),
+                "/designRoot/children/0/runs/0/fontSizePt"
+        );
+        assertFontSizeMinimumRejected(
+                textWithFontSizes("12", "-0.00"),
+                "/designRoot/children/0/runs/1/fontSizePt"
+        );
+    }
+
+    @Test
+    void fontSizeCanonicalizationPreservesRunOrderAndNormalizesZeroAndTrailingZeros() {
+        var accepted = new RecordingAuthority();
+        assertInstanceOf(
+                DesignDslAuthority.Admitted.class,
+                new CanonicalDesignDslAuthority(accepted).admit(textWithFontSizes(
+                        "12.000",
+                        MIN_POSITIVE_SCALE_64
+                ))
+        );
+        assertEquals(
+                List.of(
+                        fontSizeMinimumObservation("12"),
+                        fontSizeMinimumObservation(MIN_POSITIVE_SCALE_64)
+                ),
+                accepted.fontSizeMinimumObservations()
+        );
+
+        var at = new RecordingAuthority();
+        assertFontSizeMinimumRejected(
+                new CanonicalDesignDslAuthority(at).admit(textWithFontSizes("-0.000", "12")),
+                "/designRoot/children/0/runs/0/fontSizePt"
+        );
+        assertEquals(
+                List.of(fontSizeMinimumObservation("0")),
+                at.fontSizeMinimumObservations()
+        );
+    }
+
+    @Test
+    void fontSizeAuthorityRejectInvalidAndThrowFailClosedAtTheExactRun() {
+        for (var mode : FailureMode.values()) {
+            var authority = new FailingAuthority(mode, "geometry.fontSizePtExclusiveMin");
+
+            assertFontSizeMinimumRejected(
+                    new CanonicalDesignDslAuthority(authority)
+                            .admit(textWithFontSizes("12.00", "13")),
+                    "/designRoot/children/0/runs/0/fontSizePt"
+            );
+            assertEquals(
+                    List.of(fontSizeMinimumObservation("12")),
+                    authority.fontSizeMinimumObservations()
+            );
+        }
+    }
+
+    @Test
+    void permissiveCapacityCannotBypassTheExistingPositiveFontSizeContract() {
+        var observations = new ArrayList<DesignInputExpressionCapacityAuthority.Observation>();
+        DesignInputExpressionCapacityAuthority permissive = observation -> {
+            observations.add(observation);
+            return new DesignInputExpressionCapacityAuthority.Accepted();
+        };
+
+        var rejected = assertInstanceOf(
+                DesignDslAuthority.Rejected.class,
+                new CanonicalDesignDslAuthority(permissive)
+                        .admit(textWithFontSizes("0", "12"))
+        );
+
+        assertEquals(DesignDslAuthority.FailureCode.DESIGN_VALUE_INVALID, rejected.code());
+        assertEquals("/designRoot/children/0/runs/0/fontSizePt", rejected.pointer());
+        assertEquals(
+                List.of(fontSizeMinimumObservation("0")),
+                observations.stream()
+                        .filter(observation -> observation.limitId().equals(
+                                "geometry.fontSizePtExclusiveMin"))
+                        .toList()
+        );
+    }
+
+    @Test
+    void fontSizeTypeValidationAndCanonicalExpansionPrecedeCapacityObservation() {
+        var malformed = new RecordingAuthority();
+        var malformedResult = assertInstanceOf(
+                DesignDslAuthority.Rejected.class,
+                new CanonicalDesignDslAuthority(malformed)
+                        .admit(textWithFontSizes("\"12\"", "12"))
+        );
+        assertEquals(DesignDslAuthority.FailureCode.DESIGN_STRUCTURE_INVALID,
+                malformedResult.code());
+        assertEquals("/designRoot/children/0/runs/0/fontSizePt", malformedResult.pointer());
+        assertEquals(List.of(), malformed.fontSizeMinimumObservations());
+
+        var oversized = new RecordingAuthority();
+        var oversizedResult = assertInstanceOf(
+                DesignDslAuthority.Rejected.class,
+                new CanonicalDesignDslAuthority(oversized)
+                        .admit(textWithFontSizes("1e16777216", "12"))
+        );
+        assertEquals(DesignDslAuthority.FailureCode.DESIGN_DSL_LIMIT_EXCEEDED,
+                oversizedResult.code());
+        assertEquals(DesignDslAuthority.FailureStage.DESIGN_CANONICAL_COUNT,
+                oversizedResult.stage());
+        assertEquals(DesignDslAuthority.Limit.CANONICAL_BYTES,
+                oversizedResult.limit().orElseThrow());
+        assertEquals(List.of(), oversized.fontSizeMinimumObservations());
+    }
+
+    @Test
     void absolutePlacementMmLeavesObserveCanonicalMagnitudeAtThePublicAdmissionSeam()
             throws Exception {
         var recording = new RecordingAuthority();
@@ -578,6 +712,55 @@ class GeometryCapacityReservationTest {
                 .getBytes(StandardCharsets.UTF_8);
     }
 
+    private static byte[] textWithFontSizes(String first, String second) {
+        return ("""
+                {
+                  "dslVersion":"renderweave-design/1.0",
+                  "expressionProfile":"renderweave-expression/1.0",
+                  "displayName":"Font size capacity",
+                  "definitions":[],
+                  "designRoot":{
+                    "nodeId":"00000000-0000-4000-8000-000000000001",
+                    "kind":"canvas",
+                    "widthMm":210,
+                    "heightMm":297,
+                    "bindings":[],
+                    "children":[{
+                      "nodeId":"00000000-0000-4000-8000-000000000011",
+                      "kind":"text",
+                      "bindings":[],
+                      "placement":{
+                        "type":"ABSOLUTE",
+                        "xMm":0,
+                        "yMm":0,
+                        "widthMode":"FIXED",
+                        "widthMm":80,
+                        "heightMode":"HUG_CONTENT"
+                      },
+                      "runs":[
+                        {
+                          "text":"A",
+                          "fontRef":{"assetId":"00000000-0000-4000-8000-0000000000a1"},
+                          "fontSizePt":%s,
+                          "color":"#FF000000",
+                          "decoration":"NONE",
+                          "letterSpacingPt":0
+                        },
+                        {
+                          "text":"B",
+                          "fontRef":{"assetId":"00000000-0000-4000-8000-0000000000a1"},
+                          "fontSizePt":%s,
+                          "color":"#FF000000",
+                          "decoration":"NONE",
+                          "letterSpacingPt":0
+                        }
+                      ]
+                    }]
+                  }
+                }
+                """).formatted(first, second).getBytes(StandardCharsets.UTF_8);
+    }
+
     private static DesignInputExpressionCapacityAuthority.Observation minObservation(
             String observedValue
     ) {
@@ -666,6 +849,15 @@ class GeometryCapacityReservationTest {
         );
     }
 
+    private static DesignInputExpressionCapacityAuthority.Observation fontSizeMinimumObservation(
+            String observedValue
+    ) {
+        return new DesignInputExpressionCapacityAuthority.Observation(
+                "geometry.fontSizePtExclusiveMin",
+                observedValue
+        );
+    }
+
     private static void assertGeometryRejected(
             DesignDslAuthority.Admission admission,
             String pointer
@@ -714,6 +906,21 @@ class GeometryCapacityReservationTest {
         );
     }
 
+    private static void assertFontSizeMinimumRejected(byte[] designDsl, String pointer) {
+        assertFontSizeMinimumRejected(new CanonicalDesignDslAuthority().admit(designDsl), pointer);
+    }
+
+    private static void assertFontSizeMinimumRejected(
+            DesignDslAuthority.Admission admission,
+            String pointer
+    ) {
+        assertGeometryRejected(
+                admission,
+                pointer,
+                DesignDslAuthority.Limit.GEOMETRY_FONT_SIZE_PT_EXCLUSIVE_MIN
+        );
+    }
+
     private static final class RecordingAuthority
             implements DesignInputExpressionCapacityAuthority {
         private final List<Observation> observations = new ArrayList<>();
@@ -747,6 +954,13 @@ class GeometryCapacityReservationTest {
         private List<String> authoredMmObservedValues() {
             return authoredMmObservations().stream()
                     .map(Observation::observedValue)
+                    .toList();
+        }
+
+        private List<Observation> fontSizeMinimumObservations() {
+            return observations.stream()
+                    .filter(observation -> observation.limitId().equals(
+                            "geometry.fontSizePtExclusiveMin"))
                     .toList();
         }
     }
@@ -813,6 +1027,13 @@ class GeometryCapacityReservationTest {
             return observations.stream()
                     .filter(observation -> observation.limitId().equals(
                             "geometry.authoredCoordinateOrLengthMmAbsoluteMax"))
+                    .toList();
+        }
+
+        private List<Observation> fontSizeMinimumObservations() {
+            return observations.stream()
+                    .filter(observation -> observation.limitId().equals(
+                            "geometry.fontSizePtExclusiveMin"))
                     .toList();
         }
     }
