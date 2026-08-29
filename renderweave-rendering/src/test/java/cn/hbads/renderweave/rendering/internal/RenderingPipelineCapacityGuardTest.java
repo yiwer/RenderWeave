@@ -998,4 +998,27 @@ class RenderingPipelineCapacityGuardTest {
         assertThrows(IllegalArgumentException.class,
                 () -> guard.admit(limit, 15_000L, 15_000L));
     }
+
+    @Test
+    void terminalRegistryRetentionRequiresFrozenCodeLessDeploymentInvariant() {
+        var guard = new RenderingPipelineCapacityGuard();
+        var limit = RenderingPipelineCapacityGuard.Limit
+                .DEADLINE_AND_RETENTION_TERMINAL_REGISTRY_AND_OUTPUT_RETENTION_MILLIS;
+
+        var below = guard.admitInvariant(limit, 299_999L).orElseThrow();
+        assertEquals(EvaluationStage.ENGINE, below.publicStage());
+        assertEquals("deadlineAndRetention.terminalRegistryAndOutputRetentionMillis",
+                below.limitId().value());
+        assertTrue(guard.admitInvariant(limit, 300_000L).isEmpty());
+        var above = guard.admitInvariant(limit, 300_001L).orElseThrow();
+        assertEquals(EvaluationStage.ENGINE, above.publicStage());
+        assertEquals("deadlineAndRetention.terminalRegistryAndOutputRetentionMillis",
+                above.limitId().value());
+
+        assertEquals(300_000L, guard.exactValue(limit));
+        assertThrows(IllegalArgumentException.class,
+                () -> guard.admit(limit, 300_000L));
+        assertThrows(IllegalArgumentException.class,
+                () -> guard.rejection(limit));
+    }
 }

@@ -4581,3 +4581,28 @@
   无，J0 pending、J1 未批准，因此状态为 `automated_verified`；未重复 server/full。
 - cap-050+ deferred；无 HTTP/OpenAPI/Web/migration/Profile/provider/API Key/真实数据/费用/Profile
   registration/push/tag/PR，OpenAPI 保持 0.13.0。
+
+# 2026-08-29 Template-v1 T180 terminal registry/output retention（resolved / automated_verified）
+
+- T179 已以 verified commit `ef439105` 收口，worktree clean、ahead 170 且 DAG 无其他 active claim；冻结
+  `RW-T19-S8-072`、`RW-T19-S9-015/018/019` / Rendering-pipeline cap-050 是首个 unblocked residual，现按
+  single-writer claim T180。
+- cap-050 固定 `deadlineAndRetention.terminalRegistryAndOutputRetentionMillis` EXACT `300000`、observed
+  `299999/300000/300001`、REQUEST_CONTROL / public ENGINE / code-less retention invariant /
+  ALGORITHM_INVARIANT；不为 deployment/profile mismatch 发明 public Render problem code。
+- Java internal guard 负责 exact invariant；Rust `RequestRegistry` 负责实际 terminal replay lifecycle，并将 expiry
+  固定为 `max(sealedAt, deadlineAt)+300000 ms`。访问/replay/retry/cancel 不续期，exact expiry 不再 replay 旧
+  terminal；cap-051/052 deferred。claim 时 A0、J0。
+- 无 HTTP/OpenAPI/Web/migration/Profile/provider/API Key/真实数据/费用/Profile registration/push/tag/PR。
+- Java internal guard 已增加 code-less EXACT cap-050 outcome，覆盖 `299999/300000/300001` 并禁止把 invariant
+  投影成 public rejection。Rust production registry 在 terminal 完整形成后读取真实 seal clock，以
+  `max(sealedAt, deadlineAt)+300000 ms` 固定 expiry；clock rollback 不缩短 retention、checked overflow fail-closed，
+  replay 不续期，exact expiry 先 purge，pre-command cancel 独立路径未改。
+- TDD RED/GREEN 已收口：Java guard `42/42`；Rust daemon `14` unit + `3` integration、workspace all-target、clippy
+  `-D warnings`、fmt；Maven 受影响 reactor Schema `20` / Validation `13` / Template `86` / Asset `92` /
+  Rendering `296` 全绿。
+- render `.sdlc/evidence/20260829-124606-render/` metadata passed/A1（2/2），fast
+  `.sdlc/evidence/20260829-124806-fast/` metadata passed/A1（3/3）；`cargo fmt --check`、`git diff --check` 通过。
+  既有 wire/vector replay 不构成 T180 clock-retention 专项 A2；T180-specific A2/A3 无，J0 pending、J1 未批准。
+- cap-051/052 deferred；无 HTTP/OpenAPI/Web/migration/wire/manifest/Profile registration/certification/provider/
+  API Key/真实数据/费用/push/tag/PR，OpenAPI 保持 0.13.0。

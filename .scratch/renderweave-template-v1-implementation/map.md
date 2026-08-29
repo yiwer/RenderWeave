@@ -1098,6 +1098,13 @@ Label: wayfinder:map
   reactor 为 20/13/86/92/295；render `.sdlc/evidence/20260829-122619-render/` 与 fast
   `.sdlc/evidence/20260829-122749-fast/` metadata 均 passed/A1，`git diff --check` 通过。T179-specific A2/A3
   无，J0 pending；cap-050+ deferred，无 API/OpenAPI/Web/migration/Profile/provider/push/tag/PR 变化。
+- [T180 — terminal registry 与 sealed output 5 分钟 retention 合流](issues/180-terminal-registry-output-retention.md)
+  — **resolved / automated_verified**；blocked by T21/T22/T98/T122/T179（均 resolved）。code-less EXACT `300000`
+  invariant 已进入 Java internal guard；Rust `RequestRegistry` 以真实 terminal seal 与 deadline 较晚者固定不可续期
+  expiry，覆盖 `299999/300000/300001` 与 exact expiry purge。Java guard `42/42`，Rust daemon `14+3`、workspace
+  all-target/clippy/fmt 与 Maven 20/13/86/92/296 均绿；render `20260829-124606` 2/2、fast `20260829-124806`
+  3/3 metadata passed/A1。T180 专项 A2/A3 无、J0 pending；cap-051+ deferred，无 public/app/wire/manifest/Profile
+  或 provider/push/tag/PR 变化。
 
 - 改写或重解释现有 Schema/Inference v1 已提交历史，或在 dirty main 上直接实施 Template。
 - Workspace、组织/成员/分享/协作、跨 ownerScope 复制、通用 connector、任意 SQL/HTTP/文件/脚本、插件节点或运行时代码注册。

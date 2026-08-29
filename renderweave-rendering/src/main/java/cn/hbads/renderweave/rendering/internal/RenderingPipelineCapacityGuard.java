@@ -209,6 +209,11 @@ final class RenderingPipelineCapacityGuard {
                 Comparison.EXACT,
                 ProblemCode.RENDER_DEADLINE_EXCEEDED,
                 EvaluationStage.DOCUMENT_SEAL),
+        DEADLINE_AND_RETENTION_TERMINAL_REGISTRY_AND_OUTPUT_RETENTION_MILLIS(
+                "deadlineAndRetention.terminalRegistryAndOutputRetentionMillis",
+                300_000L,
+                Comparison.EXACT,
+                EvaluationStage.ENGINE),
         DEADLINE_AND_RETENTION_TOTAL_DEADLINE_MILLIS(
                 "deadlineAndRetention.totalDeadlineMillis",
                 60_000L,
@@ -241,6 +246,15 @@ final class RenderingPipelineCapacityGuard {
                 String id,
                 long frozenValue,
                 Comparison comparison,
+                EvaluationStage publicStage
+        ) {
+            this(id, frozenValue, comparison, null, publicStage);
+        }
+
+        Limit(
+                String id,
+                long frozenValue,
+                Comparison comparison,
                 ProblemCode problemCode,
                 EvaluationStage publicStage
         ) {
@@ -254,6 +268,7 @@ final class RenderingPipelineCapacityGuard {
 
     Optional<RenderingProblem> admit(Limit limit, long observedValue) {
         Objects.requireNonNull(limit, "limit");
+        requireProblemCode(limit);
         requireNonNegative(observedValue, "observedValue");
         var admitted = switch (limit.comparison) {
             case MAX_INCLUSIVE -> observedValue <= limit.frozenValue;
@@ -264,6 +279,7 @@ final class RenderingPipelineCapacityGuard {
 
     RenderingProblem rejection(Limit limit) {
         Objects.requireNonNull(limit, "limit");
+        requireProblemCode(limit);
         return RenderingProblem.ofLimit(
                 limit.problemCode,
                 limit.publicStage,
@@ -303,11 +319,26 @@ final class RenderingPipelineCapacityGuard {
 
     Optional<RenderingProblem> admitRuntimeMaximum(Limit limit, long observedValue) {
         Objects.requireNonNull(limit, "limit");
+        requireProblemCode(limit);
         requireComparison(limit, Comparison.EXACT);
         requireNonNegative(observedValue, "observedValue");
         return observedValue <= limit.frozenValue
                 ? Optional.empty()
                 : problem(limit);
+    }
+
+    Optional<InvariantViolation> admitInvariant(Limit limit, long observedValue) {
+        Objects.requireNonNull(limit, "limit");
+        requireComparison(limit, Comparison.EXACT);
+        if (limit.problemCode != null) {
+            throw new IllegalArgumentException("limit must be a code-less invariant");
+        }
+        requireNonNegative(observedValue, "observedValue");
+        return observedValue == limit.frozenValue
+                ? Optional.empty()
+                : Optional.of(new InvariantViolation(
+                        limit.publicStage,
+                        new LimitId(limit.id)));
     }
 
     RequestTracker newRequestTracker() {
@@ -327,8 +358,22 @@ final class RenderingPipelineCapacityGuard {
         }
     }
 
+    private static void requireProblemCode(Limit limit) {
+        if (limit.problemCode == null) {
+            throw new IllegalArgumentException(
+                    "code-less invariant cannot produce a Rendering problem");
+        }
+    }
+
     private Optional<RenderingProblem> problem(Limit limit) {
         return Optional.of(rejection(limit));
+    }
+
+    record InvariantViolation(EvaluationStage publicStage, LimitId limitId) {
+        InvariantViolation {
+            Objects.requireNonNull(publicStage, "publicStage");
+            Objects.requireNonNull(limitId, "limitId");
+        }
     }
 
     /** Request-local atomic accumulator backed by the same frozen limit catalog. */

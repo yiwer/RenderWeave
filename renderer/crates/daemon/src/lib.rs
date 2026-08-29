@@ -45,7 +45,7 @@ use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 #[cfg(any(unix, test))]
-const TERMINAL_RETENTION_MILLIS: i64 = 5 * 60 * 1_000;
+const TERMINAL_REGISTRY_AND_OUTPUT_RETENTION_MILLIS: i64 = 300_000;
 #[cfg(any(unix, test))]
 const PRE_COMMAND_CANCEL_RETENTION_MILLIS: i64 = 60 * 1_000;
 
@@ -446,7 +446,8 @@ fn serve_connection<S: io::Read + io::Write>(
             }
             Err(error) => return Err(error.into()),
         };
-        let response = registry.handle(frame, now_epoch_millis())?;
+        let mut clock = now_epoch_millis;
+        let response = registry.handle_with_clock(frame, &mut clock)?;
         response.write_to(connection)?;
     }
 }
@@ -525,15 +526,28 @@ impl RequestRegistry {
         }
     }
 
+    #[cfg(test)]
     fn handle(
         &mut self,
         frame: Frame,
         now_epoch_millis: i64,
     ) -> Result<TerminalResponse, ProtocolError> {
+        self.handle_with_clock(frame, &mut || now_epoch_millis)
+    }
+
+    fn handle_with_clock<F>(
+        &mut self,
+        frame: Frame,
+        clock: &mut F,
+    ) -> Result<TerminalResponse, ProtocolError>
+    where
+        F: FnMut() -> i64,
+    {
+        let now_epoch_millis = clock();
         self.entries
             .retain(|_, entry| entry.retain_until_epoch_millis > now_epoch_millis);
         match frame.frame_type {
-            FrameType::Command => self.handle_command(&frame.payload, now_epoch_millis),
+            FrameType::Command => self.handle_command(&frame.payload, now_epoch_millis, clock),
             FrameType::Cancel => self.handle_cancel(&frame.payload, now_epoch_millis),
             _ => Err(ProtocolError::Invalid(
                 "post-handshake client frame must be COMMAND or CANCEL",
@@ -541,11 +555,15 @@ impl RequestRegistry {
         }
     }
 
-    fn handle_command(
+    fn handle_command<F>(
         &mut self,
         payload: &[u8],
         now_epoch_millis: i64,
-    ) -> Result<TerminalResponse, ProtocolError> {
+        clock: &mut F,
+    ) -> Result<TerminalResponse, ProtocolError>
+    where
+        F: FnMut() -> i64,
+    {
         let admitted = parse_command(payload)?;
         let request_id = admitted.command.request_id.clone();
         if let Some(existing) = self.entries.get(&request_id) {
@@ -633,15 +651,20 @@ impl RequestRegistry {
             }
         };
         let terminal_response = TerminalResponse::problem(problem_payload);
+        let sealed_at_epoch_millis = clock().max(now_epoch_millis);
+        let retain_until_epoch_millis = admitted
+            .deadline_epoch_millis
+            .max(sealed_at_epoch_millis)
+            .checked_add(TERMINAL_REGISTRY_AND_OUTPUT_RETENTION_MILLIS)
+            .ok_or(ProtocolError::Invalid(
+                "terminal registry retention deadline overflow",
+            ))?;
         self.entries.insert(
             request_id,
             RegistryEntry {
                 command_digest: admitted.command_digest,
                 deadline_epoch_millis: admitted.deadline_epoch_millis,
-                retain_until_epoch_millis: admitted
-                    .deadline_epoch_millis
-                    .max(now_epoch_millis)
-                    .saturating_add(TERMINAL_RETENTION_MILLIS),
+                retain_until_epoch_millis,
                 terminal_response: terminal_response.clone(),
             },
         );
@@ -746,6 +769,7 @@ mod tests {
     use renderweave_renderer_protocol::client_hello_bytes;
     use renderweave_renderer_protocol::encode_frame;
     use serde_json::Value;
+    use std::collections::VecDeque;
     use std::io::Cursor;
     use std::sync::Mutex;
 
@@ -871,6 +895,113 @@ mod tests {
         let conflict: Value = serde_json::from_slice(&only_frame(&conflict).payload).unwrap();
         assert_eq!(conflict["code"], "RENDER_REQUEST_CONFLICT");
         assert_eq!(conflict["engineStage"], "REQUEST_CONTROL");
+    }
+
+    #[test]
+    fn terminal_retention_starts_at_actual_seal_and_replay_does_not_renew_it() {
+        let command = vector_json("png-command");
+        let deadline = parse_command(command.as_bytes())
+            .unwrap()
+            .deadline_epoch_millis;
+        let sealed_at = deadline + 10_000;
+        let mut times = VecDeque::from([deadline - 1, sealed_at]);
+        let mut clock = || times.pop_front().expect("scripted clock exhausted");
+        let mut registry = request_registry();
+
+        let first = registry
+            .handle_with_clock(
+                Frame {
+                    frame_type: FrameType::Command,
+                    payload: command.as_bytes().to_vec(),
+                },
+                &mut clock,
+            )
+            .unwrap();
+        assert_eq!(only_frame(&first).frame_type, FrameType::Problem);
+
+        let early_replay = registry
+            .handle(
+                Frame {
+                    frame_type: FrameType::Command,
+                    payload: command.as_bytes().to_vec(),
+                },
+                sealed_at + 1,
+            )
+            .unwrap();
+        assert_eq!(
+            only_frame(&early_replay).payload,
+            only_frame(&first).payload
+        );
+
+        let last_replay = registry
+            .handle(
+                Frame {
+                    frame_type: FrameType::Command,
+                    payload: command.as_bytes().to_vec(),
+                },
+                sealed_at + 299_999,
+            )
+            .unwrap();
+        assert_eq!(only_frame(&last_replay).payload, only_frame(&first).payload);
+
+        let expired = registry
+            .handle(
+                Frame {
+                    frame_type: FrameType::Command,
+                    payload: command.into_bytes(),
+                },
+                sealed_at + 300_000,
+            )
+            .unwrap();
+        let expired: Value = serde_json::from_slice(&only_frame(&expired).payload).unwrap();
+        assert_eq!(expired["code"], "RENDER_DEADLINE_EXCEEDED");
+        assert_ne!(
+            only_frame(&first).payload,
+            serde_json::to_vec(&expired).unwrap()
+        );
+    }
+
+    #[test]
+    fn terminal_retention_starts_at_command_deadline_when_it_is_later_than_seal() {
+        let command = vector_json("png-command");
+        let deadline = parse_command(command.as_bytes())
+            .unwrap()
+            .deadline_epoch_millis;
+        let mut times = VecDeque::from([deadline - 20_000, deadline - 10_000]);
+        let mut clock = || times.pop_front().expect("scripted clock exhausted");
+        let mut registry = request_registry();
+
+        let first = registry
+            .handle_with_clock(
+                Frame {
+                    frame_type: FrameType::Command,
+                    payload: command.as_bytes().to_vec(),
+                },
+                &mut clock,
+            )
+            .unwrap();
+        let last_replay = registry
+            .handle(
+                Frame {
+                    frame_type: FrameType::Command,
+                    payload: command.as_bytes().to_vec(),
+                },
+                deadline + 299_999,
+            )
+            .unwrap();
+        assert_eq!(only_frame(&last_replay).payload, only_frame(&first).payload);
+
+        let expired = registry
+            .handle(
+                Frame {
+                    frame_type: FrameType::Command,
+                    payload: command.into_bytes(),
+                },
+                deadline + 300_000,
+            )
+            .unwrap();
+        let expired: Value = serde_json::from_slice(&only_frame(&expired).payload).unwrap();
+        assert_eq!(expired["code"], "RENDER_DEADLINE_EXCEEDED");
     }
 
     #[test]
