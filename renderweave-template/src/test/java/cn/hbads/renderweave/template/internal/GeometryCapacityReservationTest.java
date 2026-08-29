@@ -41,6 +41,126 @@ class GeometryCapacityReservationTest {
             "99.9999999999999999999999999999999999999999999999999999999999999999";
     private static final String TRANSFORM_SCALE_MAX_ABOVE_SCALE_64 =
             "100.0000000000000000000000000000000000000000000000000000000000000001";
+    private static final String ROTATION_MIN_BELOW_SCALE_64 =
+            "-360.0000000000000000000000000000000000000000000000000000000000000001";
+    private static final String ROTATION_MIN_ABOVE_SCALE_64 =
+            "-359.9999999999999999999999999999999999999999999999999999999999999999";
+
+    @Test
+    void transformRotationObservesCanonicalValueBeforeScalesAtPublicAdmissionSeam()
+            throws Exception {
+        var recording = new RecordingAuthority();
+
+        assertInstanceOf(
+                DesignDslAuthority.Admitted.class,
+                new CanonicalDesignDslAuthority(recording).admit(canonicalVectorReplacing(
+                        "admit-transform-and-composites",
+                        "\"rotationDeg\":45",
+                        "\"rotationDeg\":-359.500"
+                ))
+        );
+
+        assertEquals(
+                List.of(
+                        rotationMinimumObservation("-359.5"),
+                        transformScaleObservation("1"),
+                        transformScaleObservation("1")
+                ),
+                recording.transformObservations()
+        );
+    }
+
+    @Test
+    void defaultAuthorityEnforcesRotationMinimumAtTheExactPropertyPointer()
+            throws Exception {
+        for (var accepted : List.of(
+                transformWithRotation("-360.000"),
+                transformWithRotation(ROTATION_MIN_ABOVE_SCALE_64)
+        )) {
+            assertInstanceOf(
+                    DesignDslAuthority.Admitted.class,
+                    new CanonicalDesignDslAuthority().admit(accepted)
+            );
+        }
+
+        assertRotationMinimumRejected(
+                transformWithRotation(ROTATION_MIN_BELOW_SCALE_64),
+                "/designRoot/children/0/transform/rotationDeg"
+        );
+    }
+
+    @Test
+    void rotationMinimumObservesCanonicalTrailingZerosAndNegativeZero()
+            throws Exception {
+        var trailingZeros = new RecordingAuthority();
+        assertInstanceOf(
+                DesignDslAuthority.Admitted.class,
+                new CanonicalDesignDslAuthority(trailingZeros)
+                        .admit(transformWithRotation("-360.000"))
+        );
+        assertEquals(
+                List.of(rotationMinimumObservation("-360")),
+                trailingZeros.rotationMinimumObservations()
+        );
+
+        var negativeZero = new RecordingAuthority();
+        assertInstanceOf(
+                DesignDslAuthority.Admitted.class,
+                new CanonicalDesignDslAuthority(negativeZero)
+                        .admit(transformWithRotation("-0.000"))
+        );
+        assertEquals(
+                List.of(rotationMinimumObservation("0")),
+                negativeZero.rotationMinimumObservations()
+        );
+    }
+
+    @Test
+    void rotationMinimumAuthorityRejectInvalidAndThrowFailClosedAtTheExactProperty()
+            throws Exception {
+        for (var mode : FailureMode.values()) {
+            var authority = new FailingAuthority(mode, "geometry.rotationDegreesMin");
+
+            assertGeometryRejected(
+                    new CanonicalDesignDslAuthority(authority)
+                            .admit(transformWithRotation("-360.00")),
+                    "/designRoot/children/0/transform/rotationDeg",
+                    DesignDslAuthority.Limit.GEOMETRY_ROTATION_DEGREES_MIN
+            );
+            assertEquals(
+                    List.of(rotationMinimumObservation("-360")),
+                    authority.rotationMinimumObservations()
+            );
+        }
+    }
+
+    @Test
+    void rotationTypeAndCanonicalExpansionPrecedeMinimumObservation()
+            throws Exception {
+        var malformedAuthority = new RecordingAuthority();
+        var malformed = assertInstanceOf(
+                DesignDslAuthority.Rejected.class,
+                new CanonicalDesignDslAuthority(malformedAuthority)
+                        .admit(transformWithRotation("\"-360\""))
+        );
+        assertEquals(DesignDslAuthority.FailureCode.DESIGN_STRUCTURE_INVALID, malformed.code());
+        assertEquals("/designRoot/children/0/transform/rotationDeg", malformed.pointer());
+        assertEquals(List.of(), malformedAuthority.rotationMinimumObservations());
+
+        var oversizedAuthority = new RecordingAuthority();
+        var oversized = assertInstanceOf(
+                DesignDslAuthority.Rejected.class,
+                new CanonicalDesignDslAuthority(oversizedAuthority)
+                        .admit(transformWithRotation("1e16777216"))
+        );
+        assertEquals(DesignDslAuthority.FailureCode.DESIGN_DSL_LIMIT_EXCEEDED,
+                oversized.code());
+        assertEquals(DesignDslAuthority.FailureStage.DESIGN_CANONICAL_COUNT,
+                oversized.stage());
+        assertEquals(DesignDslAuthority.Limit.CANONICAL_BYTES,
+                oversized.limit().orElseThrow());
+        assertEquals(List.of(), oversizedAuthority.rotationMinimumObservations());
+    }
 
     @Test
     void transformScalesObserveCanonicalAbsoluteValuesAtThePublicAdmissionSeam()
@@ -86,7 +206,7 @@ class GeometryCapacityReservationTest {
     }
 
     @Test
-    void absentOptionalTransformProducesNoScaleObservation() throws Exception {
+    void absentOptionalTransformProducesNoTransformObservation() throws Exception {
         var recording = new RecordingAuthority();
 
         assertInstanceOf(
@@ -95,7 +215,7 @@ class GeometryCapacityReservationTest {
                         .admit(canonicalVector("admit-frame-in-canvas"))
         );
 
-        assertEquals(List.of(), recording.transformScaleObservations());
+        assertEquals(List.of(), recording.transformObservations());
     }
 
     @Test
@@ -1021,6 +1141,14 @@ class GeometryCapacityReservationTest {
                 .getBytes(StandardCharsets.UTF_8);
     }
 
+    private byte[] transformWithRotation(String rotationDeg) throws IOException {
+        return canonicalVectorReplacing(
+                "admit-transform-and-composites",
+                "\"rotationDeg\":45",
+                "\"rotationDeg\":" + rotationDeg
+        );
+    }
+
     private byte[] frameWithX(String xMm) throws IOException {
         return canonicalVectorReplacing(
                 "admit-frame-in-canvas",
@@ -1071,6 +1199,15 @@ class GeometryCapacityReservationTest {
     ) {
         return new DesignInputExpressionCapacityAuthority.Observation(
                 "geometry.transformScaleAbsoluteMax",
+                observedValue
+        );
+    }
+
+    private static DesignInputExpressionCapacityAuthority.Observation rotationMinimumObservation(
+            String observedValue
+    ) {
+        return new DesignInputExpressionCapacityAuthority.Observation(
+                "geometry.rotationDegreesMin",
                 observedValue
         );
     }
@@ -1161,6 +1298,14 @@ class GeometryCapacityReservationTest {
         );
     }
 
+    private static void assertRotationMinimumRejected(byte[] designDsl, String pointer) {
+        assertGeometryRejected(
+                new CanonicalDesignDslAuthority().admit(designDsl),
+                pointer,
+                DesignDslAuthority.Limit.GEOMETRY_ROTATION_DEGREES_MIN
+        );
+    }
+
     private static final class RecordingAuthority
             implements DesignInputExpressionCapacityAuthority {
         private final List<Observation> observations = new ArrayList<>();
@@ -1208,6 +1353,22 @@ class GeometryCapacityReservationTest {
             return observations.stream()
                     .filter(observation -> observation.limitId().equals(
                             "geometry.transformScaleAbsoluteMax"))
+                    .toList();
+        }
+
+        private List<Observation> transformObservations() {
+            return observations.stream()
+                    .filter(observation -> observation.limitId().equals(
+                            "geometry.rotationDegreesMin")
+                            || observation.limitId().equals(
+                            "geometry.transformScaleAbsoluteMax"))
+                    .toList();
+        }
+
+        private List<Observation> rotationMinimumObservations() {
+            return observations.stream()
+                    .filter(observation -> observation.limitId().equals(
+                            "geometry.rotationDegreesMin"))
                     .toList();
         }
     }
@@ -1288,6 +1449,13 @@ class GeometryCapacityReservationTest {
             return observations.stream()
                     .filter(observation -> observation.limitId().equals(
                             "geometry.transformScaleAbsoluteMax"))
+                    .toList();
+        }
+
+        private List<Observation> rotationMinimumObservations() {
+            return observations.stream()
+                    .filter(observation -> observation.limitId().equals(
+                            "geometry.rotationDegreesMin"))
                     .toList();
         }
     }

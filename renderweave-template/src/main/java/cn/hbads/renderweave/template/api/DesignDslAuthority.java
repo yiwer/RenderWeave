@@ -119,7 +119,8 @@ public interface DesignDslAuthority {
                 "geometry.authoredCoordinateOrLengthMmAbsoluteMax"),
         GEOMETRY_FONT_SIZE_PT_EXCLUSIVE_MIN("geometry.fontSizePtExclusiveMin"),
         GEOMETRY_FONT_SIZE_PT_MAX("geometry.fontSizePtMax"),
-        GEOMETRY_TRANSFORM_SCALE_ABSOLUTE_MAX("geometry.transformScaleAbsoluteMax");
+        GEOMETRY_TRANSFORM_SCALE_ABSOLUTE_MAX("geometry.transformScaleAbsoluteMax"),
+        GEOMETRY_ROTATION_DEGREES_MIN("geometry.rotationDegreesMin");
 
         private final String id;
 

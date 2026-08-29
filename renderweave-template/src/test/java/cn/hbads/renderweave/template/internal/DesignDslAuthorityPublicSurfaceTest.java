@@ -159,7 +159,8 @@ class DesignDslAuthorityPublicSurfaceTest {
                         "geometry.authoredCoordinateOrLengthMmAbsoluteMax",
                         "geometry.fontSizePtExclusiveMin",
                         "geometry.fontSizePtMax",
-                        "geometry.transformScaleAbsoluteMax"
+                        "geometry.transformScaleAbsoluteMax",
+                        "geometry.rotationDegreesMin"
                 },
                 Arrays.stream(DesignDslAuthority.Limit.values())
                         .map(DesignDslAuthority.Limit::id)
