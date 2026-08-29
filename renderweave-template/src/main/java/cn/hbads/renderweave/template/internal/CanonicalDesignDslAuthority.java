@@ -2521,7 +2521,8 @@ final class CanonicalDesignDslAuthority implements DesignDslAuthority {
         reserveCapacityDecimal(
                 value,
                 pointer,
-                Limit.GEOMETRY_FONT_SIZE_PT_EXCLUSIVE_MIN
+                Limit.GEOMETRY_FONT_SIZE_PT_EXCLUSIVE_MIN,
+                Limit.GEOMETRY_FONT_SIZE_PT_MAX
         );
         if (value.signum() <= 0) {
             throw failure(FailureCode.DESIGN_VALUE_INVALID, pointer);
