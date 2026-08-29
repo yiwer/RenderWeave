@@ -925,6 +925,12 @@ Label: wayfinder:map
 
 ## Current frontier
 
+- [T202 — 接线 transform scale absolute maximum 产品容量](issues/202-wire-transform-scale-absolute-maximum-capacity.md)
+  — **resolved / automated_verified / unclaimed**；Blocked by T201（resolved）。实现 `93ad46fb` 已把 cap-063
+  `geometry.transformScaleAbsoluteMax=100` 接入公共 admission seam；immutable component v15 SHA-256
+  `b3e5829cd42275a3706e2c6f313939850ab75fcf33795dcbb98c302333d678f9`、21566 bytes，Java/TypeScript
+  195/195、wired 63/65、remaining geometry 2。focused 40/40、Template 176/176、`template`/`fast` passed/A1；
+  A3 absent、J0 pending、J1 未批准。claim 已释放；下一 frontier 为 cap-064，尚未登记或 claim。
 - [T201 — 接线 font-size pt maximum 产品容量](issues/201-wire-font-size-pt-maximum-capacity.md)
   — **resolved / automated_verified / unclaimed**；实现 `1f8fc359`，immutable component v14 SHA-256
   `ab0c270c754312ca4c03a52061d6b5a7147cb894179a9a99a8a5e6232bf471b8`、21522 bytes。cap-062 已与

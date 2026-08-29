@@ -1,5 +1,26 @@
 # NOTES.md
 
+# 2026-08-29 Template-v1 T202 transform scale absolute maximum capacity（resolved / automated_verified）
+- T201 已以实现 `1f8fc359`、治理 `fd5c7c28` 收口并释放 claim；DAG 无其他 active claim。现按 single-writer
+  claim cap-063 `geometry.transformScaleAbsoluteMax=100`，关联 `RW-T19-S7-112` 与
+  `RW-T19-S9-017/019`，目标 wired 63/65、remaining geometry 2。
+- 只深化公共 `DesignDslAuthority.admit(rawUtf8)` 与既有 Template-owned capacity authority；每个 present
+  non-Canvas Transform 按 `scaleX→scaleY` 观察 canonical absolute magnitude，既有 non-zero local contract 先行；
+  Binding overlay 继续复用同一 re-admission seam。cap-064–065 均 deferred。
+- 本票按 `tdd` skill 从真实 Transform 公共 seam 写一个 tracer 先取 observation 缺失 RED，再逐纵切推进。claim
+  时 A0、J0 pending、J1 未批准；无 app wiring/Profile/Renderer/provider/API Key/真实数据/生产/push/tag/PR，
+  用户 Image/Inference dirty work 与 stash 保持不动。
+- 实现 `93ad46fb` 已按 `scaleX→scaleY` authored order 接入 cap-063；positive/negative below/at/scale-64 above、
+  canonical absolute magnitude、exact pointer、absent Transform、local-zero/malformed precedence 与 authority
+  reject/invalid/throw 均已覆盖。focused 40/40、Template module 176/176。
+- immutable v15 target SHA-256 `b3e5829cd42275a3706e2c6f313939850ab75fcf33795dcbb98c302333d678f9`、
+  21566 bytes；component `.sdlc/evidence/20260829-205530-template-t202-component/` Java 195/195（A1）、
+  TypeScript 195/195、2692 checks（A2），wired 63/65、remaining geometry 2、formal records 0。
+- `template` `.sdlc/evidence/20260829-205551-template/metadata.json` 与 `fast`
+  `.sdlc/evidence/20260829-205622-fast/metadata.json` passed/A1，Template Java/Python 211/211。claim 已释放；
+  A3 absent、J0 pending、J1 未批准，server/full 按非 app-wiring boundary 未重复，用户 dirty work/stash 未改，未
+  push/tag/PR。下一 frontier 为 cap-064 `geometry.rotationDegreesMin`，尚未登记或 claim。
+
 # 2026-08-29 Template-v1 T201 font-size pt maximum capacity（resolved / automated_verified）
 - T200 已以实现 `3f51f820`、治理 `10ca185a` 收口并释放 claim；DAG 无其他 active claim。现按 single-writer
   claim cap-062 `geometry.fontSizePtMax=4096`，关联 `RW-T19-S7-111` 与 `RW-T19-S9-017/019`，目标 wired

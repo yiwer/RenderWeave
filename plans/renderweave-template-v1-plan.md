@@ -6517,3 +6517,33 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
   module 170/170；`template` `.sdlc/evidence/20260829-204028-template/` 与 `fast`
   `.sdlc/evidence/20260829-204102-fast/` passed/A1，Template Java/Python 211/211。A3 无，J0 pending、J1 未批准；
   本票无 app wiring，未重复 server/full。claim 已释放；下一 frontier 为 cap-063，尚未登记或 claim。
+
+## 202. TV1-T202 执行卡
+
+- 状态：`resolved / automated_verified / unclaimed`；Blocked by T201（resolved）。
+- authority：Ticket 19 `RW-T19-S7-112 / RW-T19-S9-017 / RW-T19-S9-019` 与 cap-063 固定
+  `geometry.transformScaleAbsoluteMax=100`、MAX_INCLUSIVE / CANONICAL_DECIMAL；terminal 为
+  `DESIGN_PROPERTY_CONSTRAINT_INVALID / DESIGN_PROPERTY_AND_AGGREGATE_VALIDATION`，public stage
+  TEMPLATE_CLOSURE，reservation point 为 persisted write/Evaluation 前，zero boundary 为
+  ZERO_WRITE_AND_DOWNSTREAM。
+- seam/scope：只深化 `DesignDslAuthority.admit(rawUtf8)` 与同一 Template-owned capacity authority；每个 present
+  non-Canvas Transform 按 `scaleX→scaleY` 观察 canonical absolute magnitude，local non-zero contract 在 capacity
+  前。Binding overlay 继续复用同一 re-admission seam；cap-064–065 保持 deferred。
+- TDD：先提升真实 Transform 公共 seam 的 ordered absolute observation 并取得 cap-063 缺失 RED，再逐纵切覆盖
+  正负 below/at/scale-64 above、canonical decimal、exact pointer、absent Transform、local-zero precedence 与
+  authority reject/invalid/throw。
+- target/gates：成功后冻结 immutable component target v15，目标 wired 63/65、remaining geometry 2；执行
+  focused Template、Template module、component Java/TypeScript、canonical vectors、`template`、`fast`。无 app
+  wiring，不重复 server/full。
+- boundary：不接线 cap-064–065，不发行 formal records/class manifests，不运行 Renderer/Profile/provider/API Key/
+  真实数据/生产/J1/A3/READY，不改用户 dirty work/stash，不 push/tag/PR。claim 时 A0、J0 pending。
+- 实现/证据：实现基线 `93ad46fb39215e3f9e99e3649737e1efc425fcff`；每个 present non-Canvas Transform
+  只解析一次 `scaleX`/`scaleY`，保留 local non-zero precedence，并按 authored order 观察 canonical absolute
+  magnitude。positive/negative below/at/scale-64 above、exact pointer、absent Transform、zero precedence、
+  malformed/type precedence 与 authority reject/invalid/throw 均已覆盖。immutable v15 target SHA-256
+  `b3e5829cd42275a3706e2c6f313939850ab75fcf33795dcbb98c302333d678f9`、21566 bytes；component
+  `.sdlc/evidence/20260829-205530-template-t202-component/` Java primary 195/195（A1）、TypeScript independent
+  195/195、2692 checks（A2），wired 63/65、remaining geometry 2、formal records 0。focused 40/40、Template
+  module 176/176；`template` `.sdlc/evidence/20260829-205551-template/` 与 `fast`
+  `.sdlc/evidence/20260829-205622-fast/` passed/A1，Template Java/Python 211/211。A3 absent、J0 pending、J1
+  未批准；本票无 app wiring，未重复 server/full。claim 已释放；下一 frontier 为 cap-064，尚未登记或 claim。
