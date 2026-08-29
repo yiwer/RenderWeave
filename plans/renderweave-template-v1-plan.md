@@ -6706,7 +6706,7 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
 
 ## 209. TV1-T209 执行卡
 
-- 状态：`active / claimed`；Blocked by T208（resolved）。
+- 状态：`resolved / automated_verified / unclaimed`；Blocked by T208（resolved）。
 - authority：portable tricky-font policy 要求每个 Certified Renderer target 的 face 被 FreeType 分类为
   `FT_IS_TRICKY`；exact FreeType 2.14.3 只在 `TT_USE_BYTECODE_INTERPRETER` 编译路径中执行分类并设置
   `FT_FACE_FLAG_TRICKY`，当前 candidate custom options 同时显式 `#undef` 该派生宏。
@@ -6717,4 +6717,11 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
   `template`。本票不执行或下载 proprietary font，不保留 vendor source，不 build/link/run FreeType/Skia。
 - boundary：只机器化现状矛盾，不选择新 candidate 或改 portable semantics；`buildAuthorized/certified/ready/`
   `recordIssuanceAllowed` 全 false，Renderer Exact Output 162 条不发行，Ticket 19 open。无 API/OpenAPI/Web/Flyway/
-  Profile/provider/API Key/真实数据/生产/push/tag/PR；A0 claim，A1/A2/A3/J1 待证据。
+  Profile/provider/API Key/真实数据/生产/push/tag/PR。
+- resolution：实现 `c194178e`；decision SHA-256 `8c2488ea...0d62ce5a5`，exact FreeType source fact SHA-256
+  `c381554e...b451922d`/40600 bytes。focused mutation suite 5/5；A1 gate
+  `.sdlc/evidence/20260829-235027-template-t209-tricky-font-compatibility/` 401 checks；fresh `template`
+  `.sdlc/evidence/20260829-235046-template-t209-integration/` 为 Editor 38/21867、SPEC 24519/24427、artifacts
+  404、authorityDiff=0，且 target materialization/record issuance/Certified/READY/Ticket19 closure 全 false。
+  一次受限官方开源 source read 用于 A1 fact，未保留 vendor source；offline gate network/provider attempts 0。
+  A2/A3 absent、J0 pending；产品语义 J1 仍待 owner，claim 已释放。

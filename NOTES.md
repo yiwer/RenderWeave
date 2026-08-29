@@ -1,5 +1,17 @@
 # NOTES.md
 
+# 2026-08-29 Template-v1 T209 Renderer tricky-font compatibility gate（resolved / automated_verified）
+- T208 收口后按 single-writer claim 并完成 T209。已确认 frozen policy 要求每个 Certified target
+  `FT_IS_TRICKY`，而 exact candidate custom header 同时 `#undef TT_USE_BYTECODE_INTERPRETER`；FreeType 2.14.3
+  的 classification/`FT_FACE_FLAG_TRICKY` assignment 受该宏编译守卫，当前 candidate 无法满足该 requirement。
+- 实现 `c194178e` 已物化 offline decision/verifier/gate 并接入 `template`；decision SHA-256
+  `8c2488ea...0d62ce5a5`。missing verifier/decision RED 后，mutation tests 5/5；focused A1
+  `20260829-235027-template-t209-tricky-font-compatibility` 为 401 checks，fresh `template`
+  `20260829-235046-template-t209-integration` 为 Editor 38/21867、SPEC 24519/24427、authorityDiff=0。
+- 一次受限官方开源 source read 绑定 exact source fact，未保留 vendor source；offline gate network/provider attempts
+  0，未读 API Key/真实数据。未选择新 candidate 语义、不生成字体、不 build、不发行 162 records、不升级
+  Certified/READY。A1 passed，A2/A3 absent、J0 pending；产品语义 J1 待 owner，claim 已释放。
+
 # 2026-08-29 Template-v1 T208 Rendering Pipeline formal issuance（resolved / automated_verified）
 - 实现 `5da2bd93`、immutable target `6966be31`、derived hardening `525db9bc`/`86ae31ee`/`c2f8e827`/
   `731e7dcb` 与 issuance `7530c324`；target SHA=`eaa7a953...7da9c428`，assigned digest=

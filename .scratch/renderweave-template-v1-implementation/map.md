@@ -926,10 +926,12 @@ Label: wayfinder:map
 ## Current frontier
 
 - [T209 — Renderer tricky-font classification compatibility gate](issues/209-renderer-tricky-font-classification-compatibility-gate.md)
-  — **active / claimed**；Blocked by T208（resolved）。只把 frozen portable `FT_IS_TRICKY` requirement 与当前
-  candidate `#undef TT_USE_BYTECODE_INTERPRETER` 的矛盾物化为 offline fail-closed decision/verifier/gate；不选择
-  新 candidate 语义、不 build、不产生字体 bytes、不发行 Renderer Exact Output records，也不升级 Certified/READY。
-  A0 claim，A1/A2/A3/J1 待本票证据；single-writer claim 仅本票。
+  — **resolved / automated_verified / unclaimed**；实现 `c194178e` 已把 frozen portable `FT_IS_TRICKY`
+  requirement 与当前 candidate `#undef TT_USE_BYTECODE_INTERPRETER` 的矛盾物化为 offline fail-closed
+  decision/verifier/gate，并接入 `template`。decision SHA-256 `8c2488ea...0d62ce5a5`；focused 5/5、gate
+  401 checks、fresh Template Editor 38/21867、SPEC 24519/24427、authorityDiff=0。A1 passed，A2/A3 absent、
+  J0 pending；J1 仅用于后续产品语义选择。未 build/生成字体/发行 162 records/升级 Certified/READY；claim 已释放。
+  下一 Renderer Exact Output frontier 仍被 candidate semantics decision 阻塞，尚未登记或 claim。
 - [T208 — 发行 Rendering Pipeline 156+156 容量记录](issues/208-issue-rendering-pipeline-capacity-records.md)
   — **resolved / automated_verified / unclaimed**；实现 `5da2bd93`、target `6966be31`、derived hardening
   `525db9bc`/`86ae31ee`/`c2f8e827`/`731e7dcb` 与 issuance `7530c324` 保持 formal 253/253 prefix
