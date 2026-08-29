@@ -23,9 +23,15 @@ function artifact(relativePath) {
   return { path: relativePath, sha256: sha(bytes), byteLength: bytes.length };
 }
 
+function recordCount(relativePath) {
+  return raw(relativePath).toString("utf8").split(/\r?\n/u).filter((line) => line.length > 0).length;
+}
+
 const primary = json(`${ROOT}/atomic-candidate-primary-result-v1.json`);
 const independent = json(`${ROOT}/atomic-candidate-independent-result-v1.json`);
 const audit = json(`${ROOT}/atomic-candidate-readiness-audit-v1.json`);
+const formalCaseCount = recordCount("conformance-cases-v1.jsonl");
+const formalOracleCount = recordCount("conformance-oracles-v1.jsonl");
 if (primary.status !== "PASS_STATIC_CANDIDATE_DECOMPOSITION" || primary.failureCount !== 0) throw new Error("primary result is not a clean pass");
 if (independent.status !== "PASS_STATIC_CANDIDATE_DECOMPOSITION" || independent.failureCount !== 0) throw new Error("independent result is not a clean pass");
 if (audit.status !== "ONE_CONTENT_SOURCE_AND_DETERMINISTIC_TARGETS_BOUND_PREISSUANCE_BLOCKED" || audit.decision.formalRecordIssuanceAllowed !== false) throw new Error("audit boundary drifted");
@@ -35,7 +41,7 @@ if (audit.counts.inputFixtureArtifactBindingCount !== 108 || audit.counts.target
 if (audit.counts.semanticProjectionExactLiteralBindingCount !== 42 || audit.counts.semanticProjectionContentPrerequisiteCount !== 58 || audit.counts.contentPrerequisiteResolvedBySourceCount !== 1 || audit.counts.contentPrerequisiteRemainingCount !== 57 || audit.counts.contentSourceSlotCount !== 47 || audit.counts.contentSourceExactBindingCount !== 1 || audit.counts.contentSourceUnboundBindingCount !== 46 || audit.counts.contentSourceRecordArtifactCount !== 1 || audit.counts.contentSourceCanonicalDesignDslArtifactCount !== 2 || audit.counts.uiObservationPendingCount !== 62) throw new Error("semantic projection or content source inventory drifted");
 if (audit.counts.terminalAdjudicatedFromPendingCount !== 33 || audit.counts.pendingTerminalBindingCount !== 0 || audit.counts.faultArtifactBindingCount !== 37 || audit.counts.faultNoneBindingCount !== 71) throw new Error("terminal or fault binding inventory drifted");
 if (audit.counts.proposedProbeCount !== 0 || audit.counts.candidateProfileBindingAssertionCount !== 109 || audit.counts.candidateProfileBoundCandidateCount !== 82) throw new Error("candidate probe binding inventory drifted");
-if (audit.counts.formalCaseCount !== 253 || audit.counts.formalOracleCount !== 253) throw new Error("global formal registry count drifted");
+if (audit.counts.formalCaseCount !== formalCaseCount || audit.counts.formalOracleCount !== formalOracleCount || formalCaseCount !== formalOracleCount) throw new Error("global formal registry count drifted");
 if (audit.counts.formalEditorCaseCount !== 0 || audit.counts.formalEditorOracleCount !== 0) throw new Error("Editor formal namespace drifted");
 
 const evidence = {
@@ -109,8 +115,8 @@ const evidence = {
     candidateProfileBoundCandidateCount: 82,
     primaryCheckCount: primary.checkCount,
     independentCheckCount: independent.checkCount,
-    formalCaseCount: 253,
-    formalOracleCount: 253,
+    formalCaseCount,
+    formalOracleCount,
     formalEditorCaseCount: 0,
     formalEditorOracleCount: 0
   },

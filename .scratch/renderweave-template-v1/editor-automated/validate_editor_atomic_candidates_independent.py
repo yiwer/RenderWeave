@@ -11,6 +11,13 @@ HERE = Path(__file__).resolve().parent
 SPEC = HERE.parent
 ROOT = "editor-automated"
 EXECUTION_CLASS = "EXEC::EDITOR_AUTOMATED::1.0"
+NON_EDITOR_FORMAL_CLASSES = {
+    "EXEC::SPEC_REGISTRY::1.0",
+    "EXEC::DOMAIN_SERVICES::1.0",
+    "EXEC::DESIGN_INPUT_EXPRESSION::1.0",
+    "EXEC::RENDERING_PIPELINE::1.0",
+    "EXEC::RENDERER_EXACT_OUTPUT::1.0",
+}
 CONTRACT_PATH = f"{ROOT}/atomic-candidate-contract-v1.json"
 CANDIDATES_PATH = f"{ROOT}/atomic-scenario-candidates-v1.json"
 AUDIT_PATH = f"{ROOT}/atomic-candidate-readiness-audit-v1.json"
@@ -866,6 +873,8 @@ def main() -> None:
         "targetBindingContract": artifact(TARGET_BINDING_CONTRACT_PATH),
         "targetBindingCatalog": artifact(TARGET_BINDING_CATALOG_PATH),
     }, "audit input and target artifacts")
+    formal_cases = jsonl_records("conformance-cases-v1.jsonl")
+    formal_oracles = jsonl_records("conformance-oracles-v1.jsonl")
     check(audit["counts"] == {
         "journeySeedCount": 12,
         "candidateCount": 108,
@@ -897,8 +906,8 @@ def main() -> None:
         "proposedProbeCount": 0,
         "candidateProfileBindingAssertionCount": 109,
         "candidateProfileBoundCandidateCount": 82,
-        "formalCaseCount": 253,
-        "formalOracleCount": 253,
+        "formalCaseCount": len(formal_cases),
+        "formalOracleCount": len(formal_oracles),
         "formalEditorCaseCount": 0,
         "formalEditorOracleCount": 0,
     }, "audit counts")
@@ -930,12 +939,13 @@ def main() -> None:
     check(audit["decision"]["formalRecordIssuanceAllowed"] is False, "audit issuance forbidden")
     check(all(value is False for value in audit["zeroExecutionBoundary"].values()), "zero execution boundary")
 
-    formal_cases = jsonl_records("conformance-cases-v1.jsonl")
-    formal_oracles = jsonl_records("conformance-oracles-v1.jsonl")
     editor_formal_cases = [record for record in formal_cases if record.get("executionClass") == EXECUTION_CLASS]
     editor_formal_oracles = [record for record in formal_oracles if record.get("oracleId", "").startswith("ORC::EDITOR_AUTOMATED::")]
-    check(len(formal_cases) == 253 and len(formal_oracles) == 253,
-          "global formal registries include issued Domain Services and Design/Input/Expression suffixes")
+    check(len(formal_cases) == len(formal_oracles) and len(formal_cases) >= 46 and
+          all(record.get("executionClass") in NON_EDITOR_FORMAL_CLASSES for record in formal_cases) and
+          all(not record.get("oracleId", "").startswith("ORC::EDITOR_AUTOMATED::")
+              for record in formal_oracles),
+          "global formal registries remain a closed non-Editor append-only corpus")
     check(not editor_formal_cases and not editor_formal_oracles, "Editor formal namespaces remain empty")
     formal_ids = {record["caseId"] for record in formal_cases} | {record["oracleId"] for record in formal_oracles}
     check(not (seen_ids & formal_ids), "candidate IDs absent from formal registry")

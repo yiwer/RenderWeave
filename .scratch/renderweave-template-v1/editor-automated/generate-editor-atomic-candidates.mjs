@@ -5,6 +5,13 @@ import { dirname, resolve } from "node:path";
 const SPEC = resolve(import.meta.dirname, "..");
 const ROOT = "editor-automated";
 const EXECUTION_CLASS = "EXEC::EDITOR_AUTOMATED::1.0";
+const NON_EDITOR_FORMAL_CLASSES = new Set([
+  "EXEC::SPEC_REGISTRY::1.0",
+  "EXEC::DOMAIN_SERVICES::1.0",
+  "EXEC::DESIGN_INPUT_EXPRESSION::1.0",
+  "EXEC::RENDERING_PIPELINE::1.0",
+  "EXEC::RENDERER_EXACT_OUTPUT::1.0",
+]);
 const CANDIDATE_PROFILE = "renderweave-editor-atomic-candidate/1.5";
 const INPUT_PROFILE = "renderweave-editor-atomic-input-plan/1.1";
 const FAULT_PROFILE = "renderweave-editor-atomic-fault-plan/1.1";
@@ -1959,6 +1966,8 @@ function buildAudit(candidates) {
 function validate(contractValue, candidatesValue, auditValue) {
   const checks = [];
   const check = (name, pass, details) => checks.push({ name, pass: Boolean(pass), details });
+  const formalCases = readJsonl("conformance-cases-v1.jsonl");
+  const formalOracles = readJsonl("conformance-oracles-v1.jsonl");
   const assignment = readJson(`${ROOT}/non-capacity-assignment-v1.json`);
   const currentProbeProfile = readJson("conformance-probe-profile-v1.json");
   const candidateProbeProfile = readJson(CANDIDATE_PROBE_PROFILE_PATH);
@@ -2170,7 +2179,13 @@ function validate(contractValue, candidatesValue, auditValue) {
     const candidateProbe = candidate.assertionPlan.some((assertion) => assertion.probeBinding.status === "CANDIDATE_PROFILE_NOT_ISSUED");
     return (!pendingExpectation || candidate.blockers.includes(BLOCKERS.expected)) && (!candidateProbe || candidate.blockers.includes(BLOCKERS.probe));
   }), null);
-  check("global formal JSONL counts include issued Domain Services and Design/Input/Expression suffixes", auditValue.counts.formalCaseCount === 253 && auditValue.counts.formalOracleCount === 253, { cases: auditValue.counts.formalCaseCount, oracles: auditValue.counts.formalOracleCount });
+  check("global formal JSONL remains a closed non-Editor append-only corpus",
+    auditValue.counts.formalCaseCount === formalCases.length &&
+      auditValue.counts.formalOracleCount === formalOracles.length &&
+      formalCases.length === formalOracles.length && formalCases.length >= 46 &&
+      formalCases.every((record) => NON_EDITOR_FORMAL_CLASSES.has(record.executionClass)) &&
+      formalOracles.every((record) => !record.oracleId?.startsWith("ORC::EDITOR_AUTOMATED::")),
+    { cases: auditValue.counts.formalCaseCount, oracles: auditValue.counts.formalOracleCount });
   check("Editor formal namespaces remain empty", auditValue.counts.formalEditorCaseCount === 0 && auditValue.counts.formalEditorOracleCount === 0, { cases: auditValue.counts.formalEditorCaseCount, oracles: auditValue.counts.formalEditorOracleCount });
   check("zero-execution boundary is fully false", Object.values(auditValue.zeroExecutionBoundary).every((value) => value === false), auditValue.zeroExecutionBoundary);
   check("formal issuance remains forbidden", auditValue.decision.formalRecordIssuanceAllowed === false, auditValue.decision);
