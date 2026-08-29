@@ -1,5 +1,19 @@
 # NOTES.md
 
+# 2026-08-29 Template-v1 T189 Expression inputs per-expression capacity（resolved / automated_verified）
+- cap-041 `expression.inputsPerExpression=32` 已合流到现有 Rendering.internal 单一 guard；closure-wide admission
+  对每 snapshot 的每个 ExpressionDefinition 在读取/解析 source 前检查 admitted `inputs`，冻结
+  `31/32/33`、EXPRESSION_PARSE_AND_STATIC_ANALYSIS / public TEMPLATE_CLOSURE /
+  EXPRESSION_LIMIT_EXCEEDED / ZERO_WRITE_AND_DOWNSTREAM。
+- TDD 记录 missing-enum compile RED 与公共 Evaluator behavioral RED。33 个唯一且词法全使用的 alias 配合相邻
+  表达式非法语法时，capacity 先于 parser/AST 返回 exact problem，input resolution、capability establish/restore
+  及 state load/save 均为 0；32 个唯一且全使用的 literal inputs 经真实 closure 路径成功 seal。
+- focused 127/127、受影响 reactor 534/534（Rendering 323/323）；`render`
+  `.sdlc/evidence/20260829-162134-render/metadata.json` 与 `fast`
+  `.sdlc/evidence/20260829-162224-fast/metadata.json` 均 passed/A1。cap-042+ deferred；T189-specific A2/A3 与
+  formal record issuance 均无；J0 pending、J1 未批准。无 public/app/Profile/provider/API Key/真实数据/费用/
+  push/tag/PR 变化。
+
 # 2026-08-29 Template-v1 T188 Expression source total capacity（resolved / automated_verified）
 - cap-040 `expression.sourceUtf8BytesTotal=1048576` 已合流到现有 Rendering.internal 单一 guard；其
   per-DesignDSL `SourceBudget` 先执行 T187 单项检查，再用 `BigInteger` 精确累计总量，并按 frozen snapshot

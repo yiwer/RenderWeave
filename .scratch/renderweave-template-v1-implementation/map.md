@@ -1152,6 +1152,12 @@ Label: wayfinder:map
   承载；先单项后总量、按 snapshot 重置，并在真实 parser decode/AST 前累计全部 unused Expression source。
   root/child 各 exact-at 成功，单 DSL above 以 exact closure problem 且零 downstream 拒绝；focused 124/124、
   受影响 reactor 531/531，`render`/`fast` 均 passed/A1。T188-specific A2/A3 无，J0 pending、J1 未批准。
+- [T189 — Expression inputs per-expression capacity authority](issues/189-expression-inputs-per-expression-capacity.md)
+  — **resolved / automated_verified**；blocked by T21/T126/T188（均 resolved）。cap-041
+  `expression.inputsPerExpression=32` 已由现有 Rendering.internal guard 承载；closure admission 对每 snapshot 的
+  每个 ExpressionDefinition 在读取/解析 source 前检查 admitted `inputs`。31/32/33 guard identity、32-input
+  real closure success 与 33-input parser-precedence/零 downstream 均已覆盖；focused 127/127、受影响 reactor
+  534/534，`render`/`fast` 均 passed/A1。cap-042+ deferred；T189-specific A2/A3 无，J0 pending、J1 未批准。
 
 - 改写或重解释现有 Schema/Inference v1 已提交历史，或在 dirty main 上直接实施 Template。
 - Workspace、组织/成员/分享/协作、跨 ownerScope 复制、通用 connector、任意 SQL/HTTP/文件/脚本、插件节点或运行时代码注册。

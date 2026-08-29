@@ -241,6 +241,55 @@ class EvaluatorContractTest {
     }
 
     @Test
+    void inputsPerExpressionOverBudgetWinsBeforeSourceParsingAndDownstreamWork() {
+        var stateStore = new RecordingCapabilityStateStore();
+        var runtime = new RecordingCapabilityRuntime();
+        var inputResolutions = new AtomicInteger();
+        var targetResolver = resolver();
+        ValidationTargetResolver recordingResolver = target -> {
+            inputResolutions.incrementAndGet();
+            return targetResolver.resolve(target);
+        };
+        var evaluator = evaluator(
+                closureWith(withInputCountOverflow(canvasWithRect())),
+                recordingResolver,
+                stateStore,
+                runtime);
+
+        var rejected = assertInstanceOf(EvaluationOutcome.Rejected.class,
+                evaluator.evaluate(command("{\"rootDocument\":{}}")));
+
+        assertEquals(EvaluationStage.TEMPLATE_CLOSURE, rejected.stage());
+        assertEquals(RenderingProblem.ProblemCode.EXPRESSION_LIMIT_EXCEEDED,
+                rejected.problem().code());
+        assertEquals("expression.inputsPerExpression",
+                rejected.problem().limitId().orElseThrow().value());
+        assertEquals(0, inputResolutions.get());
+        assertEquals(0, runtime.establishCalls);
+        assertEquals(0, runtime.restoreCalls);
+        assertEquals(0, stateStore.loadCalls);
+        assertEquals(0, stateStore.saveCalls);
+    }
+
+    @Test
+    void inputsPerExpressionAcceptsTheExactMaximumOnTheRealClosurePath() {
+        var stateStore = new RecordingCapabilityStateStore();
+        var runtime = new RecordingCapabilityRuntime();
+        var evaluator = evaluator(
+                closureWith(withInputCountAtLimit(canvasWithRect())),
+                resolver(),
+                stateStore,
+                runtime);
+
+        assertInstanceOf(EvaluationOutcome.SealedDocument.class,
+                evaluator.evaluate(command("{\"rootDocument\":{}}")));
+        assertEquals(0, runtime.establishCalls);
+        assertEquals(0, runtime.restoreCalls);
+        assertEquals(0, stateStore.loadCalls);
+        assertEquals(0, stateStore.saveCalls);
+    }
+
+    @Test
     void randomDemandOverBudgetRejectsBeforeCallingProviderForTheNextPosition() {
         var runtime = new SupplyingCapabilityRuntime();
         var evaluator = evaluator(
@@ -3109,6 +3158,41 @@ class EvaluatorContractTest {
                 .mapToInt(source -> source.source().getBytes(StandardCharsets.UTF_8).length)
                 .sum());
         return withCapacityExpressionSources(designDocument, sources);
+    }
+
+    private static String withInputCountOverflow(String designDocument) {
+        return withExpressionInputCount(designDocument, 33, true, true);
+    }
+
+    private static String withInputCountAtLimit(String designDocument) {
+        return withExpressionInputCount(designDocument, 32, false, false);
+    }
+
+    private static String withExpressionInputCount(
+            String designDocument,
+            int inputCount,
+            boolean randomLast,
+            boolean invalidSource
+    ) {
+        var inputs = new ArrayList<String>();
+        for (var index = 0; index < inputCount; index++) {
+            var source = randomLast && index == inputCount - 1
+                    ? "{\"kind\":\"capability\",\"capability\":\"RANDOM\","
+                    + "\"operation\":\"UNIFORM_DECIMAL_0_1\"}"
+                    : "{\"kind\":\"literal\",\"valueType\":\"decimal\",\"value\":1}";
+            inputs.add("{\"alias\":\"v" + index + "\",\"source\":" + source + "}");
+        }
+        var source = String.join(invalidSource ? " " : " + ",
+                java.util.stream.IntStream.range(0, inputCount)
+                        .mapToObj(index -> "input.v" + index)
+                        .toList());
+        return designDocument.replace(
+                "\"definitions\":[]",
+                "\"definitions\":[{\"definitionId\":\"" + capacityUuid(7, 20_000) + "\","
+                        + "\"kind\":\"expression\",\"displayName\":\"Capacity\","
+                        + "\"domain\":\"invocation\",\"output\":\"decimal\","
+                        + "\"inputs\":[" + String.join(",", inputs) + "],"
+                        + "\"source\":\"" + source + "\"}]");
     }
 
     private static String withCapacityExpressionSources(

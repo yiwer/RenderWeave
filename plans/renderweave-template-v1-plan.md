@@ -1,5 +1,28 @@
 # RenderWeave Template v1 Implementation Plan
 
+## 189. TV1-T189 执行卡
+
+- 状态：`resolved / automated_verified`；single writer: Codex；blocked by T21/T126/T188（均 resolved）。
+- authority：Ticket 19 `RW-T19-S7-049` 与 DESIGN_INPUT_EXPRESSION cap-041；
+  `expression.inputsPerExpression` MAX_INCLUSIVE `32`，observed `31/32/33`，
+  EXPRESSION_PARSE_AND_STATIC_ANALYSIS / public TEMPLATE_CLOSURE /
+  EXPRESSION_LIMIT_EXCEEDED / ZERO_WRITE_AND_DOWNSTREAM。
+- seam：深化 Rendering.internal 单一 `DesignInputExpressionCapacityGuard`；closure-wide
+  `ExpressionCapacityAdmission` 对每 frozen snapshot 的每个 ExpressionDefinition 在 source parse/AST 前检查
+  admitted `inputs` 数组。测试 seam 为 guard tracer 与公共 `Evaluator.evaluate`，不新增 public API/SPI。
+- TDD：先取得 missing enum compile RED，再取得 33 inputs 的 Evaluator behavioral RED；覆盖 31/32/33、
+  exact-at 全 alias 使用、above 对 invalid/unused source 的 precedence 与零 downstream，随后 focused
+  Rendering、受影响 reactor、render/fast。
+- 边界：不实现 cap-042 inputs total、后续 AST/graph/case/list/decimal axes、formal records 或完整 execution-class
+  target；不实现 app/Profile/provider/真实数据，不 push/tag/PR；claim=A0、J0 pending、J1 未批准。
+- Resolution：现有 internal guard 已承载 cap-041；closure admission 对每个 ExpressionDefinition 在读取/解析
+  source 前检查 admitted `inputs`。33 个唯一且词法全使用的 alias 配合相邻表达式非法语法时，capacity 先于
+  parser/AST 返回 exact closure problem，且 input resolution、capability runtime/state 均为 0；32 个唯一且
+  全使用的 literal inputs 经真实 closure 路径成功 seal。focused 127/127、受影响 reactor 534/534（Rendering
+  323/323）；`render` `.sdlc/evidence/20260829-162134-render/metadata.json` 与 `fast`
+  `.sdlc/evidence/20260829-162224-fast/metadata.json` 均 passed/A1。T189-specific A2/A3 无，J0 pending、
+  J1 未批准；无 public/app/Profile/provider/push/tag/PR 变化。
+
 ## 188. TV1-T188 执行卡
 
 - 状态：`resolved / automated_verified`；single writer: Codex；blocked by T21/T126/T187（均 resolved）。

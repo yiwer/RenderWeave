@@ -67,6 +67,15 @@ final class ExpressionCapacityAdmission {
                     if (!"expression".equals(kind.value())) {
                         continue;
                     }
+                    if (!(definition.members().get("inputs") instanceof ArrayNode inputs)) {
+                        return new Fault();
+                    }
+                    var inputCapacityProblem = CAPACITY_GUARD.admit(
+                            DesignInputExpressionCapacityGuard.Limit.INPUTS_PER_EXPRESSION,
+                            inputs.items().size());
+                    if (inputCapacityProblem.isPresent()) {
+                        return new Rejected(inputCapacityProblem.orElseThrow());
+                    }
                     if (!(definition.members().get("source") instanceof Text source)) {
                         return new Fault();
                     }
