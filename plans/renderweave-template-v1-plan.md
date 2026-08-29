@@ -1,5 +1,25 @@
 # RenderWeave Template v1 Implementation Plan
 
+## 186. TV1-T186 执行卡
+
+- 状态：`resolved / automated_verified`；single writer: Codex；blocked by T21/T126/T185（均 resolved）。
+- authority：Ticket 19 `RW-T19-S7-064` 与 design-input-expression cap-055；
+  `expression.explicitRoundingScaleMax` MAX_INCLUSIVE `64`，observed `63/64/65`，
+  EXPRESSION_PARSE_AND_STATIC_ANALYSIS / public TEMPLATE_CLOSURE /
+  EXPRESSION_LIMIT_EXCEEDED / ZERO_WRITE_AND_DOWNSTREAM。
+- seam：Rendering.internal 单一 `DesignInputExpressionCapacityGuard`；`ExpressionAnalyzer` 对 divide/round/
+  formatDecimal 的全部显式 scale 参数返回独立 capacity outcome，不新增 public API/SPI 或重复 guard。
+- TDD：先取得 missing-guard/typed-outcome RED，再覆盖 guard 63/64/65 与真实 parser→analyzer 产品路径；随后
+  focused Rendering、受影响 reactor、render/fast。
+- 边界：fixture tracer 不冒充完整 Evaluator 或 A2/A3；不实现 records/executor/app/Profile/provider/真实数据，
+  不 push/tag/PR；claim 时 A0、J0 pending、J1 未批准。
+- Resolution：单一 internal guard 已承载 cap-055；Expression analyzer 对 divide/round/formatDecimal 返回 distinct
+  capacity outcome，closure-wide admission 在 Input/Capability/Asset/materialization 前检查全部 snapshot 与 unused
+  Expression。Evaluator tracer 证明 input resolution、capability establish/restore、state load/save 均为 0。
+  focused 33/33，受影响 reactor 524/524；`render` `.sdlc/evidence/20260829-154121-render/metadata.json`
+  与 `fast` `.sdlc/evidence/20260829-154217-fast/metadata.json` 均 passed/A1。T186-specific A2/A3 无，
+  J0 pending、J1 未批准；无 public/app/Profile/provider/push/tag/PR 变化。
+
 ## 185. TV1-T185 执行卡
 
 - 状态：`resolved / automated_verified`；single writer: Codex；blocked by T13/T21/T128/T154/T166/T184（均 resolved）。

@@ -176,6 +176,19 @@ final class CanonicalEvaluator implements Evaluator {
             return rejected(EvaluationStage.TEMPLATE_CLOSURE,
                     ProblemCode.RENDER_INTERNAL_ERROR, null);
         }
+        var expressionCapacity = ExpressionCapacityAdmission.admit(
+                closure, semantics, evaluationControl);
+        if (expressionCapacity instanceof ExpressionCapacityAdmission.Rejected limited) {
+            return new EvaluationOutcome.Rejected(
+                    limited.problem().stage(), limited.problem());
+        }
+        if (expressionCapacity instanceof ExpressionCapacityAdmission.Fault) {
+            return rejected(EvaluationStage.TEMPLATE_CLOSURE,
+                    ProblemCode.RENDER_INTERNAL_ERROR, null);
+        }
+        if (expressionCapacity instanceof ExpressionCapacityAdmission.DeadlineExceeded) {
+            return deadlineRejected(EVALUATION_AND_DOCUMENT_SEAL_DEADLINE_LIMIT);
+        }
         var declarationOutcome = CapabilityDeclarations.scan(
                 closure, semantics, capabilityBudget, evaluationControl);
         if (declarationOutcome instanceof CapabilityDeclarations.DeclarationFault) {

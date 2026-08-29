@@ -1647,6 +1647,12 @@ final class Materializer {
                     EvaluationStage.MATERIALIZATION,
                     ProblemCode.CAPABILITY_RESULT_INVALID,
                     error.failure().limitId());
+            case EXPRESSION_LIMIT_EXCEEDED -> failed(
+                    // Evaluator preflight owns the normal path; preserve exact taxonomy if an
+                    // internal direct materialization call ever breaches that invariant.
+                    EvaluationStage.TEMPLATE_CLOSURE,
+                    ProblemCode.EXPRESSION_LIMIT_EXCEEDED,
+                    error.failure().limitId());
             default -> failed(
                     EvaluationStage.MATERIALIZATION, ProblemCode.EVALUATION_FAILED, null);
         };

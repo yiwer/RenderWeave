@@ -1,6 +1,7 @@
 package cn.hbads.renderweave.rendering.internal;
 
-import java.math.BigDecimal;
+import cn.hbads.renderweave.rendering.api.RenderingProblem;
+
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -15,6 +16,9 @@ import java.util.Set;
  * 及其直接 {@code !}，并在 {@code exists(x) && RHS}、{@code !exists(x) || RHS} 中收窄 RHS。
  */
 final class ExpressionAnalyzer {
+
+    private static final DesignInputExpressionCapacityGuard CAPACITY_GUARD =
+            new DesignInputExpressionCapacityGuard();
 
     /** 一个 Expression input 的静态声明：类型 + 是否 MAY_BE_ABSENT。 */
     record InputDeclaration(DesignValueDecoder.DesignValueType type, boolean mayBeAbsent) {
@@ -40,7 +44,7 @@ final class ExpressionAnalyzer {
     record StaticFailure(StaticFailureKind kind, String detail) {
     }
 
-    sealed interface AnalysisResult permits Analyzed, AnalysisRejected {
+    sealed interface AnalysisResult permits Analyzed, AnalysisRejected, AnalysisLimitExceeded {
     }
 
     record Analyzed(OutputType outputType) implements AnalysisResult {
@@ -49,6 +53,12 @@ final class ExpressionAnalyzer {
     record AnalysisRejected(List<StaticFailure> failures) implements AnalysisResult {
         AnalysisRejected {
             failures = List.copyOf(failures);
+        }
+    }
+
+    record AnalysisLimitExceeded(RenderingProblem problem) implements AnalysisResult {
+        AnalysisLimitExceeded {
+            Objects.requireNonNull(problem, "problem");
         }
     }
 
@@ -63,6 +73,10 @@ final class ExpressionAnalyzer {
     static AnalysisResult analyze(ExpressionAst ast, Map<String, InputDeclaration> inputs) {
         Objects.requireNonNull(ast, "ast");
         Objects.requireNonNull(inputs, "inputs");
+        var capacityProblem = admitCapacity(ast);
+        if (capacityProblem != null) {
+            return new AnalysisLimitExceeded(capacityProblem);
+        }
         var analyzer = new ExpressionAnalyzer(inputs);
         var failures = new java.util.ArrayList<StaticFailure>();
         var type = analyzer.typeOf(ast, failures);
@@ -75,6 +89,54 @@ final class ExpressionAnalyzer {
             return new AnalysisRejected(failures);
         }
         return new Analyzed(new OutputType(type.type(), type.mayBeAbsent()));
+    }
+
+    static RenderingProblem admitCapacity(ExpressionAst ast) {
+        Objects.requireNonNull(ast, "ast");
+        if (ast instanceof ExpressionAst.Unary unary) {
+            return admitCapacity(unary.operand());
+        }
+        if (ast instanceof ExpressionAst.Binary binary) {
+            var left = admitCapacity(binary.left());
+            return left == null ? admitCapacity(binary.right()) : left;
+        }
+        if (!(ast instanceof ExpressionAst.Call call)) {
+            return null;
+        }
+        var ownProblem = switch (call.function()) {
+            case DIVIDE -> admitScale(call.arguments(), 2);
+            case ROUND -> admitScale(call.arguments(), 1);
+            case FORMAT_DECIMAL -> {
+                var minimumScale = admitScale(call.arguments(), 1);
+                yield minimumScale == null
+                        ? admitScale(call.arguments(), 2)
+                        : minimumScale;
+            }
+            default -> null;
+        };
+        if (ownProblem != null) {
+            return ownProblem;
+        }
+        for (var argument : call.arguments()) {
+            var nestedProblem = admitCapacity(argument);
+            if (nestedProblem != null) {
+                return nestedProblem;
+            }
+        }
+        return null;
+    }
+
+    private static RenderingProblem admitScale(List<ExpressionAst> arguments, int index) {
+        if (index >= arguments.size()
+                || !(arguments.get(index) instanceof ExpressionAst.DecimalLiteral literal)
+                || literal.value().signum() < 0
+                || literal.value().stripTrailingZeros().scale() > 0) {
+            return null;
+        }
+        return CAPACITY_GUARD.admit(
+                        DesignInputExpressionCapacityGuard.Limit.EXPLICIT_ROUNDING_SCALE_MAX,
+                        literal.value().toBigIntegerExact())
+                .orElse(null);
     }
 
     private record LocalType(DesignValueDecoder.DesignValueType type, boolean mayBeAbsent) {
@@ -324,10 +386,6 @@ final class ExpressionAnalyzer {
             failures.add(new StaticFailure(
                     StaticFailureKind.COMPILE_TIME_LITERAL_REQUIRED, name));
             return;
-        }
-        if (literal.value().compareTo(BigDecimal.valueOf(64)) > 0) {
-            failures.add(new StaticFailure(
-                    StaticFailureKind.COMPILE_TIME_LITERAL_REQUIRED, name + ".scale"));
         }
     }
 

@@ -1,10 +1,16 @@
 package cn.hbads.renderweave.rendering.internal;
 
+import cn.hbads.renderweave.rendering.api.EvaluationStage;
+import cn.hbads.renderweave.rendering.api.RenderingProblem.ProblemCode;
+import cn.hbads.renderweave.template.api.DesignSemanticAuthority.ArrayNode;
+import cn.hbads.renderweave.template.api.DesignSemanticAuthority.ObjectNode;
+import cn.hbads.renderweave.template.api.DesignSemanticAuthority.Text;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -274,6 +280,89 @@ class ExpressionEngineTest {
         var rejected = assertInstanceOf(ExpressionAnalyzer.AnalysisRejected.class, analysis);
         assertEquals(ExpressionAnalyzer.StaticFailureKind.COMPILE_TIME_LITERAL_REQUIRED,
                 rejected.failures().get(0).kind());
+    }
+
+    @Test
+    void explicitRoundingScaleAtFrozenMaximumIsStaticallyAdmitted() {
+        for (var source : java.util.List.of(
+                "divide(1, 2, 64, 'HALF_UP')",
+                "round(1, 64, 'HALF_EVEN')",
+                "formatDecimal(1, 64, 64, 'DOWN')")) {
+            assertInstanceOf(ExpressionAnalyzer.Analyzed.class,
+                    ExpressionAnalyzer.analyze(parse(source), Map.of()), source);
+        }
+    }
+
+    @Test
+    void everyExplicitRoundingScaleAboveFrozenMaximumReturnsCapacityOutcome() {
+        for (var source : List.of(
+                "divide(1, 2, 65, 'HALF_UP')",
+                "round(1, 65, 'HALF_EVEN')",
+                "formatDecimal(1, 65, 65, 'DOWN')",
+                "formatDecimal(1, 0, 65, 'UP')")) {
+            var result = ExpressionAnalyzer.analyze(parse(source), Map.of());
+            var limited = assertInstanceOf(
+                    ExpressionAnalyzer.AnalysisLimitExceeded.class, result, source);
+            assertEquals(EvaluationStage.TEMPLATE_CLOSURE, limited.problem().stage());
+            assertEquals(ProblemCode.EXPRESSION_LIMIT_EXCEEDED, limited.problem().code());
+            assertEquals("expression.explicitRoundingScaleMax",
+                    limited.problem().limitId().orElseThrow().value());
+        }
+    }
+
+    @Test
+    void definitionEnginePreservesScaleCapacityIdentityBeforeLazyEvaluation() {
+        var definitionId = "00000000-0000-4000-8000-0000000000d1";
+        var definition = new ObjectNode(Map.of(
+                "definitionId", new Text(definitionId),
+                "kind", new Text("expression"),
+                "inputs", new ArrayNode(List.of()),
+                "source", new Text("round(1, 65, 'HALF_UP')")));
+        var engine = new DefinitionEngine(List.of(definition));
+        var capabilityDemands = new java.util.concurrent.atomic.AtomicInteger();
+        var scope = new DefinitionEngine.ResolutionScope() {
+            @Override
+            public TypedObject context() {
+                return null;
+            }
+
+            @Override
+            public Map<String, DesignValue> customs() {
+                return Map.of();
+            }
+
+            @Override
+            public DefinitionEngine.LoopFrames loopFrames() {
+                return DefinitionEngine.LoopFrames.EMPTY;
+            }
+
+            @Override
+            public DefinitionEngine definitions() {
+                return engine;
+            }
+
+            @Override
+            public DefinitionEngine.CapabilityProvider capabilities() {
+                return (capability, operation, position) -> {
+                    capabilityDemands.incrementAndGet();
+                    throw new AssertionError("capacity rejection must precede lazy input demand");
+                };
+            }
+
+            @Override
+            public CapabilityCallPosition.RuntimePath capabilityPath() {
+                return CapabilityCallPosition.root(
+                        "00000000-0000-4000-8000-000000000001", 1);
+            }
+        };
+
+        var outcome = engine.resolveDefinition(definitionId, scope);
+
+        var error = assertInstanceOf(ExpressionEvaluator.EvalError.class, outcome);
+        assertEquals(ExpressionEvaluator.RuntimeFailureKind.EXPRESSION_LIMIT_EXCEEDED,
+                error.failure().kind());
+        assertEquals("expression.explicitRoundingScaleMax", error.failure().limitId());
+        assertEquals(0, capabilityDemands.get());
     }
 
     @Test

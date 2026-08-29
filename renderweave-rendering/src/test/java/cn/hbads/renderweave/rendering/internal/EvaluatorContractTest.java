@@ -130,6 +130,37 @@ class EvaluatorContractTest {
     }
 
     @Test
+    void explicitRoundingScaleOverBudgetRejectsAtClosureBeforeAllDownstreamWork() {
+        var stateStore = new RecordingCapabilityStateStore();
+        var runtime = new RecordingCapabilityRuntime();
+        var inputResolutions = new AtomicInteger();
+        var targetResolver = resolver();
+        ValidationTargetResolver recordingResolver = target -> {
+            inputResolutions.incrementAndGet();
+            return targetResolver.resolve(target);
+        };
+        var evaluator = evaluator(
+                closureWith(withUnusedRandomScaleOverflow(canvasWithRect())),
+                recordingResolver,
+                stateStore,
+                runtime);
+
+        var rejected = assertInstanceOf(EvaluationOutcome.Rejected.class,
+                evaluator.evaluate(command("{\"rootDocument\":{}}")));
+
+        assertEquals(EvaluationStage.TEMPLATE_CLOSURE, rejected.stage());
+        assertEquals(RenderingProblem.ProblemCode.EXPRESSION_LIMIT_EXCEEDED,
+                rejected.problem().code());
+        assertEquals("expression.explicitRoundingScaleMax",
+                rejected.problem().limitId().orElseThrow().value());
+        assertEquals(0, inputResolutions.get());
+        assertEquals(0, runtime.establishCalls);
+        assertEquals(0, runtime.restoreCalls);
+        assertEquals(0, stateStore.loadCalls);
+        assertEquals(0, stateStore.saveCalls);
+    }
+
+    @Test
     void randomDemandOverBudgetRejectsBeforeCallingProviderForTheNextPosition() {
         var runtime = new SupplyingCapabilityRuntime();
         var evaluator = evaluator(
@@ -2929,6 +2960,16 @@ class EvaluatorContractTest {
                 + "\"inputs\":[{\"alias\":\"draw\",\"source\":{\"kind\":\"capability\","
                 + "\"capability\":\"RANDOM\",\"operation\":\"UNIFORM_DECIMAL_0_1\"}}],"
                 + "\"source\":\"if(input.draw < 0.5, 'A', 'B')\"}]");
+    }
+
+    private static String withUnusedRandomScaleOverflow(String designDocument) {
+        return designDocument.replace("\"definitions\":[]", "\"definitions\":[{"
+                + "\"definitionId\":\"00000000-0000-4000-8000-0000000000e6\","
+                + "\"kind\":\"expression\",\"displayName\":\"Overflow\","
+                + "\"domain\":\"invocation\",\"output\":\"decimal\","
+                + "\"inputs\":[{\"alias\":\"draw\",\"source\":{\"kind\":\"capability\","
+                + "\"capability\":\"RANDOM\",\"operation\":\"UNIFORM_DECIMAL_0_1\"}}],"
+                + "\"source\":\"round(input.draw, 65, 'HALF_UP')\"}]");
     }
 
     private static String loopRandomCapabilityDocument(String items) {

@@ -516,6 +516,11 @@ final class DefinitionEngine {
             }
         }
         var analysis = ExpressionAnalyzer.analyze(ast, declarations);
+        if (analysis instanceof ExpressionAnalyzer.AnalysisLimitExceeded limited) {
+            return new EvalError(new RuntimeFailure(
+                    RuntimeFailureKind.EXPRESSION_LIMIT_EXCEEDED,
+                    limited.problem().limitId().orElseThrow().value()));
+        }
         if (analysis instanceof ExpressionAnalyzer.AnalysisRejected) {
             return dependencyError();
         }

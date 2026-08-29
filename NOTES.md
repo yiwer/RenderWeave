@@ -1,5 +1,17 @@
 # NOTES.md
 
+# 2026-08-29 Template-v1 T186 Expression explicit rounding scale capacity（resolved / automated_verified）
+
+- 冻结 cap-055 `expression.explicitRoundingScaleMax=64` 已由单一 internal guard 承载，MAX_INCLUSIVE
+  `63/64/65`，EXPRESSION_PARSE_AND_STATIC_ANALYSIS / public TEMPLATE_CLOSURE /
+  EXPRESSION_LIMIT_EXCEEDED / ZERO_WRITE_AND_DOWNSTREAM。
+- analyzer 裸 `64` 与 overflow 的假 `COMPILE_TIME_LITERAL_REQUIRED` 已移除；divide/round/formatDecimal 全部 scale
+  位返回 distinct capacity outcome。closure-wide admission 检查全部 snapshot/unused Expression，Evaluator tracer
+  证明 input resolution、capability runtime/state 与全部 downstream work 均为 0。
+- focused 33/33、受影响 reactor 524/524；`render` `.sdlc/evidence/20260829-154121-render/metadata.json` 与
+  `fast` `.sdlc/evidence/20260829-154217-fast/metadata.json` 均 passed/A1。T186-specific A2/A3 无；
+  J0 pending、J1 未批准。无 public/app/Profile/provider/API Key/真实数据/费用/push/tag/PR 动作。
+
 # 2026-08-29 Template-v1 T185 canonical diagnostic sidecar 与字节预算（resolved / automated_verified）
 
 - Rendering.internal exact OccurrencePath 已覆盖 sibling、Repeat item、TemplateUse viewport/sourceCanvas 与普通 source

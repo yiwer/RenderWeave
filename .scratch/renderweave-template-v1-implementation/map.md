@@ -1135,6 +1135,11 @@ Label: wayfinder:map
   `diagnostics.sidecarBytes=8388608` exact-at/above 已由唯一 production guard 原子执行。closed ConsumerPropertyRef
   同步收口，受影响 reactor 519/519；
   `render` 与 `fast` passed/A1。T185-specific A2/A3 无、J0 pending、J1 未批准；无 public/app/Profile/provider 变化。
+- [T186 — Expression explicit rounding scale capacity authority](issues/186-expression-explicit-rounding-scale-capacity.md)
+  — **resolved / automated_verified**；blocked by T21/T126/T185（均 resolved）。cap-055
+  `expression.explicitRoundingScaleMax=64` 已由 Rendering.internal 单一 guard 承载；真实 parser→analyzer 与
+  closure-wide static admission 对全部 unused Expression 在任何 downstream work 前返回 exact capacity outcome。
+  受影响 reactor 524/524，`render`/`fast` passed/A1；T186-specific A2/A3 无、J0 pending、J1 未批准。
 
 - 改写或重解释现有 Schema/Inference v1 已提交历史，或在 dirty main 上直接实施 Template。
 - Workspace、组织/成员/分享/协作、跨 ownerScope 复制、通用 connector、任意 SQL/HTTP/文件/脚本、插件节点或运行时代码注册。
