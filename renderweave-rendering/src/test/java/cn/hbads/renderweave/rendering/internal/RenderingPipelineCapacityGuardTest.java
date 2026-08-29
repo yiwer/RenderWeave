@@ -808,4 +808,28 @@ class RenderingPipelineCapacityGuardTest {
         assertThrows(IllegalArgumentException.class,
                 () -> guard.admit(limit, 1, 16_777_217));
     }
+
+    @Test
+    void capabilityStateRecordBytesUsesTheFrozenProductionGuardContract() {
+        var guard = new RenderingPipelineCapacityGuard();
+        var limit = RenderingPipelineCapacityGuard.Limit
+                .CAPABILITY_RUNTIME_CAPABILITY_STATE_RECORD_BYTES;
+
+        assertTrue(guard.admit(limit, 1_048_575L).isEmpty());
+        assertTrue(guard.admit(limit, 1_048_576L).isEmpty());
+
+        var problem = guard.admit(limit, 1_048_577L)
+                .orElseThrow();
+        assertEquals(EvaluationStage.CAPABILITY_STATE, problem.stage());
+        assertEquals(ProblemCode.CAPABILITY_BUDGET_EXCEEDED, problem.code());
+        assertEquals("capabilityRuntime.capabilityStateRecordBytes",
+                problem.limitId().orElseThrow().value());
+
+        assertTrue(guard.admit(limit, 1, 1).isEmpty());
+        assertEquals("capabilityRuntime.capabilityStateRecordBytes",
+                guard.admit(limit, 2, 1).orElseThrow()
+                        .limitId().orElseThrow().value());
+        assertThrows(IllegalArgumentException.class,
+                () -> guard.admit(limit, 1, 1_048_577));
+    }
 }

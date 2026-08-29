@@ -1053,6 +1053,11 @@ Label: wayfinder:map
   tightening 与失败不提交 counters 的原子边界。有效收紧 vector 证明 position-total first-failure 后仍可精确填满
   demand counters；focused 127/127、受影响 reactor 20/13/84/92/267 与 render/fast metadata 全绿；A1、无 T172
   专属 A2/A3、J0。
+- [T173 — CapabilityState record bytes production guard 合流](issues/173-capability-state-record-bytes-production-guard.md)
+  — **resolved / automated_verified**；blocked by T21/T132/T172（均 resolved）。按 `RW-T19-S8-030` 与 cap-043，
+  已将 T132 pre-commit state-record bytes admission 合流到唯一 production guard；删除重复 frozen maximum/比较并
+  保持 effective tightening、exact CAPABILITY_STATE taxonomy、超限零 store write 与 replay 不重复收费。
+  focused 128/128、受影响 reactor 20/13/84/92/268 与 render/fast metadata 全绿；A1、无 T173 专属 A2/A3、J0。
 
 - 改写或重解释现有 Schema/Inference v1 已提交历史，或在 dirty main 上直接实施 Template。
 - Workspace、组织/成员/分享/协作、跨 ownerScope 复制、通用 connector、任意 SQL/HTTP/文件/脚本、插件节点或运行时代码注册。

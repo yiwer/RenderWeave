@@ -4414,3 +4414,26 @@
   A2/A3，既有独立 replay 不冒充本票证据；J0 pending、J1 未批准，未重复 server/full。
 - 状态回填后的 `fast` A1 `.sdlc/evidence/20260829-091922-fast/` metadata passed、3/3；stderr 仅 npm 配置
   warning，step exit code 与 metadata truth 均为成功。
+
+# 2026-08-29 Template-v1 T173 CapabilityState record bytes guard 合流（resolved / automated_verified）
+
+- T172 已以 verified commit `dbe02aea` 收口，worktree clean、ahead 163 且 DAG 无其他 active claim；冻结
+  `RW-T19-S8-030` / cap-043 是下一个 unblocked frontier，现按 single-writer claim T173。
+- cap-043 固定 `capabilityRuntime.capabilityStateRecordBytes` MAX_INCLUSIVE `1048576`、observed
+  `1048575/1048576/1048577`，CAPABILITY_STATE_INITIALIZATION / public CAPABILITY_STATE /
+  CAPABILITY_BUDGET_EXCEEDED / ZERO_DOCUMENT_OUTPUT，reservation point 为提交 CapabilityState 前。
+- T132 已有真实 pre-commit admission；本票只做 exact production guard 合流，保留 effectiveBudgetVector 收紧、
+  runtime establish 后以 opaque `sealedState.length` 准入、above-limit 零 store write，以及 replay 不重复建立或收费。
+  cap-044+ result/retry/rejection 轴继续 deferred；claim 时 A0、J0。
+- TDD 首轮得到缺失 `CAPABILITY_RUNTIME_CAPABILITY_STATE_RECORD_BYTES` 的唯一预期 compile RED；catalog 与
+  production admission 合流后 guard + Evaluator 103/103，expanded focused 128/128。未伪造行为 RED：T132 已有
+  正确 state-record admission，本票只收敛 frozen guard authority。
+- `RenderingPipelineCapacityGuard` 现独占 state-record id/1048576/problem/public stage；effective maximum 只能在
+  `0..1048576` 收紧。`CapabilityBudget` 删除重复常量与手写比较，frozen/effective vector 与 admission 均从 catalog
+  取得权威；公开 Evaluator 继续证明 exact-at 成功、above-limit exact taxonomy 且 `saveCalls=0`。
+- 受影响 reactor 为 20/13/84/92/268；`render` A1 `.sdlc/evidence/20260829-092526-render/`（2/2）与 `fast` A1
+  `.sdlc/evidence/20260829-092653-fast/`（3/3）metadata passed，`git diff --check` 与重复 authority 搜索通过。
+  cap-043 无 T173 专属 A2/A3，既有独立 replay 不冒充本票证据；J0 pending、J1 未批准，未重复 server/full。
+- 无 app wiring/API/Web/migration/Profile/provider/API Key/真实数据/费用/Profile registration/push/tag/PR。
+- 状态回填后的 `fast` A1 `.sdlc/evidence/20260829-092820-fast/` metadata passed、3/3；stderr 仅 npm 配置
+  warning，step exit code 与 metadata truth 均为成功。

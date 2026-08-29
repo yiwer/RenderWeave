@@ -168,7 +168,12 @@ final class RenderingPipelineCapacityGuard {
                 "capabilityRuntime.positionCanonicalBytesTotal",
                 16_777_216L,
                 ProblemCode.CAPABILITY_BUDGET_EXCEEDED,
-                EvaluationStage.MATERIALIZATION);
+                EvaluationStage.MATERIALIZATION),
+        CAPABILITY_RUNTIME_CAPABILITY_STATE_RECORD_BYTES(
+                "capabilityRuntime.capabilityStateRecordBytes",
+                1_048_576L,
+                ProblemCode.CAPABILITY_BUDGET_EXCEEDED,
+                EvaluationStage.CAPABILITY_STATE);
 
         private final String id;
         private final long maximumInclusive;
