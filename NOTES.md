@@ -1,5 +1,27 @@
 # NOTES.md
 
+# 2026-08-29 Template-v1 T204 rotation degrees maximum capacity（resolved / automated_verified）
+- T203 已以实现 `c235ca09`、治理 `cc381b28` 收口并释放 claim；DAG 无其他 active claim。现按 single-writer
+  claim cap-065 `geometry.rotationDegreesMax=360`，关联 `RW-T19-S7-113` 与 `RW-T19-S9-017/019`，目标
+  wired 65/65、remaining 0。
+- 只深化公共 `DesignDslAuthority.admit(rawUtf8)` 与既有 Template-owned capacity authority；每个 present
+  non-Canvas Transform 的 once-parsed canonical `rotationDeg` 按 min→max 在 scaleX/scaleY 前观察，不做 modulo
+  normalization。Binding overlay 继续复用同一 re-admission seam。
+- 先强化真实 Transform 公共 seam tracer 并取得 cap-065 observation 缺失 RED，再逐纵切推进。65/65 只代表产品
+  reservation wiring 完整；exact class target/manifests、preissuance/formal issuance 另票。claim 时 A0、J0 pending、
+  J1 未批准；无 app wiring/Profile/Renderer/provider/API Key/真实数据/生产/push/tag/PR，用户 dirty work/stash 不动。
+- 实现 `12a3f7e6` 已让同一 once-parsed canonical `rotationDeg` 按 min→max→scaleX→scaleY 观察；
+  below/at/above、trailing-zero/negative-zero、exact pointer、absent Transform、parser/canonical precedence 与
+  authority reject/invalid/throw 均已覆盖。focused 48/48、Template module 184/184。
+- immutable v17 target SHA-256 `2369720282648dbc02d91d6b9730762b639e04034cb68094000fdb23213cb0b4`、
+  21520 bytes、57/57 artifacts exact；component `.sdlc/evidence/20260829-212445-template-t204-component/`
+  Java primary 195/195（A1）、TypeScript independent 195/195、2692 checks（A2），wired 65/65、remaining 0、
+  product reservation proof complete；preissuance/formal/executable 仍 false。
+- `template` `.sdlc/evidence/20260829-212656-template/metadata.json` 与 `fast`
+  `.sdlc/evidence/20260829-212731-fast/metadata.json` passed/A1，Template Java/Python 211/211。claim 已释放；
+  A3 absent、J0 pending、J1 未批准；无 app wiring，未重复 server/full。用户 dirty work/stash 未改，未 push/tag/PR。
+  下一 frontier 为 exact execution-class target/manifests + independent preissuance replay，尚未登记或 claim。
+
 # 2026-08-29 Template-v1 T203 rotation degrees minimum capacity（resolved / automated_verified）
 - T202 已以实现 `93ad46fb`、治理 `13822c0b` 收口并释放 claim；DAG 无其他 active claim。现按 single-writer
   claim cap-064 `geometry.rotationDegreesMin=-360`，关联 `RW-T19-S7-113` 与 `RW-T19-S9-017/019`，目标

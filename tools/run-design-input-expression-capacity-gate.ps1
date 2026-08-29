@@ -30,7 +30,7 @@ if (-not $resolvedEvidenceDir.StartsWith(
 }
 
 $target = Join-Path $repoRoot `
-    '.scratch\renderweave-template-v1\design-input-expression\capacity-component-target-v16.json'
+    '.scratch\renderweave-template-v1\design-input-expression\capacity-component-target-v17.json'
 $primaryReport = Join-Path $resolvedEvidenceDir `
     'design-input-expression-capacity-primary.json'
 $independentReport = Join-Path $resolvedEvidenceDir `
@@ -100,19 +100,20 @@ try {
     if ($result.reportVersion -ne `
             'renderweave-design-input-expression-capacity-independent/1' `
             -or $result.assurance -ne `
-            'A2_COMPONENT_SCALAR_REPLAY_PARTIAL_PRODUCT_WIRING' `
+            'A2_COMPONENT_SCALAR_REPLAY_COMPLETE_PRODUCT_WIRING' `
             -or $result.axisCount -ne 65 `
             -or $result.caseCount -ne 195 `
             -or $result.passed -ne 195 `
             -or $result.failed -ne 0 `
-            -or $result.boundary.wiredProductAxisCount -ne 64 `
-            -or $result.boundary.remainingProductAxisCount -ne 1 `
+            -or $result.boundary.wiredProductAxisCount -ne 65 `
+            -or $result.boundary.remainingProductAxisCount -ne 0 `
+            -or -not $result.boundary.productReservationProofComplete `
             -or $result.boundary.preissuanceReady `
             -or $result.boundary.recordIssuanceAllowed `
             -or $result.boundary.executionClassExecutable) {
         throw 'Design/Input/Expression independent report boundary drifted.'
     }
-    Write-Host 'DESIGN_INPUT_EXPRESSION component gate: 195/195 scalar PASS, 64/65 wired'
+    Write-Host 'DESIGN_INPUT_EXPRESSION component gate: 195/195 scalar PASS, 65/65 wired'
 }
 finally {
     Pop-Location

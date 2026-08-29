@@ -6578,3 +6578,35 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
   `.sdlc/evidence/20260829-211232-template/` 与 `fast` `.sdlc/evidence/20260829-211310-fast/` passed/A1，
   Template Java/Python 211/211。A3 absent、J0 pending、J1 未批准；无 app wiring，未重复 server/full。claim 已
   释放；下一 frontier 为 cap-065 `geometry.rotationDegreesMax`，尚未登记或 claim。
+
+## 204. TV1-T204 执行卡
+
+- 状态：`resolved / automated_verified / unclaimed`；Blocked by T203（resolved）。
+- authority：Ticket 19 `RW-T19-S7-113 / RW-T19-S9-017 / RW-T19-S9-019` 与 cap-065 固定
+  `geometry.rotationDegreesMax=360`、MAX_INCLUSIVE / CANONICAL_DECIMAL；terminal 为
+  `DESIGN_PROPERTY_CONSTRAINT_INVALID / DESIGN_PROPERTY_AND_AGGREGATE_VALIDATION`，public stage
+  TEMPLATE_CLOSURE，reservation point 为 persisted write/Evaluation 前，zero boundary 为
+  ZERO_WRITE_AND_DOWNSTREAM。
+- seam/scope：只深化 `DesignDslAuthority.admit(rawUtf8)` 与同一 Template-owned capacity authority；每个
+  present non-Canvas Transform 只解析一次 `rotationDeg`，以同一 canonical value 按 cap-064 min→cap-065 max
+  fail-fast，再观察 scaleX/scaleY；不作 modulo-360 normalization。Binding overlay 继续复用同一 re-admission seam。
+- test-first：先强化真实 Transform 公共 seam tracer，要求 min→max→scaleX→scaleY 并取得 cap-065 缺失 RED；
+  再覆盖 scale-64 below/at/above、trailing-zero/negative-zero canonicalization、exact pointer、absent Transform、
+  parser/canonical precedence 与 authority reject/invalid/throw。
+- target/gates：成功后冻结 immutable component target v17，目标 wired 65/65、remaining 0；执行 focused
+  Template、Template module、component Java/TypeScript、canonical vectors、`template`、`fast`。产品 reservation
+  完整不等于 class preissuance ready；exact class target/manifests 与 formal issuance 另票推进。本票无 app wiring，
+  不重复 server/full。
+- boundary：不创建 exact class target/manifests，不发行 formal records，不运行 Renderer/Profile/provider/API Key/
+  真实数据/生产/J1/A3/READY，不改用户 dirty work/stash，不 push/tag/PR。claim 时 A0、J0 pending。
+- 实现/证据：实现基线 `12a3f7e69b9a814358133c8d84ddc2b53da84789`；真实公共 seam tracer 先取得 cap-065
+  缺失 observation RED，随后完成同一 once-parsed canonical value 的 min→max→scaleX→scaleY 顺序及
+  below/at/above、trailing-zero/negative-zero、exact pointer、absent Transform、parser/canonical precedence、
+  authority reject/invalid/throw 覆盖。focused 48/48、Template module 184/184。immutable v17 target SHA-256
+  `2369720282648dbc02d91d6b9730762b639e04034cb68094000fdb23213cb0b4`、21520 bytes、57/57 artifacts exact；
+  component `.sdlc/evidence/20260829-212445-template-t204-component/` Java primary 195/195（A1）、TypeScript
+  independent 195/195、2692 checks（A2），wired 65/65、remaining 0、product reservation proof complete；class
+  preissuance/formal issuance/executable 仍 false。`template` `.sdlc/evidence/20260829-212656-template/` 与 `fast`
+  `.sdlc/evidence/20260829-212731-fast/` passed/A1，Template Java/Python 211/211。A3 absent、J0 pending、J1 未批准；
+  无 app wiring，未重复 server/full。claim 已释放；下一 frontier 为 exact Design/Input/Expression execution-class
+  target、required executor manifests 与 independent preissuance replay，尚未登记或 claim。

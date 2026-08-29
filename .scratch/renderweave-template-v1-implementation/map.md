@@ -925,6 +925,15 @@ Label: wayfinder:map
 
 ## Current frontier
 
+- [T204 — 接线 rotation degrees maximum 产品容量](issues/204-wire-rotation-degrees-maximum-capacity.md)
+  — **resolved / automated_verified / unclaimed**；实现 `12a3f7e6` 已把 cap-065
+  `geometry.rotationDegreesMax=360` 接入公共 admission seam，同一 once-parsed canonical `rotationDeg` 按
+  min→max→scaleX→scaleY 观察且不做 modulo normalization。immutable component v17 SHA-256
+  `2369720282648dbc02d91d6b9730762b639e04034cb68094000fdb23213cb0b4`、21520 bytes、57/57 artifacts
+  exact；Java/TypeScript 195/195、2692 independent checks、wired 65/65、remaining 0、product proof complete。
+  focused 48/48、Template module 184/184，`template`/`fast` passed/A1，Template Java/Python 211/211。
+  preissuance/formal/executable 仍 false，A3 absent、J0 pending、J1 未批准；无 app wiring，未重复 server/full。
+  claim 已释放；下一 frontier 为 exact execution-class target/manifests + independent preissuance replay，尚未登记或 claim。
 - [T203 — 接线 rotation degrees minimum 产品容量](issues/203-wire-rotation-degrees-minimum-capacity.md)
   — **resolved / automated_verified / unclaimed**；实现 `c235ca09` 已把 cap-064
   `geometry.rotationDegreesMin=-360` 接入公共 admission seam，并在 scale reservations 前观察 once-parsed
