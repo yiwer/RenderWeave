@@ -82,6 +82,33 @@ class DesignInputExpressionCapacityAuthorityTest {
         );
     }
 
+    @Test
+    void comparesCanonicalDecimalsInLinearSpaceWithoutNumericReconstruction() {
+        var largePositive = "1" + "0".repeat(100_000);
+        var tinyPositive = "0." + "0".repeat(100_000) + "1";
+
+        assertInstanceOf(
+                DesignInputExpressionCapacityAuthority.Accepted.class,
+                evaluate("geometry.canvasTrimMmPerAxisExclusiveMin", tinyPositive)
+        );
+        assertInstanceOf(
+                DesignInputExpressionCapacityAuthority.Rejected.class,
+                evaluate("geometry.canvasTrimMmPerAxisMax", largePositive)
+        );
+        assertInstanceOf(
+                DesignInputExpressionCapacityAuthority.Accepted.class,
+                evaluate("geometry.canvasTrimMmPerAxisMax", "1000.000")
+        );
+        assertInstanceOf(
+                DesignInputExpressionCapacityAuthority.Rejected.class,
+                evaluate("geometry.rotationDegreesMin", "-360.0001")
+        );
+        assertInstanceOf(
+                DesignInputExpressionCapacityAuthority.Accepted.class,
+                evaluate("geometry.rotationDegreesMin", "-360.000")
+        );
+    }
+
     private DesignInputExpressionCapacityAuthority.Decision evaluate(
             String limitId,
             String observedValue

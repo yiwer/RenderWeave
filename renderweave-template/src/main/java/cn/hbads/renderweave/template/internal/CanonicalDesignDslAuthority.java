@@ -44,6 +44,7 @@ final class CanonicalDesignDslAuthority implements DesignDslAuthority {
             "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
     );
     private static final Pattern RGBA = Pattern.compile("^#[0-9A-F]{8}$");
+    private static final long MAX_CANONICAL_UTF8_BYTES = 16L * 1024L * 1024L;
 
     private final StrictJsonParser parser;
     private final CanonicalJsonWriter writer;
@@ -120,8 +121,8 @@ final class CanonicalDesignDslAuthority implements DesignDslAuthority {
         if (!UUID_V4.matcher(nodeId).matches()) {
             throw failure(FailureCode.DESIGN_VALUE_INVALID, "/designRoot/nodeId");
         }
-        positiveDecimal(canvas, "widthMm", "/designRoot/widthMm");
-        positiveDecimal(canvas, "heightMm", "/designRoot/heightMm");
+        canvasTrimDecimal(canvas, "widthMm", "/designRoot/widthMm");
+        canvasTrimDecimal(canvas, "heightMm", "/designRoot/heightMm");
         if (canvas.members().containsKey("backgroundColor")) {
             var color = string(
                     canvas.members().get("backgroundColor"),
@@ -2458,6 +2459,84 @@ final class CanonicalDesignDslAuthority implements DesignDslAuthority {
         } catch (NumberFormatException exception) {
             throw failure(FailureCode.DESIGN_VALUE_INVALID, pointer);
         }
+    }
+
+    private void canvasTrimDecimal(
+            JsonValue.ObjectValue object,
+            String name,
+            String pointer
+    ) throws DesignDslFailureException {
+        var value = required(object, name, pointer);
+        if (!(value instanceof JsonValue.NumberValue number)) {
+            throw failure(FailureCode.DESIGN_STRUCTURE_INVALID, pointer);
+        }
+        String observed;
+        try {
+            var decimal = new BigDecimal(number.token());
+            if (decimal.signum() == 0) {
+                observed = "0";
+            } else {
+                var normalized = decimal.stripTrailingZeros();
+                if (plainDecimalLength(normalized) > MAX_CANONICAL_UTF8_BYTES) {
+                    throw canonicalLimitFailure();
+                }
+                observed = normalized.toPlainString();
+            }
+        } catch (NumberFormatException exception) {
+            throw failure(FailureCode.DESIGN_VALUE_INVALID, pointer);
+        }
+        DesignInputExpressionCapacityAuthority.Decision decision;
+        try {
+            decision = capacity.evaluate(new DesignInputExpressionCapacityAuthority.Observation(
+                    "geometry.canvasTrimMmPerAxisExclusiveMin",
+                    observed
+            ));
+        } catch (RuntimeException unavailable) {
+            throw geometryFailure(
+                    Limit.GEOMETRY_CANVAS_TRIM_MM_PER_AXIS_EXCLUSIVE_MIN,
+                    pointer
+            );
+        }
+        if (!(decision instanceof DesignInputExpressionCapacityAuthority.Accepted)) {
+            throw geometryFailure(
+                    Limit.GEOMETRY_CANVAS_TRIM_MM_PER_AXIS_EXCLUSIVE_MIN,
+                    pointer
+            );
+        }
+    }
+
+    private long plainDecimalLength(BigDecimal decimal) {
+        long digits = decimal.precision();
+        long scale = decimal.scale();
+        long magnitudeLength;
+        if (scale <= 0) {
+            magnitudeLength = Math.addExact(digits, -scale);
+        } else if (digits <= scale) {
+            magnitudeLength = Math.addExact(scale, 2L);
+        } else {
+            magnitudeLength = Math.addExact(digits, 1L);
+        }
+        return decimal.signum() < 0
+                ? Math.addExact(magnitudeLength, 1L)
+                : magnitudeLength;
+    }
+
+    private DesignDslFailureException canonicalLimitFailure() {
+        return new DesignDslFailureException(new Rejected(
+                FailureCode.DESIGN_DSL_LIMIT_EXCEEDED,
+                FailureStage.DESIGN_CANONICAL_COUNT,
+                "",
+                Optional.of(Limit.CANONICAL_BYTES)
+        ));
+    }
+
+    private DesignDslFailureException geometryFailure(Limit limit, String pointer) {
+        return new DesignDslFailureException(new Rejected(
+                FailureCode.DESIGN_PROPERTY_CONSTRAINT_INVALID,
+                FailureStage.DESIGN_PROPERTY_AND_AGGREGATE_VALIDATION,
+                pointer,
+                Optional.of(limit)
+        ));
     }
 
     private void rangedDecimalValue(

@@ -2,7 +2,6 @@ package cn.hbads.renderweave.template.internal;
 
 import cn.hbads.renderweave.template.api.DesignInputExpressionCapacityAuthority;
 
-import java.math.BigDecimal;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -274,7 +273,7 @@ final class CanonicalDesignInputExpressionCapacityAuthority
             try {
                 ordering = encoding == Encoding.INTEGER
                         ? Long.compare(Long.parseLong(observedValue), Long.parseLong(limitValue))
-                        : new BigDecimal(observedValue).compareTo(new BigDecimal(limitValue));
+                        : compareCanonicalDecimal(observedValue, limitValue);
             } catch (NumberFormatException invalid) {
                 return null;
             }
@@ -284,6 +283,75 @@ final class CanonicalDesignInputExpressionCapacityAuthority
                 case MIN_EXCLUSIVE -> ordering > 0;
                 case EXACT -> ordering == 0;
             };
+        }
+
+        private static int compareCanonicalDecimal(String left, String right) {
+            int leftSign = decimalSign(left);
+            int rightSign = decimalSign(right);
+            if (leftSign != rightSign) {
+                return Integer.compare(leftSign, rightSign);
+            }
+            if (leftSign == 0) {
+                return 0;
+            }
+            int magnitude = compareDecimalMagnitude(left, right);
+            return leftSign < 0 ? -magnitude : magnitude;
+        }
+
+        private static int decimalSign(String value) {
+            boolean negative = value.charAt(0) == '-';
+            for (int index = negative ? 1 : 0; index < value.length(); index++) {
+                char current = value.charAt(index);
+                if (current != '.' && current != '0') {
+                    return negative ? -1 : 1;
+                }
+            }
+            return 0;
+        }
+
+        private static int compareDecimalMagnitude(String left, String right) {
+            int leftStart = left.charAt(0) == '-' ? 1 : 0;
+            int rightStart = right.charAt(0) == '-' ? 1 : 0;
+            int leftPoint = decimalPoint(left, leftStart);
+            int rightPoint = decimalPoint(right, rightStart);
+            int leftIntegerLength = leftPoint - leftStart;
+            int rightIntegerLength = rightPoint - rightStart;
+            if (leftIntegerLength != rightIntegerLength) {
+                return Integer.compare(leftIntegerLength, rightIntegerLength);
+            }
+            for (int index = 0; index < leftIntegerLength; index++) {
+                int comparison = Character.compare(
+                        left.charAt(leftStart + index),
+                        right.charAt(rightStart + index)
+                );
+                if (comparison != 0) {
+                    return comparison;
+                }
+            }
+            int leftFractionStart = leftPoint == left.length() ? leftPoint : leftPoint + 1;
+            int rightFractionStart = rightPoint == right.length() ? rightPoint : rightPoint + 1;
+            int fractionLength = Math.max(
+                    left.length() - leftFractionStart,
+                    right.length() - rightFractionStart
+            );
+            for (int index = 0; index < fractionLength; index++) {
+                char leftDigit = leftFractionStart + index < left.length()
+                        ? left.charAt(leftFractionStart + index)
+                        : '0';
+                char rightDigit = rightFractionStart + index < right.length()
+                        ? right.charAt(rightFractionStart + index)
+                        : '0';
+                int comparison = Character.compare(leftDigit, rightDigit);
+                if (comparison != 0) {
+                    return comparison;
+                }
+            }
+            return 0;
+        }
+
+        private static int decimalPoint(String value, int start) {
+            int point = value.indexOf('.', start);
+            return point < 0 ? value.length() : point;
         }
     }
 }

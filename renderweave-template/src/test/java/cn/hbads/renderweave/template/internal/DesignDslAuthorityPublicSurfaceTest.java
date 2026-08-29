@@ -95,6 +95,7 @@ class DesignDslAuthorityPublicSurfaceTest {
                         DesignDslAuthority.FailureCode.DESIGN_MEMBER_UNKNOWN,
                         DesignDslAuthority.FailureCode.DESIGN_STRUCTURE_INVALID,
                         DesignDslAuthority.FailureCode.DESIGN_VALUE_INVALID,
+                        DesignDslAuthority.FailureCode.DESIGN_PROPERTY_CONSTRAINT_INVALID,
                         DesignDslAuthority.FailureCode.DESIGN_KERNEL_SCOPE_UNSUPPORTED
                 },
                 DesignDslAuthority.FailureCode.values()
@@ -103,6 +104,7 @@ class DesignDslAuthorityPublicSurfaceTest {
                 new DesignDslAuthority.FailureStage[]{
                         DesignDslAuthority.FailureStage.DESIGN_PARSE,
                         DesignDslAuthority.FailureStage.DESIGN_SEMANTIC_VALIDATION,
+                        DesignDslAuthority.FailureStage.DESIGN_PROPERTY_AND_AGGREGATE_VALIDATION,
                         DesignDslAuthority.FailureStage.DESIGN_CANONICAL_COUNT
                 },
                 DesignDslAuthority.FailureStage.values()
@@ -149,7 +151,8 @@ class DesignDslAuthorityPublicSurfaceTest {
                         "expression.intermediateDecimalPrecisionDigits",
                         "expression.intermediateDecimalScaleMin",
                         "expression.intermediateDecimalScaleMax",
-                        "expression.explicitRoundingScaleMax"
+                        "expression.explicitRoundingScaleMax",
+                        "geometry.canvasTrimMmPerAxisExclusiveMin"
                 },
                 Arrays.stream(DesignDslAuthority.Limit.values())
                         .map(DesignDslAuthority.Limit::id)

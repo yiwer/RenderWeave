@@ -51,12 +51,14 @@ public interface DesignDslAuthority {
         DESIGN_MEMBER_UNKNOWN,
         DESIGN_STRUCTURE_INVALID,
         DESIGN_VALUE_INVALID,
+        DESIGN_PROPERTY_CONSTRAINT_INVALID,
         DESIGN_KERNEL_SCOPE_UNSUPPORTED
     }
 
     enum FailureStage {
         DESIGN_PARSE,
         DESIGN_SEMANTIC_VALIDATION,
+        DESIGN_PROPERTY_AND_AGGREGATE_VALIDATION,
         DESIGN_CANONICAL_COUNT
     }
 
@@ -107,7 +109,9 @@ public interface DesignDslAuthority {
                 "expression.intermediateDecimalScaleMin"),
         EXPRESSION_INTERMEDIATE_DECIMAL_SCALE_MAX(
                 "expression.intermediateDecimalScaleMax"),
-        EXPRESSION_EXPLICIT_ROUNDING_SCALE_MAX("expression.explicitRoundingScaleMax");
+        EXPRESSION_EXPLICIT_ROUNDING_SCALE_MAX("expression.explicitRoundingScaleMax"),
+        GEOMETRY_CANVAS_TRIM_MM_PER_AXIS_EXCLUSIVE_MIN(
+                "geometry.canvasTrimMmPerAxisExclusiveMin");
 
         private final String id;
 
