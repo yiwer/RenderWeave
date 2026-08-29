@@ -14,7 +14,6 @@ final class CapabilityBudget {
 
     private static final RenderingPipelineCapacityGuard CAPACITY_GUARD =
             new RenderingPipelineCapacityGuard();
-    private static final long MAX_RESULT_DIGEST_STREAMING_BYTES = 16_777_216;
     private static final long MAX_INITIALIZATION_ATTEMPTS = 3;
     private static final long MAX_RANDOM_REJECTION_ATTEMPTS = 128;
 
@@ -40,7 +39,8 @@ final class CapabilityBudget {
                         .CAPABILITY_RUNTIME_POSITION_CANONICAL_BYTES_TOTAL),
                 CAPACITY_GUARD.maximumInclusive(RenderingPipelineCapacityGuard.Limit
                         .CAPABILITY_RUNTIME_CAPABILITY_STATE_RECORD_BYTES),
-                MAX_RESULT_DIGEST_STREAMING_BYTES,
+                CAPACITY_GUARD.maximumInclusive(RenderingPipelineCapacityGuard.Limit
+                        .CAPABILITY_RUNTIME_RESULT_DIGEST_STREAMING_BYTES),
                 MAX_INITIALIZATION_ATTEMPTS));
     }
 
@@ -81,7 +81,8 @@ final class CapabilityBudget {
                         CAPACITY_GUARD.maximumInclusive(RenderingPipelineCapacityGuard.Limit
                                 .CAPABILITY_RUNTIME_CAPABILITY_STATE_RECORD_BYTES)),
                 limit(limits, "resultDigestStreamingBytes",
-                        MAX_RESULT_DIGEST_STREAMING_BYTES),
+                        CAPACITY_GUARD.maximumInclusive(RenderingPipelineCapacityGuard.Limit
+                                .CAPABILITY_RUNTIME_RESULT_DIGEST_STREAMING_BYTES)),
                 exactLimit(limits, "initializationAttempts", MAX_INITIALIZATION_ATTEMPTS)));
     }
 
@@ -256,23 +257,23 @@ final class CapabilityBudget {
         }
 
         synchronized LimitExceeded reserveResultDigestBytes(long framedBytes) {
-            if (wouldExceed(
-                    resultDigestBytes, framedBytes, limits.resultDigestStreamingBytes())) {
-                return exceeded("resultDigestStreamingBytes");
-            }
-            resultDigestBytes += framedBytes;
-            return null;
-        }
-
-        private static boolean wouldExceed(long current, long increment, long maximum) {
-            if (increment < 0) {
+            if (framedBytes < 0) {
                 throw new IllegalArgumentException("capacity increment must not be negative");
             }
-            return current > maximum || increment > maximum - current;
-        }
-
-        private static LimitExceeded exceeded(String suffix) {
-            return new LimitExceeded("capabilityRuntime." + suffix);
+            var nextResultDigestBytes = resultDigestBytes > Long.MAX_VALUE - framedBytes
+                    ? Long.MAX_VALUE
+                    : resultDigestBytes + framedBytes;
+            var problem = CAPACITY_GUARD.admit(
+                            RenderingPipelineCapacityGuard.Limit
+                                    .CAPABILITY_RUNTIME_RESULT_DIGEST_STREAMING_BYTES,
+                            nextResultDigestBytes,
+                            limits.resultDigestStreamingBytes())
+                    .orElse(null);
+            if (problem != null) {
+                return new LimitExceeded(problem.limitId().orElseThrow().value());
+            }
+            resultDigestBytes = nextResultDigestBytes;
+            return null;
         }
     }
 

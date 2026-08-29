@@ -16,6 +16,7 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class CapabilityValuesTest {
@@ -199,6 +200,24 @@ class CapabilityValuesTest {
     }
 
     @Test
+    void resultDigestBytesRejectWithoutPartiallyCommittingTheCounter() {
+        var tracker = CapabilityBudget.fromEffectiveVector(
+                tightenedResultDigestBudgetVector()).newTracker();
+        assertThrows(IllegalArgumentException.class,
+                () -> tracker.reserveResultDigestBytes(-1));
+        assertNull(tracker.reserveResultDigestBytes(1));
+
+        var resultDigestExceeded = tracker.reserveResultDigestBytes(3);
+
+        assertEquals("capabilityRuntime.resultDigestStreamingBytes",
+                resultDigestExceeded.limitId());
+        assertNull(tracker.reserveResultDigestBytes(2));
+        assertNull(tracker.reserveResultDigestBytes(0));
+        assertEquals("capabilityRuntime.resultDigestStreamingBytes",
+                tracker.reserveResultDigestBytes(1).limitId());
+    }
+
+    @Test
     void resultDigestEmbedsCanonicalCallPositionObject() {
         var values = CapabilityValues.forState(
                 new CapabilityValues.CapabilityState(0, FIXED_NONCE));
@@ -253,6 +272,20 @@ class CapabilityValuesTest {
                 + "\"positionCanonicalBytesTotal\":3,"
                 + "\"capabilityStateRecordBytes\":1048576,"
                 + "\"resultDigestStreamingBytes\":16777216,"
+                + "\"initializationAttempts\":3,"
+                + "\"randomRejectionAttempts\":128}}}}";
+    }
+
+    private static String tightenedResultDigestBudgetVector() {
+        return "{\"groups\":{\"capabilityRuntime\":{\"limits\":{"
+                + "\"staticCapabilitySources\":4096,"
+                + "\"totalDemands\":8192,"
+                + "\"clockDemands\":4096,"
+                + "\"randomDemands\":4096,"
+                + "\"positionCanonicalBytesPerDemand\":2048,"
+                + "\"positionCanonicalBytesTotal\":16777216,"
+                + "\"capabilityStateRecordBytes\":1048576,"
+                + "\"resultDigestStreamingBytes\":3,"
                 + "\"initializationAttempts\":3,"
                 + "\"randomRejectionAttempts\":128}}}}";
     }

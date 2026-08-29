@@ -4437,3 +4437,27 @@
 - 无 app wiring/API/Web/migration/Profile/provider/API Key/真实数据/费用/Profile registration/push/tag/PR。
 - 状态回填后的 `fast` A1 `.sdlc/evidence/20260829-092820-fast/` metadata passed、3/3；stderr 仅 npm 配置
   warning，step exit code 与 metadata truth 均为成功。
+
+# 2026-08-29 Template-v1 T174 Capability result-digest streaming bytes guard 合流（resolved / automated_verified）
+
+- T173 已以 verified commit `27a0253d` 收口，worktree clean、ahead 164 且 DAG 无其他 active claim；冻结
+  `RW-T19-S8-031` / cap-044 是下一个 unblocked frontier，现按 single-writer claim T174。
+- cap-044 固定 `capabilityRuntime.resultDigestStreamingBytes` MAX_INCLUSIVE `16777216`、observed
+  `16777215/16777216/16777217`，CAPABILITY_FIRST_DEMAND / public MATERIALIZATION /
+  CAPABILITY_BUDGET_EXCEEDED / ZERO_DOCUMENT_OUTPUT，reservation point 为下一 demand 的结果返回前。
+- T131 已有真实 canonical framed-byte cumulative admission；本票只做 exact production guard 合流，保留
+  effectiveBudgetVector 收紧、provider 产出 closed value 后/结果返回 Expression 前预留、失败不 append demand/
+  framed entry，且不退款 provider 前已成功预留的 total/kind/position demand。cap-045+ 继续 deferred。
+- TDD 首轮得到缺失 `CAPABILITY_RUNTIME_RESULT_DIGEST_STREAMING_BYTES` 的唯一预期 compile RED；catalog 与
+  production tracker 合流后 guard + CapabilityValues 52/52，expanded focused 130/130。未伪造行为 RED：T131
+  已有正确 result-digest admission，本票只收敛 frozen guard authority。
+- `RenderingPipelineCapacityGuard` 现独占 result-digest id/16777216/problem/public stage；effective maximum 只能
+  在 `0..16777216` 收紧。`CapabilityBudget` 删除重复常量、`wouldExceed` 与手写 suffix limitId，以 saturating
+  projected sum 检查并提交同一值。max `3` 下 1→拒绝 3→接受 2 证明失败未提交 counter；公开 Evaluator max `1`
+  回归仍证明 provider 调用一次但超限结果不返回、零文档。
+- 受影响 reactor 为 20/13/84/92/270；`render` A1 `.sdlc/evidence/20260829-093537-render/`（2/2）与 `fast` A1
+  `.sdlc/evidence/20260829-093630-fast/`（3/3）metadata passed，`git diff --check` 与重复 authority 搜索通过。
+  cap-044 无 T174 专属 A2/A3，既有独立 replay 不冒充本票证据；J0 pending、J1 未批准，未重复 server/full。
+- 无 app wiring/API/Web/migration/Profile/provider/API Key/真实数据/费用/Profile registration/push/tag/PR。
+- 状态回填后的 `fast` A1 `.sdlc/evidence/20260829-093801-fast/` metadata passed、3/3；stderr 仅 npm 配置
+  warning，step exit code 与 metadata truth 均为成功。
