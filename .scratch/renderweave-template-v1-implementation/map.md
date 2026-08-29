@@ -1158,6 +1158,13 @@ Label: wayfinder:map
   每个 ExpressionDefinition 在读取/解析 source 前检查 admitted `inputs`。31/32/33 guard identity、32-input
   real closure success 与 33-input parser-precedence/零 downstream 均已覆盖；focused 127/127、受影响 reactor
   534/534，`render`/`fast` 均 passed/A1。cap-042+ deferred；T189-specific A2/A3 无，J0 pending、J1 未批准。
+- [T190 — Expression inputs total capacity authority](issues/190-expression-inputs-total-capacity.md)
+  — **resolved / automated_verified**；blocked by T21/T126/T189（均 resolved）。cap-042
+  `expression.inputsTotal=4096` 已由现有 Rendering.internal guard 的 per-DesignDSL `InputBudget` 承载；逐
+  Expression 先 cap-041、再 cap-042，并在读取/解析 source 前原子预留。4095/4096/4097 identity、4097
+  invalid-source precedence/零 downstream、单 DSL exact-at 与 root/child 各 exact-at 重置均已覆盖；focused
+  132/132、受影响 reactor 539/539，`render`/`fast` 均 passed/A1。cap-043+ deferred；T190-specific A2/A3
+  无，J0 pending、J1 未批准。
 
 - 改写或重解释现有 Schema/Inference v1 已提交历史，或在 dirty main 上直接实施 Template。
 - Workspace、组织/成员/分享/协作、跨 ownerScope 复制、通用 connector、任意 SQL/HTTP/文件/脚本、插件节点或运行时代码注册。

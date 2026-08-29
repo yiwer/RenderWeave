@@ -290,6 +290,73 @@ class EvaluatorContractTest {
     }
 
     @Test
+    void inputsTotalOverBudgetWinsBeforeSourceParsingAndDownstreamWork() {
+        var stateStore = new RecordingCapabilityStateStore();
+        var runtime = new RecordingCapabilityRuntime();
+        var inputResolutions = new AtomicInteger();
+        var targetResolver = resolver();
+        ValidationTargetResolver recordingResolver = target -> {
+            inputResolutions.incrementAndGet();
+            return targetResolver.resolve(target);
+        };
+        var evaluator = evaluator(
+                closureWith(withInputTotalOverflow(canvasWithRect())),
+                recordingResolver,
+                stateStore,
+                runtime);
+
+        var rejected = assertInstanceOf(EvaluationOutcome.Rejected.class,
+                evaluator.evaluate(command("{\"rootDocument\":{}}")));
+
+        assertEquals(EvaluationStage.TEMPLATE_CLOSURE, rejected.stage());
+        assertEquals(RenderingProblem.ProblemCode.EXPRESSION_LIMIT_EXCEEDED,
+                rejected.problem().code());
+        assertEquals("expression.inputsTotal",
+                rejected.problem().limitId().orElseThrow().value());
+        assertEquals(0, inputResolutions.get());
+        assertEquals(0, runtime.establishCalls);
+        assertEquals(0, runtime.restoreCalls);
+        assertEquals(0, stateStore.loadCalls);
+        assertEquals(0, stateStore.saveCalls);
+    }
+
+    @Test
+    void inputsTotalAcceptsTheExactMaximumOnTheRealClosurePath() {
+        var stateStore = new RecordingCapabilityStateStore();
+        var runtime = new RecordingCapabilityRuntime();
+        var evaluator = evaluator(
+                closureWith(withInputTotalAtLimit(canvasWithRect())),
+                resolver(),
+                stateStore,
+                runtime);
+
+        assertInstanceOf(EvaluationOutcome.SealedDocument.class,
+                evaluator.evaluate(command("{\"rootDocument\":{}}")));
+        assertEquals(0, runtime.establishCalls);
+        assertEquals(0, runtime.restoreCalls);
+        assertEquals(0, stateStore.loadCalls);
+        assertEquals(0, stateStore.saveCalls);
+    }
+
+    @Test
+    void inputsTotalResetsForEachDslAtTheFrozenMaximum() {
+        var stateStore = new RecordingCapabilityStateStore();
+        var runtime = new RecordingCapabilityRuntime();
+        var evaluator = evaluator(
+                closureWithInputTotalAtLimitPerDsl(),
+                resolver(),
+                stateStore,
+                runtime);
+
+        assertInstanceOf(EvaluationOutcome.SealedDocument.class,
+                evaluator.evaluate(command("{\"rootDocument\":{}}")));
+        assertEquals(0, runtime.establishCalls);
+        assertEquals(0, runtime.restoreCalls);
+        assertEquals(0, stateStore.loadCalls);
+        assertEquals(0, stateStore.saveCalls);
+    }
+
+    @Test
     void randomDemandOverBudgetRejectsBeforeCallingProviderForTheNextPosition() {
         var runtime = new SupplyingCapabilityRuntime();
         var evaluator = evaluator(
@@ -2736,6 +2803,27 @@ class EvaluatorContractTest {
                         1)));
     }
 
+    private static ClosureSnapshot closureWithInputTotalAtLimitPerDsl() {
+        var useId = capacityUuid(2, 701);
+        var rootSnapshot = snapshot(
+                ROOT_ID,
+                withInputTotalAtLimit(canvasWithChildren(templateUse(CHILD_ID, useId, 701))));
+        var childSnapshot = snapshot(
+                CHILD_ID,
+                withInputTotalAtLimit(canvasWithChildren("")));
+        return new ClosureSnapshot(
+                new TemplateClosureAuthority.OwnerScope("owner-a"),
+                rootSnapshot.templateId(),
+                1,
+                List.of(rootSnapshot, childSnapshot),
+                List.of(new ClosureEdge(
+                        rootSnapshot.templateId(),
+                        1,
+                        useId,
+                        childSnapshot.templateId(),
+                        1)));
+    }
+
     private static ClosureSnapshot closureWithSkippedTemplateUses(int skippedCount) {
         var skippedUseId = capacityUuid(4, 1);
         var actualUseId = capacityUuid(4, 2);
@@ -3166,6 +3254,52 @@ class EvaluatorContractTest {
 
     private static String withInputCountAtLimit(String designDocument) {
         return withExpressionInputCount(designDocument, 32, false, false);
+    }
+
+    private static String withInputTotalOverflow(String designDocument) {
+        return withExpressionInputTotal(designDocument, 4_097, true);
+    }
+
+    private static String withInputTotalAtLimit(String designDocument) {
+        return withExpressionInputTotal(designDocument, 4_096, false);
+    }
+
+    private static String withExpressionInputTotal(
+            String designDocument,
+            int totalInputs,
+            boolean invalidLast
+    ) {
+        var definitions = new ArrayList<String>();
+        var remainingInputs = totalInputs;
+        while (remainingInputs > 0) {
+            var definitionIndex = definitions.size();
+            var inputCount = Math.min(32, remainingInputs);
+            var finalDefinition = inputCount == remainingInputs;
+            var inputs = new ArrayList<String>(inputCount);
+            for (var inputIndex = 0; inputIndex < inputCount; inputIndex++) {
+                var source = invalidLast && finalDefinition && inputIndex == inputCount - 1
+                        ? "{\"kind\":\"capability\",\"capability\":\"RANDOM\","
+                        + "\"operation\":\"UNIFORM_DECIMAL_0_1\"}"
+                        : "{\"kind\":\"literal\",\"valueType\":\"decimal\",\"value\":1}";
+                inputs.add("{\"alias\":\"v" + inputIndex + "\",\"source\":" + source + "}");
+            }
+            var inputReferences = java.util.stream.IntStream.range(0, inputCount)
+                    .mapToObj(inputIndex -> "input.v" + inputIndex)
+                    .toList();
+            var source = String.join(" + ", inputReferences);
+            if (invalidLast && finalDefinition) {
+                source += " input.v0";
+            }
+            definitions.add("{\"definitionId\":\"" + capacityUuid(7, 30_000 + definitionIndex)
+                    + "\",\"kind\":\"expression\",\"displayName\":\"Input capacity "
+                    + definitionIndex + "\",\"domain\":\"invocation\","
+                    + "\"output\":\"decimal\",\"inputs\":[" + String.join(",", inputs)
+                    + "],\"source\":\"" + source + "\"}");
+            remainingInputs -= inputCount;
+        }
+        return designDocument.replace(
+                "\"definitions\":[]",
+                "\"definitions\":[" + String.join(",", definitions) + "]");
     }
 
     private static String withExpressionInputCount(

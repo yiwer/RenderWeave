@@ -1,5 +1,28 @@
 # RenderWeave Template v1 Implementation Plan
 
+## 190. TV1-T190 执行卡
+
+- 状态：`resolved / automated_verified`；single writer: Codex；blocked by T21/T126/T189（均 resolved）。
+- authority：Ticket 19 `RW-T19-S7-050` 与 DESIGN_INPUT_EXPRESSION cap-042；
+  `expression.inputsTotal` MAX_INCLUSIVE `4096`，observed `4095/4096/4097`，
+  EXPRESSION_PARSE_AND_STATIC_ANALYSIS / public TEMPLATE_CLOSURE /
+  EXPRESSION_LIMIT_EXCEEDED / ZERO_WRITE_AND_DOWNSTREAM。
+- seam：深化 Rendering.internal 单一 `DesignInputExpressionCapacityGuard`；closure-wide
+  `ExpressionCapacityAdmission` 按 frozen snapshot/DesignDSL 新建累计预算，对每个 ExpressionDefinition
+  先执行 cap-041 单项、再执行 cap-042 总量，且均在读取/解析 source 前预留。测试 seam 为既有 guard tracer
+  与公共 `Evaluator.evaluate`，不新增 public API/SPI。
+- TDD：先取得 missing total-budget compile RED，再取得 4097 inputs 的 Evaluator behavioral RED；覆盖
+  4095/4096/4097、exact-at、above 对 invalid source 的 precedence、零 downstream 与跨 snapshot 重置。
+- 边界：不实现 cap-043+、formal records 或完整 execution-class target；不实现 app/Profile/provider/真实数据，
+  不 push/tag/PR；claim=A0、J0 pending、J1 未批准。
+- Resolution：现有 internal guard 已承载 cap-042 与 per-DesignDSL `InputBudget`；每项先 cap-041，再以
+  `BigInteger` projected total 原子检查 cap-042，成功后才提交累计值。closure admission 为每 snapshot 新建预算，
+  并在读取/解析 source 前预留。4097-input invalid-source fixture 以 exact closure problem 且零 downstream 拒绝；
+  单 DSL 4096 与 root/child 各 4096 均成功 seal。focused 132/132、受影响 reactor 539/539（Rendering
+  328/328）；`render` `.sdlc/evidence/20260829-163521-render/metadata.json` 与 `fast`
+  `.sdlc/evidence/20260829-163610-fast/metadata.json` 均 passed/A1。T190-specific A2/A3 无，J0 pending、
+  J1 未批准；无 public/app/Profile/provider/push/tag/PR 变化。
+
 ## 189. TV1-T189 执行卡
 
 - 状态：`resolved / automated_verified`；single writer: Codex；blocked by T21/T126/T188（均 resolved）。

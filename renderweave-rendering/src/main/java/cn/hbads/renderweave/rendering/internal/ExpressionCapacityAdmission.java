@@ -52,6 +52,7 @@ final class ExpressionCapacityAdmission {
             for (var snapshot : closure.snapshots()) {
                 stageControl.checkpoint();
                 var sourceBudget = CAPACITY_GUARD.newSourceBudget();
+                var inputBudget = CAPACITY_GUARD.newInputBudget();
                 var interpretation = semantics.interpret(snapshot.canonicalDesignDslUtf8());
                 if (!(interpretation instanceof DesignSemanticAuthority.Interpreted interpreted)
                         || !(interpreted.document().members().get("definitions")
@@ -70,9 +71,7 @@ final class ExpressionCapacityAdmission {
                     if (!(definition.members().get("inputs") instanceof ArrayNode inputs)) {
                         return new Fault();
                     }
-                    var inputCapacityProblem = CAPACITY_GUARD.admit(
-                            DesignInputExpressionCapacityGuard.Limit.INPUTS_PER_EXPRESSION,
-                            inputs.items().size());
+                    var inputCapacityProblem = inputBudget.admit(inputs.items().size());
                     if (inputCapacityProblem.isPresent()) {
                         return new Rejected(inputCapacityProblem.orElseThrow());
                     }

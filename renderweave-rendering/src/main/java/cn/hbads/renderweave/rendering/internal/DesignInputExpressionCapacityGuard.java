@@ -34,6 +34,11 @@ final class DesignInputExpressionCapacityGuard {
                 32,
                 ProblemCode.EXPRESSION_LIMIT_EXCEEDED,
                 EvaluationStage.TEMPLATE_CLOSURE),
+        INPUTS_TOTAL(
+                "expression.inputsTotal",
+                4_096,
+                ProblemCode.EXPRESSION_LIMIT_EXCEEDED,
+                EvaluationStage.TEMPLATE_CLOSURE),
         EXPLICIT_ROUNDING_SCALE_MAX(
                 "expression.explicitRoundingScaleMax",
                 64,
@@ -75,8 +80,33 @@ final class DesignInputExpressionCapacityGuard {
         }
     }
 
+    final class InputBudget {
+        private BigInteger totalInputs = BigInteger.ZERO;
+
+        Optional<RenderingProblem> admit(long expressionInputs) {
+            var perExpressionProblem = DesignInputExpressionCapacityGuard.this.admit(
+                    Limit.INPUTS_PER_EXPRESSION,
+                    expressionInputs);
+            if (perExpressionProblem.isPresent()) {
+                return perExpressionProblem;
+            }
+            var projectedTotal = totalInputs.add(BigInteger.valueOf(expressionInputs));
+            var totalProblem = DesignInputExpressionCapacityGuard.this.admit(
+                    Limit.INPUTS_TOTAL,
+                    projectedTotal);
+            if (totalProblem.isEmpty()) {
+                totalInputs = projectedTotal;
+            }
+            return totalProblem;
+        }
+    }
+
     SourceBudget newSourceBudget() {
         return new SourceBudget();
+    }
+
+    InputBudget newInputBudget() {
+        return new InputBudget();
     }
 
     Optional<RenderingProblem> admit(Limit limit, long observedValue) {

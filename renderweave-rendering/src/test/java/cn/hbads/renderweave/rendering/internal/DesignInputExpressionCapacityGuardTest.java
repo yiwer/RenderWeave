@@ -10,6 +10,41 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class DesignInputExpressionCapacityGuardTest {
 
     @Test
+    void inputsTotalBoundaryUsesFrozenProductionGuardContract() {
+        var guard = new DesignInputExpressionCapacityGuard();
+        var limit = DesignInputExpressionCapacityGuard.Limit.INPUTS_TOTAL;
+
+        assertTrue(guard.admit(limit, 4_095).isEmpty());
+        assertTrue(guard.admit(limit, 4_096).isEmpty());
+
+        var problem = guard.admit(limit, 4_097).orElseThrow();
+        assertEquals(EvaluationStage.TEMPLATE_CLOSURE, problem.stage());
+        assertEquals(ProblemCode.EXPRESSION_LIMIT_EXCEEDED, problem.code());
+        assertEquals("expression.inputsTotal",
+                problem.limitId().orElseThrow().value());
+    }
+
+    @Test
+    void inputBudgetAccumulatesOneDslAndPreservesPerExpressionPrecedence() {
+        var guard = new DesignInputExpressionCapacityGuard();
+        var inputBudget = guard.newInputBudget();
+
+        for (var index = 0; index < 127; index++) {
+            assertTrue(inputBudget.admit(32).isEmpty());
+        }
+        assertTrue(inputBudget.admit(31).isEmpty());
+        assertTrue(inputBudget.admit(1).isEmpty());
+
+        var totalProblem = inputBudget.admit(1).orElseThrow();
+        assertEquals("expression.inputsTotal",
+                totalProblem.limitId().orElseThrow().value());
+
+        var perExpressionProblem = guard.newInputBudget().admit(33).orElseThrow();
+        assertEquals("expression.inputsPerExpression",
+                perExpressionProblem.limitId().orElseThrow().value());
+    }
+
+    @Test
     void inputsPerExpressionBoundaryUsesFrozenProductionGuardContract() {
         var guard = new DesignInputExpressionCapacityGuard();
         var limit = DesignInputExpressionCapacityGuard.Limit.INPUTS_PER_EXPRESSION;

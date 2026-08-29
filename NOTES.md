@@ -1,5 +1,19 @@
 # NOTES.md
 
+# 2026-08-29 Template-v1 T190 Expression inputs total capacity（resolved / automated_verified）
+- cap-042 `expression.inputsTotal=4096` 已合流到现有 Rendering.internal 单一 guard；per-DesignDSL
+  `InputBudget` 逐 Expression 先 cap-041、再以 `BigInteger` projected total 原子检查 cap-042，成功后才提交
+  累计值。closure admission 为每 snapshot 新建预算并在读取/解析 source 前预留。
+- TDD 记录 missing-enum compile RED、missing-budget compile RED 与公共 Evaluator behavioral RED。4097-input
+  invalid-source fixture 从原 `RENDER_INTERNAL_ERROR` 收口为 exact TEMPLATE_CLOSURE /
+  EXPRESSION_LIMIT_EXCEEDED / `expression.inputsTotal`，input resolution、capability establish/restore 与 state
+  load/save 均为 0；单 DSL 4096 与 root/child 各 4096 均成功 seal。
+- focused 132/132、受影响 reactor 539/539（Rendering 328/328）；`render`
+  `.sdlc/evidence/20260829-163521-render/metadata.json` 与 `fast`
+  `.sdlc/evidence/20260829-163610-fast/metadata.json` 均 passed/A1。cap-043+ deferred；T190-specific A2/A3 与
+  formal record issuance 均无；J0 pending、J1 未批准。无 public/app/Profile/provider/API Key/真实数据/费用/
+  push/tag/PR 变化。
+
 # 2026-08-29 Template-v1 T189 Expression inputs per-expression capacity（resolved / automated_verified）
 - cap-041 `expression.inputsPerExpression=32` 已合流到现有 Rendering.internal 单一 guard；closure-wide admission
   对每 snapshot 的每个 ExpressionDefinition 在读取/解析 source 前检查 admitted `inputs`，冻结
