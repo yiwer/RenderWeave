@@ -1,5 +1,6 @@
 package cn.hbads.renderweave.rendering.internal;
 
+import cn.hbads.renderweave.rendering.api.CapabilityDerivation;
 import cn.hbads.renderweave.rendering.api.EvaluationStage;
 import cn.hbads.renderweave.rendering.api.RenderingProblem;
 import cn.hbads.renderweave.rendering.api.RenderingProblem.LimitId;
@@ -189,7 +190,13 @@ final class RenderingPipelineCapacityGuard {
                 3L,
                 Comparison.EXACT,
                 ProblemCode.CAPABILITY_STATE_UNAVAILABLE,
-                EvaluationStage.CAPABILITY_STATE);
+                EvaluationStage.CAPABILITY_STATE),
+        CAPABILITY_RUNTIME_RANDOM_REJECTION_ATTEMPTS(
+                "capabilityRuntime.randomRejectionAttempts",
+                CapabilityDerivation.MAX_REJECTION_ATTEMPTS,
+                Comparison.EXACT,
+                ProblemCode.CAPABILITY_RESULT_INVALID,
+                EvaluationStage.MATERIALIZATION);
 
         private final String id;
         private final long frozenValue;

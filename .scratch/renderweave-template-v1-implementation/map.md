@@ -1070,6 +1070,12 @@ Label: wayfinder:map
   唯一 production guard；删除重复 frozen value/比较/stored maximum/手写 limitId，并保持 retry、
   unknown-commit recovery 与零第 4 次 store/provider 交互。focused 131/131、受影响 reactor
   20/13/84/92/271 与 render/fast metadata 全绿；A1、无 T175 专属 A2/A3、J0。cap-046 继续 deferred。
+- [T176 — Capability random rejection attempts production guard 合流](issues/176-capability-random-rejection-attempts-production-guard.md)
+  — **resolved / automated_verified**；blocked by T21/T134/T175（均 resolved）。按 `RW-T19-S8-033` 与
+  cap-046，已将 exact-profile `127/128/129`、counter `0…127` runtime ceiling 与 exhaustion taxonomy 合流到
+  唯一 production guard；删除 budget/result projection 的重复 frozen value/比较/手写 limitId，guard 直接引用
+  唯一 HMAC 算法 constant 并保持首 demand fail-closed 边界。focused 132/132、受影响 reactor
+  20/13/84/92/272 与 render/fast metadata 全绿；A1、无 T176 专属 A2/A3、J0。
 
 - 改写或重解释现有 Schema/Inference v1 已提交历史，或在 dirty main 上直接实施 Template。
 - Workspace、组织/成员/分享/协作、跨 ownerScope 复制、通用 connector、任意 SQL/HTTP/文件/脚本、插件节点或运行时代码注册。

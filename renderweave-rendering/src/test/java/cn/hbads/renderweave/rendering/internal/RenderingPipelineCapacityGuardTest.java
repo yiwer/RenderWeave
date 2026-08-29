@@ -890,4 +890,37 @@ class RenderingPipelineCapacityGuardTest {
         assertEquals("capabilityRuntime.initializationAttempts",
                 fourth.limitId().orElseThrow().value());
     }
+
+    @Test
+    void capabilityRandomRejectionAttemptsUsesTheFrozenExactProductionGuardContract() {
+        var guard = new RenderingPipelineCapacityGuard();
+        var limit = RenderingPipelineCapacityGuard.Limit
+                .CAPABILITY_RUNTIME_RANDOM_REJECTION_ATTEMPTS;
+
+        var below = guard.admit(limit, 127L).orElseThrow();
+        assertEquals(EvaluationStage.MATERIALIZATION, below.stage());
+        assertEquals(ProblemCode.CAPABILITY_RESULT_INVALID, below.code());
+        assertEquals("capabilityRuntime.randomRejectionAttempts",
+                below.limitId().orElseThrow().value());
+        assertTrue(guard.admit(limit, 128L).isEmpty());
+        var above = guard.admit(limit, 129L).orElseThrow();
+        assertEquals(EvaluationStage.MATERIALIZATION, above.stage());
+        assertEquals(ProblemCode.CAPABILITY_RESULT_INVALID, above.code());
+        assertEquals("capabilityRuntime.randomRejectionAttempts",
+                above.limitId().orElseThrow().value());
+
+        assertEquals(128L, guard.exactValue(limit));
+        assertThrows(IllegalArgumentException.class,
+                () -> guard.maximumInclusive(limit));
+        assertThrows(IllegalArgumentException.class,
+                () -> guard.admit(limit, 128L, 128L));
+
+        assertTrue(guard.admitRuntimeMaximum(limit, 127L).isEmpty());
+        assertTrue(guard.admitRuntimeMaximum(limit, 128L).isEmpty());
+        var next = guard.admitRuntimeMaximum(limit, 129L).orElseThrow();
+        assertEquals(EvaluationStage.MATERIALIZATION, next.stage());
+        assertEquals(ProblemCode.CAPABILITY_RESULT_INVALID, next.code());
+        assertEquals("capabilityRuntime.randomRejectionAttempts",
+                next.limitId().orElseThrow().value());
+    }
 }

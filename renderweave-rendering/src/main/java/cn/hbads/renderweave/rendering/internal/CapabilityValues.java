@@ -174,9 +174,10 @@ final class CapabilityValues {
     }
 
     private static EvalError capabilityResultInvalid() {
+        var exhausted = CapabilityBudget.randomRejectionExhausted();
         return new EvalError(new RuntimeFailure(
                 RuntimeFailureKind.CAPABILITY_RESULT_INVALID,
-                "capabilityRuntime.randomRejectionAttempts"));
+                exhausted.limitId()));
     }
 
     static String utcDate(long epochSecond) {

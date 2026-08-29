@@ -14,7 +14,6 @@ final class CapabilityBudget {
 
     private static final RenderingPipelineCapacityGuard CAPACITY_GUARD =
             new RenderingPipelineCapacityGuard();
-    private static final long MAX_RANDOM_REJECTION_ATTEMPTS = 128;
 
     private final Limits limits;
 
@@ -55,7 +54,11 @@ final class CapabilityBudget {
         var groups = objectMember(root, "groups");
         var capabilityRuntime = objectMember(groups, "capabilityRuntime");
         var limits = objectMember(capabilityRuntime, "limits");
-        exactLimit(limits, "randomRejectionAttempts", MAX_RANDOM_REJECTION_ATTEMPTS);
+        exactCatalogLimit(
+                limits,
+                "randomRejectionAttempts",
+                RenderingPipelineCapacityGuard.Limit
+                        .CAPABILITY_RUNTIME_RANDOM_REJECTION_ATTEMPTS);
         exactCatalogLimit(
                 limits,
                 "initializationAttempts",
@@ -118,6 +121,15 @@ final class CapabilityBudget {
         return new InitializationAttempts();
     }
 
+    static LimitExceeded randomRejectionExhausted() {
+        var limit = RenderingPipelineCapacityGuard.Limit
+                .CAPABILITY_RUNTIME_RANDOM_REJECTION_ATTEMPTS;
+        var nextAttempt = Math.addExact(CAPACITY_GUARD.exactValue(limit), 1L);
+        var problem = CAPACITY_GUARD.admitRuntimeMaximum(limit, nextAttempt)
+                .orElseThrow();
+        return new LimitExceeded(problem.limitId().orElseThrow().value());
+    }
+
     private static RenderJson.ObjectValue objectMember(
             RenderJson.ObjectValue parent, String member) {
         if (parent.members().get(member) instanceof RenderJson.ObjectValue object) {
@@ -165,18 +177,6 @@ final class CapabilityBudget {
         if (CAPACITY_GUARD.admit(limit, value).isPresent()) {
             throw invalidVector();
         }
-    }
-
-    private static long exactLimit(
-            RenderJson.ObjectValue limits,
-            String member,
-            long frozenValue
-    ) {
-        var value = limit(limits, member, frozenValue);
-        if (value != frozenValue) {
-            throw invalidVector();
-        }
-        return value;
     }
 
     private static IllegalArgumentException invalidVector() {

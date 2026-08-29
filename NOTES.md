@@ -4437,6 +4437,31 @@
 - 无 app wiring/API/Web/migration/Profile/provider/API Key/真实数据/费用/Profile registration/push/tag/PR。
 - 状态回填后的 `fast` A1 `.sdlc/evidence/20260829-095005-fast/` metadata passed、3/3；stderr 仅 npm 配置
   warning，step exit code 与 metadata truth 均为成功。
+
+# 2026-08-29 Template-v1 T176 Capability random rejection attempts guard 合流（resolved / automated_verified）
+
+- T175 已以 verified commit `72d7b98b` 收口，worktree clean、ahead 166 且 DAG 无其他 active claim；冻结
+  `RW-T19-S8-033` / cap-046 是下一个 unblocked frontier，现按 single-writer claim T176。
+- cap-046 固定 `capabilityRuntime.randomRejectionAttempts` EXACT `128`、observed `127/128/129`，
+  CAPABILITY_FIRST_DEMAND / public MATERIALIZATION / CAPABILITY_RESULT_INVALID / ZERO_DOCUMENT_OUTPUT，
+  reservation point 为开始下一次 HMAC rejection-sampling counter attempt 之前。
+- `CapabilityDerivation` 继续独占 HMAC 与 counter `0…127` 算法；pipeline guard 将独占 exact
+  profile/taxonomy/limitId 并直接复用算法常量，删除 `CapabilityBudget` 与 `CapabilityValues` 的重复权威。
+- TDD 首轮得到缺失 `CAPABILITY_RUNTIME_RANDOM_REJECTION_ATTEMPTS` 的唯一预期 compile RED；catalog、
+  profile 与 exhaustion projection 合流后 guard 38/38，expanded focused 132/132。未伪造行为 RED：T134
+  已有正确 exact-profile/exhaustion 行为，本票只收敛 frozen guard authority。
+- `RenderingPipelineCapacityGuard` 现独占 random-rejection id/EXACT comparator/problem/public stage；
+  `127/129` profile 拒绝、`128` 接受，would-be 第 129 次 attempt 前以相同 taxonomy 失败。
+  `CapabilityBudget` 删除重复常量、旧 exact helper、本地比较与手写 limitId；guard 直接引用唯一
+  `CapabilityDerivation.MAX_REJECTION_ATTEMPTS`，HMAC/counter `0…127` 算法保持单点。
+- 受影响 reactor 为 20/13/84/92/272；`render` A1 `.sdlc/evidence/20260829-095911-render/`（2/2）与
+  `fast` A1 `.sdlc/evidence/20260829-100004-fast/`（3/3）metadata passed，`git diff --check` 与重复
+  authority 搜索通过。cap-046 无 T176 专属 A2/A3，既有独立 replay 不冒充本票证据；J0 pending、J1 未批准，
+  未重复 server/full。
+- 无 app wiring/API shape/OpenAPI/Web/migration/Profile/provider/API Key/真实数据/费用/Profile registration/
+  push/tag/PR。
+- 状态回填后的 `fast` A1 `.sdlc/evidence/20260829-100110-fast/` metadata passed、3/3；stderr 仅 npm 配置
+  warning，step exit code 与 metadata truth 均为成功。
 - 状态回填后的 `fast` A1 `.sdlc/evidence/20260829-092820-fast/` metadata passed、3/3；stderr 仅 npm 配置
   warning，step exit code 与 metadata truth 均为成功。
 
