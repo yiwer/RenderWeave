@@ -10,6 +10,41 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class DesignInputExpressionCapacityGuardTest {
 
     @Test
+    void mappingCasesTotalBoundaryUsesFrozenProductionGuardContract() {
+        var guard = new DesignInputExpressionCapacityGuard();
+        var limit = DesignInputExpressionCapacityGuard.Limit.MAPPING_CASES_TOTAL;
+
+        assertTrue(guard.admit(limit, 8_191).isEmpty());
+        assertTrue(guard.admit(limit, 8_192).isEmpty());
+
+        var problem = guard.admit(limit, 8_193).orElseThrow();
+        assertEquals(EvaluationStage.TEMPLATE_CLOSURE, problem.stage());
+        assertEquals(ProblemCode.EXPRESSION_LIMIT_EXCEEDED, problem.code());
+        assertEquals("expression.mappingCasesTotal",
+                problem.limitId().orElseThrow().value());
+    }
+
+    @Test
+    void mappingCaseBudgetAccumulatesOneDslAndPreservesPerDefinitionPrecedence() {
+        var guard = new DesignInputExpressionCapacityGuard();
+        var caseBudget = guard.newMappingCaseBudget();
+
+        var perDefinitionProblem = caseBudget.admit(257).orElseThrow();
+        assertEquals("expression.mappingCasesPerDefinition",
+                perDefinitionProblem.limitId().orElseThrow().value());
+
+        for (var index = 0; index < 31; index++) {
+            assertTrue(caseBudget.admit(256).isEmpty());
+        }
+        assertTrue(caseBudget.admit(255).isEmpty());
+        assertTrue(caseBudget.admit(1).isEmpty());
+
+        var totalProblem = caseBudget.admit(1).orElseThrow();
+        assertEquals("expression.mappingCasesTotal",
+                totalProblem.limitId().orElseThrow().value());
+    }
+
+    @Test
     void mappingCasesPerDefinitionBoundaryUsesFrozenProductionGuardContract() {
         var guard = new DesignInputExpressionCapacityGuard();
         var limit = DesignInputExpressionCapacityGuard.Limit.MAPPING_CASES_PER_DEFINITION;

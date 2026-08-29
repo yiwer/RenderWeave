@@ -1,5 +1,29 @@
 # RenderWeave Template v1 Implementation Plan
 
+## 192. TV1-T192 执行卡
+
+- 状态：`resolved / automated_verified`；single writer: Codex；blocked by T21/T126/T191（均 resolved）。
+- authority：Ticket 19 `RW-T19-S7-052` 与 DESIGN_INPUT_EXPRESSION cap-044；
+  `expression.mappingCasesTotal` MAX_INCLUSIVE `8192`，observed `8191/8192/8193`，
+  EXPRESSION_PARSE_AND_STATIC_ANALYSIS / public TEMPLATE_CLOSURE /
+  EXPRESSION_LIMIT_EXCEEDED / ZERO_WRITE_AND_DOWNSTREAM。
+- seam：深化 Rendering.internal 单一 `DesignInputExpressionCapacityGuard`，新增 per-DesignDSL
+  Mapping-case budget；closure-wide `ExpressionCapacityAdmission` 对每个 MappingDefinition 先执行 cap-043、
+  再执行 cap-044，并仅在两者成功后提交累计值。每 frozen snapshot 新建预算，不新增 public API/SPI。
+- TDD：先取得 missing enum/budget compile RED，再取得 unused 8193-case total 的 Evaluator behavioral RED；
+  覆盖 8191/8192/8193 identity、exact-at、above static admission、零 downstream 与跨 snapshot 重置。
+- 边界：不实现 cap-045+ AST/graph/list/decimal axes、formal records 或完整 execution-class target；不实现
+  app/Profile/provider/真实数据，不 push/tag/PR；claim=A0、J0 pending、J1 未批准。
+- Resolution：现有 internal guard 已承载 cap-044 与 per-DesignDSL `MappingCaseBudget`；逐 Mapping 先检查
+  cap-043，再以 `BigInteger` projected total 原子检查 cap-044，成功后才提交累计值。closure admission 为每
+  snapshot 新建预算。TDD 得到 missing-enum/missing-budget compile RED，且 unused 8193-case fixture 原错误到达
+  `SealedDocument`；合流后以 exact TEMPLATE_CLOSURE / EXPRESSION_LIMIT_EXCEEDED /
+  `expression.mappingCasesTotal` 且零 downstream 拒绝。32×256 exact-at 与 root/child 各 exact-at 均成功 seal。
+  focused 140/140、受影响 reactor 547/547（Rendering 336/336）；`render`
+  `.sdlc/evidence/20260829-165304-render/metadata.json` 与 `fast`
+  `.sdlc/evidence/20260829-165352-fast/metadata.json` 均 passed/A1。cap-045+ deferred；T192-specific A2/A3
+  无，J0 pending、J1 未批准；无 public/app/Profile/provider/push/tag/PR 变化。
+
 ## 191. TV1-T191 执行卡
 
 - 状态：`resolved / automated_verified`；single writer: Codex；blocked by T21/T126/T190（均 resolved）。

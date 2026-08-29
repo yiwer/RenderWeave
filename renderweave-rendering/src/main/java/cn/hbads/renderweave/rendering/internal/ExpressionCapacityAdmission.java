@@ -53,6 +53,7 @@ final class ExpressionCapacityAdmission {
                 stageControl.checkpoint();
                 var sourceBudget = CAPACITY_GUARD.newSourceBudget();
                 var inputBudget = CAPACITY_GUARD.newInputBudget();
+                var mappingCaseBudget = CAPACITY_GUARD.newMappingCaseBudget();
                 var interpretation = semantics.interpret(snapshot.canonicalDesignDslUtf8());
                 if (!(interpretation instanceof DesignSemanticAuthority.Interpreted interpreted)
                         || !(interpreted.document().members().get("definitions")
@@ -69,9 +70,7 @@ final class ExpressionCapacityAdmission {
                         if (!(definition.members().get("cases") instanceof ArrayNode cases)) {
                             return new Fault();
                         }
-                        var caseCapacityProblem = CAPACITY_GUARD.admit(
-                                DesignInputExpressionCapacityGuard.Limit.MAPPING_CASES_PER_DEFINITION,
-                                cases.items().size());
+                        var caseCapacityProblem = mappingCaseBudget.admit(cases.items().size());
                         if (caseCapacityProblem.isPresent()) {
                             return new Rejected(caseCapacityProblem.orElseThrow());
                         }

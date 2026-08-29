@@ -1171,6 +1171,12 @@ Label: wayfinder:map
   每 snapshot 的每个 MappingDefinition 在 InputAdmission/惰性求值前检查完整 authored `cases`。255/256/257
   identity、unused 257-case static rejection/零 downstream 与 exact-at seal 均已覆盖；focused 135/135、受影响
   reactor 542/542，`render`/`fast` 均 passed/A1。cap-044+ deferred；T191-specific A2/A3 无，J0 pending、J1 未批准。
+- [T192 — Mapping cases total capacity authority](issues/192-mapping-cases-total-capacity.md)
+  — **resolved / automated_verified**；blocked by T21/T126/T191（均 resolved）。cap-044
+  `expression.mappingCasesTotal=8192` 已由现有 Rendering.internal guard 的 per-DesignDSL budget 承载；逐
+  Mapping 先 cap-043、再 cap-044，成功后才提交累计值。8191/8192/8193 identity、unused above/零 downstream、
+  exact-at 与 root/child 各 exact-at 重置均已覆盖；focused 140/140、受影响 reactor 547/547，`render`/`fast`
+  均 passed/A1。cap-045+ deferred；T192-specific A2/A3 无，J0 pending、J1 未批准。
 
 - 改写或重解释现有 Schema/Inference v1 已提交历史，或在 dirty main 上直接实施 Template。
 - Workspace、组织/成员/分享/协作、跨 ownerScope 复制、通用 connector、任意 SQL/HTTP/文件/脚本、插件节点或运行时代码注册。

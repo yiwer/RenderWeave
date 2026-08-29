@@ -1,5 +1,19 @@
 # NOTES.md
 
+# 2026-08-29 Template-v1 T192 Mapping cases total capacity（resolved / automated_verified）
+- cap-044 `expression.mappingCasesTotal=8192` 已合流到现有 Rendering.internal 单一 guard；per-DesignDSL
+  `MappingCaseBudget` 逐 Mapping 先 cap-043、再以 `BigInteger` projected total 原子检查 cap-044，成功后才
+  提交累计值。closure admission 为每 frozen snapshot 新建预算。
+- TDD 记录 missing-enum/missing-budget compile RED 与公共 Evaluator behavioral RED：unused 8193-case fixture
+  原错误到达 `SealedDocument`；合流后以 exact TEMPLATE_CLOSURE / EXPRESSION_LIMIT_EXCEEDED /
+  `expression.mappingCasesTotal` 拒绝，validation target resolution、capability establish/restore 与 state
+  load/save 均为 0。32×256 exact-at 与 root/child 各 exact-at 均成功 seal。
+- focused 140/140、受影响 reactor 547/547（Schema 20、Validation 13、Template 86、Asset 92、Rendering
+  336）；`render` `.sdlc/evidence/20260829-165304-render/metadata.json` 与 `fast`
+  `.sdlc/evidence/20260829-165352-fast/metadata.json` 均 passed/A1。cap-045+ deferred；T192-specific A2/A3 与
+  formal record issuance 均无；J0 pending、J1 未批准。无 public/app/Profile/provider/API Key/真实数据/费用/
+  push/tag/PR 变化。
+
 # 2026-08-29 Template-v1 T191 Mapping cases per-definition capacity（resolved / automated_verified）
 - cap-043 `expression.mappingCasesPerDefinition=256` 已合流到现有 Rendering.internal 单一 guard；closure
   admission 对每 frozen snapshot 的每个 MappingDefinition 在 InputAdmission/惰性求值前检查完整 authored

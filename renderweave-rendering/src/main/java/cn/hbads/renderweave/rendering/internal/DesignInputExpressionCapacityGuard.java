@@ -44,6 +44,11 @@ final class DesignInputExpressionCapacityGuard {
                 256,
                 ProblemCode.EXPRESSION_LIMIT_EXCEEDED,
                 EvaluationStage.TEMPLATE_CLOSURE),
+        MAPPING_CASES_TOTAL(
+                "expression.mappingCasesTotal",
+                8_192,
+                ProblemCode.EXPRESSION_LIMIT_EXCEEDED,
+                EvaluationStage.TEMPLATE_CLOSURE),
         EXPLICIT_ROUNDING_SCALE_MAX(
                 "expression.explicitRoundingScaleMax",
                 64,
@@ -106,12 +111,37 @@ final class DesignInputExpressionCapacityGuard {
         }
     }
 
+    final class MappingCaseBudget {
+        private BigInteger totalCases = BigInteger.ZERO;
+
+        Optional<RenderingProblem> admit(long definitionCases) {
+            var perDefinitionProblem = DesignInputExpressionCapacityGuard.this.admit(
+                    Limit.MAPPING_CASES_PER_DEFINITION,
+                    definitionCases);
+            if (perDefinitionProblem.isPresent()) {
+                return perDefinitionProblem;
+            }
+            var projectedTotal = totalCases.add(BigInteger.valueOf(definitionCases));
+            var totalProblem = DesignInputExpressionCapacityGuard.this.admit(
+                    Limit.MAPPING_CASES_TOTAL,
+                    projectedTotal);
+            if (totalProblem.isEmpty()) {
+                totalCases = projectedTotal;
+            }
+            return totalProblem;
+        }
+    }
+
     SourceBudget newSourceBudget() {
         return new SourceBudget();
     }
 
     InputBudget newInputBudget() {
         return new InputBudget();
+    }
+
+    MappingCaseBudget newMappingCaseBudget() {
+        return new MappingCaseBudget();
     }
 
     Optional<RenderingProblem> admit(Limit limit, long observedValue) {

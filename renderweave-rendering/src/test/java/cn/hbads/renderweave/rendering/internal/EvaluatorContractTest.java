@@ -406,6 +406,73 @@ class EvaluatorContractTest {
     }
 
     @Test
+    void mappingCasesTotalOverBudgetRejectsBeforeAllDownstreamWork() {
+        var stateStore = new RecordingCapabilityStateStore();
+        var runtime = new RecordingCapabilityRuntime();
+        var inputResolutions = new AtomicInteger();
+        var targetResolver = resolver();
+        ValidationTargetResolver recordingResolver = target -> {
+            inputResolutions.incrementAndGet();
+            return targetResolver.resolve(target);
+        };
+        var evaluator = evaluator(
+                closureWith(withMappingCaseTotal(canvasWithRect(), 8_193)),
+                recordingResolver,
+                stateStore,
+                runtime);
+
+        var rejected = assertInstanceOf(EvaluationOutcome.Rejected.class,
+                evaluator.evaluate(command("{\"rootDocument\":{}}")));
+
+        assertEquals(EvaluationStage.TEMPLATE_CLOSURE, rejected.stage());
+        assertEquals(RenderingProblem.ProblemCode.EXPRESSION_LIMIT_EXCEEDED,
+                rejected.problem().code());
+        assertEquals("expression.mappingCasesTotal",
+                rejected.problem().limitId().orElseThrow().value());
+        assertEquals(0, inputResolutions.get());
+        assertEquals(0, runtime.establishCalls);
+        assertEquals(0, runtime.restoreCalls);
+        assertEquals(0, stateStore.loadCalls);
+        assertEquals(0, stateStore.saveCalls);
+    }
+
+    @Test
+    void mappingCasesTotalAcceptsTheExactMaximumOnTheRealClosurePath() {
+        var stateStore = new RecordingCapabilityStateStore();
+        var runtime = new RecordingCapabilityRuntime();
+        var evaluator = evaluator(
+                closureWith(withMappingCaseTotal(canvasWithRect(), 8_192)),
+                resolver(),
+                stateStore,
+                runtime);
+
+        assertInstanceOf(EvaluationOutcome.SealedDocument.class,
+                evaluator.evaluate(command("{\"rootDocument\":{}}")));
+        assertEquals(0, runtime.establishCalls);
+        assertEquals(0, runtime.restoreCalls);
+        assertEquals(0, stateStore.loadCalls);
+        assertEquals(0, stateStore.saveCalls);
+    }
+
+    @Test
+    void mappingCasesTotalResetsForEachDslAtTheFrozenMaximum() {
+        var stateStore = new RecordingCapabilityStateStore();
+        var runtime = new RecordingCapabilityRuntime();
+        var evaluator = evaluator(
+                closureWithMappingCaseTotalAtLimitPerDsl(),
+                resolver(),
+                stateStore,
+                runtime);
+
+        assertInstanceOf(EvaluationOutcome.SealedDocument.class,
+                evaluator.evaluate(command("{\"rootDocument\":{}}")));
+        assertEquals(0, runtime.establishCalls);
+        assertEquals(0, runtime.restoreCalls);
+        assertEquals(0, stateStore.loadCalls);
+        assertEquals(0, stateStore.saveCalls);
+    }
+
+    @Test
     void randomDemandOverBudgetRejectsBeforeCallingProviderForTheNextPosition() {
         var runtime = new SupplyingCapabilityRuntime();
         var evaluator = evaluator(
@@ -2873,6 +2940,29 @@ class EvaluatorContractTest {
                         1)));
     }
 
+    private static ClosureSnapshot closureWithMappingCaseTotalAtLimitPerDsl() {
+        var useId = capacityUuid(2, 702);
+        var rootSnapshot = snapshot(
+                ROOT_ID,
+                withMappingCaseTotal(
+                        canvasWithChildren(templateUse(CHILD_ID, useId, 702)),
+                        8_192));
+        var childSnapshot = snapshot(
+                CHILD_ID,
+                withMappingCaseTotal(canvasWithChildren(""), 8_192));
+        return new ClosureSnapshot(
+                new TemplateClosureAuthority.OwnerScope("owner-a"),
+                rootSnapshot.templateId(),
+                1,
+                List.of(rootSnapshot, childSnapshot),
+                List.of(new ClosureEdge(
+                        rootSnapshot.templateId(),
+                        1,
+                        useId,
+                        childSnapshot.templateId(),
+                        1)));
+    }
+
     private static ClosureSnapshot closureWithSkippedTemplateUses(int skippedCount) {
         var skippedUseId = capacityUuid(4, 1);
         var actualUseId = capacityUuid(4, 2);
@@ -3314,21 +3404,41 @@ class EvaluatorContractTest {
     }
 
     private static String withMappingCaseCount(String designDocument, int caseCount) {
+        return designDocument.replace(
+                "\"definitions\":[]",
+                "\"definitions\":[" + mappingDefinition(0, caseCount) + "]");
+    }
+
+    private static String withMappingCaseTotal(String designDocument, int totalCases) {
+        if (totalCases < 0) {
+            throw new IllegalArgumentException("totalCases must be non-negative");
+        }
+        var definitions = new ArrayList<String>();
+        var remainingCases = totalCases;
+        while (remainingCases > 0) {
+            var caseCount = Math.min(256, remainingCases);
+            definitions.add(mappingDefinition(definitions.size(), caseCount));
+            remainingCases -= caseCount;
+        }
+        return designDocument.replace(
+                "\"definitions\":[]",
+                "\"definitions\":[" + String.join(",", definitions) + "]");
+    }
+
+    private static String mappingDefinition(int definitionIndex, int caseCount) {
         var thenSource = "{\"kind\":\"literal\",\"valueType\":\"text\","
                 + "\"value\":\"matched\"}";
         var cases = new ArrayList<String>(caseCount);
         for (var index = 0; index < caseCount; index++) {
             cases.add("{\"operator\":\"IS_PRESENT\",\"then\":" + thenSource + "}");
         }
-        return designDocument.replace(
-                "\"definitions\":[]",
-                "\"definitions\":[{\"definitionId\":\"" + capacityUuid(7, 40_000)
+        return "{\"definitionId\":\"" + capacityUuid(7, 40_000 + definitionIndex)
                         + "\",\"kind\":\"mapping\",\"displayName\":\"Case capacity\","
                         + "\"domain\":\"invocation\",\"output\":\"text\","
                         + "\"input\":{\"kind\":\"literal\",\"valueType\":\"decimal\","
                         + "\"value\":0},\"cases\":[" + String.join(",", cases) + "],"
                         + "\"otherwise\":{\"kind\":\"literal\",\"valueType\":\"text\","
-                        + "\"value\":\"other\"}}]");
+                        + "\"value\":\"other\"}}";
     }
 
     private static String withExpressionInputTotal(
