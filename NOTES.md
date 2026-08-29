@@ -1,5 +1,19 @@
 # NOTES.md
 
+# 2026-08-29 Template-v1 T198 Canvas bleed maximum（resolved / automated_verified）
+- cap-059 `geometry.bleedMmPerSideMax=100` 已沿公共 `DesignDslAuthority.admit(rawUtf8)` 接入唯一
+  Template-owned capacity authority；可选 bleed 存在时按 `topMm -> rightMm -> bottomMm -> leftMm`，每边共享
+  canonical value 并 min→max fail-fast。四边 below/at/scale-64 above、exact pointer 与 authority
+  reject/invalid/throw identity 已覆盖；实现 `ca1a0b55`。
+- immutable v11 target SHA-256 `957abb68737d22ccbb9dfa8d4007135ee018b08c3e920e6df04c7653a1c94d90`、
+  21391 bytes；component `.sdlc/evidence/20260829-1948-template-t198-component/` Java 195/195（A1）+
+  TypeScript 195/195、2692 checks（A2），wired 59/65、remaining geometry 6、formal records 0。
+- RED→GREEN focused 30/30、Template module 153/153；`template`
+  `.sdlc/evidence/20260829-194829-template/metadata.json` 与 `fast`
+  `.sdlc/evidence/20260829-194900-fast/metadata.json` passed/A1，Template Java/Python 211/211 及 static/registry
+  replay 全绿。本票释放 claim；A3 无，J0 pending、J1 未批准，server/full 按非 app-wiring boundary 未重复，
+  provider/API Key/真实数据/生产/Profile/native build/push/tag/PR 均未推进。下一 frontier 为 cap-060，尚未登记。
+
 # 2026-08-29 Template-v1 T197 Canvas bleed minimum（resolved / automated_verified）
 - cap-058 `geometry.bleedMmPerSideMin=0` 已沿公共 `DesignDslAuthority.admit(rawUtf8)` 接入唯一
   Template-owned capacity authority；可选 bleed 缺失时零 observation，存在时按

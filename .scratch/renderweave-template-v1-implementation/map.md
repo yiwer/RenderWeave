@@ -913,7 +913,10 @@ Label: wayfinder:map
   geometry 8。claim 已释放。统一 TV1-T197 又完成 cap-058 `geometry.bleedMmPerSideMin`：可选 Canvas
   bleed 存在时按 `topMm -> rightMm -> bottomMm -> leftMm` 接入唯一 authority；实现 `21ff1c45`、immutable
   v10 target、component 195/195+195/195、Template Java/Python 211/211 与 `template`/`fast` 均绿，当前 wired
-  58/65、remaining geometry 7。claim 已释放，cap-059–065 保持 deferred。195 个
+  58/65、remaining geometry 7。claim 已释放。统一 TV1-T198 又完成 cap-059
+  `geometry.bleedMmPerSideMax`：每个 bleed side 共享 canonical value 并按 min→max 接入唯一 authority；实现
+  `ca1a0b55`、immutable v11 target、component 195/195+195/195、Template Java/Python 211/211 与
+  `template`/`fast` 均绿，当前 wired 59/65、remaining geometry 6。claim 已释放，cap-060–065 保持 deferred。195 个
   capacity candidates 在全部真实接线、两个 required executor manifests 与独立产品 replay 完成前仍不得发行。其余
   execution-class target、Profile 发行、Editor J1、Renderer 双物理 Linux CPU-family
   认证与最终生命周期升级仍须以届时真实产品 artifact 和 executor 为输入另行切票；Ticket 19 保持 open。
@@ -922,6 +925,13 @@ Label: wayfinder:map
 
 ## Current frontier
 
+- [T198 — 接线 Canvas bleed 每边 maximum 产品容量](issues/198-wire-canvas-bleed-maximum-capacity.md)
+  — **resolved / automated_verified / unclaimed**；实现 `ca1a0b55`，immutable component v11 SHA-256
+  `957abb68737d22ccbb9dfa8d4007135ee018b08c3e920e6df04c7653a1c94d90`。cap-059
+  `geometry.bleedMmPerSideMax=100` 已按四边 frozen wire order 对每边执行 min→max reservation；Java/TypeScript
+  195/195、Template Java/Python 211/211、`template`/`fast` 全绿，wired 59/65、remaining geometry 6。A3 无，
+  J0 pending、J1 未批准；cap-060–065 与 formal issuance/class manifests 保持 pending。下一 unblocked frontier
+  为 cap-060 `geometry.authoredCoordinateOrLengthMmAbsoluteMax`，尚未登记或 claim。
 - [T197 — 接线 Canvas bleed 每边 minimum 产品容量](issues/197-wire-canvas-bleed-minimum-capacity.md)
   — **resolved / automated_verified / unclaimed**；实现 `21ff1c45`，immutable component v10 SHA-256
   `3d12b38b84b00c3f1961a31f337f5ea0e1d729d9dfa8d3af98c93291ddd39609`。cap-058

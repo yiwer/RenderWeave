@@ -1,0 +1,441 @@
+{
+  "artifactVersion": "renderweave-design-input-expression-capacity-component-target/1.0",
+  "targetId": "DESIGN_INPUT_EXPRESSION_TARGET::CAPACITY_AUTHORITY_PARTIAL_WIRING::11.0",
+  "status": "FROZEN_COMPONENT_REPLAY_TARGET_PARTIAL_PRODUCT_WIRING",
+  "implementationRevision": "ca1a0b55fc008a55c5dfbc94437ba28aabcfe141",
+  "executionClass": "EXEC::DESIGN_INPUT_EXPRESSION::1.0",
+  "guardContractId": "renderweave-design-input-expression-capacity-guard/1.0",
+  "moduleOwner": "renderweave-template",
+  "predecessorTarget": {
+    "path": ".scratch/renderweave-template-v1/design-input-expression/capacity-component-target-v10.json",
+    "sha256": "sha256:3d12b38b84b00c3f1961a31f337f5ea0e1d729d9dfa8d3af98c93291ddd39609",
+    "byteLength": 21354,
+    "mutationAllowed": false
+  },
+  "scalarReplay": {
+    "axisCount": 65,
+    "caseCount": 195,
+    "valueEncodings": [
+      "CANONICAL_INTEGER",
+      "CANONICAL_DECIMAL",
+      "ENUM_TOKEN"
+    ],
+    "comparators": [
+      "ENUM_EXACT",
+      "EXACT",
+      "MAX_INCLUSIVE",
+      "MIN_EXCLUSIVE",
+      "MIN_INCLUSIVE"
+    ],
+    "primaryRole": "java-semantic-authority",
+    "independentRole": "typescript-independent-authoring-replayer",
+    "sharedSemanticLibrary": null
+  },
+  "productWiring": {
+    "wiredAxisCount": 59,
+    "remainingAxisCount": 6,
+    "wiredLimitIds": [
+      "designDslParser.rawUtf8Bytes",
+      "designDslParser.canonicalBytes",
+      "designDslParser.jsonDepth",
+      "designDslParser.objectMembers",
+      "designDslParser.arrayItems",
+      "designDslParser.totalValuesAndContainers",
+      "designDslParser.stringUtf8Bytes",
+      "designDslParser.memberNameUtf8Bytes",
+      "designDslParser.numberTokenBytes",
+      "designDslSemantics.authoredNodes",
+      "designDslSemantics.authoredTreeDepth",
+      "designDslSemantics.childrenPerContainer",
+      "designDslSemantics.definitions",
+      "designDslSemantics.bindingsTotal",
+      "designDslSemantics.bindingsPerNode",
+      "designDslSemantics.runsPerTextNode",
+      "designDslSemantics.runsTotal",
+      "designDslSemantics.gridTracksPerAxis",
+      "designDslSemantics.vectorEntriesPerNode",
+      "designDslSemantics.vectorEntriesTotal",
+      "designDslSemantics.fillsPerTemplateUse",
+      "designDslSemantics.literalListItemsPerList",
+      "designDslSemantics.literalListItemsTotal",
+      "designDslSemantics.authoredRunTextScalars",
+      "expression.sourceUtf8BytesPerExpression",
+      "expression.sourceUtf8BytesTotal",
+      "expression.inputsPerExpression",
+      "expression.inputsTotal",
+      "expression.mappingCasesPerDefinition",
+      "expression.mappingCasesTotal",
+      "expression.astNodesPerExpression",
+      "expression.astNodesTotal",
+      "expression.definitionGraphEdges",
+      "expression.definitionChainDepth",
+      "expression.admittedDecimalPrecisionDigits",
+      "expression.admittedDecimalScaleMin",
+      "expression.admittedDecimalScaleMax",
+      "expression.intermediateDecimalPrecisionDigits",
+      "expression.intermediateDecimalScaleMin",
+      "expression.intermediateDecimalScaleMax",
+      "expression.explicitRoundingScaleMax",
+      "renderInput.contentEncoding",
+      "renderInput.utf8Bytes",
+      "renderInput.jsonDepth",
+      "renderInput.objectMembers",
+      "renderInput.arrayItems",
+      "renderInput.totalValuesAndContainers",
+      "renderInput.stringUtf8Bytes",
+      "renderInput.numberTokenBytes",
+      "renderInput.customValueEntries",
+      "problems.itemsIncludingLimitMarker",
+      "problems.ordinaryItemsWhenTruncated",
+      "problems.canonicalBytesPerItem",
+      "problems.canonicalBytesTotal",
+      "problems.limitMarkerReservedBytes",
+      "geometry.canvasTrimMmPerAxisExclusiveMin",
+      "geometry.canvasTrimMmPerAxisMax",
+      "geometry.bleedMmPerSideMin",
+      "geometry.bleedMmPerSideMax"
+    ],
+    "remainingGroups": [
+      {
+        "group": "geometry",
+        "axisCount": 6,
+        "status": "PRODUCT_RESERVATION_POINTS_PENDING"
+      }
+    ],
+    "parserReservationProof": "cn.hbads.renderweave.template.internal.DesignDslCapacityReservationTest#parserDerivesAllEightObservationsAtItsProductReservationPoints",
+    "canonicalReservationProof": "cn.hbads.renderweave.template.internal.DesignDslCapacityReservationTest#canonicalWriterDerivesFinalBytesBeforeAllocationAndUsesTheSameAuthority",
+    "semanticReservationProof": "cn.hbads.renderweave.template.internal.DesignDslSemanticCapacityReservationTest",
+    "semanticReservationProofAxisCount": 15,
+    "canonicalVectorRegression": "cn.hbads.renderweave.template.internal.CanonicalKernelVectorTest",
+    "productReservationProofComplete": false,
+    "renderInputReservationProof": "cn.hbads.renderweave.rendering.internal.RenderInputCapacityReservationTest",
+    "renderInputReservationProofAxisCount": 8,
+    "contentEncodingReservationProof": "cn.hbads.renderweave.app.rendering.RenderingControllerCapacityReservationTest",
+    "contentEncodingReservationProofAxisCount": 1,
+    "assemblyProof": [
+      "cn.hbads.renderweave.app.template.TemplateApplicationConfigurationTest#missingHostConfigurationSelectsTheFailClosedAuthority",
+      "cn.hbads.renderweave.app.rendering.RenderingApplicationConfigurationTest"
+    ],
+    "problemReservationProof": "cn.hbads.renderweave.template.internal.TemplateProblemCapacityReservationTest",
+    "problemReservationProofAxisCount": 5,
+    "expressionDefinitionReservationProof": "cn.hbads.renderweave.template.internal.ExpressionDefinitionCapacityReservationTest",
+    "expressionDefinitionReservationProofAxisCount": 10,
+    "expressionAstConsumptionProof": "cn.hbads.renderweave.rendering.internal.ExpressionEngineTest",
+    "expressionDecimalReservationProof": [
+      "cn.hbads.renderweave.template.internal.ExpressionDecimalCapacityReservationTest",
+      "cn.hbads.renderweave.rendering.internal.ExpressionDecimalCapacityEvaluationTest",
+      "cn.hbads.renderweave.rendering.internal.MaterializerTest#injectedCapacityAuthorityReachesExpressionEvaluation"
+    ],
+    "expressionDecimalReservationProofAxisCount": 7,
+    "retiredRenderingOwnedExpressionArtifacts": [
+      "renderweave-rendering/src/main/java/cn/hbads/renderweave/rendering/internal/ExpressionAst.java",
+      "renderweave-rendering/src/main/java/cn/hbads/renderweave/rendering/internal/ExpressionParser.java"
+    ],
+    "geometryReservationProof": "cn.hbads.renderweave.template.internal.GeometryCapacityReservationTest",
+    "geometryReservationProofAxisCount": 4
+  },
+  "artifacts": [
+    {
+      "path": "renderweave-template/src/main/java/cn/hbads/renderweave/template/api/DesignInputExpressionCapacityAuthority.java",
+      "sha256": "sha256:1069ff324d35d6a8f4a58265fb7030611efc91129b6cb19bcba94e396d57c337",
+      "byteLength": 1882
+    },
+    {
+      "path": "renderweave-template/src/main/java/cn/hbads/renderweave/template/api/DesignDslAuthority.java",
+      "sha256": "sha256:87285c2eb9cb3f5e145b0da48c1d5ebfb12600893c4d2b80d532295acc4dffec",
+      "byteLength": 5634
+    },
+    {
+      "path": "renderweave-template/src/main/java/cn/hbads/renderweave/template/internal/CanonicalDesignInputExpressionCapacityAuthority.java",
+      "sha256": "sha256:3b999374d99275cb1b901592b2973eb65fe1b5f1f154c40014e98f5fff942b82",
+      "byteLength": 17067
+    },
+    {
+      "path": "renderweave-template/src/main/java/cn/hbads/renderweave/template/internal/StrictJsonParser.java",
+      "sha256": "sha256:326c8488c448ee168ff0bd8e9546811644db98330a9a92737c1027fbe4cf38f1",
+      "byteLength": 9333
+    },
+    {
+      "path": "renderweave-template/src/main/java/cn/hbads/renderweave/template/internal/CanonicalJsonWriter.java",
+      "sha256": "sha256:3d0e33a39ba89fe48e9ca09135269aade5876c613c742fd733c1e1c9fb20bc01",
+      "byteLength": 8063
+    },
+    {
+      "path": "renderweave-template/src/main/java/cn/hbads/renderweave/template/internal/CanonicalDesignDslAuthority.java",
+      "sha256": "sha256:b2c000fb1475275de814d6cb83a1ae013e6f02502ce70ed69819fe579b435c07",
+      "byteLength": 127015
+    },
+    {
+      "path": "renderweave-template/src/main/java/cn/hbads/renderweave/template/internal/DesignSemanticCapacityPreflight.java",
+      "sha256": "sha256:cf56aaad1a4500d61c69aa2329d55c8c6f0fe9ca059c8eb1f15bee3f7a4d28e3",
+      "byteLength": 10398
+    },
+    {
+      "path": "renderweave-template/src/main/java/cn/hbads/renderweave/template/internal/TemplateModule.java",
+      "sha256": "sha256:a80a255e6abd0c432f8cf98f1263eea5f55be480fe830bd0754fdb26ee4a4dea",
+      "byteLength": 4672
+    },
+    {
+      "path": "renderweave-template/src/test/java/cn/hbads/renderweave/template/internal/DesignInputExpressionCapacityAuthorityTest.java",
+      "sha256": "sha256:c6d401f4d229a6a3798961cc2fcb76ab5fc549b591109bc000a2fff98b45a92d",
+      "byteLength": 4592
+    },
+    {
+      "path": "renderweave-template/src/test/java/cn/hbads/renderweave/template/internal/DesignDslCapacityReservationTest.java",
+      "sha256": "sha256:bae0b18b3cc356f0aed00c147592effde9fe0a43c47fb1d0cfd2c1cdc90f99b0",
+      "byteLength": 4787
+    },
+    {
+      "path": "renderweave-template/src/test/java/cn/hbads/renderweave/template/internal/DesignDslSemanticCapacityReservationTest.java",
+      "sha256": "sha256:2db246796fc9f9c645450f8cd80ba94f2a48ed358542d50f0e2c7bd0c44e92c0",
+      "byteLength": 10504
+    },
+    {
+      "path": "renderweave-template/src/test/java/cn/hbads/renderweave/template/internal/DesignInputExpressionCapacityConformanceTest.java",
+      "sha256": "sha256:f3a33dbfc168c2e441c9c40ce786561c9729bef67bcb0e3f425b438ac4955f41",
+      "byteLength": 12517
+    },
+    {
+      "path": "renderweave-template/src/test/java/cn/hbads/renderweave/template/internal/DesignDslAuthorityPublicSurfaceTest.java",
+      "sha256": "sha256:cfbeaed24cb79e82672d90a65f78377900dd9e28eaa5592109f84df4d3150dc4",
+      "byteLength": 9569
+    },
+    {
+      "path": "renderweave-template/src/test/java/cn/hbads/renderweave/template/internal/CanonicalKernelVectorTest.java",
+      "sha256": "sha256:5511d4dd666ad40be89a1dd31672f92e432128848d6266aeeb1d257eab807ce2",
+      "byteLength": 14017
+    },
+    {
+      "path": "renderweave-rendering/src/main/java/cn/hbads/renderweave/rendering/internal/RenderJsonParser.java",
+      "sha256": "sha256:77aba734c2f10c5b8daa81378c54ddfe5b1d8e7655ea47ef4f84cca22375e5c8",
+      "byteLength": 23355
+    },
+    {
+      "path": "renderweave-rendering/src/main/java/cn/hbads/renderweave/rendering/internal/RenderInputEnvelope.java",
+      "sha256": "sha256:6844636ee1ea6e21d0bceae9f3bd8ebf03ebcfa93d5dbd75ce7328ad859b6d35",
+      "byteLength": 9894
+    },
+    {
+      "path": "renderweave-rendering/src/main/java/cn/hbads/renderweave/rendering/internal/InputAdmission.java",
+      "sha256": "sha256:f8d0dd4046b30bfcd6fba4297b0fe46afd1114539dfa43ee09715b481f499c24",
+      "byteLength": 15762
+    },
+    {
+      "path": "renderweave-rendering/src/main/java/cn/hbads/renderweave/rendering/internal/CanonicalEvaluator.java",
+      "sha256": "sha256:347780436a04e5e9148e022baa6a5adbe9437c8d3e49c613ba6855a6ee768261",
+      "byteLength": 28134
+    },
+    {
+      "path": "renderweave-rendering/src/main/java/cn/hbads/renderweave/rendering/internal/RenderingModule.java",
+      "sha256": "sha256:c375aa03a15f0b144734bcc8cc71d9cd09e7296377053e3fe08e36431919f1d8",
+      "byteLength": 3841
+    },
+    {
+      "path": "renderweave-rendering/src/test/java/cn/hbads/renderweave/rendering/internal/RenderInputCapacityReservationTest.java",
+      "sha256": "sha256:59651ef1cb1be4e6c433ed50d7e5dabf78394c0732ec19af2e02009306758370",
+      "byteLength": 8101
+    },
+    {
+      "path": "renderweave-rendering/src/test/java/cn/hbads/renderweave/rendering/internal/RenderInputEnvelopeTest.java",
+      "sha256": "sha256:0da653a1203a376923378e8692557709794e45c41667fcb88c252ce0cff0d85f",
+      "byteLength": 9064
+    },
+    {
+      "path": "renderweave-rendering/src/test/java/cn/hbads/renderweave/rendering/internal/InputAdmissionTest.java",
+      "sha256": "sha256:870633efb9432fe1edd01dc8610f723834f1c095aff4726c89009838c4e5b718",
+      "byteLength": 15536
+    },
+    {
+      "path": "renderweave-rendering/src/test/java/cn/hbads/renderweave/rendering/internal/EvaluatorContractTest.java",
+      "sha256": "sha256:a9344a0d8ee10be796a2d3aaaada8b2687fe8f00d610c860266b049385019699",
+      "byteLength": 178157
+    },
+    {
+      "path": "renderweave-app/src/main/java/cn/hbads/renderweave/app/template/TemplateApplicationConfiguration.java",
+      "sha256": "sha256:0930b306f3652041b3133a43bae36eb5ef5a8ede705663e23362bcafc8147705",
+      "byteLength": 6748
+    },
+    {
+      "path": "renderweave-app/src/main/java/cn/hbads/renderweave/app/rendering/RenderingApplicationConfiguration.java",
+      "sha256": "sha256:f2865471f6c1a49f7c5b46737eef419fab79d33fd36dba7f011fbd2f01289c57",
+      "byteLength": 18529
+    },
+    {
+      "path": "renderweave-app/src/main/java/cn/hbads/renderweave/app/rendering/RenderingController.java",
+      "sha256": "sha256:a1fb27663f4cf3022e37217d72feea2fbdf7bc555b88ceef17f8249cf7a3f801",
+      "byteLength": 18229
+    },
+    {
+      "path": "renderweave-app/src/test/java/cn/hbads/renderweave/app/template/TemplateApplicationConfigurationTest.java",
+      "sha256": "sha256:e5bce17c8e72dc3c2cb0700a168b9fc87e013e42819a377114a94f1b3c111ed7",
+      "byteLength": 4551
+    },
+    {
+      "path": "renderweave-app/src/test/java/cn/hbads/renderweave/app/rendering/RenderingApplicationConfigurationTest.java",
+      "sha256": "sha256:2bf1c1448a0b93600cad97e406544a31a5ee792b466f1dd103b752daa6933d9c",
+      "byteLength": 11804
+    },
+    {
+      "path": "renderweave-app/src/test/java/cn/hbads/renderweave/app/rendering/RenderingControllerCapacityReservationTest.java",
+      "sha256": "sha256:4bb8f315b5a063c135ec74928cf1f8cae972727b2b3806ca02857ad2dd83bd29",
+      "byteLength": 5545
+    },
+    {
+      "path": "renderweave-app/src/test/java/cn/hbads/renderweave/app/rendering/RenderingControllerTest.java",
+      "sha256": "sha256:77ac20e4510680e1f21424d1ea6e5e4fbe1a6946763ac1d34644bed1b4dcc69e",
+      "byteLength": 13428
+    },
+    {
+      "path": "tools/verify-design-input-expression-capacity.ts",
+      "sha256": "sha256:30c19d718fbabf8d7b2f021963b1e65d3eab9db3739843ad5e80e56d5def3316",
+      "byteLength": 18331
+    },
+    {
+      "path": "tools/run-design-input-expression-capacity-gate.ps1",
+      "sha256": "sha256:0b8f470e6ee7e2645a4001947dc8bb72e693513861dad3b1b90db59e31503503",
+      "byteLength": 5951
+    },
+    {
+      "path": ".scratch/renderweave-template-v1/conformance-capacity-coverage-v1.json",
+      "sha256": "sha256:d9662c79464f0fe726ff9067068d9317565e4f4d1caa13b04cf5c0b2e0e60582",
+      "byteLength": 318460
+    },
+    {
+      "path": ".scratch/renderweave-template-v1/design-input-expression/fixture-contract-v1.json",
+      "sha256": "sha256:ee7bb2dff80686dabdd9c5583d01d8b0159930fa75a0f70178aa92bbf125cc31",
+      "byteLength": 3808
+    },
+    {
+      "path": ".scratch/renderweave-template-v1/design-input-expression/observation-adapter-v1.json",
+      "sha256": "sha256:e46af856d38c1844d1c3b222479e25208c0f5297caabdfea16ccd779301d77e9",
+      "byteLength": 5368
+    },
+    {
+      "path": ".scratch/renderweave-template-v1/design-input-expression/generator-target-manifest-v1.json",
+      "sha256": "sha256:2de5c33e7f03c3c1354426882960200344e232ad12ec12d5eae20d80483760c8",
+      "byteLength": 47584
+    },
+    {
+      "path": "renderweave-template/src/main/java/cn/hbads/renderweave/template/internal/TemplateProblemBudget.java",
+      "sha256": "sha256:797009ef0b5408da9c328a6cdcaf2ca5110e4de7c43349d1fd4280ddb94c38c9",
+      "byteLength": 8054
+    },
+    {
+      "path": "renderweave-template/src/main/java/cn/hbads/renderweave/template/internal/TemplateDependencyEvaluator.java",
+      "sha256": "sha256:d2e34d8c186823bb38a4363e37ac54b016b3dd44ea1c4141b2759309bef1f93b",
+      "byteLength": 13108
+    },
+    {
+      "path": "renderweave-template/src/main/java/cn/hbads/renderweave/template/internal/TemplateSemanticDependencyValidator.java",
+      "sha256": "sha256:47250a0be7c69fdfbccd4b40429db610c06bec3e1d6c7db4dea020879418e013",
+      "byteLength": 43426
+    },
+    {
+      "path": "renderweave-template/src/test/java/cn/hbads/renderweave/template/internal/TemplateProblemBudgetTest.java",
+      "sha256": "sha256:5afb44cd00f3a2a3d32d69f619204eb0a8014b2417c95fcc0e565a394f2e0522",
+      "byteLength": 3538
+    },
+    {
+      "path": "renderweave-template/src/test/java/cn/hbads/renderweave/template/internal/TemplateDependencyEvaluatorTest.java",
+      "sha256": "sha256:c83d860d34b2f9f889ba28690a255a887b7bbf3417e6ea90d99c5e96fb60b70b",
+      "byteLength": 15560
+    },
+    {
+      "path": "renderweave-template/src/test/java/cn/hbads/renderweave/template/internal/TemplateSemanticDependencyValidatorTest.java",
+      "sha256": "sha256:626ecd21a475194c3dabb0048a95d7db5edd8f3d55d5e612f1f29be01bf0086f",
+      "byteLength": 26588
+    },
+    {
+      "path": "renderweave-template/src/test/java/cn/hbads/renderweave/template/internal/TemplateProblemCapacityReservationTest.java",
+      "sha256": "sha256:6277a9be1438ade61bca4a857f2a2146068f3dc7e94bcb964aba5c8ca8f803d1",
+      "byteLength": 15388
+    },
+    {
+      "path": "renderweave-template/src/main/java/cn/hbads/renderweave/template/internal/ExpressionDefinitionCapacityBudget.java",
+      "sha256": "sha256:6099100b81cf8febc44bd9c275a54e278185e2f6291758be07eccf85f0589b40",
+      "byteLength": 6276
+    },
+    {
+      "path": "renderweave-template/src/test/java/cn/hbads/renderweave/template/internal/ExpressionDefinitionCapacityReservationTest.java",
+      "sha256": "sha256:50b7690b375741cb190e73ec2c8e846ec96d8e20be271471292dddddcd83e1ed",
+      "byteLength": 25626
+    },
+    {
+      "path": "renderweave-template/src/main/java/cn/hbads/renderweave/template/api/DesignSemanticAuthority.java",
+      "sha256": "sha256:f45e9bed78c7fabfbe4d10e4b6a5116a2e9b035b9680950ec43f217af7ad0231",
+      "byteLength": 5895
+    },
+    {
+      "path": "renderweave-template/src/main/java/cn/hbads/renderweave/template/internal/CanonicalDesignSemanticAuthority.java",
+      "sha256": "sha256:bc0100dd827b89a1c0f6c2463a6c972b2bafd1fc956829f81cbcf2cf32d0fd6c",
+      "byteLength": 4100
+    },
+    {
+      "path": "renderweave-template/src/main/java/cn/hbads/renderweave/template/internal/ExpressionParser.java",
+      "sha256": "sha256:e470432895cd120ebb9102dd27e31af40105530a15d2d6b70c4a169471340c3e",
+      "byteLength": 21431
+    },
+    {
+      "path": "renderweave-rendering/src/main/java/cn/hbads/renderweave/rendering/internal/DefinitionEngine.java",
+      "sha256": "sha256:7f374684b5bab80438273b191c3708a465aee04d4bd082d7ba57e9079489c0b5",
+      "byteLength": 34445
+    },
+    {
+      "path": "renderweave-rendering/src/main/java/cn/hbads/renderweave/rendering/internal/ExpressionAnalyzer.java",
+      "sha256": "sha256:6ad750a5a902f6511a06e0418da30b49054986bf7f407c08af8b893fbdef4509",
+      "byteLength": 18843
+    },
+    {
+      "path": "renderweave-rendering/src/main/java/cn/hbads/renderweave/rendering/internal/ExpressionEvaluator.java",
+      "sha256": "sha256:346ee926d3b8f48d0710fd20236726a31c9106848f9edb22435631dbac0799ab",
+      "byteLength": 20903
+    },
+    {
+      "path": "renderweave-rendering/src/main/java/cn/hbads/renderweave/rendering/internal/Materializer.java",
+      "sha256": "sha256:8b013bf525547c3658f14c983c520abe17a76540b7f210a4b583e4cb08098cdd",
+      "byteLength": 77008
+    },
+    {
+      "path": "renderweave-rendering/src/test/java/cn/hbads/renderweave/rendering/internal/ExpressionEngineTest.java",
+      "sha256": "sha256:9d739815c53b5931cd1e18a3caa903b80e49477c30f6d375369c9245d1ed6450",
+      "byteLength": 17333
+    },
+    {
+      "path": "renderweave-template/src/test/java/cn/hbads/renderweave/template/internal/ExpressionDecimalCapacityReservationTest.java",
+      "sha256": "sha256:a1d0440184b7dd92c8e39cbcecc80dedb834553cdfc1abcf6c4c81b5844dc07d",
+      "byteLength": 11636
+    },
+    {
+      "path": "renderweave-rendering/src/test/java/cn/hbads/renderweave/rendering/internal/ExpressionDecimalCapacityEvaluationTest.java",
+      "sha256": "sha256:b5944fa9a7bf3205aba72a443d5946e924bd2c746cbaf51f21ee45c9b77fe9d4",
+      "byteLength": 11579
+    },
+    {
+      "path": "renderweave-rendering/src/test/java/cn/hbads/renderweave/rendering/internal/MaterializerTest.java",
+      "sha256": "sha256:a4e171773f2df560d01ed6e2b89e260d63512a62a146379c0047dcdb43f476c0",
+      "byteLength": 85357
+    },
+    {
+      "path": "renderweave-template/src/test/java/cn/hbads/renderweave/template/internal/GeometryCapacityReservationTest.java",
+      "sha256": "sha256:3d8608b2f3d0f0e73543a9b3bed21875a85da820e959eb64ad3ce0a02753ea2b",
+      "byteLength": 19486
+    }
+  ],
+  "formalRegistryBoundary": {
+    "caseRecordCount": 58,
+    "caseRegistrySha256": "sha256:bba2e350cc29c5fc8faae7f4bdb47c8bd0e2e60a3dd78d6f64d9d355b2440add",
+    "oracleRecordCount": 58,
+    "oracleRegistrySha256": "sha256:a0f513b0d305d00b1797f32db38488b92e5775fa8c19a3fcb00d4e2394e3d2db"
+  },
+  "boundary": {
+    "componentReplayAllowed": true,
+    "exactExecutionClassTargetCreated": false,
+    "classRequiredExecutorManifestsIssued": false,
+    "preissuanceReady": false,
+    "formalRecordsIssued": 0,
+    "recordIssuanceAllowed": false,
+    "executionClassExecutable": false,
+    "nativeRendererInvoked": false,
+    "externalProviderAttemptsAllowed": false
+  }
+}
