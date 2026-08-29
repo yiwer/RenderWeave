@@ -1,8 +1,8 @@
 # 接线 Expression decimal 七轴产品容量
 
 Type: task
-Status: implementation_complete / final_gate_pending
-Claimed by: —（2026-08-27 已释放；等待当前产品 smoke 结束后恢复最终 gate）
+Status: resolved / automated_verified
+Claimed by: —（2026-08-29 final gate closeout 完成后释放）
 Blocked by: 135（已 resolved）
 
 ## Question
@@ -78,3 +78,26 @@ branch、零写 first-fail 与单一 comparator？
   由 smoke 暴露的独立 Editor 纠偏票 TV1-T126a 接续；smoke 结束后必须恢复本票最终 gate，未通过前不得改报
   `automated_verified`。provider attempts、API Key reads、reservations/cost 仍为 0；无真实数据、生产、J1/A3/READY 或
   独立 native Renderer build。
+
+## Resolution（2026-08-29）
+
+- 产品 smoke 与 T126a/T126b 自动门控结束后，本票重新独占 claim 并审计 main integration 的最终顺序证据：
+  `server` `.sdlc/evidence/20260829-175320-server/`、Goal `full`
+  `.sdlc/evidence/20260829-180317-full/`、resolution `fast`
+  `.sdlc/evidence/20260829-181957-fast/` 均绑定 merge revision
+  `ed152c75dc2579fc9dc1dceb168b91bd324f0656` 且 metadata 为 A1 `passed`；执行时间严格相邻递增，分别为
+  1/1、17/17、3/3 steps，零失败。server 为 8-module BUILD SUCCESS，App 381 tests / 0 failures / 0 errors /
+  15 controlled skips。
+- 实现 revision `6aba539dcf25f2fbc66f7854d42d62487326a8a3` 与 target revision
+  `9851de8f7cecd5953f8334d49d66b532e26af644` 均为当前 HEAD 祖先；从该 merge revision 到 T126b verified
+  commit 之间没有 Template/Rendering/Schema/Validation 文件变化，因此按 RULE-VAL-001 复用上述最终证据。
+  当前 v7 target SHA-256 仍为
+  `dc2c9714fe2efbfe552238e67aed09d72ce2cfdbca98e6c573a678d0e25e6363`，与 server input manifest 精确一致。
+- component evidence `.sdlc/evidence/20260827-003602-design-input-expression-capacity-v7/` 保持 Java primary
+  195/195（A1）与独立 TypeScript replay 195/195、2690 checks（A2，明确仅 component scalar replay / partial
+  product wiring）；wired 55/65、remaining geometry 10。formal registry 当前仍为 cases 58 / oracles 58，v7
+  `formalRecordsIssued=0`，不满足 issuance、class executable 或 READY。
+- 本票 lifecycle 如实升级为 `resolved / automated_verified` 并释放 claim。A3 无，J0 pending、J1 未批准；未运行
+  provider、未读取 API Key、未发送真实数据、未注册 Profile、未执行生产或独立 native Renderer build，未
+  push/tag/PR；geometry 十轴、两个 required executor manifests、独立产品 replay 与 195 formal issuance 继续
+  作为后继工作，不由本票冒充完成。

@@ -234,13 +234,12 @@
   `.sdlc/evidence/20260829-152404-render/` 与 `fast` `.sdlc/evidence/20260829-152454-fast/` 均 passed/A1。
   T185-specific A2/A3 无，J0 pending、J1 未批准；无 API/OpenAPI/Web/Flyway/app/Profile/provider/push/tag/PR 变化。
 
-- 当前 frontier（2026-08-29）：TV1-T01–T135 均已 `resolved`。TV1-T136 已完成 decimal 七轴产品实现、不可变 v7
-  target 与 component/template/fast 验证，达到 wired 55/65、remaining geometry 10；其 `server/full/resolution fast`
-  已在 main integration 的顺序 server/full/resolution fast 取得绿色证据，但 lifecycle 仍留给下一轮独立 closeout。
-  人工 smoke 发现的节点创建与画布/结构树缺口已由 TV1-T126a/T126b 收口；T126b 当前 Web gate 与 formal Template
-  product 3/3 + a11y 4/4（Playwright 7/7）全绿并释放 claim。下一轮优先复算 T136；两个 class required executor manifests、独立产品 replay 与
-  195 条 formal issuance 继续 pending。
-- 状态：`in_progress`；TV1-T126b=`automated_verified`；TV1-T126a=`automated_verified`；TV1-T136=`implementation_complete/final_gate_pending`；TV1-T135=`automated_verified`；TV1-T134=`automated_verified`；TV1-T133=`automated_verified`；TV1-T132=`automated_verified`；TV1-T131=`automated_verified`；TV1-T130=`automated_verified`；TV1-T129=`automated_verified`；TV1-T128=`automated_verified`；TV1-T127=`automated_verified`；TV1-T01/T02/T03/T04/T05/T06/T07/T08/T09/T10/T10b/T11/T12a/T12b/T13/T14/T14b/T15/T16/T17/T18/T19/T20/T22=`automated_verified`
+- 当前 frontier（2026-08-29）：TV1-T01–T136 均已 `resolved`。TV1-T136 的 decimal 七轴产品实现、不可变 v7
+  target、component replay 与顺序 `server` / 17-step Goal `full` / resolution `fast` 均已取得绿色证据，达到
+  wired 55/65、remaining geometry 10 并独立完成 lifecycle closeout。人工 smoke 发现的节点创建与画布/结构树
+  缺口也已由 TV1-T126a/T126b 收口；当前无 active claim。下一轮从 geometry 十轴中复算并登记首个统一
+  TV1-T195 frontier；两个 class required executor manifests、独立产品 replay 与 195 条 formal issuance 继续 pending。
+- 状态：`in_progress`；TV1-T126b=`automated_verified`；TV1-T126a=`automated_verified`；TV1-T136=`automated_verified`；TV1-T135=`automated_verified`；TV1-T134=`automated_verified`；TV1-T133=`automated_verified`；TV1-T132=`automated_verified`；TV1-T131=`automated_verified`；TV1-T130=`automated_verified`；TV1-T129=`automated_verified`；TV1-T128=`automated_verified`；TV1-T127=`automated_verified`；TV1-T01/T02/T03/T04/T05/T06/T07/T08/T09/T10/T10b/T11/T12a/T12b/T13/T14/T14b/T15/T16/T17/T18/T19/T20/T22=`automated_verified`
   （T09 另含人工 J1），TV1-T21=`automated_verified`（首个 Rendering 纵切——renderweave-rendering
   首个 artifact、TemplateClosureAuthority/Evaluator stage 1–8/seal、CapabilityState 加密落盘、
   RenderNodeContract 向量语料 Java primary、端到端 assembly 证明）；TV1-T13 已完成 AssetResolver、加密
@@ -5338,8 +5337,8 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
 
 ## 136. TV1-T136 执行卡
 
-- 状态：`implementation_complete / final_gate_pending`；Blocked by T135（resolved）；claim 已释放，等待当前产品 smoke
-  结束后恢复顺序 `server`、Goal `full` 与 resolution `fast`。
+- 状态：`resolved / automated_verified`；Blocked by T135（resolved）；2026-08-29 final gate closeout 完成并释放
+  claim。
 - 决策：完整接线 admitted precision/scale 三轴、intermediate precision/scale 三轴与 explicit rounding scale 一轴；
   TDD seam 沿用 `DesignDslAuthority.admit(rawUtf8)` 与既有 Rendering evaluator/Expression consumption，不新增第二
   comparator、HTTP/OpenAPI、migration 或配置面。
@@ -5357,6 +5356,12 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
 - 禁止影响：geometry 十轴、class manifests/195 formal records、其他 execution class、Renderer/Profile/独立 native
   build、provider/API Key/真实数据/生产/J1/A3/READY、用户 360 项 dirty work 与 stash；
   `BUILD_NOT_AUTHORIZED` 保持。
+- 结果：实现 `6aba539d` 与 v7 target `9851de8f` 均已进入 main；component Java primary 195/195（A1）与独立
+  TypeScript replay 195/195、2690 checks（A2 partial product wiring）保持绿色，target SHA-256 与最终 server input
+  manifest 一致。顺序 `server` `.sdlc/evidence/20260829-175320-server/`、17-step Goal `full`
+  `.sdlc/evidence/20260829-180317-full/`、resolution `fast` `.sdlc/evidence/20260829-181957-fast/` 均 A1 passed。
+  formal registry 58/58、v7 recordsIssued=0；A3 无，J0 pending、J1 未批准，remaining geometry 10 与 issuance/
+  executable/READY 边界不变。
 
 ## 126a. TV1-T126a 执行卡
 

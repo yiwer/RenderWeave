@@ -900,10 +900,11 @@ Label: wayfinder:map
   bounded collector 并冻结 v4；T134 又完成 Expression source/input/Mapping/Definition graph 八轴并冻结 v5。
   T135 已完成 Expression AST 两轴：Template-owned 同一 grammar parser 在 AST node allocation 前调用共享
   capacity authority，Rendering 消费同一 immutable AST 派生值，重复 parser/AST 与硬编码阈值已删除；不可变 v6
-  target 与发布级 17-step replay 全绿，当前 wired 48/65、remaining 17。T136 已完成 decimal 七轴实现与 v7 target，
-  当前 wired 55/65、remaining geometry 10；其 ticket lifecycle 仍待独立 resolution closeout。人工 smoke 发现的正式
-  Editor 节点创建与本地画布/结构树缺口已分别由 TV1-T126a/T126b 收口并完成自动门控；当前无 claim，下一轮优先复算
-  T136 closeout。195 个
+  target 与发布级 17-step replay 全绿，当前 wired 48/65、remaining 17。T136 已完成 decimal 七轴实现、v7 target
+  与独立 final-gate closeout：顺序 `server`、17-step Goal `full`、resolution `fast` 全绿，生命周期现为
+  `resolved / automated_verified`。人工 smoke 发现的正式 Editor 节点创建与本地画布/结构树缺口也已分别由
+  TV1-T126a/T126b 收口并完成自动门控；当前无 claim，下一轮从 remaining geometry 10 中复算首个统一 T195
+  frontier。195 个
   capacity candidates 在全部真实接线、两个 required executor manifests 与独立产品 replay 完成前仍不得发行。其余
   execution-class target、Profile 发行、Editor J1、Renderer 双物理 Linux CPU-family
   认证与最终生命周期升级仍须以届时真实产品 artifact 和 executor 为输入另行切票；Ticket 19 保持 open。

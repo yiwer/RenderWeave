@@ -1,5 +1,17 @@
 # NOTES.md
 
+# 2026-08-29 Template-v1 T136 Expression decimal 七轴 final gate（resolved / automated_verified）
+- T136 final-gate closeout 已在 main 独立复算：实现 `6aba539d`、不可变 v7 target `9851de8f` 均为当前 HEAD
+  祖先，merge 后无 Template/Rendering/Schema/Validation delta；v7 当前 SHA-256 与最终 server input manifest
+  精确一致。
+- 顺序 `server` `.sdlc/evidence/20260829-175320-server/`、Goal `full`
+  `.sdlc/evidence/20260829-180317-full/`、resolution `fast` `.sdlc/evidence/20260829-181957-fast/` 均为 A1
+  passed，分别 1/1、17/17、3/3 steps。component Java primary 195/195（A1），独立 TypeScript replay
+  195/195、2690 checks（A2，partial product wiring）；wired 55/65、remaining geometry 10。
+- formal registry 保持 cases 58 / oracles 58，v7 `formalRecordsIssued=0`。本票释放 claim 并升级为
+  `resolved / automated_verified`；A3 无，J0 pending、J1 未批准，未运行 provider/API Key/真实数据/生产/
+  Profile/native build，未 push/tag/PR。下一轮从 geometry 十轴中登记统一 TV1-T195 frontier。
+
 # 2026-08-29 Template-v1 T126b Formal Editor Canvas/structure tree（resolved / automated_verified）
 - 正式 Template Editor 已用 session-only deep module 物化 `fit / zoomAtPoint / wheelZoom / pan`，缩放固定
   `0.25..4`，wheel 保持指针下 world point；Canvas 以 4 px/mm 投影可精确读取的 authored
