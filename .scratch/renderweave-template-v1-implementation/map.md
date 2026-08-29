@@ -925,6 +925,13 @@ Label: wayfinder:map
 
 ## Current frontier
 
+- [T200 — 接线 font-size pt exclusive-min 产品容量](issues/200-wire-font-size-pt-exclusive-min-capacity.md)
+  — **resolved / automated_verified / unclaimed**；实现 `3f51f820`，immutable component v13 SHA-256
+  `836f12acc9a586ad09f355a6487a65fe61d47c4c5c98ac69e96aeaba485408b2`、21490 bytes。cap-061
+  `geometry.fontSizePtExclusiveMin=0` 已按 authored Run order 覆盖每个 Text Run `fontSizePt`；Java/TypeScript
+  195/195、Template 168/168、Java/Python 211/211、`template`/`fast` 全绿，wired 61/65、remaining geometry 4、
+  formal records 0。A3 无，J0 pending、J1 未批准；claim 已释放，下一 unblocked frontier 为 cap-062
+  `geometry.fontSizePtMax`，尚未登记或 claim。
 - [T199 — 接线 authored mm coordinate/length absolute 产品容量](issues/199-wire-authored-mm-absolute-capacity.md)
   — **resolved / automated_verified / unclaimed**；实现 `86e7169c`，immutable component v12 SHA-256
   `9237af14b1bd8bab2232fc55c7d3499aa6e9b3477ad9d8f311c305ffd333b9cd`、21449 bytes。cap-060

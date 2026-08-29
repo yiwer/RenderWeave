@@ -1,5 +1,25 @@
 # NOTES.md
 
+# 2026-08-29 Template-v1 T200 font-size pt exclusive-min capacity（resolved / automated_verified）
+- T199 已以实现 `86e7169c`、治理 `0ce7aa2f` 收口并释放 claim；DAG 无其他 active claim。现按 single-writer
+  claim cap-061 `geometry.fontSizePtExclusiveMin=0`，关联 `RW-T19-S7-111` 与 `RW-T19-S9-017/019`，目标
+  wired 61/65、remaining geometry 4。
+- 只深化公共 `DesignDslAuthority.admit(rawUtf8)` 与既有 Template-owned capacity authority，按 authored Run order
+  观察每个 `text.runs[*].fontSizePt`。默认 below/at 必须返回 frozen property-capacity identity；Binding overlay
+  复用既有重构/re-admission seam。cap-062–065、formal issuance/class manifests 与 app wiring 均 deferred。
+- 本票从真实 Text 公共 seam 先取 observation 缺失 RED；claim 时 A0、J0 pending、J1 未批准。无 Profile/provider/
+  API Key/真实数据/生产/push/tag/PR，用户 Image/Inference dirty work 与 stash 保持不动。
+- 实现 `3f51f820` 已按 authored Run order 把每个 `fontSizePt` 接入 cap-061；默认 below/at 返回 frozen
+  property-capacity identity，permissive authority 仍不能绕过原有 positive contract。focused 32/32、Template
+  module 168/168。
+- immutable v13 target SHA-256 `836f12acc9a586ad09f355a6487a65fe61d47c4c5c98ac69e96aeaba485408b2`、
+  21490 bytes；component `.sdlc/evidence/20260829-202538-template-t200-component/` Java 195/195（A1）+
+  TypeScript 195/195、2692 checks（A2），wired 61/65、remaining geometry 4、formal records 0。
+- `template` `.sdlc/evidence/20260829-202614-template/metadata.json` 与 `fast`
+  `.sdlc/evidence/20260829-202648-fast/metadata.json` passed/A1，Template Java/Python 211/211。claim 已释放；
+  A3 无，J0 pending、J1 未批准，server/full 按非 app-wiring boundary 未重复，用户 dirty work/stash 未改，未
+  push/tag/PR。下一 frontier 为 cap-062 `geometry.fontSizePtMax`，尚未登记。
+
 # 2026-08-29 Template-v1 T199 authored mm absolute capacity（resolved / automated_verified）
 - T198 已以实现 `ca1a0b55`、治理 `bf4bfb81` 收口并释放 claim；DAG 无其他 active claim。现按 single-writer
   claim cap-060 `geometry.authoredCoordinateOrLengthMmAbsoluteMax=10000`，关联 `RW-T19-S7-110` 与
