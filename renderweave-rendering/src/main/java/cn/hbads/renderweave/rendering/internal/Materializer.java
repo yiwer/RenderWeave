@@ -215,6 +215,10 @@ final class Materializer {
             return failed(EvaluationStage.TEMPLATE_CLOSURE, ProblemCode.RENDER_INTERNAL_ERROR, null);
         }
 
+        var manifestBaseFailure = materializer.reserveResourceManifestBytes(2);
+        if (manifestBaseFailure != null) {
+            return manifestBaseFailure;
+        }
         var invocationFailure = materializer.reserveTemplateInvocation(1);
         if (invocationFailure != null) {
             return invocationFailure;
@@ -1157,14 +1161,7 @@ final class Materializer {
         if (exactContentFailure != null) {
             return exactContentFailure;
         }
-        var resourceCapacityFailure = capacityFailure(requestCapacity.reserve(
-                RenderingPipelineCapacityGuard.Limit
-                        .ASSETS_AND_FETCH_RENDER_RESOURCE_ENTRIES,
-                1));
-        if (resourceCapacityFailure != null) {
-            return resourceCapacityFailure;
-        }
-        resources.add(new ResourceEntry(
+        var resource = new ResourceEntry(
                 resourceId.value(),
                 kind.name(),
                 fact.fetchUrl(),
@@ -1177,8 +1174,28 @@ final class Materializer {
                 fact.contentVersion(),
                 path,
                 memberName,
-                fact.technicalDescriptor()));
+                fact.technicalDescriptor());
+        var manifestByteFailure = reserveResourceManifestBytes(Math.addExact(
+                resources.isEmpty() ? 0 : 1,
+                RenderResourceCanonicalizer.canonicalUtf8Length(resource)));
+        if (manifestByteFailure != null) {
+            return manifestByteFailure;
+        }
+        var resourceCapacityFailure = capacityFailure(requestCapacity.reserve(
+                RenderingPipelineCapacityGuard.Limit
+                        .ASSETS_AND_FETCH_RENDER_RESOURCE_ENTRIES,
+                1));
+        if (resourceCapacityFailure != null) {
+            return resourceCapacityFailure;
+        }
+        resources.add(resource);
         return new ResolvedValue(new ObjectNode(Map.of("resourceId", new Text(resourceId.value()))));
+    }
+
+    private MaterializationFailed reserveResourceManifestBytes(long bytes) {
+        return capacityFailure(requestCapacity.reserve(
+                RenderingPipelineCapacityGuard.Limit.ASSETS_AND_FETCH_MANIFEST_BYTES,
+                bytes));
     }
 
     private MaterializationFailed reserveImagePixels(

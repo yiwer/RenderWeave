@@ -133,6 +133,11 @@ final class RenderingPipelineCapacityGuard {
                 "assetsAndFetch.uniqueFontBytes",
                 67_108_864L,
                 ProblemCode.ASSET_BUDGET_EXCEEDED,
+                EvaluationStage.ASSET_ADMISSION),
+        ASSETS_AND_FETCH_MANIFEST_BYTES(
+                "assetsAndFetch.manifestBytes",
+                4_194_304L,
+                ProblemCode.ASSET_BUDGET_EXCEEDED,
                 EvaluationStage.ASSET_ADMISSION);
 
         private final String id;

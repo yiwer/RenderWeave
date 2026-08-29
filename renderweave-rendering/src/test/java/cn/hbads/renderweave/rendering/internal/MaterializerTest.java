@@ -972,6 +972,73 @@ class MaterializerTest {
     }
 
     @Test
+    void resourceManifestByteBudgetCountsExactCanonicalArrayBeforeAppend() {
+        var limit = RenderingPipelineCapacityGuard.Limit
+                .ASSETS_AND_FETCH_MANIFEST_BYTES;
+        var emptyExactCapacity = new RenderingPipelineCapacityGuard().newRequestTracker();
+        assertTrue(emptyExactCapacity.reserve(limit, 4_194_302L).isEmpty());
+
+        var emptyExact = materialize(
+                canvasWith(""), Map.of(), null, absentCapability(), emptyExactCapacity);
+
+        assertInstanceOf(Materializer.Materialized.class, emptyExact);
+        assertTrue(emptyExactCapacity.reserve(limit, 1).isPresent());
+
+        var emptyExceededCapacity = new RenderingPipelineCapacityGuard().newRequestTracker();
+        assertTrue(emptyExceededCapacity.reserve(limit, 4_194_303L).isEmpty());
+
+        var emptyExceeded = materialize(
+                canvasWith(""), Map.of(), null, absentCapability(), emptyExceededCapacity);
+
+        assertManifestByteLimit(emptyExceeded);
+
+        var document = canvasWith(
+                textNode("00000000-0000-4000-8000-000000000077") + ","
+                        + textNode("00000000-0000-4000-8000-000000000078"));
+        // Exact closed FONT entries are 505 bytes each; [] plus comma totals 1,013 bytes.
+        var exactCapacity = new RenderingPipelineCapacityGuard().newRequestTracker();
+        assertTrue(exactCapacity.reserve(limit, 4_193_291L).isEmpty());
+        var exactPort = new SequencedContentPort(List.of(
+                ResolvedContent.font("content-version-1", "sha256:" + "9".repeat(64), 1),
+                ResolvedContent.font("content-version-2", "sha256:" + "9".repeat(64), 1)));
+
+        var exact = materialize(
+                document, Map.of(), exactPort, absentCapability(), exactCapacity);
+
+        var exactTree = assertInstanceOf(Materializer.Materialized.class, exact).tree();
+        assertEquals(2, exactPort.resolves);
+        assertEquals(2, exactTree.resources().size());
+        assertTrue(exactCapacity.reserve(limit, 1).isPresent());
+
+        var exceededCapacity = new RenderingPipelineCapacityGuard().newRequestTracker();
+        assertTrue(exceededCapacity.reserve(limit, 4_193_292L).isEmpty());
+        var exceededPort = new SequencedContentPort(List.of(
+                ResolvedContent.font("content-version-1", "sha256:" + "9".repeat(64), 1),
+                ResolvedContent.font("content-version-2", "sha256:" + "9".repeat(64), 1)));
+
+        var exceeded = materialize(
+                document, Map.of(), exceededPort, absentCapability(), exceededCapacity);
+
+        assertManifestByteLimit(exceeded);
+        assertEquals(2, exceededPort.resolves);
+        assertTrue(exceededCapacity.reserve(
+                RenderingPipelineCapacityGuard.Limit
+                        .ASSETS_AND_FETCH_RENDER_RESOURCE_ENTRIES,
+                2_047).isEmpty());
+    }
+
+    private static void assertManifestByteLimit(
+            Materializer.MaterializationOutcome outcome
+    ) {
+        var failed = assertInstanceOf(Materializer.MaterializationFailed.class, outcome);
+        assertEquals(EvaluationStage.ASSET_ADMISSION, failed.stage());
+        assertEquals(RenderingProblem.ProblemCode.ASSET_BUDGET_EXCEEDED,
+                failed.problem().code());
+        assertEquals("assetsAndFetch.manifestBytes",
+                failed.problem().limitId().orElseThrow().value());
+    }
+
+    @Test
     void missingAssetPortFailsClosedAtAssetAdmission() {
         var document = canvasWith(imageNode());
         var outcome = materialize(document, Map.of(), null);

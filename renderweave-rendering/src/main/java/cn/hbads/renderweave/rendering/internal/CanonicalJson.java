@@ -114,6 +114,36 @@ final class CanonicalJson {
         return builder.toString();
     }
 
+    static long canonicalUtf8Length(CanonicalValue value) {
+        Objects.requireNonNull(value, "value");
+        var total = new long[1];
+        value.writeTo(text -> total[0] = Math.addExact(total[0], utf8Length(text)));
+        return total[0];
+    }
+
+    static int utf8Length(String value) {
+        var length = 0;
+        for (int index = 0; index < value.length(); index++) {
+            var current = value.charAt(index);
+            if (current <= 0x7F) {
+                length++;
+            } else if (current <= 0x7FF) {
+                length += 2;
+            } else if (Character.isHighSurrogate(current)
+                    && index + 1 < value.length()
+                    && Character.isLowSurrogate(value.charAt(index + 1))) {
+                length += 4;
+                index++;
+            } else if (Character.isSurrogate(current)) {
+                // StandardCharsets.UTF_8 replaces an unpaired surrogate with one ASCII byte.
+                length++;
+            } else {
+                length += 3;
+            }
+        }
+        return length;
+    }
+
     private static CanonicalValue encodedValue(String encoded) {
         Objects.requireNonNull(encoded, "encoded");
         return sink -> sink.writeUtf8(encoded);

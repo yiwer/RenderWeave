@@ -40,7 +40,7 @@ final class RenderDocumentCanonicalWriter implements CanonicalJson.Utf8Sink {
 
     @Override
     public void writeUtf8(String canonicalText) {
-        var byteLength = utf8Length(canonicalText);
+        var byteLength = CanonicalJson.utf8Length(canonicalText);
         var problem = capacity.reserve(
                 RenderingPipelineCapacityGuard.Limit.RENDER_DOCUMENT_CANONICAL_BYTES,
                 byteLength);
@@ -72,29 +72,6 @@ final class RenderDocumentCanonicalWriter implements CanonicalJson.Utf8Sink {
             throw new IllegalStateException("canonical JSON container depth underflow");
         }
         jsonDepth--;
-    }
-
-    private static int utf8Length(String value) {
-        var length = 0;
-        for (int index = 0; index < value.length(); index++) {
-            var current = value.charAt(index);
-            if (current <= 0x7F) {
-                length++;
-            } else if (current <= 0x7FF) {
-                length += 2;
-            } else if (Character.isHighSurrogate(current)
-                    && index + 1 < value.length()
-                    && Character.isLowSurrogate(value.charAt(index + 1))) {
-                length += 4;
-                index++;
-            } else if (Character.isSurrogate(current)) {
-                // StandardCharsets.UTF_8 replaces an unpaired surrogate with one ASCII byte.
-                length++;
-            } else {
-                length += 3;
-            }
-        }
-        return length;
     }
 
     private void append(byte[] encoded) {

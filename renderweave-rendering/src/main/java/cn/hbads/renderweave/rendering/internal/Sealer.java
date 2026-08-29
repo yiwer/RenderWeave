@@ -179,49 +179,13 @@ final class Sealer {
             entry.put("resourceId", CanonicalJson.string(resource.resourceId()));
             entry.put("sha256", CanonicalJson.string(resource.sha256()));
             entry.put("technicalDescriptor",
-                    technicalDescriptorWire(resource.technicalDescriptor()));
+                    RenderResourceCanonicalizer.technicalDescriptorWire(
+                            resource.technicalDescriptor()));
             var bytes = CanonicalJson.object(entry).getBytes(StandardCharsets.UTF_8);
             framed.writeBytes(lengthFrame(bytes.length));
             framed.writeBytes(bytes);
         }
         return RenderingDigests.digestWithDomain(ASSET_SELECTION_DOMAIN, framed.toByteArray());
-    }
-
-    private static String technicalDescriptorWire(
-            cn.hbads.renderweave.asset.api.AssetAcceptanceAuthority.TechnicalDescriptor descriptor) {
-        return CanonicalJson.encode(technicalDescriptorValue(descriptor));
-    }
-
-    private static CanonicalJson.CanonicalValue technicalDescriptorValue(
-            cn.hbads.renderweave.asset.api.AssetAcceptanceAuthority.TechnicalDescriptor descriptor) {
-        var members = new TreeMap<String, CanonicalJson.CanonicalValue>();
-        if (descriptor
-                instanceof cn.hbads.renderweave.asset.api.AssetAcceptanceAuthority.ImageDescriptor image) {
-            members.put("colorEncoding", CanonicalJson.stringValue(image.colorEncoding().name()));
-            members.put("encodedHeightPx", CanonicalJson.decimalValue(
-                    BigDecimal.valueOf(image.encodedHeightPx())));
-            members.put("encodedWidthPx", CanonicalJson.decimalValue(
-                    BigDecimal.valueOf(image.encodedWidthPx())));
-            members.put("frameCount", CanonicalJson.decimalValue(
-                    BigDecimal.valueOf(image.frameCount())));
-            members.put("kind", CanonicalJson.stringValue("image"));
-            members.put("logicalHeightPx", CanonicalJson.decimalValue(
-                    BigDecimal.valueOf(image.logicalHeightPx())));
-            members.put("logicalWidthPx", CanonicalJson.decimalValue(
-                    BigDecimal.valueOf(image.logicalWidthPx())));
-            members.put("orientation", CanonicalJson.stringValue(image.orientation().name()));
-        } else if (descriptor
-                instanceof cn.hbads.renderweave.asset.api.AssetAcceptanceAuthority.FontDescriptor font) {
-            members.put("faceIndex", CanonicalJson.decimalValue(
-                    BigDecimal.valueOf(font.faceIndex())));
-            members.put("flavor", CanonicalJson.stringValue(font.flavor().name()));
-            members.put("kind", CanonicalJson.stringValue("font"));
-            members.put("unitsPerEm", CanonicalJson.decimalValue(
-                    BigDecimal.valueOf(font.unitsPerEm())));
-        } else {
-            throw new IllegalStateException("unknown technical descriptor");
-        }
-        return CanonicalJson.objectValue(members);
     }
 
     // ------------------------------------------------------------------
@@ -405,21 +369,7 @@ final class Sealer {
             List<Materializer.ResourceEntry> resources) {
         var items = new ArrayList<CanonicalJson.CanonicalValue>(resources.size());
         for (var resource : resources) {
-            var entry = new TreeMap<String, CanonicalJson.CanonicalValue>();
-            entry.put("acceptanceProfileId",
-                    CanonicalJson.stringValue(resource.acceptanceProfileId()));
-            entry.put("byteLength", CanonicalJson.decimalValue(
-                    BigDecimal.valueOf(resource.byteLength())));
-            entry.put("expiresAt", CanonicalJson.decimalValue(
-                    BigDecimal.valueOf(resource.leaseExpiresAtEpochSecond())));
-            entry.put("fetchUrl", CanonicalJson.stringValue(resource.fetchUrl()));
-            entry.put("kind", CanonicalJson.stringValue(resource.kind().toLowerCase()));
-            entry.put("mediaType", CanonicalJson.stringValue(resource.mediaType()));
-            entry.put("resourceId", CanonicalJson.stringValue(resource.resourceId()));
-            entry.put("sha256", CanonicalJson.stringValue(resource.sha256()));
-            entry.put("technicalDescriptor",
-                    technicalDescriptorValue(resource.technicalDescriptor()));
-            items.add(CanonicalJson.objectValue(entry));
+            items.add(RenderResourceCanonicalizer.canonicalValue(resource));
         }
         return items;
     }

@@ -4225,3 +4225,32 @@
   T165-specific A2/A3；J0 pending、J1 未批准。未重复 server/full；cap-036 继续 deferred；provider attempts/
   API Key reads/真实数据/Profile registration/push/tag/PR 均为 0。
 - 状态回填后的 resolution `fast` `.sdlc/evidence/20260829-081327-fast/` metadata 为 `passed`，3/3 steps 全绿。
+
+# 2026-08-29 Template-v1 T166 RenderResource manifest bytes（resolved / automated_verified）
+
+- T165 已以 verified commit `7b49fc1a` 收口，worktree clean、ahead 156 且 DAG 无其他 current active claim；冻结
+  `RW-T19-S8-020` / cap-036 是下一个 unblocked frontier，现按 single-writer claim T166。
+- `assetsAndFetch.manifestBytes` 固定 MAX_INCLUSIVE `4194304`、observed `4194303/4194304/4194305`，
+  ASSET_ADMISSION_AND_RESOLUTION / public ASSET_ADMISSION / ASSET_BUDGET_EXCEEDED / ZERO_DOCUMENT_OUTPUT，
+  reservation point 为下一 authored/resolved Asset unit 与 external fetch 前。
+- 计数 exact final closed `resources` array canonical UTF-8：含 `[]`、commas、entry canonical bytes，排除 envelope
+  member name 与 ResolvedAsset business identity。Materializer 与 Sealer 必须共享 projector，逐 entry 流式计量后才
+  append；duplicate exact content 仍一对一收费。
+- claim 时 A0、J0；URL/cache/fetch 轴继续 deferred；provider/API Key/真实数据/费用/Profile registration/
+  push/tag/PR 均为 0。
+- 先提取 Materializer/Sealer 共用 `RenderResourceCanonicalizer` 与 streaming `canonicalUtf8Length`；既有
+  RenderDocument/digest focused 24/24 先行全绿，确认 sealed bytes 未漂移且不分配完整 manifest。
+- guard/Materializer TDD 精确得到 4 个缺失 enum 的 compile RED；catalog 接入后 guard 28/28 绿并保留 1 个
+  behavioral RED，证明生产路径尚未计 `[]`。实现现于 root frame 前预留 2 bytes，并在每次 exact-content 预算后、
+  resource-entry reserve/append 前预留 optional comma + exact canonical entry bytes。
+- 空 manifest exact/above 与两个 closed FONT entries 的 `1013` bytes exact/above 均通过；above case 已执行两次
+  Resolver，但第二项未消耗 resource-entry、未 append，返回 frozen ASSET_ADMISSION / ASSET_BUDGET_EXCEEDED /
+  full limitId 且零 RenderDocument。
+- focused 158/158；受影响 reactor Schema 20、Validation 13、Template 84、Asset 92、Rendering 255 全绿，零
+  failure/error；`git diff --check` 通过。
+- A1 `render` `.sdlc/evidence/20260829-082511-render/`（2/2）与 `fast`
+  `.sdlc/evidence/20260829-082600-fast/`（3/3）metadata 均 `passed`；render 内 RenderDocument 独立 replay 83/83
+  证明共享 projector 既有字节轴无漂移。cap-036 只调用 production guard，故无 T166 行为路径专属 A2/A3；
+  J0 pending、J1 未批准。未重复 server/full；无 app wiring/API/Web/migration/Profile 变化，provider attempts/
+  API Key reads/真实数据/Profile registration/push/tag/PR 均为 0。
+- 状态回填后的 resolution `fast` `.sdlc/evidence/20260829-082750-fast/` metadata 为 `passed`，3/3 steps 全绿。

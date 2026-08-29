@@ -639,4 +639,28 @@ class RenderingPipelineCapacityGuardTest {
         assertEquals("assetsAndFetch.uniqueFontBytes",
                 problem.limitId().orElseThrow().value());
     }
+
+    @Test
+    void manifestBytesBoundaryUsesTheFrozenProductionGuardContract() {
+        var guard = new RenderingPipelineCapacityGuard();
+
+        assertTrue(guard.admit(
+                RenderingPipelineCapacityGuard.Limit
+                        .ASSETS_AND_FETCH_MANIFEST_BYTES,
+                4_194_303L).isEmpty());
+        assertTrue(guard.admit(
+                RenderingPipelineCapacityGuard.Limit
+                        .ASSETS_AND_FETCH_MANIFEST_BYTES,
+                4_194_304L).isEmpty());
+
+        var problem = guard.admit(
+                        RenderingPipelineCapacityGuard.Limit
+                                .ASSETS_AND_FETCH_MANIFEST_BYTES,
+                        4_194_305L)
+                .orElseThrow();
+        assertEquals(EvaluationStage.ASSET_ADMISSION, problem.stage());
+        assertEquals(ProblemCode.ASSET_BUDGET_EXCEEDED, problem.code());
+        assertEquals("assetsAndFetch.manifestBytes",
+                problem.limitId().orElseThrow().value());
+    }
 }
