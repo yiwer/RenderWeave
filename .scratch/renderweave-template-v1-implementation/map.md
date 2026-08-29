@@ -907,7 +907,10 @@ Label: wayfinder:map
   `geometry.canvasTrimMmPerAxisExclusiveMin`：通过既有 `DesignDslAuthority.admit(rawUtf8)` 把 root Canvas
   width/height 两个真实 reservation point 接回 Template-owned authority；实现 `86b4dc1d`、immutable v8 target、
   component 195/195+195/195、Template Java/Python 211/211 与 `template`/`fast` 均绿，当前 wired 56/65、remaining 9。
-  claim 已释放，下一轮从 cap-057 起登记并 claim 一个 geometry frontier。195 个
+  claim 已释放。统一 TV1-T196 又完成 cap-057 `geometry.canvasTrimMmPerAxisMax`：同一 canonical value 按
+  width/height 各 min→max 接入唯一 authority；实现 `3b662149`、immutable v9 target、component
+  195/195+195/195、Template Java/Python 211/211 与 `template`/`fast` 均绿，当前 wired 57/65、remaining
+  geometry 8。claim 已释放，下一轮从 cap-058 起登记一个 geometry frontier；cap-059–065 保持 deferred。195 个
   capacity candidates 在全部真实接线、两个 required executor manifests 与独立产品 replay 完成前仍不得发行。其余
   execution-class target、Profile 发行、Editor J1、Renderer 双物理 Linux CPU-family
   认证与最终生命周期升级仍须以届时真实产品 artifact 和 executor 为输入另行切票；Ticket 19 保持 open。
@@ -916,6 +919,13 @@ Label: wayfinder:map
 
 ## Current frontier
 
+- [T196 — 接线 Canvas trim 每轴 inclusive-max 产品容量](issues/196-wire-canvas-trim-inclusive-max-capacity.md)
+  — **resolved / automated_verified / unclaimed**；实现 `3b662149`，immutable component v9 SHA-256
+  `ad06c0415cfaad9e636a536b57c0d32c2ad4ad73a72d103c36bbdf458ec70abf`。cap-057
+  `geometry.canvasTrimMmPerAxisMax=1000` 已按 `width min -> width max -> height min -> height max` 经既有 public
+  admission seam 接线；Java/TypeScript 195/195、Template Java/Python 211/211、`template`/`fast` 全绿，wired
+  57/65、remaining geometry 8。A3 无，J0 pending、J1 未批准；cap-058–065 与 formal issuance/class manifests
+  保持 pending。
 - [T195 — 接线 Canvas trim 每轴 exclusive-min 产品容量](issues/195-wire-canvas-trim-exclusive-min-capacity.md)
   — **resolved / automated_verified / unclaimed**；实现 `86b4dc1d`，immutable component v8 SHA-256
   `7c088a21bae28cefc712f2b7c0d6cbc12b22382577b5bf335412c6150ce5daf6`。root Canvas `widthMm`/`heightMm`

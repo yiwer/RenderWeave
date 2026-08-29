@@ -1,5 +1,19 @@
 # NOTES.md
 
+# 2026-08-29 Template-v1 T196 Canvas trim inclusive-max（resolved / automated_verified）
+- cap-057 `geometry.canvasTrimMmPerAxisMax=1000` 已沿公共 `DesignDslAuthority.admit(rawUtf8)` 接入唯一
+  Template-owned capacity authority；每个 root Canvas 轴只 canonicalize 一次，按
+  `width min→max -> height min→max` fail-fast，below/at 成功，scale-64 above 与 reject/invalid/throw 均保留 exact
+  property code/stage/limit。实现 `3b662149`；冻结 canonical kernel v1/8 的 parser number-token bytes/digest 未改。
+- immutable v9 target SHA-256 `ad06c0415cfaad9e636a536b57c0d32c2ad4ad73a72d103c36bbdf458ec70abf`、
+  21317 bytes；component `.sdlc/evidence/20260829-1923-template-t196-component/` Java 195/195（A1）+
+  TypeScript 195/195、2692 checks（A2），wired 57/65、remaining geometry 8、formal records 0。
+- RED→GREEN focused 23/23、Template module 146/146；`template`
+  `.sdlc/evidence/20260829-192419-template/metadata.json` 与 `fast`
+  `.sdlc/evidence/20260829-192451-fast/metadata.json` passed/A1，Template Java/Python 211/211 及 static/registry
+  replay 全绿。本票释放 claim；A3 无，J0 pending、J1 未批准，server/full 按非 app-wiring boundary 未重复，
+  provider/API Key/真实数据/生产/Profile/native build/push/tag/PR 均未推进。下一轮从 cap-058 登记一个 frontier。
+
 # 2026-08-29 Template-v1 T195 Canvas trim exclusive-min（resolved / automated_verified）
 - cap-056 `geometry.canvasTrimMmPerAxisExclusiveMin` 已沿公共 `DesignDslAuthority.admit(rawUtf8)` 接入唯一
   Template-owned capacity authority；root Canvas `widthMm`→`heightMm` 各观察一次，below/at 与
