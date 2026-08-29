@@ -925,6 +925,13 @@ Label: wayfinder:map
 
 ## Current frontier
 
+- [T208 — 发行 Rendering Pipeline 156+156 容量记录](issues/208-issue-rendering-pipeline-capacity-records.md)
+  — **resolved / automated_verified / unclaimed**；实现 `5da2bd93`、target `6966be31`、derived hardening
+  `525db9bc`/`86ae31ee`/`c2f8e827`/`731e7dcb` 与 issuance `7530c324` 保持 formal 253/253 prefix
+  逐字节不变，仅追加 assigned 156+156 suffix。formal 409/409、capacity 363/525、ordinal 4=
+  `EXECUTABLE_A2_REPLAYED`；Node/Python 4567/4567、SPEC 24519/24427、Editor formal 0/0，fresh `template`/
+  `fast` passed。A1/A2 passed，A3 absent、J0 pending、J1 未批准且本票不需要；claim 已释放。Renderer Exact
+  Output 162 条、combined/non-capacity、Editor J1 与 Ticket 19 继续 pending，下一 preissuance frontier 尚未登记或 claim。
 - [T207 — 物化 Rendering Pipeline execution-class preissuance](issues/207-rendering-pipeline-execution-class-preissuance.md)
   — **resolved / automated_verified / unclaimed**；实现 `665f9568`、gate hardening `3da7892a`、digest fix
   `9782359c` 与 target `9f1a3f44` 已冻结 Java Evaluator/Sealer → exact command/document → Rust public

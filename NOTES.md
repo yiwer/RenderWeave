@@ -1,5 +1,17 @@
 # NOTES.md
 
+# 2026-08-29 Template-v1 T208 Rendering Pipeline formal issuance（resolved / automated_verified）
+- 实现 `5da2bd93`、immutable target `6966be31`、derived hardening `525db9bc`/`86ae31ee`/`c2f8e827`/
+  `731e7dcb` 与 issuance `7530c324`；target SHA=`eaa7a953...7da9c428`，assigned digest=
+  `a91ad6cc...5365ad4c`。253/253 prefix byte-identical，仅追加 assigned 156+156；formal 409/409、capacity
+  363/525、ordinal 4=`EXECUTABLE_A2_REPLAYED`。
+- fresh issuance `20260829-232541-rendering-pipeline-record-issuance` Node/Python 4567/4567（A2）；final
+  `template` `20260829-233035` 与 `fast` `20260829-233111` passed（A1），SPEC 24519/24427、Editor
+  38/21867 且 Editor formal 0/0。A3 absent、J0 pending、J1 未批准且本 provider-zero ticket 不需要。
+- 无 API/OpenAPI/Web/Flyway/product/Profile/Renderer deployment delta，Provider/network/API-key/真实数据 attempts 0，
+  未 push/tag/PR，用户 dirty work/stash 未触碰。claim 已释放；下一 Renderer Exact Output 162 records
+  preissuance frontier 尚未登记或 claim，combined/non-capacity/Editor J1/Ticket 19 继续 pending。
+
 # 2026-08-29 Template-v1 T207 Rendering Pipeline execution-class preissuance（resolved / automated_verified）
 - 实现 `665f9568`、gate hardening `3da7892a`、digest evidence fix `9782359c`、target `9f1a3f44`；target
   SHA-256 `a834125e...c99bd9`，assigned digest `a91ad6cc...65ad4c`，materializer 3/3 byte-identical。

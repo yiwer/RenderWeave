@@ -6678,3 +6678,28 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
 - formal 仍 253/253、本 class 0/0、ordinal 4 pending、`recordIssuanceAllowed=false`、
   `executionClassExecutable=false`；A3 absent、J0 pending、J1 未批准。无 Profile/deployment/API/provider/真实数据/
   生产/push/tag/PR，claim 已释放；下一 frontier 为独立 156+156 formal issuance，尚未登记或 claim。
+
+## 208. TV1-T208 执行卡
+
+- 状态：`resolved / automated_verified / unclaimed`；Blocked by T207（resolved）。
+- authority：只把 T207 已冻结且 A2 replay 的 Rendering Pipeline assigned 156 Case + 156 Oracle 从 candidate
+  transport 原序追加到 formal registry；当前 253/253 bytes 是不可变 prefix，目标 poststate 为 409/409。
+- seam/scope：deterministic issuance target 绑定 T207 exact target/two executor manifests、central prestate、candidate
+  suffix 与 expected poststate；materializer 只接受 exact prestate 或完整 poststate，Node primary/Python independent
+  只经 formal registry + central lifecycle public facts 双重 replay，不共享 semantic library。
+- TDD/gates：先取 missing issuer/target/postissuance gate RED；先提交实现 revision，再物化 target、要求 byte-identical
+  replay、apply once、双 postissuance replay。fresh T207 class gate 后运行 T208 issuance、`template`、`fast`。
+- boundary：只推进 ordinal 4=`EXECUTABLE_A2_REPLAYED` 与 capacity 363/525；Renderer Exact Output 162 条、combined/
+  non-capacity、Editor J1、Profile/certification/READY/Ticket 19 closure 均 pending。无 API/provider/API Key/真实数据/
+  生产/push/tag/PR，不改用户 dirty work/stash。claim 时 A0、J0 pending、J1 未批准。
+- resolution：实现 `5da2bd93`、immutable target `6966be31`、derived replay/idempotency hardening
+  `525db9bc`/`86ae31ee`/`c2f8e827`/`731e7dcb` 与 formal issuance `7530c324`。target SHA-256
+  `eaa7a953...7da9c428`，assigned digest `a91ad6cc...5365ad4c`；253/253 prefix byte-identical，formal
+  409/409、capacity 363/525、ordinal 4=`EXECUTABLE_A2_REPLAYED`。
+- verification：fresh T207 class replay `template-v1-t208-rendering-preissuance-20260829-2323`；fresh T208
+  issuance `20260829-232541-rendering-pipeline-record-issuance` 为 Node/Python 4567/4567（A2）；final
+  `template` `20260829-233035` 与 `fast` `20260829-233111` passed（A1），SPEC 24519/24427、Editor
+  38/21867 且 Editor formal 0/0。A3 absent、J0 pending、J1 未批准且本 provider-zero ticket 不需要。
+- closure：Provider/network/API-key/真实数据 attempts 0；无 product/API/OpenAPI/Web/Flyway/Profile/Renderer
+  deployment delta，未 push/tag/PR，用户 dirty work/stash 未触碰。claim 已释放；Renderer Exact Output 162 条
+  preissuance 为下一安全 frontier，尚未登记或 claim，Ticket 19 保持 open。
