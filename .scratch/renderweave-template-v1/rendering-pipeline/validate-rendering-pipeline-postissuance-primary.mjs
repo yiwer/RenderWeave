@@ -319,16 +319,28 @@ function replay() {
     phase?.formalIssuedOracleCount === ISSUED_CAPACITY_COUNT,
   "BOOTSTRAP_CAPACITY_COUNTS", JSON.stringify(phase));
   const specTarget = json(`${SPEC_ROOT}/spec-registry/target-manifest-v1.json`);
-  const issuance = specTarget.registryBindings.appendOnlyIssuance;
-  check(specTarget.implementationRevision === "spec-registry-bootstrap/1.15" &&
+  const specBindings = specTarget.registryBindings;
+  const issuance = specBindings.appendOnlyIssuance;
+  check(specTarget.status === "ISSUED_APPEND_ONLY_EXACT_TARGET" &&
+    specBindings.formalStatus === "ISSUED_APPEND_ONLY_PREFIX" &&
+    specBindings.formalCases.expectedSha256 === target.poststate.formalCases.sha256 &&
+    specBindings.formalCases.observedSha256 === target.poststate.formalCases.sha256 &&
+    specBindings.formalOracles.expectedSha256 === target.poststate.formalOracles.sha256 &&
+    specBindings.formalOracles.observedSha256 === target.poststate.formalOracles.sha256 &&
     issuance.appendedExecutionClass === EXECUTION_CLASS &&
     issuance.appendedCaseCount === ASSIGNED_COUNT &&
     issuance.appendedOracleCount === ASSIGNED_COUNT &&
-    issuance.assignedCorpusDigest === target.assignedCorpus.assignedCorpusDigest,
+    issuance.assignedCorpusDigest === target.assignedCorpus.assignedCorpusDigest &&
+    issuance.preservedCasePrefixSha256 === target.poststate.formalCases.preservedPrefixSha256 &&
+    issuance.preservedOraclePrefixSha256 === target.poststate.formalOracles.preservedPrefixSha256,
   "SPEC_TARGET_ISSUANCE", specTarget.implementationRevision);
   check(issuance.target.path === targetPath.replace(`${SPEC_ROOT}/`, "") &&
     issuance.target.sha256 === digest(targetBytes) &&
     issuance.target.byteLength === targetBytes.length &&
+    issuance.predecessorIssuance.target.path ===
+      target.prestate.previousCapacityIssuance.path.replace(`${SPEC_ROOT}/`, "") &&
+    issuance.predecessorIssuance.target.sha256 === target.prestate.previousCapacityIssuance.sha256 &&
+    issuance.predecessorIssuance.target.byteLength === target.prestate.previousCapacityIssuance.byteLength &&
     issuance.predecessorIssuance.appendedExecutionClass === PREDECESSOR_CLASS,
   "SPEC_TARGET_ISSUANCE_CHAIN", issuance.target.path);
 

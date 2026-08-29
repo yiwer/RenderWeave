@@ -400,18 +400,41 @@ class Replay:
             self.read(f"{SPEC_ROOT}/spec-registry/target-manifest-v1.json"),
             "SPEC target",
         )
-        issuance = spec_target["registryBindings"]["appendOnlyIssuance"]
-        self.check(spec_target.get("implementationRevision") == "spec-registry-bootstrap/1.15" and
+        spec_bindings = spec_target["registryBindings"]
+        issuance = spec_bindings["appendOnlyIssuance"]
+        self.check(spec_target.get("status") == "ISSUED_APPEND_ONLY_EXACT_TARGET" and
+                   spec_bindings.get("formalStatus") == "ISSUED_APPEND_ONLY_PREFIX" and
+                   spec_bindings["formalCases"].get("expectedSha256") ==
+                   target["poststate"]["formalCases"]["sha256"] and
+                   spec_bindings["formalCases"].get("observedSha256") ==
+                   target["poststate"]["formalCases"]["sha256"] and
+                   spec_bindings["formalOracles"].get("expectedSha256") ==
+                   target["poststate"]["formalOracles"]["sha256"] and
+                   spec_bindings["formalOracles"].get("observedSha256") ==
+                   target["poststate"]["formalOracles"]["sha256"] and
                    issuance.get("appendedExecutionClass") == EXECUTION_CLASS and
                    issuance.get("appendedCaseCount") == ASSIGNED_COUNT and
                    issuance.get("appendedOracleCount") == ASSIGNED_COUNT and
                    issuance.get("assignedCorpusDigest") ==
-                   target["assignedCorpus"]["assignedCorpusDigest"],
+                   target["assignedCorpus"]["assignedCorpusDigest"] and
+                   issuance.get("preservedCasePrefixSha256") ==
+                   target["poststate"]["formalCases"]["preservedPrefixSha256"] and
+                   issuance.get("preservedOraclePrefixSha256") ==
+                   target["poststate"]["formalOracles"]["preservedPrefixSha256"],
                    "SPEC_TARGET_ISSUANCE", spec_target.get("implementationRevision"))
         expected_target_path = self.target_path.removeprefix(f"{SPEC_ROOT}/")
+        expected_predecessor_path = target["prestate"]["previousCapacityIssuance"]["path"].removeprefix(
+            f"{SPEC_ROOT}/"
+        )
         self.check(issuance.get("target", {}).get("path") == expected_target_path and
                    issuance.get("target", {}).get("sha256") == sha256(target_bytes) and
                    issuance.get("target", {}).get("byteLength") == len(target_bytes) and
+                   issuance.get("predecessorIssuance", {}).get("target", {}).get("path") ==
+                   expected_predecessor_path and
+                   issuance.get("predecessorIssuance", {}).get("target", {}).get("sha256") ==
+                   target["prestate"]["previousCapacityIssuance"]["sha256"] and
+                   issuance.get("predecessorIssuance", {}).get("target", {}).get("byteLength") ==
+                   target["prestate"]["previousCapacityIssuance"]["byteLength"] and
                    issuance.get("predecessorIssuance", {}).get("appendedExecutionClass") ==
                    PREDECESSOR_CLASS,
                    "SPEC_TARGET_ISSUANCE_CHAIN", issuance.get("target"))
