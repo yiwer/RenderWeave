@@ -4359,3 +4359,29 @@
   A2/A3，既有独立 replay 不冒充本票证据；J0 pending、J1 未批准，未重复 server/full。
 - 状态回填后的 `fast` A1 `.sdlc/evidence/20260829-090701-fast/` metadata passed、3/3；stderr 仅 npm 配置
   warning，step exit code 与 metadata truth 均为成功。
+
+# 2026-08-29 Template-v1 T171 Capability position bytes per-demand guard 合流（resolved / automated_verified）
+
+- T170 已以 verified commit `32a0c7b1` 收口，worktree clean、ahead 161 且 DAG 无其他 active claim；冻结
+  `RW-T19-S8-028` / cap-041 是下一个 unblocked frontier，现按 single-writer claim T171。
+- cap-041 固定 `capabilityRuntime.positionCanonicalBytesPerDemand` MAX_INCLUSIVE `2048`、observed
+  `2047/2048/2049`，CAPABILITY_FIRST_DEMAND / public MATERIALIZATION / CAPABILITY_BUDGET_EXCEEDED /
+  ZERO_DOCUMENT_OUTPUT，reservation point 为下一 total+kind demand 在 state/result 返回前。
+- T131 已有真实 position-byte admission；本票只做 exact production guard 合流，保留 effectiveBudgetVector 收紧、
+  total→kind→per-demand→position-total first-failure，以及所有 admission 成功后才共同提交 counters 的原子边界。
+- cap-042+ position-total/state/result/retry/rejection 轴继续 deferred；claim 时 A0、J0。无 app wiring/API/Web/
+  migration/Profile/provider/API Key/真实数据/费用/Profile registration/push/tag/PR。
+- TDD 首轮得到缺失 `CAPABILITY_RUNTIME_POSITION_CANONICAL_BYTES_PER_DEMAND` 的唯一预期 compile RED；catalog 与
+  production tracker 合流后 guard + CapabilityValues 47/47，expanded focused 125/125。未伪造行为 RED：T131 已有
+  正确 admission，本票只收敛 frozen guard authority。
+- `RenderingPipelineCapacityGuard` 现独占 per-demand position id/2048/problem/public stage；effective maximum 只能
+  在 `0..2048` 收紧。`CapabilityBudget` 删除重复常量与直接比较，继续按 total→kind→per-demand→position-total
+  admission，全部成功后才提交 counters。
+- 首个 2049-byte CLOCK demand 以 per-demand limitId 失败；随后 4096 CLOCK + 4096 RANDOM、每个 2048 bytes 均成功，
+  精确填满 total/kind/position-total 三轴，证明失败未部分提交任一 counter；公开 Evaluator max `1` 回归仍证明
+  provider 调用为零。
+- 受影响 reactor 为 20/13/84/92/265；`render` A1 `.sdlc/evidence/20260829-091126-render/`（2/2）与 `fast` A1
+  `.sdlc/evidence/20260829-091213-fast/`（3/3）metadata passed，`git diff --check` 通过。cap-041 无 T171 专属
+  A2/A3，既有独立 replay 不冒充本票证据；J0 pending、J1 未批准，未重复 server/full。
+- 状态回填后的 `fast` A1 `.sdlc/evidence/20260829-091316-fast/` metadata passed、3/3；stderr 仅 npm 配置
+  warning，step exit code 与 metadata truth 均为成功。

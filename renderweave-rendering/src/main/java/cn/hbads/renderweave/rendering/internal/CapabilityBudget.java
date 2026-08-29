@@ -14,7 +14,6 @@ final class CapabilityBudget {
 
     private static final RenderingPipelineCapacityGuard CAPACITY_GUARD =
             new RenderingPipelineCapacityGuard();
-    private static final long MAX_POSITION_BYTES_PER_DEMAND = 2_048;
     private static final long MAX_POSITION_BYTES_TOTAL = 16_777_216;
     private static final long MAX_CAPABILITY_STATE_RECORD_BYTES = 1_048_576;
     private static final long MAX_RESULT_DIGEST_STREAMING_BYTES = 16_777_216;
@@ -37,7 +36,8 @@ final class CapabilityBudget {
                         .CAPABILITY_RUNTIME_CLOCK_DEMANDS),
                 CAPACITY_GUARD.maximumInclusive(RenderingPipelineCapacityGuard.Limit
                         .CAPABILITY_RUNTIME_RANDOM_DEMANDS),
-                MAX_POSITION_BYTES_PER_DEMAND,
+                CAPACITY_GUARD.maximumInclusive(RenderingPipelineCapacityGuard.Limit
+                        .CAPABILITY_RUNTIME_POSITION_CANONICAL_BYTES_PER_DEMAND),
                 MAX_POSITION_BYTES_TOTAL,
                 MAX_CAPABILITY_STATE_RECORD_BYTES,
                 MAX_RESULT_DIGEST_STREAMING_BYTES,
@@ -72,7 +72,8 @@ final class CapabilityBudget {
                         CAPACITY_GUARD.maximumInclusive(RenderingPipelineCapacityGuard.Limit
                                 .CAPABILITY_RUNTIME_RANDOM_DEMANDS)),
                 limit(limits, "positionCanonicalBytesPerDemand",
-                        MAX_POSITION_BYTES_PER_DEMAND),
+                        CAPACITY_GUARD.maximumInclusive(RenderingPipelineCapacityGuard.Limit
+                                .CAPABILITY_RUNTIME_POSITION_CANONICAL_BYTES_PER_DEMAND)),
                 limit(limits, "positionCanonicalBytesTotal", MAX_POSITION_BYTES_TOTAL),
                 limit(limits, "capabilityStateRecordBytes",
                         MAX_CAPABILITY_STATE_RECORD_BYTES),
@@ -210,8 +211,15 @@ final class CapabilityBudget {
                             randomProblem.limitId().orElseThrow().value());
                 }
             }
-            if (canonicalPositionBytes > limits.positionBytesPerDemand()) {
-                return exceeded("positionCanonicalBytesPerDemand");
+            var positionPerDemandProblem = CAPACITY_GUARD.admit(
+                            RenderingPipelineCapacityGuard.Limit
+                                    .CAPABILITY_RUNTIME_POSITION_CANONICAL_BYTES_PER_DEMAND,
+                            canonicalPositionBytes,
+                            limits.positionBytesPerDemand())
+                    .orElse(null);
+            if (positionPerDemandProblem != null) {
+                return new LimitExceeded(
+                        positionPerDemandProblem.limitId().orElseThrow().value());
             }
             if (wouldExceed(positionBytes, canonicalPositionBytes, limits.positionBytesTotal())) {
                 return exceeded("positionCanonicalBytesTotal");

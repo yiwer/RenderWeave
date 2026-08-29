@@ -1040,6 +1040,12 @@ Label: wayfinder:map
   total→kind→position 顺序、effective tightening 与失败不提交 counters 的原子边界。4096 RANDOM exact-at、第 4097
   个以 random limitId 失败，随后 4096 CLOCK 仍可将 total 推至 8192；focused 123/123、受影响 reactor
   20/13/84/92/263 与 render/fast metadata 全绿；A1、无 T170 专属 A2/A3、J0。
+- [T171 — Capability position bytes per-demand production guard 合流](issues/171-capability-position-bytes-per-demand-production-guard.md)
+  — **resolved / automated_verified**；blocked by T21/T131/T170（均 resolved）。按 `RW-T19-S8-028` 与 cap-041，
+  已将 T131 position canonical bytes per-demand admission 合流到唯一 production guard；删除重复 frozen
+  maximum/比较并保留 total→kind→per-demand→position-total 顺序、effective tightening 与失败不提交 counters 的
+  原子边界。2049-byte 拒绝后 4096 CLOCK + 4096 RANDOM × 2048 bytes 仍精确填满全部相关轴；focused 125/125、
+  受影响 reactor 20/13/84/92/265 与 render/fast metadata 全绿；A1、无 T171 专属 A2/A3、J0。
 
 - 改写或重解释现有 Schema/Inference v1 已提交历史，或在 dirty main 上直接实施 Template。
 - Workspace、组织/成员/分享/协作、跨 ownerScope 复制、通用 connector、任意 SQL/HTTP/文件/脚本、插件节点或运行时代码注册。

@@ -760,4 +760,28 @@ class RenderingPipelineCapacityGuardTest {
         assertThrows(IllegalArgumentException.class,
                 () -> guard.admit(limit, 1, 4_097));
     }
+
+    @Test
+    void capabilityPositionBytesPerDemandUsesTheFrozenProductionGuardContract() {
+        var guard = new RenderingPipelineCapacityGuard();
+        var limit = RenderingPipelineCapacityGuard.Limit
+                .CAPABILITY_RUNTIME_POSITION_CANONICAL_BYTES_PER_DEMAND;
+
+        assertTrue(guard.admit(limit, 2_047L).isEmpty());
+        assertTrue(guard.admit(limit, 2_048L).isEmpty());
+
+        var problem = guard.admit(limit, 2_049L)
+                .orElseThrow();
+        assertEquals(EvaluationStage.MATERIALIZATION, problem.stage());
+        assertEquals(ProblemCode.CAPABILITY_BUDGET_EXCEEDED, problem.code());
+        assertEquals("capabilityRuntime.positionCanonicalBytesPerDemand",
+                problem.limitId().orElseThrow().value());
+
+        assertTrue(guard.admit(limit, 1, 1).isEmpty());
+        assertEquals("capabilityRuntime.positionCanonicalBytesPerDemand",
+                guard.admit(limit, 2, 1).orElseThrow()
+                        .limitId().orElseThrow().value());
+        assertThrows(IllegalArgumentException.class,
+                () -> guard.admit(limit, 1, 2_049));
+    }
 }
