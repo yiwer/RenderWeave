@@ -114,7 +114,9 @@ public interface DesignDslAuthority {
                 "geometry.canvasTrimMmPerAxisExclusiveMin"),
         GEOMETRY_CANVAS_TRIM_MM_PER_AXIS_MAX("geometry.canvasTrimMmPerAxisMax"),
         GEOMETRY_BLEED_MM_PER_SIDE_MIN("geometry.bleedMmPerSideMin"),
-        GEOMETRY_BLEED_MM_PER_SIDE_MAX("geometry.bleedMmPerSideMax");
+        GEOMETRY_BLEED_MM_PER_SIDE_MAX("geometry.bleedMmPerSideMax"),
+        GEOMETRY_AUTHORED_COORDINATE_OR_LENGTH_MM_ABSOLUTE_MAX(
+                "geometry.authoredCoordinateOrLengthMmAbsoluteMax");
 
         private final String id;
 

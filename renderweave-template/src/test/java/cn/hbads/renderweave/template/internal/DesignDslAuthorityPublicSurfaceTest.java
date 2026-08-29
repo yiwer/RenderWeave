@@ -155,7 +155,8 @@ class DesignDslAuthorityPublicSurfaceTest {
                         "geometry.canvasTrimMmPerAxisExclusiveMin",
                         "geometry.canvasTrimMmPerAxisMax",
                         "geometry.bleedMmPerSideMin",
-                        "geometry.bleedMmPerSideMax"
+                        "geometry.bleedMmPerSideMax",
+                        "geometry.authoredCoordinateOrLengthMmAbsoluteMax"
                 },
                 Arrays.stream(DesignDslAuthority.Limit.values())
                         .map(DesignDslAuthority.Limit::id)

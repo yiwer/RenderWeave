@@ -984,7 +984,7 @@ final class CanonicalDesignDslAuthority implements DesignDslAuthority {
             direction = string(node.members().get("direction"), pointer + "/direction");
         }
         if (node.members().containsKey("gapMm")) {
-            nonNegativeDecimal(node, "gapMm", pointer + "/gapMm");
+            nonNegativeAuthoredMmDecimal(node, "gapMm", pointer + "/gapMm");
         }
         if (node.members().containsKey("justifyContent")) {
             enumMember(node, "justifyContent", NodeContractCatalog.JUSTIFY_CONTENT_TOKENS,
@@ -1002,10 +1002,10 @@ final class CanonicalDesignDslAuthority implements DesignDslAuthority {
             String pointer
     ) throws DesignDslFailureException {
         if (node.members().containsKey("rowGapMm")) {
-            nonNegativeDecimal(node, "rowGapMm", pointer + "/rowGapMm");
+            nonNegativeAuthoredMmDecimal(node, "rowGapMm", pointer + "/rowGapMm");
         }
         if (node.members().containsKey("columnGapMm")) {
-            nonNegativeDecimal(node, "columnGapMm", pointer + "/columnGapMm");
+            nonNegativeAuthoredMmDecimal(node, "columnGapMm", pointer + "/columnGapMm");
         }
         validateTracks(node, "rows", pointer + "/rows");
         validateTracks(node, "columns", pointer + "/columns");
@@ -1028,7 +1028,7 @@ final class CanonicalDesignDslAuthority implements DesignDslAuthority {
             switch (type) {
                 case "FIXED" -> {
                     rejectUnknown(track, Set.of("type", "valueMm"), trackPointer);
-                    positiveDecimal(track, "valueMm", trackPointer + "/valueMm");
+                    positiveAuthoredMmDecimal(track, "valueMm", trackPointer + "/valueMm");
                 }
                 case "FRACTION" -> {
                     rejectUnknown(track, Set.of("type", "weight"), trackPointer);
@@ -1050,7 +1050,7 @@ final class CanonicalDesignDslAuthority implements DesignDslAuthority {
         var stroke = object(value, pointer);
         rejectUnknown(stroke, NodeContractCatalog.STROKE_MM_MEMBERS, pointer);
         colorMember(stroke, "color", pointer + "/color");
-        positiveDecimal(stroke, "widthMm", pointer + "/widthMm");
+        positiveAuthoredMmDecimal(stroke, "widthMm", pointer + "/widthMm");
         enumMember(stroke, "cap", NodeContractCatalog.STROKE_CAP_TOKENS, pointer + "/cap");
         enumMember(stroke, "join", NodeContractCatalog.STROKE_JOIN_TOKENS, pointer + "/join");
     }
@@ -1059,7 +1059,7 @@ final class CanonicalDesignDslAuthority implements DesignDslAuthority {
         var padding = object(value, pointer);
         rejectUnknown(padding, NodeContractCatalog.PADDING_MEMBERS, pointer);
         for (var member : NodeContractCatalog.PADDING_MEMBER_ORDER) {
-            nonNegativeDecimal(padding, member, pointer + "/" + member);
+            nonNegativeAuthoredMmDecimal(padding, member, pointer + "/" + member);
         }
     }
 
@@ -1067,7 +1067,7 @@ final class CanonicalDesignDslAuthority implements DesignDslAuthority {
         var radii = object(value, pointer);
         rejectUnknown(radii, NodeContractCatalog.CORNER_RADII_MEMBERS, pointer);
         for (var member : NodeContractCatalog.CORNER_RADII_MEMBER_ORDER) {
-            nonNegativeDecimal(radii, member, pointer + "/" + member);
+            nonNegativeAuthoredMmDecimal(radii, member, pointer + "/" + member);
         }
     }
 
@@ -1592,17 +1592,18 @@ final class CanonicalDesignDslAuthority implements DesignDslAuthority {
                 enumMember(spec, "direction", NodeContractCatalog.STACK_DIRECTION_TOKENS,
                         pointer + "/direction");
                 if (spec.members().containsKey("gapMm")) {
-                    nonNegativeDecimal(spec, "gapMm", pointer + "/gapMm");
+                    nonNegativeAuthoredMmDecimal(spec, "gapMm", pointer + "/gapMm");
                 }
             }
             case "GRID" -> {
                 rejectUnknown(spec, NodeContractCatalog.GRID_PACKING_SPEC_MEMBERS, pointer);
                 positiveIntegerMember(spec, "columns", pointer + "/columns");
                 if (spec.members().containsKey("columnGapMm")) {
-                    nonNegativeDecimal(spec, "columnGapMm", pointer + "/columnGapMm");
+                    nonNegativeAuthoredMmDecimal(
+                            spec, "columnGapMm", pointer + "/columnGapMm");
                 }
                 if (spec.members().containsKey("rowGapMm")) {
-                    nonNegativeDecimal(spec, "rowGapMm", pointer + "/rowGapMm");
+                    nonNegativeAuthoredMmDecimal(spec, "rowGapMm", pointer + "/rowGapMm");
                 }
             }
             default -> throw failure(FailureCode.DESIGN_VALUE_INVALID, pointer + "/kind");
@@ -1851,34 +1852,34 @@ final class CanonicalDesignDslAuthority implements DesignDslAuthority {
                 case "MOVE_TO" -> {
                     rejectUnknown(command, NodeContractCatalog.MOVE_TO_COMMAND_MEMBERS,
                             commandPointer);
-                    decimalMember(command, "xMm", commandPointer + "/xMm");
-                    decimalMember(command, "yMm", commandPointer + "/yMm");
+                    authoredMmDecimal(command, "xMm", commandPointer + "/xMm");
+                    authoredMmDecimal(command, "yMm", commandPointer + "/yMm");
                 }
                 case "LINE_TO" -> {
                     rejectUnknown(command, NodeContractCatalog.LINE_TO_COMMAND_MEMBERS,
                             commandPointer);
-                    decimalMember(command, "xMm", commandPointer + "/xMm");
-                    decimalMember(command, "yMm", commandPointer + "/yMm");
+                    authoredMmDecimal(command, "xMm", commandPointer + "/xMm");
+                    authoredMmDecimal(command, "yMm", commandPointer + "/yMm");
                     hasDrawing = true;
                 }
                 case "QUAD_TO" -> {
                     rejectUnknown(command, NodeContractCatalog.QUAD_TO_COMMAND_MEMBERS,
                             commandPointer);
-                    decimalMember(command, "cxMm", commandPointer + "/cxMm");
-                    decimalMember(command, "cyMm", commandPointer + "/cyMm");
-                    decimalMember(command, "xMm", commandPointer + "/xMm");
-                    decimalMember(command, "yMm", commandPointer + "/yMm");
+                    authoredMmDecimal(command, "cxMm", commandPointer + "/cxMm");
+                    authoredMmDecimal(command, "cyMm", commandPointer + "/cyMm");
+                    authoredMmDecimal(command, "xMm", commandPointer + "/xMm");
+                    authoredMmDecimal(command, "yMm", commandPointer + "/yMm");
                     hasDrawing = true;
                 }
                 case "CUBIC_TO" -> {
                     rejectUnknown(command, NodeContractCatalog.CUBIC_TO_COMMAND_MEMBERS,
                             commandPointer);
-                    decimalMember(command, "c1xMm", commandPointer + "/c1xMm");
-                    decimalMember(command, "c1yMm", commandPointer + "/c1yMm");
-                    decimalMember(command, "c2xMm", commandPointer + "/c2xMm");
-                    decimalMember(command, "c2yMm", commandPointer + "/c2yMm");
-                    decimalMember(command, "xMm", commandPointer + "/xMm");
-                    decimalMember(command, "yMm", commandPointer + "/yMm");
+                    authoredMmDecimal(command, "c1xMm", commandPointer + "/c1xMm");
+                    authoredMmDecimal(command, "c1yMm", commandPointer + "/c1yMm");
+                    authoredMmDecimal(command, "c2xMm", commandPointer + "/c2xMm");
+                    authoredMmDecimal(command, "c2yMm", commandPointer + "/c2yMm");
+                    authoredMmDecimal(command, "xMm", commandPointer + "/xMm");
+                    authoredMmDecimal(command, "yMm", commandPointer + "/yMm");
                     hasDrawing = true;
                 }
                 case "CLOSE" -> {
@@ -2028,8 +2029,8 @@ final class CanonicalDesignDslAuthority implements DesignDslAuthority {
             throws DesignDslFailureException {
         var point = object(value, pointer);
         rejectUnknown(point, NodeContractCatalog.POINT_MM_MEMBERS, pointer);
-        var x = decimalValue(required(point, "xMm", pointer + "/xMm"), pointer + "/xMm");
-        var y = decimalValue(required(point, "yMm", pointer + "/yMm"), pointer + "/yMm");
+        var x = authoredMmValue(required(point, "xMm", pointer + "/xMm"), pointer + "/xMm");
+        var y = authoredMmValue(required(point, "yMm", pointer + "/yMm"), pointer + "/yMm");
         return new BigDecimal[]{x, y};
     }
 
@@ -2083,8 +2084,8 @@ final class CanonicalDesignDslAuthority implements DesignDslAuthority {
         switch (variant) {
             case ABSOLUTE -> {
                 rejectUnknown(placement, NodeContractCatalog.ABSOLUTE_PLACEMENT_MEMBERS, pointer);
-                decimalMember(placement, "xMm", pointer + "/xMm");
-                decimalMember(placement, "yMm", pointer + "/yMm");
+                authoredMmDecimal(placement, "xMm", pointer + "/xMm");
+                authoredMmDecimal(placement, "yMm", pointer + "/yMm");
             }
             case STACK -> rejectUnknown(placement, NodeContractCatalog.STACK_PLACEMENT_MEMBERS, pointer);
             case GRID -> {
@@ -2135,12 +2136,12 @@ final class CanonicalDesignDslAuthority implements DesignDslAuthority {
             throw failure(FailureCode.DESIGN_VALUE_INVALID, pointer + "/heightMode");
         }
         if (widthMode == NodeContractCatalog.SizeMode.FIXED) {
-            positiveDecimal(placement, "widthMm", pointer + "/widthMm");
+            positiveAuthoredMmDecimal(placement, "widthMm", pointer + "/widthMm");
         } else if (placement.members().containsKey("widthMm")) {
             throw failure(FailureCode.DESIGN_VALUE_INVALID, pointer + "/widthMm");
         }
         if (heightMode == NodeContractCatalog.SizeMode.FIXED) {
-            positiveDecimal(placement, "heightMm", pointer + "/heightMm");
+            positiveAuthoredMmDecimal(placement, "heightMm", pointer + "/heightMm");
         } else if (placement.members().containsKey("heightMm")) {
             throw failure(FailureCode.DESIGN_VALUE_INVALID, pointer + "/heightMm");
         }
@@ -2161,20 +2162,20 @@ final class CanonicalDesignDslAuthority implements DesignDslAuthority {
                 if (widthMode != NodeContractCatalog.SizeMode.FILL) {
                     throw failure(FailureCode.DESIGN_VALUE_INVALID, pointer + "/rightInsetMm");
                 }
-                decimalMember(placement, "rightInsetMm", pointer + "/rightInsetMm");
+                authoredMmDecimal(placement, "rightInsetMm", pointer + "/rightInsetMm");
             }
             if (placement.members().containsKey("bottomInsetMm")) {
                 if (heightMode != NodeContractCatalog.SizeMode.FILL) {
                     throw failure(FailureCode.DESIGN_VALUE_INVALID, pointer + "/bottomInsetMm");
                 }
-                decimalMember(placement, "bottomInsetMm", pointer + "/bottomInsetMm");
+                authoredMmDecimal(placement, "bottomInsetMm", pointer + "/bottomInsetMm");
             }
         }
         if (variant == NodeContractCatalog.PlacementVariant.STACK) {
             for (var member : List.of(
                     "marginTopMm", "marginRightMm", "marginBottomMm", "marginLeftMm")) {
                 if (placement.members().containsKey(member)) {
-                    decimalMember(placement, member, pointer + "/" + member);
+                    authoredMmDecimal(placement, member, pointer + "/" + member);
                 }
             }
             if (placement.members().containsKey("alignSelf")) {
@@ -2201,7 +2202,7 @@ final class CanonicalDesignDslAuthority implements DesignDslAuthority {
             for (var member : List.of(
                     "marginTopMm", "marginRightMm", "marginBottomMm", "marginLeftMm")) {
                 if (placement.members().containsKey(member)) {
-                    decimalMember(placement, member, pointer + "/" + member);
+                    authoredMmDecimal(placement, member, pointer + "/" + member);
                 }
             }
             if (widthMode == NodeContractCatalog.SizeMode.FILL
@@ -2223,10 +2224,10 @@ final class CanonicalDesignDslAuthority implements DesignDslAuthority {
             var minName = "min" + axis + "Mm";
             var maxName = "max" + axis + "Mm";
             if (placement.members().containsKey(minName)) {
-                nonNegativeDecimal(placement, minName, pointer + "/" + minName);
+                nonNegativeAuthoredMmDecimal(placement, minName, pointer + "/" + minName);
             }
             if (placement.members().containsKey(maxName)) {
-                positiveDecimal(placement, maxName, pointer + "/" + maxName);
+                positiveAuthoredMmDecimal(placement, maxName, pointer + "/" + maxName);
             }
             if (placement.members().containsKey(minName) && placement.members().containsKey(maxName)) {
                 var min = decimalValue(placement.members().get(minName), pointer + "/" + minName);
@@ -2463,6 +2464,54 @@ final class CanonicalDesignDslAuthority implements DesignDslAuthority {
         }
     }
 
+    private void authoredMmDecimal(
+            JsonValue.ObjectValue object,
+            String name,
+            String pointer
+    ) throws DesignDslFailureException {
+        reserveAuthoredMm(decimalValue(required(object, name, pointer), pointer), pointer);
+    }
+
+    private void positiveAuthoredMmDecimal(
+            JsonValue.ObjectValue object,
+            String name,
+            String pointer
+    ) throws DesignDslFailureException {
+        var value = decimalValue(required(object, name, pointer), pointer);
+        if (value.signum() <= 0) {
+            throw failure(FailureCode.DESIGN_VALUE_INVALID, pointer);
+        }
+        reserveAuthoredMm(value, pointer);
+    }
+
+    private void nonNegativeAuthoredMmDecimal(
+            JsonValue.ObjectValue object,
+            String name,
+            String pointer
+    ) throws DesignDslFailureException {
+        var value = decimalValue(required(object, name, pointer), pointer);
+        if (value.signum() < 0) {
+            throw failure(FailureCode.DESIGN_VALUE_INVALID, pointer);
+        }
+        reserveAuthoredMm(value, pointer);
+    }
+
+    private BigDecimal authoredMmValue(JsonValue value, String pointer)
+            throws DesignDslFailureException {
+        var decimal = decimalValue(value, pointer);
+        reserveAuthoredMm(decimal, pointer);
+        return decimal;
+    }
+
+    private void reserveAuthoredMm(BigDecimal value, String pointer)
+            throws DesignDslFailureException {
+        reserveCapacityDecimal(
+                value.abs(),
+                pointer,
+                Limit.GEOMETRY_AUTHORED_COORDINATE_OR_LENGTH_MM_ABSOLUTE_MAX
+        );
+    }
+
     private void canvasTrimDecimal(
             JsonValue.ObjectValue object,
             String name,
@@ -2483,24 +2532,27 @@ final class CanonicalDesignDslAuthority implements DesignDslAuthority {
             String pointer,
             Limit... limits
     ) throws DesignDslFailureException {
-        var value = required(object, name, pointer);
-        if (!(value instanceof JsonValue.NumberValue number)) {
-            throw failure(FailureCode.DESIGN_STRUCTURE_INVALID, pointer);
-        }
+        reserveCapacityDecimal(
+                decimalValue(required(object, name, pointer), pointer),
+                pointer,
+                limits
+        );
+    }
+
+    private void reserveCapacityDecimal(
+            BigDecimal decimal,
+            String pointer,
+            Limit... limits
+    ) throws DesignDslFailureException {
         String observed;
-        try {
-            var decimal = new BigDecimal(number.token());
-            if (decimal.signum() == 0) {
-                observed = "0";
-            } else {
-                var normalized = decimal.stripTrailingZeros();
-                if (plainDecimalLength(normalized) > MAX_CANONICAL_UTF8_BYTES) {
-                    throw canonicalLimitFailure();
-                }
-                observed = normalized.toPlainString();
+        if (decimal.signum() == 0) {
+            observed = "0";
+        } else {
+            var normalized = decimal.stripTrailingZeros();
+            if (plainDecimalLength(normalized) > MAX_CANONICAL_UTF8_BYTES) {
+                throw canonicalLimitFailure();
             }
-        } catch (NumberFormatException exception) {
-            throw failure(FailureCode.DESIGN_VALUE_INVALID, pointer);
+            observed = normalized.toPlainString();
         }
         for (var limit : limits) {
             DesignInputExpressionCapacityAuthority.Decision decision;
