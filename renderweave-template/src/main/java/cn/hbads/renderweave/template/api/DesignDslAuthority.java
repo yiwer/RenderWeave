@@ -113,7 +113,8 @@ public interface DesignDslAuthority {
         GEOMETRY_CANVAS_TRIM_MM_PER_AXIS_EXCLUSIVE_MIN(
                 "geometry.canvasTrimMmPerAxisExclusiveMin"),
         GEOMETRY_CANVAS_TRIM_MM_PER_AXIS_MAX("geometry.canvasTrimMmPerAxisMax"),
-        GEOMETRY_BLEED_MM_PER_SIDE_MIN("geometry.bleedMmPerSideMin");
+        GEOMETRY_BLEED_MM_PER_SIDE_MIN("geometry.bleedMmPerSideMin"),
+        GEOMETRY_BLEED_MM_PER_SIDE_MAX("geometry.bleedMmPerSideMax");
 
         private final String id;
 

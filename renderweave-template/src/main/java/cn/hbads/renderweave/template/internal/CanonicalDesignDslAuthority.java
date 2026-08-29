@@ -143,7 +143,8 @@ final class CanonicalDesignDslAuthority implements DesignDslAuthority {
                         bleed,
                         member,
                         "/designRoot/bleed/" + member,
-                        Limit.GEOMETRY_BLEED_MM_PER_SIDE_MIN
+                        Limit.GEOMETRY_BLEED_MM_PER_SIDE_MIN,
+                        Limit.GEOMETRY_BLEED_MM_PER_SIDE_MAX
                 );
             }
         }
