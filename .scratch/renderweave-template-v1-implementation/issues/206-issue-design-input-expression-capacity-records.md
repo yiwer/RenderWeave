@@ -1,8 +1,8 @@
 # T206 — Issue Design/Input/Expression capacity records
 
 Type: task
-Status: active / claimed
-Claimed by: Codex `/root`（single-writer）
+Status: resolved / automated_verified
+Claimed by: none（single-writer claim released）
 Blocked by: T205（resolved）
 
 ## Goal
@@ -42,3 +42,29 @@ atomically advance bootstrap ordinal 3 to `EXECUTABLE_A2_REPLAYED` without issui
   Profile, invoke Renderer/provider/API Key/real data/production, or claim J1/A3/READY/Ticket 19 closure.
 - Do not modify the user's Image/Inference dirty work or stash, and do not push, tag, or create a PR.
   Claim evidence is A0; J0 pending and J1 not approved.
+
+## Resolution
+
+- Issuer/replayer/gate implementation landed in `7d10f776`; transport hardening in `74ebc88c`; immutable
+  target binding in `eb843497`; formal issuance and central lifecycle update in `e75ba4c4`.
+- Target SHA-256 is `b5227039abe50a0b2f5f14ba90070e01dc28e34c783e141cd13ed67211dbed9d`;
+  assigned corpus digest is
+  `sha256:d50b78e0bc2e6bf3bd3708784e4d90001d8d51e76f33068b10272a74ff3a4776`.
+- The original 58/58 prefix remained byte-identical. Exactly 195 Cases and 195 Oracles were appended,
+  yielding 253/253 formal records and 207/525 issued capacity records. Ordinal 3 is now
+  `EXECUTABLE_A2_REPLAYED`; Rendering and Renderer Exact Output remain pending and Ticket 19 remains open.
+- Fresh preissuance evidence is
+  `.sdlc/evidence/20260829-221033-template-t206-design-input-expression-preissuance/`; fresh issuance evidence
+  is `.sdlc/evidence/20260829-221211-template-t206-design-input-expression-issuance/`. Node primary and Python
+  independent postissuance replay each passed 5,632 checks (A2), and poststate materialization replay was
+  6/6 byte-identical.
+- SPEC Registry 1.15 replay passed 23,377 Node and 23,285 Python checks over 404 artifacts. Editor-derived
+  replay passed 38 primary and 21,555 independent checks while retaining zero formal Editor records.
+- The first template-static replay correctly exposed a Git-for-Windows long-path transport failure at
+  `.sdlc/evidence/20260829-221324-template/`; binding `GIT_WORK_TREE` to the real repository root removed that
+  cwd-dependent failure without changing authority bytes. Fresh `template` evidence
+  `.sdlc/evidence/20260829-221731-template/` and `fast` evidence
+  `.sdlc/evidence/20260829-221902-fast/` both passed (A1).
+- A3 is absent; J0 remains pending and J1 was not approved. No app wiring or product-semantic delta was
+  introduced, so server/full were not repeated. Provider attempts remained zero; no API key, real data,
+  production, user dirty work/stash, push, tag, or PR was touched. Claim released.

@@ -6640,7 +6640,7 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
 
 ## 206. TV1-T206 执行卡
 
-- 状态：`active / claimed by Codex /root`；Blocked by T205（resolved）。
+- 状态：`resolved / automated_verified / unclaimed`；Blocked by T205（resolved）。
 - authority：bootstrap ordinal 3 已冻结 exact Java + TypeScript product target、两个 required executor manifests、
   observation adapter、assigned 195+195 candidate subset 与 digest；只有 append-only formal issuance、独立
   postissuance replay 和中央 lifecycle 原子一致后才可成为 executable。
@@ -6655,3 +6655,12 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
 - boundary：不发行其余 capacity/combined/non-capacity/Editor J1 records，不改 API/OpenAPI/Web/Flyway/产品语义，
   不运行 Renderer/Profile/provider/API Key/真实数据/生产/J1/A3/READY，不改用户 dirty work/stash，不 push/tag/PR；
   claim 时 A0、J0 pending、J1 未批准。
+- resolution：实现 `7d10f776`、transport hardening `74ebc88c`、immutable target `eb843497`、formal issuance
+  `e75ba4c4`。target SHA-256 `b5227039...dbed9d`、assigned digest `d50b78e0...a4776`；原 58/58 prefix
+  byte-identical，仅追加 195+195，formal 253/253、capacity 207/525、ordinal 3=`EXECUTABLE_A2_REPLAYED`。
+  preissuance `20260829-221033`、issuance `20260829-221211`；Node/Python 各 5632 checks，poststate 6/6
+  byte-identical（A2），SPEC 23377/23285、Editor derived 38/21555。首次 `template` `20260829-221324`
+  fail-closed 暴露 Git-for-Windows 长 cwd `revision:path` stat 问题；绑定真实 `GIT_WORK_TREE` 后 fresh
+  `template` `20260829-221731` 与 `fast` `20260829-221902` passed（A1）。A3 absent、J0 pending、J1 未批准；
+  无 app wiring/product-semantic delta，未重复 server/full。provider attempts 0，未触碰用户 dirty work/stash，
+  未 push/tag/PR。claim 已释放；Rendering/Renderer Exact Output 318 条与 Ticket 19 继续 pending。

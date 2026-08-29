@@ -926,10 +926,12 @@ Label: wayfinder:map
 ## Current frontier
 
 - [T206 — 发行 Design/Input/Expression 195+195 容量记录](issues/206-issue-design-input-expression-capacity-records.md)
-  — **active / claimed by Codex `/root`**；blocked by T205（resolved）。只接受 exact 58/58 prestate 或完整
-  253/253 poststate，保持旧 prefix 逐字节不变并仅追加 assigned Design/Input/Expression suffix；以 Node/Python
-  双 replay 和 fresh T205 class gate 把 ordinal 3 原子推进为 `EXECUTABLE_A2_REPLAYED`、全局 capacity 207/525。
-  Rendering/Renderer Exact Output 318 条继续 pending，Ticket 19 保持 open；A0、J0 pending、J1 未批准。
+  — **resolved / automated_verified / unclaimed**；实现 `7d10f776`、transport hardening `74ebc88c`、target
+  `eb843497` 与 issuance `e75ba4c4` 已保持原 58/58 prefix 逐字节不变并仅追加 assigned 195+195 suffix。
+  formal registry 为 253/253、capacity 为 207/525、ordinal 3=`EXECUTABLE_A2_REPLAYED`；Node/Python 各
+  5632 checks，poststate 6/6 byte-identical，SPEC 23377/23285、Editor derived 38/21555。fresh `template`/
+  `fast` passed（A1），双 postissuance replay 为 A2；A3 absent、J0 pending、J1 未批准。Rendering/Renderer
+  Exact Output 318 条继续 pending，Ticket 19 open；claim 已释放，下一 Rendering Pipeline frontier 尚未登记或 claim。
 - [T205 — 物化 Design/Input/Expression execution-class preissuance](issues/205-design-input-expression-execution-class-preissuance.md)
   — **resolved / automated_verified / unclaimed**；implementation `bc027d4b` 与 target `7d004bdc` 已冻结
   exact target + `java-semantic-authority` / `typescript-independent-authoring-replayer` manifests。target SHA-256
