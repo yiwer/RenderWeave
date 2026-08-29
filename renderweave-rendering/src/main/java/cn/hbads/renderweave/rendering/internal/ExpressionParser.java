@@ -16,13 +16,11 @@ import java.util.Objects;
  */
 final class ExpressionParser {
 
-    static final int MAX_AST_NODES = 4_096;
     private static final DesignInputExpressionCapacityGuard CAPACITY_GUARD =
             new DesignInputExpressionCapacityGuard();
 
     enum ParseFailureKind {
-        SYNTAX_INVALID,
-        AST_LIMIT_EXCEEDED
+        SYNTAX_INVALID
     }
 
     record ParseFailure(ParseFailureKind kind, int position, String limitId) {
@@ -47,6 +45,7 @@ final class ExpressionParser {
     private int position;
     private int nodeCount;
     private ParseFailure failure;
+    private RenderingProblem capacityProblem;
 
     private ExpressionParser(String source) {
         this.source = source;
@@ -67,6 +66,9 @@ final class ExpressionParser {
         }
         var parser = new ExpressionParser(new String(sourceUtf8, StandardCharsets.UTF_8));
         var expression = parser.parseExpression();
+        if (parser.capacityProblem != null) {
+            return new ParseLimitExceeded(parser.capacityProblem);
+        }
         if (parser.failure != null) {
             return new ParseRejected(parser.failure);
         }
@@ -86,11 +88,19 @@ final class ExpressionParser {
     }
 
     private ExpressionAst count(ExpressionAst node) {
-        nodeCount++;
-        if (nodeCount > MAX_AST_NODES) {
-            reject(ParseFailureKind.AST_LIMIT_EXCEEDED, position, "expression.astNodesPerExpression");
+        if (capacityProblem != null) {
+            return node;
         }
+        nodeCount++;
+        CAPACITY_GUARD.admit(
+                        DesignInputExpressionCapacityGuard.Limit.AST_NODES_PER_EXPRESSION,
+                        nodeCount)
+                .ifPresent(problem -> capacityProblem = problem);
         return node;
+    }
+
+    private boolean failed() {
+        return failure != null || capacityProblem != null;
     }
 
     // ------------------------------------------------------------------
@@ -103,7 +113,7 @@ final class ExpressionParser {
 
     private ExpressionAst parseOr() {
         var left = parseAnd();
-        while (failure == null && peekOperator("||")) {
+        while (!failed() && peekOperator("||")) {
             consumeOperator("||");
             var right = parseAnd();
             left = count(new ExpressionAst.Binary(ExpressionAst.BinaryOperator.OR, left, right));
@@ -113,7 +123,7 @@ final class ExpressionParser {
 
     private ExpressionAst parseAnd() {
         var left = parseEquality();
-        while (failure == null && peekOperator("&&")) {
+        while (!failed() && peekOperator("&&")) {
             consumeOperator("&&");
             var right = parseEquality();
             left = count(new ExpressionAst.Binary(ExpressionAst.BinaryOperator.AND, left, right));
@@ -123,7 +133,7 @@ final class ExpressionParser {
 
     private ExpressionAst parseEquality() {
         var left = parseRelational();
-        while (failure == null) {
+        while (!failed()) {
             if (peekOperator("==")) {
                 consumeOperator("==");
                 left = count(new ExpressionAst.Binary(
@@ -141,7 +151,7 @@ final class ExpressionParser {
 
     private ExpressionAst parseRelational() {
         var left = parseAdditive();
-        while (failure == null) {
+        while (!failed()) {
             if (peekOperator("<=")) {
                 consumeOperator("<=");
                 left = count(new ExpressionAst.Binary(
@@ -167,7 +177,7 @@ final class ExpressionParser {
 
     private ExpressionAst parseAdditive() {
         var left = parseMultiplicative();
-        while (failure == null) {
+        while (!failed()) {
             if (peekOperator("+")) {
                 consumeOperator("+");
                 left = count(new ExpressionAst.Binary(
@@ -185,7 +195,7 @@ final class ExpressionParser {
 
     private ExpressionAst parseMultiplicative() {
         var left = parseUnary();
-        while (failure == null && peekOperator("*")) {
+        while (!failed() && peekOperator("*")) {
             consumeOperator("*");
             left = count(new ExpressionAst.Binary(
                     ExpressionAst.BinaryOperator.MULTIPLY, left, parseUnary()));
@@ -209,7 +219,7 @@ final class ExpressionParser {
     }
 
     private ExpressionAst parsePrimary() {
-        if (failure != null) {
+        if (failed()) {
             return null;
         }
         skipWhitespace();
@@ -221,7 +231,7 @@ final class ExpressionParser {
         if (current == '(') {
             position++;
             var inner = parseExpression();
-            if (failure != null) {
+            if (failed()) {
                 return null;
             }
             if (!peekOperator(")")) {
@@ -265,7 +275,7 @@ final class ExpressionParser {
             }
             while (true) {
                 var argument = parseExpression();
-                if (failure != null) {
+                if (failed()) {
                     return null;
                 }
                 arguments.add(argument);

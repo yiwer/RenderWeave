@@ -1,5 +1,29 @@
 # RenderWeave Template v1 Implementation Plan
 
+## 193. TV1-T193 执行卡
+
+- 状态：`resolved / automated_verified`；single writer: Codex；blocked by T21/T126/T192（均 resolved）。
+- authority：Ticket 19 `RW-T19-S7-053` 与 DESIGN_INPUT_EXPRESSION cap-045；
+  `expression.astNodesPerExpression` MAX_INCLUSIVE `4096`，observed `4095/4096/4097`，
+  EXPRESSION_PARSE_AND_STATIC_ANALYSIS / public TEMPLATE_CLOSURE /
+  EXPRESSION_LIMIT_EXCEEDED / ZERO_WRITE_AND_DOWNSTREAM。
+- seam：深化 Rendering.internal 单一 `DesignInputExpressionCapacityGuard`；`ExpressionParser` 删除重复
+  `MAX_AST_NODES`/手写比较/limitId，并通过 guard 逐节点 admission，将 overflow 投影为已有
+  `ParseLimitExceeded`。closure-wide admission 已解析所有 unused Expression，不新增 public API/SPI。
+- TDD：先取得 missing guard enum compile RED，再冻结 parser 与公共 Evaluator 的错误 taxonomy RED；使用
+  平衡且语义有效的 decimal AST 覆盖 4095/4096/4097、exact-at 与零 downstream。
+- 边界：不实现 cap-046+ AST total/graph/list/decimal axes、formal records 或完整 execution-class target；
+  不实现 app/Profile/provider/真实数据，不 push/tag/PR；claim=A0、J0 pending、J1 未批准。
+- Resolution：cap-045 已合流到现有 internal guard；parser 删除重复 `MAX_AST_NODES`、手写比较、limitId 与
+  AST-specific rejection kind，逐节点经 guard admission，容量失败立即停止并返回 `ParseLimitExceeded`。TDD
+  得到 missing-enum compile RED、4097-node parser `ParseRejected` RED 与公共 Evaluator
+  `RENDER_INTERNAL_ERROR` RED；合流后均保留 exact TEMPLATE_CLOSURE / EXPRESSION_LIMIT_EXCEEDED /
+  `expression.astNodesPerExpression`。平衡 4095/4096/4097 AST、exact-at seal 与 above 零 downstream 均覆盖。
+  focused 143/143、受影响 reactor 550/550（Rendering 339/339）；`render`
+  `.sdlc/evidence/20260829-170140-render/metadata.json` 与 `fast`
+  `.sdlc/evidence/20260829-170228-fast/metadata.json` 均 passed/A1。cap-046+ deferred；T193-specific A2/A3
+  无，J0 pending、J1 未批准；无 public/app/Profile/provider/push/tag/PR 变化。
+
 ## 192. TV1-T192 执行卡
 
 - 状态：`resolved / automated_verified`；single writer: Codex；blocked by T21/T126/T191（均 resolved）。

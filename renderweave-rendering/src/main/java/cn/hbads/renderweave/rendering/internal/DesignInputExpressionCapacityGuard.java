@@ -49,6 +49,11 @@ final class DesignInputExpressionCapacityGuard {
                 8_192,
                 ProblemCode.EXPRESSION_LIMIT_EXCEEDED,
                 EvaluationStage.TEMPLATE_CLOSURE),
+        AST_NODES_PER_EXPRESSION(
+                "expression.astNodesPerExpression",
+                4_096,
+                ProblemCode.EXPRESSION_LIMIT_EXCEEDED,
+                EvaluationStage.TEMPLATE_CLOSURE),
         EXPLICIT_ROUNDING_SCALE_MAX(
                 "expression.explicitRoundingScaleMax",
                 64,

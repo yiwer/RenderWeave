@@ -473,6 +473,57 @@ class EvaluatorContractTest {
     }
 
     @Test
+    void astNodesPerExpressionOverBudgetRejectsBeforeAllDownstreamWork() {
+        var stateStore = new RecordingCapabilityStateStore();
+        var runtime = new RecordingCapabilityRuntime();
+        var inputResolutions = new AtomicInteger();
+        var targetResolver = resolver();
+        ValidationTargetResolver recordingResolver = target -> {
+            inputResolutions.incrementAndGet();
+            return targetResolver.resolve(target);
+        };
+        var evaluator = evaluator(
+                closureWith(withUnusedDecimalExpression(
+                        canvasWithRect(), balancedDecimalAstSource(4_097))),
+                recordingResolver,
+                stateStore,
+                runtime);
+
+        var rejected = assertInstanceOf(EvaluationOutcome.Rejected.class,
+                evaluator.evaluate(command("{\"rootDocument\":{}}")));
+
+        assertEquals(EvaluationStage.TEMPLATE_CLOSURE, rejected.stage());
+        assertEquals(RenderingProblem.ProblemCode.EXPRESSION_LIMIT_EXCEEDED,
+                rejected.problem().code());
+        assertEquals("expression.astNodesPerExpression",
+                rejected.problem().limitId().orElseThrow().value());
+        assertEquals(0, inputResolutions.get());
+        assertEquals(0, runtime.establishCalls);
+        assertEquals(0, runtime.restoreCalls);
+        assertEquals(0, stateStore.loadCalls);
+        assertEquals(0, stateStore.saveCalls);
+    }
+
+    @Test
+    void astNodesPerExpressionAcceptsTheExactMaximumOnTheRealClosurePath() {
+        var stateStore = new RecordingCapabilityStateStore();
+        var runtime = new RecordingCapabilityRuntime();
+        var evaluator = evaluator(
+                closureWith(withUnusedDecimalExpression(
+                        canvasWithRect(), balancedDecimalAstSource(4_096))),
+                resolver(),
+                stateStore,
+                runtime);
+
+        assertInstanceOf(EvaluationOutcome.SealedDocument.class,
+                evaluator.evaluate(command("{\"rootDocument\":{}}")));
+        assertEquals(0, runtime.establishCalls);
+        assertEquals(0, runtime.restoreCalls);
+        assertEquals(0, stateStore.loadCalls);
+        assertEquals(0, stateStore.saveCalls);
+    }
+
+    @Test
     void randomDemandOverBudgetRejectsBeforeCallingProviderForTheNextPosition() {
         var runtime = new SupplyingCapabilityRuntime();
         var evaluator = evaluator(
@@ -3374,6 +3425,14 @@ class EvaluatorContractTest {
                 + "\"source\":\"" + source + "\"}]");
     }
 
+    private static String withUnusedDecimalExpression(String designDocument, String source) {
+        return designDocument.replace("\"definitions\":[]", "\"definitions\":[{"
+                + "\"definitionId\":\"00000000-0000-4000-8000-0000000000e8\","
+                + "\"kind\":\"expression\",\"displayName\":\"AST capacity\","
+                + "\"domain\":\"invocation\",\"output\":\"decimal\","
+                + "\"inputs\":[],\"source\":\"" + source + "\"}]");
+    }
+
     private static String withUnusedSourceTotalOverflow(String designDocument) {
         var sources = new ArrayList<CapacityExpressionSource>();
         for (var index = 0; index < 15; index++) {
@@ -3529,6 +3588,28 @@ class EvaluatorContractTest {
 
     private static String asciiTextExpression(int sourceUtf8Bytes) {
         return "'" + "a".repeat(sourceUtf8Bytes - 2) + "'";
+    }
+
+    private static String balancedDecimalAstSource(int astNodes) {
+        if (astNodes < 1) {
+            throw new IllegalArgumentException("astNodes must be positive");
+        }
+        var unaryNodes = astNodes % 2 == 0 ? 1 : 0;
+        var leafCount = (astNodes - unaryNodes + 1) / 2;
+        var level = new ArrayList<String>(leafCount);
+        for (var index = 0; index < leafCount; index++) {
+            level.add(index == 0 && unaryNodes == 1 ? "-1" : "1");
+        }
+        while (level.size() > 1) {
+            var next = new ArrayList<String>((level.size() + 1) / 2);
+            for (var index = 0; index < level.size(); index += 2) {
+                next.add(index + 1 < level.size()
+                        ? "(" + level.get(index) + "+" + level.get(index + 1) + ")"
+                        : level.get(index));
+            }
+            level = next;
+        }
+        return level.get(0);
     }
 
     private static String asciiRandomExpression(int sourceUtf8Bytes) {

@@ -10,6 +10,21 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class DesignInputExpressionCapacityGuardTest {
 
     @Test
+    void astNodesPerExpressionBoundaryUsesFrozenProductionGuardContract() {
+        var guard = new DesignInputExpressionCapacityGuard();
+        var limit = DesignInputExpressionCapacityGuard.Limit.AST_NODES_PER_EXPRESSION;
+
+        assertTrue(guard.admit(limit, 4_095).isEmpty());
+        assertTrue(guard.admit(limit, 4_096).isEmpty());
+
+        var problem = guard.admit(limit, 4_097).orElseThrow();
+        assertEquals(EvaluationStage.TEMPLATE_CLOSURE, problem.stage());
+        assertEquals(ProblemCode.EXPRESSION_LIMIT_EXCEEDED, problem.code());
+        assertEquals("expression.astNodesPerExpression",
+                problem.limitId().orElseThrow().value());
+    }
+
+    @Test
     void mappingCasesTotalBoundaryUsesFrozenProductionGuardContract() {
         var guard = new DesignInputExpressionCapacityGuard();
         var limit = DesignInputExpressionCapacityGuard.Limit.MAPPING_CASES_TOTAL;

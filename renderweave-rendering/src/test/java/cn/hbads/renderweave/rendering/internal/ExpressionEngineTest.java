@@ -50,15 +50,21 @@ class ExpressionEngineTest {
     }
 
     @Test
-    void astBudgetIsRejected() {
-        var builder = new StringBuilder("1");
-        for (int index = 0; index < 4_200; index++) {
-            builder.append(" + 1");
-        }
-        var result = ExpressionParser.parse(builder.toString().getBytes(StandardCharsets.UTF_8));
-        var rejected = assertInstanceOf(ExpressionParser.ParseRejected.class, result);
-        assertEquals(ExpressionParser.ParseFailureKind.AST_LIMIT_EXCEEDED,
-                rejected.failure().kind());
+    void astNodeBoundaryReturnsFrozenCapacityOutcome() {
+        assertInstanceOf(ExpressionParser.ParsedAst.class,
+                ExpressionParser.parse(balancedDecimalAstSource(4_095)
+                        .getBytes(StandardCharsets.UTF_8)));
+        assertInstanceOf(ExpressionParser.ParsedAst.class,
+                ExpressionParser.parse(balancedDecimalAstSource(4_096)
+                        .getBytes(StandardCharsets.UTF_8)));
+
+        var result = ExpressionParser.parse(balancedDecimalAstSource(4_097)
+                .getBytes(StandardCharsets.UTF_8));
+        var limited = assertInstanceOf(ExpressionParser.ParseLimitExceeded.class, result);
+        assertEquals(EvaluationStage.TEMPLATE_CLOSURE, limited.problem().stage());
+        assertEquals(ProblemCode.EXPRESSION_LIMIT_EXCEEDED, limited.problem().code());
+        assertEquals("expression.astNodesPerExpression",
+                limited.problem().limitId().orElseThrow().value());
     }
 
     @Test
@@ -421,6 +427,28 @@ class ExpressionEngineTest {
         }
         return ("'" + "a".repeat(sourceUtf8Bytes - 2) + "'")
                 .getBytes(StandardCharsets.UTF_8);
+    }
+
+    private static String balancedDecimalAstSource(int astNodes) {
+        if (astNodes < 1) {
+            throw new IllegalArgumentException("astNodes must be positive");
+        }
+        var unaryNodes = astNodes % 2 == 0 ? 1 : 0;
+        var leafCount = (astNodes - unaryNodes + 1) / 2;
+        var level = new java.util.ArrayList<String>(leafCount);
+        for (var index = 0; index < leafCount; index++) {
+            level.add(index == 0 && unaryNodes == 1 ? "-1" : "1");
+        }
+        while (level.size() > 1) {
+            var next = new java.util.ArrayList<String>((level.size() + 1) / 2);
+            for (var index = 0; index < level.size(); index += 2) {
+                next.add(index + 1 < level.size()
+                        ? "(" + level.get(index) + "+" + level.get(index + 1) + ")"
+                        : level.get(index));
+            }
+            level = next;
+        }
+        return level.get(0);
     }
 
     private static String asciiConditionalExpression(int sourceUtf8Bytes) {

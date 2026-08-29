@@ -1,5 +1,20 @@
 # NOTES.md
 
+# 2026-08-29 Template-v1 T193 Expression AST nodes per-expression capacity（resolved / automated_verified）
+- cap-045 `expression.astNodesPerExpression=4096` 已合流到现有 Rendering.internal 单一 guard；parser 删除重复
+  `MAX_AST_NODES`、手写比较、literal limitId 与 AST-specific rejection kind，逐 AST node 经 guard admission，
+  容量失败立即停止并返回 `ParseLimitExceeded`。
+- TDD 记录 missing-enum compile RED、4097-node parser `ParseRejected` RED 与公共 Evaluator
+  `RENDER_INTERNAL_ERROR` RED。合流后 parser 与 closure 均保留 exact TEMPLATE_CLOSURE /
+  EXPRESSION_LIMIT_EXCEEDED / `expression.astNodesPerExpression`；平衡且语义有效的 4095/4096/4097 decimal
+  AST 覆盖 boundary，unused exact-at 成功 seal，above validation target resolution、capability establish/restore
+  与 state load/save 均为 0。
+- focused 143/143、受影响 reactor 550/550（Schema 20、Validation 13、Template 86、Asset 92、Rendering
+  339）；`render` `.sdlc/evidence/20260829-170140-render/metadata.json` 与 `fast`
+  `.sdlc/evidence/20260829-170228-fast/metadata.json` 均 passed/A1。cap-046+ deferred；T193-specific A2/A3 与
+  formal record issuance 均无；J0 pending、J1 未批准。无 public/app/Profile/provider/API Key/真实数据/费用/
+  push/tag/PR 变化。
+
 # 2026-08-29 Template-v1 T192 Mapping cases total capacity（resolved / automated_verified）
 - cap-044 `expression.mappingCasesTotal=8192` 已合流到现有 Rendering.internal 单一 guard；per-DesignDSL
   `MappingCaseBudget` 逐 Mapping 先 cap-043、再以 `BigInteger` projected total 原子检查 cap-044，成功后才
