@@ -903,8 +903,11 @@ Label: wayfinder:map
   target 与发布级 17-step replay 全绿，当前 wired 48/65、remaining 17。T136 已完成 decimal 七轴实现、v7 target
   与独立 final-gate closeout：顺序 `server`、17-step Goal `full`、resolution `fast` 全绿，生命周期现为
   `resolved / automated_verified`。人工 smoke 发现的正式 Editor 节点创建与本地画布/结构树缺口也已分别由
-  TV1-T126a/T126b 收口并完成自动门控；当前无 claim，下一轮从 remaining geometry 10 中复算首个统一 T195
-  frontier。195 个
+  TV1-T126a/T126b 收口并完成自动门控。统一 TV1-T195 已完成 cap-056
+  `geometry.canvasTrimMmPerAxisExclusiveMin`：通过既有 `DesignDslAuthority.admit(rawUtf8)` 把 root Canvas
+  width/height 两个真实 reservation point 接回 Template-owned authority；实现 `86b4dc1d`、immutable v8 target、
+  component 195/195+195/195、Template Java/Python 211/211 与 `template`/`fast` 均绿，当前 wired 56/65、remaining 9。
+  claim 已释放，下一轮从 cap-057 起登记并 claim 一个 geometry frontier。195 个
   capacity candidates 在全部真实接线、两个 required executor manifests 与独立产品 replay 完成前仍不得发行。其余
   execution-class target、Profile 发行、Editor J1、Renderer 双物理 Linux CPU-family
   认证与最终生命周期升级仍须以届时真实产品 artifact 和 executor 为输入另行切票；Ticket 19 保持 open。
@@ -913,6 +916,12 @@ Label: wayfinder:map
 
 ## Current frontier
 
+- [T195 — 接线 Canvas trim 每轴 exclusive-min 产品容量](issues/195-wire-canvas-trim-exclusive-min-capacity.md)
+  — **resolved / automated_verified / unclaimed**；实现 `86b4dc1d`，immutable component v8 SHA-256
+  `7c088a21bae28cefc712f2b7c0d6cbc12b22382577b5bf335412c6150ce5daf6`。root Canvas `widthMm`/`heightMm`
+  经 canonical decimal observation 进入唯一 Template-owned authority，exact property code/stage/limit/zero-write
+  已冻结；Java/TypeScript 195/195、Template Java/Python 211/211、`template`/`fast` 全绿，wired 56/65、remaining
+  geometry 9。A3 无，J0 pending、J1 未批准；cap-057–065 与 formal issuance/class manifests 保持 pending。
 - [F125 — 物化 Evaluator CapabilityState 持久化重放纵切](issues/125-capability-state-orchestration.md) — **resolved / automated_verified**；
   stage 6 以完整 evaluation fingerprint 绑定授权摘要、closure/input digest、冻结 contracts/Profile/budget vector，
   并经既有加密 store 完成首次建立、同 fingerprint 恢复、异 fingerprint 冲突与 unavailable fail-closed。

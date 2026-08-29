@@ -237,9 +237,11 @@
 - 当前 frontier（2026-08-29）：TV1-T01–T136 均已 `resolved`。TV1-T136 的 decimal 七轴产品实现、不可变 v7
   target、component replay 与顺序 `server` / 17-step Goal `full` / resolution `fast` 均已取得绿色证据，达到
   wired 55/65、remaining geometry 10 并独立完成 lifecycle closeout。人工 smoke 发现的节点创建与画布/结构树
-  缺口也已由 TV1-T126a/T126b 收口；当前无 active claim。下一轮从 geometry 十轴中复算并登记首个统一
-  TV1-T195 frontier；两个 class required executor manifests、独立产品 replay 与 195 条 formal issuance 继续 pending。
-- 状态：`in_progress`；TV1-T126b=`automated_verified`；TV1-T126a=`automated_verified`；TV1-T136=`automated_verified`；TV1-T135=`automated_verified`；TV1-T134=`automated_verified`；TV1-T133=`automated_verified`；TV1-T132=`automated_verified`；TV1-T131=`automated_verified`；TV1-T130=`automated_verified`；TV1-T129=`automated_verified`；TV1-T128=`automated_verified`；TV1-T127=`automated_verified`；TV1-T01/T02/T03/T04/T05/T06/T07/T08/T09/T10/T10b/T11/T12a/T12b/T13/T14/T14b/T15/T16/T17/T18/T19/T20/T22=`automated_verified`
+  缺口也已由 TV1-T126a/T126b 收口。统一 TV1-T195 已完成首个 geometry 轴 cap-056：既有 DesignDSL
+  admission seam 已接线 Canvas width/height，immutable v8 与全部门控绿色，wired 56/65、remaining 9；当前无
+  active claim，下一轮从 cap-057 起登记一个 frontier。两个 class required executor manifests、独立产品 replay
+  与 195 条 formal issuance 继续 pending。
+- 状态：`in_progress`；TV1-T195=`automated_verified`；TV1-T126b=`automated_verified`；TV1-T126a=`automated_verified`；TV1-T136=`automated_verified`；TV1-T135=`automated_verified`；TV1-T134=`automated_verified`；TV1-T133=`automated_verified`；TV1-T132=`automated_verified`；TV1-T131=`automated_verified`；TV1-T130=`automated_verified`；TV1-T129=`automated_verified`；TV1-T128=`automated_verified`；TV1-T127=`automated_verified`；TV1-T01/T02/T03/T04/T05/T06/T07/T08/T09/T10/T10b/T11/T12a/T12b/T13/T14/T14b/T15/T16/T17/T18/T19/T20/T22=`automated_verified`
   （T09 另含人工 J1），TV1-T21=`automated_verified`（首个 Rendering 纵切——renderweave-rendering
   首个 artifact、TemplateClosureAuthority/Evaluator stage 1–8/seal、CapabilityState 加密落盘、
   RenderNodeContract 向量语料 Java primary、端到端 assembly 证明）；TV1-T13 已完成 AssetResolver、加密
@@ -6330,3 +6332,27 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
   几何、pointer-anchor wheel、collapse/search、canonical save/reload、44px targets、axe、1024@2x 与窄屏降级。
   既有实际 5173 截图已复核。T126b-specific A2/A3 无，J0 pending、J1
   未批准；无 Java/OpenAPI/migration/Renderer/Profile/provider/API Key/真实数据/push/tag/PR 变化。
+
+## 195. TV1-T195 执行卡
+
+- 状态：`resolved / automated_verified / unclaimed`；Blocked by T136（resolved）。
+- authority：Ticket 19 `RW-T19-S7-108 / RW-T19-S9-017 / RW-T19-S9-019` 与 cap-056 固定
+  `geometry.canvasTrimMmPerAxisExclusiveMin=0`、MIN_EXCLUSIVE / CANONICAL_DECIMAL；terminal 为
+  `DESIGN_PROPERTY_CONSTRAINT_INVALID / DESIGN_PROPERTY_AND_AGGREGATE_VALIDATION`，public stage
+  TEMPLATE_CLOSURE，reservation point 为 persisted write/Evaluation 前，zero boundary 为
+  ZERO_WRITE_AND_DOWNSTREAM。
+- seam：只沿既有 `DesignDslAuthority.admit(rawUtf8)` 观察 root Canvas `widthMm`、`heightMm`，按 width→height
+  顺序把 normalized exact BigDecimal 投入同一 Template-owned capacity authority；不新增 Interface 或第二 comparator。
+- TDD：先以真实 Canvas JSON 在公共 admission seam 取得 observation 缺失与旧泛化 rejection 的 RED；再覆盖
+  canonical exponent/zero、below/at/above、两个轴及 authority reject/invalid/throw 的 exact GREEN。
+- target/gates：冻结 immutable component target v8，目标 wired 56/65、remaining geometry 9；执行 focused
+  Template、component Java/TypeScript、canonical vectors、`template`、`fast`，无 app wiring，server/full 可复用最近
+  未变输入的绿色证据。
+- boundary：不接线 cap-057–065，不发行 formal records/class manifests，不运行 Renderer/Profile/provider/API Key/
+  真实数据/生产/J1/A3/READY，不改用户 dirty work/stash，不 push/tag/PR。
+- 实现/证据：实现基线 `86b4dc1d25f6c3c4af6c960b989417829493069c`；immutable v8 target SHA-256
+  `7c088a21bae28cefc712f2b7c0d6cbc12b22382577b5bf335412c6150ce5daf6`、21275 bytes。focused 18/18、Template
+  module 144/144；component `.sdlc/evidence/20260829-1913-template-t195-component/` Java primary 195/195（A1）+
+  TypeScript independent 195/195、2692 checks（A2）；`template` `.sdlc/evidence/20260829-190635-template/` 与
+  `fast` `.sdlc/evidence/20260829-190708-fast/` passed/A1，Template Java/Python 211/211 且 static/registry replay
+  通过。A3 无，J0 pending、J1 未批准；按本票非 app-wiring boundary 未重复 server/full，formal records 仍为 0。

@@ -1,5 +1,18 @@
 # NOTES.md
 
+# 2026-08-29 Template-v1 T195 Canvas trim exclusive-min（resolved / automated_verified）
+- cap-056 `geometry.canvasTrimMmPerAxisExclusiveMin` 已沿公共 `DesignDslAuthority.admit(rawUtf8)` 接入唯一
+  Template-owned capacity authority；root Canvas `widthMm`→`heightMm` 各观察一次，below/at 与
+  reject/invalid/throw 均保留 exact property code/stage/limit，scale-64 above 成功。实现 `86b4dc1d` 同时以线性
+  canonical-decimal 比较和有界指数展开保持 16 MiB canonical vector 性能与原 bytes/digest。
+- immutable v8 target SHA-256 `7c088a21bae28cefc712f2b7c0d6cbc12b22382577b5bf335412c6150ce5daf6`、
+  21275 bytes；component `.sdlc/evidence/20260829-1913-template-t195-component/` Java 195/195（A1）+
+  TypeScript 195/195、2692 checks（A2），wired 56/65、remaining geometry 9、formal records 0。
+- Template module 144/144；`template` `.sdlc/evidence/20260829-190635-template/metadata.json` 与 `fast`
+  `.sdlc/evidence/20260829-190708-fast/metadata.json` passed/A1，Template Java/Python 211/211 及 static/registry
+  replay 全绿。本票释放 claim；A3 无，J0 pending、J1 未批准，server/full 按非 app-wiring boundary 未重复，
+  provider/API Key/真实数据/生产/Profile/native build/push/tag/PR 均未推进。下一轮从 cap-057 起登记一个 frontier。
+
 # 2026-08-29 Template-v1 T136 Expression decimal 七轴 final gate（resolved / automated_verified）
 - T136 final-gate closeout 已在 main 独立复算：实现 `6aba539d`、不可变 v7 target `9851de8f` 均为当前 HEAD
   祖先，merge 后无 Template/Rendering/Schema/Validation delta；v7 当前 SHA-256 与最终 server input manifest
