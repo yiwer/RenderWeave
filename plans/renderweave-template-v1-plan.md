@@ -6489,3 +6489,31 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
   module 168/168；`template` `.sdlc/evidence/20260829-202614-template/` 与 `fast`
   `.sdlc/evidence/20260829-202648-fast/` passed/A1，Template Java/Python 211/211。A3 无，J0 pending、J1 未批准；
   本票无 app wiring，未重复 server/full。claim 已释放；下一 frontier 为 cap-062，尚未登记或 claim。
+
+## 201. TV1-T201 执行卡
+
+- 状态：`resolved / automated_verified / unclaimed`；Blocked by T200（resolved）。
+- authority：Ticket 19 `RW-T19-S7-111 / RW-T19-S9-017 / RW-T19-S9-019` 与 cap-062 固定
+  `geometry.fontSizePtMax=4096`、MAX_INCLUSIVE / CANONICAL_DECIMAL；terminal 为
+  `DESIGN_PROPERTY_CONSTRAINT_INVALID / DESIGN_PROPERTY_AND_AGGREGATE_VALIDATION`，public stage
+  TEMPLATE_CLOSURE，reservation point 为 persisted write/Evaluation 前，zero boundary 为
+  ZERO_WRITE_AND_DOWNSTREAM。
+- seam/scope：只深化 `DesignDslAuthority.admit(rawUtf8)` 与同一 Template-owned capacity authority；同一
+  `text.runs[*].fontSizePt` 只 parse 一次并复用 canonical value，按 cap-061 minimum→cap-062 maximum 后再进入
+  下一 authored Run。Binding overlay 继续复用同一 re-admission seam；cap-063–065 保持 deferred。
+- TDD：先提升真实 Text 公共 seam 的两 Run observation 顺序并取得 cap-062 缺失 RED，再覆盖 below/at/
+  scale-64 above、canonical decimal、exact pointer、minimum-before-maximum 与 authority reject/invalid/throw。
+- target/gates：成功后冻结 immutable component target v14，目标 wired 62/65、remaining geometry 3；执行
+  focused Template、Template module、component Java/TypeScript、canonical vectors、`template`、`fast`。无 app
+  wiring，不重复 server/full。
+- boundary：不接线 cap-063–065，不发行 formal records/class manifests，不运行 Renderer/Profile/provider/API Key/
+  真实数据/生产/J1/A3/READY，不改用户 dirty work/stash，不 push/tag/PR。claim 时 A0、J0 pending。
+- 实现/证据：实现基线 `1f8fc3596f43d6844ed9cabde3ef23f9d4cd3a7b`；每个 Text Run 复用一次 parsed
+  decimal/canonical value 并按 cap-061→cap-062 fail-fast，below/at/scale-64 above 与 injected authority 故障身份
+  已覆盖。immutable v14 target SHA-256
+  `ab0c270c754312ca4c03a52061d6b5a7147cb894179a9a99a8a5e6232bf471b8`、21522 bytes；component
+  `.sdlc/evidence/20260829-204006-template-t201-component/` Java primary 195/195（A1）+ TypeScript independent
+  195/195、2692 checks（A2），wired 62/65、remaining geometry 3、formal records 0。focused 34/34、Template
+  module 170/170；`template` `.sdlc/evidence/20260829-204028-template/` 与 `fast`
+  `.sdlc/evidence/20260829-204102-fast/` passed/A1，Template Java/Python 211/211。A3 无，J0 pending、J1 未批准；
+  本票无 app wiring，未重复 server/full。claim 已释放；下一 frontier 为 cap-063，尚未登记或 claim。
