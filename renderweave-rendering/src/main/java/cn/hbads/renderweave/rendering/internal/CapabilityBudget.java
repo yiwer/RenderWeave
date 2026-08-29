@@ -14,7 +14,6 @@ final class CapabilityBudget {
 
     private static final RenderingPipelineCapacityGuard CAPACITY_GUARD =
             new RenderingPipelineCapacityGuard();
-    private static final long MAX_CLOCK_DEMANDS = 4_096;
     private static final long MAX_RANDOM_DEMANDS = 4_096;
     private static final long MAX_POSITION_BYTES_PER_DEMAND = 2_048;
     private static final long MAX_POSITION_BYTES_TOTAL = 16_777_216;
@@ -35,7 +34,8 @@ final class CapabilityBudget {
                         .CAPABILITY_RUNTIME_STATIC_CAPABILITY_SOURCES),
                 CAPACITY_GUARD.maximumInclusive(RenderingPipelineCapacityGuard.Limit
                         .CAPABILITY_RUNTIME_TOTAL_DEMANDS),
-                MAX_CLOCK_DEMANDS,
+                CAPACITY_GUARD.maximumInclusive(RenderingPipelineCapacityGuard.Limit
+                        .CAPABILITY_RUNTIME_CLOCK_DEMANDS),
                 MAX_RANDOM_DEMANDS,
                 MAX_POSITION_BYTES_PER_DEMAND,
                 MAX_POSITION_BYTES_TOTAL,
@@ -65,7 +65,9 @@ final class CapabilityBudget {
                 limit(limits, "totalDemands",
                         CAPACITY_GUARD.maximumInclusive(RenderingPipelineCapacityGuard.Limit
                                 .CAPABILITY_RUNTIME_TOTAL_DEMANDS)),
-                limit(limits, "clockDemands", MAX_CLOCK_DEMANDS),
+                limit(limits, "clockDemands",
+                        CAPACITY_GUARD.maximumInclusive(RenderingPipelineCapacityGuard.Limit
+                                .CAPABILITY_RUNTIME_CLOCK_DEMANDS)),
                 limit(limits, "randomDemands", MAX_RANDOM_DEMANDS),
                 limit(limits, "positionCanonicalBytesPerDemand",
                         MAX_POSITION_BYTES_PER_DEMAND),
@@ -176,9 +178,20 @@ final class CapabilityBudget {
             if (totalProblem != null) {
                 return new LimitExceeded(totalProblem.limitId().orElseThrow().value());
             }
-            if ("CLOCK".equals(capability)
-                    && wouldExceed(clockDemands, 1, limits.clockDemands())) {
-                return exceeded("clockDemands");
+            if ("CLOCK".equals(capability)) {
+                var nextClockDemands = clockDemands == Long.MAX_VALUE
+                        ? Long.MAX_VALUE
+                        : clockDemands + 1L;
+                var clockProblem = CAPACITY_GUARD.admit(
+                                RenderingPipelineCapacityGuard.Limit
+                                        .CAPABILITY_RUNTIME_CLOCK_DEMANDS,
+                                nextClockDemands,
+                                limits.clockDemands())
+                        .orElse(null);
+                if (clockProblem != null) {
+                    return new LimitExceeded(
+                            clockProblem.limitId().orElseThrow().value());
+                }
             }
             if ("RANDOM".equals(capability)
                     && wouldExceed(randomDemands, 1, limits.randomDemands())) {

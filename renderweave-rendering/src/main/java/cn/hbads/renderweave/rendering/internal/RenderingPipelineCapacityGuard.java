@@ -148,6 +148,11 @@ final class RenderingPipelineCapacityGuard {
                 "capabilityRuntime.totalDemands",
                 8_192L,
                 ProblemCode.CAPABILITY_BUDGET_EXCEEDED,
+                EvaluationStage.MATERIALIZATION),
+        CAPABILITY_RUNTIME_CLOCK_DEMANDS(
+                "capabilityRuntime.clockDemands",
+                4_096L,
+                ProblemCode.CAPABILITY_BUDGET_EXCEEDED,
                 EvaluationStage.MATERIALIZATION);
 
         private final String id;
