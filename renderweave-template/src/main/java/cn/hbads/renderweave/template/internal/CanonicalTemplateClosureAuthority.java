@@ -30,11 +30,8 @@ import java.util.TreeMap;
  */
 final class CanonicalTemplateClosureAuthority implements TemplateClosureAuthority {
 
-    private static final int MAX_FREEZE_ATTEMPTS = 3;
-    private static final int MAX_UNIQUE_SNAPSHOTS = 64;
-    private static final int MAX_AUTHORED_EDGES = 256;
-    private static final int MAX_CLOSURE_DEPTH = 16;
-    private static final long MAX_CLOSURE_CANONICAL_DESIGN_BYTES = 32L * 1024 * 1024;
+    private static final TemplateClosureCapacityGuard CAPACITY =
+            new TemplateClosureCapacityGuard();
 
     private static final Comparator<String> UTF8_ORDER =
             Comparator.comparing(name -> name.getBytes(StandardCharsets.UTF_8),
@@ -64,7 +61,9 @@ final class CanonicalTemplateClosureAuthority implements TemplateClosureAuthorit
         if (control.deadlineExceeded()) {
             return new ClosureDeadlineExceeded();
         }
-        for (int attempt = 0; attempt < MAX_FREEZE_ATTEMPTS; attempt++) {
+        var freezeAttempts = CAPACITY.exactValue(
+                TemplateClosureCapacityGuard.Limit.CLOSURE_FREEZE_ATTEMPTS);
+        for (int attempt = 0; attempt < freezeAttempts; attempt++) {
             if (control.deadlineExceeded()) {
                 return new ClosureDeadlineExceeded();
             }
@@ -182,7 +181,8 @@ final class CanonicalTemplateClosureAuthority implements TemplateClosureAuthorit
         if (deadline != null) {
             return deadline;
         }
-        if (depth > MAX_CLOSURE_DEPTH) {
+        if (!CAPACITY.evaluate(
+                TemplateClosureCapacityGuard.Limit.CLOSURE_DEPTH, depth).accepted()) {
             return new Done(new ClosureLimitExceeded(new LimitId("closureDepth")));
         }
         if (inPath.contains(templateId.value())) {
@@ -247,7 +247,9 @@ final class CanonicalTemplateClosureAuthority implements TemplateClosureAuthorit
         );
         inPath.add(templateId.value());
         snapshots.put(templateId.value(), snapshot);
-        if (snapshots.size() > MAX_UNIQUE_SNAPSHOTS) {
+        if (!CAPACITY.evaluate(
+                TemplateClosureCapacityGuard.Limit.UNIQUE_TEMPLATE_SNAPSHOTS,
+                snapshots.size()).accepted()) {
             return new Done(new ClosureLimitExceeded(new LimitId("uniqueTemplateSnapshots")));
         }
 
@@ -279,7 +281,9 @@ final class CanonicalTemplateClosureAuthority implements TemplateClosureAuthorit
                     childId,
                     child.revision()
             ));
-            if (edges.size() > MAX_AUTHORED_EDGES) {
+            if (!CAPACITY.evaluate(
+                    TemplateClosureCapacityGuard.Limit.AUTHORED_TEMPLATE_REF_EDGES,
+                    edges.size()).accepted()) {
                 return new Done(new ClosureLimitExceeded(new LimitId("authoredTemplateRefEdges")));
             }
         }
@@ -301,8 +305,9 @@ final class CanonicalTemplateClosureAuthority implements TemplateClosureAuthorit
         private long canonicalDesignBytes;
 
         private boolean reserveCanonicalDesignBytes(int nextSnapshotBytes) {
-            if (canonicalDesignBytes
-                    > MAX_CLOSURE_CANONICAL_DESIGN_BYTES - nextSnapshotBytes) {
+            var maximum = CAPACITY.maximumInclusive(
+                    TemplateClosureCapacityGuard.Limit.CLOSURE_CANONICAL_DESIGN_BYTES);
+            if (canonicalDesignBytes > maximum - nextSnapshotBytes) {
                 return false;
             }
             canonicalDesignBytes += nextSnapshotBytes;

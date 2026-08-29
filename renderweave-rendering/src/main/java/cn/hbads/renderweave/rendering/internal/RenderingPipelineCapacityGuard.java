@@ -6,6 +6,7 @@ import cn.hbads.renderweave.rendering.api.RenderingProblem;
 import cn.hbads.renderweave.rendering.api.RenderingProblem.LimitId;
 import cn.hbads.renderweave.rendering.api.RenderingProblem.ProblemCode;
 
+import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.Objects;
 import java.util.Optional;
@@ -354,6 +355,58 @@ final class RenderingPipelineCapacityGuard {
                 : Optional.of(new InvariantViolation(
                         limit.publicStage,
                         new LimitId(limit.id)));
+    }
+
+    ProbeDecision evaluate(String limitId, long observedValue) {
+        Objects.requireNonNull(limitId, "limitId");
+        var limit = Arrays.stream(Limit.values())
+                .filter(candidate -> candidate.id.equals(limitId))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "unknown Rendering pipeline capacity limit: " + limitId));
+        if (limit.problemCode == null) {
+            var violation = admitInvariant(limit, observedValue);
+            return violation.isEmpty()
+                    ? new ProbeDecision(true, limit.id, observedValue, null, null)
+                    : new ProbeDecision(
+                            false,
+                            limit.id,
+                            observedValue,
+                            null,
+                            violation.orElseThrow().publicStage());
+        }
+        var problem = admit(limit, observedValue);
+        return problem.isEmpty()
+                ? new ProbeDecision(true, limit.id, observedValue, null, null)
+                : new ProbeDecision(
+                        false,
+                        limit.id,
+                        observedValue,
+                        problem.orElseThrow().code(),
+                        problem.orElseThrow().stage());
+    }
+
+    record ProbeDecision(
+            boolean accepted,
+            String limitId,
+            long observedValue,
+            ProblemCode terminalCode,
+            EvaluationStage publicStage
+    ) {
+        ProbeDecision {
+            Objects.requireNonNull(limitId, "limitId");
+            if (observedValue < 0) {
+                throw new IllegalArgumentException("observedValue must be non-negative");
+            }
+            if (accepted && (terminalCode != null || publicStage != null)) {
+                throw new IllegalArgumentException(
+                        "accepted probe must not carry a terminal");
+            }
+            if (!accepted && publicStage == null) {
+                throw new IllegalArgumentException(
+                        "rejected probe must carry a public stage");
+            }
+        }
     }
 
     RequestTracker newRequestTracker() {
