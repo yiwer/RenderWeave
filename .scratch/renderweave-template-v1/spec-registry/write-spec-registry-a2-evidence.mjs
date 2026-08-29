@@ -138,13 +138,13 @@ const bootstrapOrder = artifact("conformance-bootstrap-order-v1.json");
 const registries = acceptance.conformanceRegistries;
 registries.executionClassCatalog.sha256 = executionCatalog.sha256.replace("sha256:", "");
 registries.executionClassCatalog.executorManifestStatus =
-  "SPEC_REGISTRY_AND_DOMAIN_SERVICES_FROZEN_OTHER_CLASSES_PENDING";
+  "SPEC_REGISTRY_DOMAIN_SERVICES_AND_DESIGN_INPUT_EXPRESSION_FROZEN_OTHER_CLASSES_PENDING";
 registries.executionClassCatalog.targetManifestStatus =
-  "SPEC_REGISTRY_AND_DOMAIN_SERVICES_FROZEN_OTHER_CLASSES_PENDING";
+  "SPEC_REGISTRY_DOMAIN_SERVICES_AND_DESIGN_INPUT_EXPRESSION_FROZEN_OTHER_CLASSES_PENDING";
 registries.bootstrapOrder.sha256 = bootstrapOrder.sha256.replace("sha256:", "");
 registries.bootstrapOrder.currentPhase = "CAPACITY_BOUNDARY";
 registries.bootstrapOrder.status =
-  "domain-services-12-capacity-records-issued-a2-other-class-product-gates-pending";
+  "domain-services-12-and-design-input-expression-195-capacity-records-issued-a2-other-class-product-gates-pending";
 registries.specRegistryBootstrap.implementationRevision = target.implementationRevision;
 registries.specRegistryBootstrap.targetManifest = {
   path: targetPath,
@@ -174,14 +174,14 @@ registries.oracleRegistry.recordCount = recordCount(formalOracles.path);
 registries.oracleRegistry.sha256 = formalOracles.sha256.replace("sha256:", "");
 acceptance.counts.issuedSpecRegistryCases = recordCount(candidateCases.path);
 acceptance.counts.issuedSpecRegistryOracles = recordCount(candidateOracles.path);
-acceptance.counts.issuedCapacityBoundaryCases = formalStatus === "ISSUED_APPEND_ONLY_PREFIX" ? 12 : 0;
-acceptance.counts.issuedCapacityBoundaryOracles = formalStatus === "ISSUED_APPEND_ONLY_PREFIX" ? 12 : 0;
-acceptance.counts.executableContractBoundaryCases = formalStatus === "ISSUED_APPEND_ONLY_PREFIX" ? 12 : 0;
+acceptance.counts.issuedCapacityBoundaryCases = formalStatus === "ISSUED_APPEND_ONLY_PREFIX" ? 207 : 0;
+acceptance.counts.issuedCapacityBoundaryOracles = formalStatus === "ISSUED_APPEND_ONLY_PREFIX" ? 207 : 0;
+acceptance.counts.executableContractBoundaryCases = formalStatus === "ISSUED_APPEND_ONLY_PREFIX" ? 207 : 0;
 writeJson("acceptance-manifest-v1.json", acceptance);
 
 const evidence = {
-  evidenceVersion: "renderweave-spec-registry-a2/1.2",
-  evidenceId: "SPEC_REGISTRY_A2::2026-08-26::000003",
+  evidenceVersion: "renderweave-spec-registry-a2/1.3",
+  evidenceId: "SPEC_REGISTRY_A2::2026-08-29::000004",
   status: "PASS",
   grade: "A2_INDEPENDENTLY_REPLAYED",
   scope: "EXEC::SPEC_REGISTRY::1.0 only",
@@ -212,8 +212,8 @@ const evidence = {
       candidateCaseCount: capacityMaterialization.counts.shapeCandidateCaseCount,
       candidateOracleCount: capacityMaterialization.counts.shapeCandidateOracleCount,
       formallyIssued: formalStatus === "ISSUED_APPEND_ONLY_PREFIX",
-      formallyIssuedCaseCount: formalStatus === "ISSUED_APPEND_ONLY_PREFIX" ? 12 : 0,
-      formallyIssuedOracleCount: formalStatus === "ISSUED_APPEND_ONLY_PREFIX" ? 12 : 0,
+      formallyIssuedCaseCount: formalStatus === "ISSUED_APPEND_ONLY_PREFIX" ? 207 : 0,
+      formallyIssuedOracleCount: formalStatus === "ISSUED_APPEND_ONLY_PREFIX" ? 207 : 0,
     },
     targetManifest: targetArtifact,
     primaryExecutorManifest: primaryExecutorArtifact,
@@ -269,7 +269,7 @@ const evidence = {
     capacityAxisCount: capacityMaterialization.counts.axisCount,
     capacityShapeCandidateCaseCount: capacityMaterialization.counts.shapeCandidateCaseCount,
     capacityShapeCandidateOracleCount: capacityMaterialization.counts.shapeCandidateOracleCount,
-    capacityRecordsIssued: formalStatus === "ISSUED_APPEND_ONLY_PREFIX" ? 12 : 0,
+    capacityRecordsIssued: formalStatus === "ISSUED_APPEND_ONLY_PREFIX" ? 207 : 0,
     capacityProductExecutionObserved: formalStatus === "ISSUED_APPEND_ONLY_PREFIX",
   },
   sideEffects: {
@@ -282,8 +282,9 @@ const evidence = {
   },
   boundary: {
     currentIssuancePhase: "CAPACITY_BOUNDARY",
-    otherExecutionClassesExecutable: false,
-    isolatedCapacityRecordsIssued: formalStatus === "ISSUED_APPEND_ONLY_PREFIX" ? 12 : 0,
+    allOtherExecutionClassesExecutable: false,
+    capacityExecutionClassesExecutable: 2,
+    isolatedCapacityRecordsIssued: formalStatus === "ISSUED_APPEND_ONLY_PREFIX" ? 207 : 0,
     combinedCapacityRecordsIssued: 0,
     fullAutomatedCorpusExecutable: false,
     rendererCertified: false,

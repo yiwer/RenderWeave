@@ -925,6 +925,11 @@ Label: wayfinder:map
 
 ## Current frontier
 
+- [T206 — 发行 Design/Input/Expression 195+195 容量记录](issues/206-issue-design-input-expression-capacity-records.md)
+  — **active / claimed by Codex `/root`**；blocked by T205（resolved）。只接受 exact 58/58 prestate 或完整
+  253/253 poststate，保持旧 prefix 逐字节不变并仅追加 assigned Design/Input/Expression suffix；以 Node/Python
+  双 replay 和 fresh T205 class gate 把 ordinal 3 原子推进为 `EXECUTABLE_A2_REPLAYED`、全局 capacity 207/525。
+  Rendering/Renderer Exact Output 318 条继续 pending，Ticket 19 保持 open；A0、J0 pending、J1 未批准。
 - [T205 — 物化 Design/Input/Expression execution-class preissuance](issues/205-design-input-expression-execution-class-preissuance.md)
   — **resolved / automated_verified / unclaimed**；implementation `bc027d4b` 与 target `7d004bdc` 已冻结
   exact target + `java-semantic-authority` / `typescript-independent-authoring-replayer` manifests。target SHA-256

@@ -1,5 +1,13 @@
 # NOTES.md
 
+# 2026-08-29 Template-v1 T206 Design/Input/Expression formal issuance（active / claimed）
+- T205 已冻结 exact target/manifests 并通过 195/195 Java、195/195 TypeScript 与 Python closure replay；现按
+  single-writer claim T206，从 exact 58/58 prefix 只追加本 class 195+195 assigned suffix。
+- 发行 seam 为 fail-closed materializer + Node/Python 独立 postissuance registry replay；成功目标是 formal
+  253/253、capacity 207/525、ordinal 3 `EXECUTABLE_A2_REPLAYED`，后续 318 条与 Ticket 19 继续 pending。
+- 本票按 `tdd` skill 先取得 missing issuer/target RED；A0、J0 pending、J1 未批准。无 app wiring/API/Profile/
+  Renderer/provider/API Key/真实数据/生产/push/tag/PR，用户 Image/Inference dirty work 与 stash 保持不动。
+
 # 2026-08-29 Template-v1 T205 Design/Input/Expression execution-class preissuance（resolved / automated_verified）
 - T204 已以实现 `12a3f7e6`、治理 `fb44e827` 收口并释放 claim；现按 single-writer claim T205。冻结 ordinal 3
   要求 exact target、`java-semantic-authority` 与 `typescript-independent-authoring-replayer` 两角色、195+195

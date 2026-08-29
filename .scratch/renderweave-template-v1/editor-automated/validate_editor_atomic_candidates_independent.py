@@ -897,8 +897,8 @@ def main() -> None:
         "proposedProbeCount": 0,
         "candidateProfileBindingAssertionCount": 109,
         "candidateProfileBoundCandidateCount": 82,
-        "formalCaseCount": 58,
-        "formalOracleCount": 58,
+        "formalCaseCount": 253,
+        "formalOracleCount": 253,
         "formalEditorCaseCount": 0,
         "formalEditorOracleCount": 0,
     }, "audit counts")
@@ -934,7 +934,8 @@ def main() -> None:
     formal_oracles = jsonl_records("conformance-oracles-v1.jsonl")
     editor_formal_cases = [record for record in formal_cases if record.get("executionClass") == EXECUTION_CLASS]
     editor_formal_oracles = [record for record in formal_oracles if record.get("oracleId", "").startswith("ORC::EDITOR_AUTOMATED::")]
-    check(len(formal_cases) == 58 and len(formal_oracles) == 58, "global formal registries include issued Domain Services suffix")
+    check(len(formal_cases) == 253 and len(formal_oracles) == 253,
+          "global formal registries include issued Domain Services and Design/Input/Expression suffixes")
     check(not editor_formal_cases and not editor_formal_oracles, "Editor formal namespaces remain empty")
     formal_ids = {record["caseId"] for record in formal_cases} | {record["oracleId"] for record in formal_oracles}
     check(not (seen_ids & formal_ids), "candidate IDs absent from formal registry")

@@ -2170,7 +2170,7 @@ function validate(contractValue, candidatesValue, auditValue) {
     const candidateProbe = candidate.assertionPlan.some((assertion) => assertion.probeBinding.status === "CANDIDATE_PROFILE_NOT_ISSUED");
     return (!pendingExpectation || candidate.blockers.includes(BLOCKERS.expected)) && (!candidateProbe || candidate.blockers.includes(BLOCKERS.probe));
   }), null);
-  check("global formal JSONL counts include the issued Domain Services suffix", auditValue.counts.formalCaseCount === 58 && auditValue.counts.formalOracleCount === 58, { cases: auditValue.counts.formalCaseCount, oracles: auditValue.counts.formalOracleCount });
+  check("global formal JSONL counts include issued Domain Services and Design/Input/Expression suffixes", auditValue.counts.formalCaseCount === 253 && auditValue.counts.formalOracleCount === 253, { cases: auditValue.counts.formalCaseCount, oracles: auditValue.counts.formalOracleCount });
   check("Editor formal namespaces remain empty", auditValue.counts.formalEditorCaseCount === 0 && auditValue.counts.formalEditorOracleCount === 0, { cases: auditValue.counts.formalEditorCaseCount, oracles: auditValue.counts.formalEditorOracleCount });
   check("zero-execution boundary is fully false", Object.values(auditValue.zeroExecutionBoundary).every((value) => value === false), auditValue.zeroExecutionBoundary);
   check("formal issuance remains forbidden", auditValue.decision.formalRecordIssuanceAllowed === false, auditValue.decision);

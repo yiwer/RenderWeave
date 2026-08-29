@@ -6637,3 +6637,21 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
   `20260829-214555` 与 `fast` `20260829-214627` passed/A1，Template Java/Python 211/211。A3 absent、J0
   pending、J1 未批准；无 app wiring，未重复 server/full。claim 已释放，下一 frontier 为 195+195 formal
   issuance/中央 lifecycle，尚未登记或 claim。
+
+## 206. TV1-T206 执行卡
+
+- 状态：`active / claimed by Codex /root`；Blocked by T205（resolved）。
+- authority：bootstrap ordinal 3 已冻结 exact Java + TypeScript product target、两个 required executor manifests、
+  observation adapter、assigned 195+195 candidate subset 与 digest；只有 append-only formal issuance、独立
+  postissuance replay 和中央 lifecycle 原子一致后才可成为 executable。
+- seam/scope：以当前 58/58 正式 registry 为逐字节不可变前缀，只按 candidate transport order 追加
+  `EXEC::DESIGN_INPUT_EXPRESSION::1.0` 的 195 Case + 195 Oracle；fail-closed materializer 仅接受 exact prestate
+  或完整 253/253 poststate，Node/Python 从正式 registry/manifest 公共 seam 独立重建闭包。
+- TDD/gates：先取得 missing issuer/target/post-replay RED；实现后从 exact revision 物化 immutable issuance target，
+  要求 byte-identical replay，fresh 重跑 T205 class gate，再 append、双 postissuance replay、刷新 SPEC/Editor derived
+  evidence，并运行 `template`、`fast`。无 app wiring/product-semantic delta，不默认重复 server/full。
+- expected lifecycle：ordinal 3=`EXECUTABLE_A2_REPLAYED`，formal registry 253/253，capacity 207/525；Rendering 与
+  Renderer Exact Output 318 条继续 pending，Ticket 19 保持 open。
+- boundary：不发行其余 capacity/combined/non-capacity/Editor J1 records，不改 API/OpenAPI/Web/Flyway/产品语义，
+  不运行 Renderer/Profile/provider/API Key/真实数据/生产/J1/A3/READY，不改用户 dirty work/stash，不 push/tag/PR；
+  claim 时 A0、J0 pending、J1 未批准。

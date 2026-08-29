@@ -35,7 +35,7 @@ if (audit.counts.inputFixtureArtifactBindingCount !== 108 || audit.counts.target
 if (audit.counts.semanticProjectionExactLiteralBindingCount !== 42 || audit.counts.semanticProjectionContentPrerequisiteCount !== 58 || audit.counts.contentPrerequisiteResolvedBySourceCount !== 1 || audit.counts.contentPrerequisiteRemainingCount !== 57 || audit.counts.contentSourceSlotCount !== 47 || audit.counts.contentSourceExactBindingCount !== 1 || audit.counts.contentSourceUnboundBindingCount !== 46 || audit.counts.contentSourceRecordArtifactCount !== 1 || audit.counts.contentSourceCanonicalDesignDslArtifactCount !== 2 || audit.counts.uiObservationPendingCount !== 62) throw new Error("semantic projection or content source inventory drifted");
 if (audit.counts.terminalAdjudicatedFromPendingCount !== 33 || audit.counts.pendingTerminalBindingCount !== 0 || audit.counts.faultArtifactBindingCount !== 37 || audit.counts.faultNoneBindingCount !== 71) throw new Error("terminal or fault binding inventory drifted");
 if (audit.counts.proposedProbeCount !== 0 || audit.counts.candidateProfileBindingAssertionCount !== 109 || audit.counts.candidateProfileBoundCandidateCount !== 82) throw new Error("candidate probe binding inventory drifted");
-if (audit.counts.formalCaseCount !== 58 || audit.counts.formalOracleCount !== 58) throw new Error("global formal registry count drifted");
+if (audit.counts.formalCaseCount !== 253 || audit.counts.formalOracleCount !== 253) throw new Error("global formal registry count drifted");
 if (audit.counts.formalEditorCaseCount !== 0 || audit.counts.formalEditorOracleCount !== 0) throw new Error("Editor formal namespace drifted");
 
 const evidence = {
@@ -109,8 +109,8 @@ const evidence = {
     candidateProfileBoundCandidateCount: 82,
     primaryCheckCount: primary.checkCount,
     independentCheckCount: independent.checkCount,
-    formalCaseCount: 58,
-    formalOracleCount: 58,
+    formalCaseCount: 253,
+    formalOracleCount: 253,
     formalEditorCaseCount: 0,
     formalEditorOracleCount: 0
   },

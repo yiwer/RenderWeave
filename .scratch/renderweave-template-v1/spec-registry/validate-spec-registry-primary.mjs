@@ -640,12 +640,25 @@ function validateTarget() {
       "APPEND_ISSUANCE_TARGET_BINDING", issuance.target.path);
     const issuanceTarget = JSON.parse(issuanceBytes.toString("utf8"));
     check(issuanceTarget.assignedCorpus.assignedCorpusDigest === issuance.assignedCorpusDigest &&
-      issuance.appendedExecutionClass === "EXEC::DOMAIN_SERVICES::1.0" && issuance.appendedCaseCount === 12 &&
-      issuance.appendedOracleCount === 12,
+      issuance.appendedExecutionClass === "EXEC::DESIGN_INPUT_EXPRESSION::1.0" &&
+      issuance.appendedCaseCount === 195 && issuance.appendedOracleCount === 195,
     "APPEND_ISSUANCE_CORPUS", issuance.assignedCorpusDigest);
     check(issuanceTarget.poststate.formalCases.sha256 === digest(formalCaseBytes) &&
       issuanceTarget.poststate.formalOracles.sha256 === digest(formalOracleBytes),
     "APPEND_ISSUANCE_POSTSTATE", issuance.target.path);
+    const predecessor = issuance.predecessorIssuance;
+    const predecessorBytes = bytes(`.scratch/renderweave-template-v1/${predecessor.target.path}`);
+    const predecessorTarget = JSON.parse(predecessorBytes.toString("utf8"));
+    check(digest(predecessorBytes) === predecessor.target.sha256 &&
+      predecessorBytes.length === predecessor.target.byteLength &&
+      predecessor.appendedExecutionClass === "EXEC::DOMAIN_SERVICES::1.0" &&
+      predecessor.appendedCaseCount === 12 && predecessor.appendedOracleCount === 12,
+    "APPEND_PREDECESSOR_ISSUANCE", predecessor.target.path);
+    check(predecessorTarget.assignedCorpus.assignedCorpusDigest === predecessor.assignedCorpusDigest &&
+      predecessorTarget.poststate.formalCases.sha256 === issuanceTarget.prestate.formalCases.sha256 &&
+      predecessorTarget.poststate.formalOracles.sha256 === issuanceTarget.prestate.formalOracles.sha256 &&
+      issuanceTarget.prestate.previousCapacityIssuance.sha256 === predecessor.target.sha256,
+    "APPEND_ISSUANCE_CHAIN", predecessor.target.path);
   } else {
     check(false, "FORMAL_STATUS", formalStatus);
   }

@@ -666,11 +666,29 @@ def validate_target() -> None:
               "APPEND_ISSUANCE_TARGET_BINDING", issuance["target"]["path"])
         issuance_target = json.loads(issuance_bytes)
         check(issuance_target["assignedCorpus"]["assignedCorpusDigest"] == issuance["assignedCorpusDigest"] and
-              issuance["appendedCaseCount"] == 12 and issuance["appendedOracleCount"] == 12,
+              issuance["appendedExecutionClass"] == "EXEC::DESIGN_INPUT_EXPRESSION::1.0" and
+              issuance["appendedCaseCount"] == 195 and issuance["appendedOracleCount"] == 195,
               "APPEND_ISSUANCE_CORPUS", issuance["assignedCorpusDigest"])
         check(issuance_target["poststate"]["formalCases"]["sha256"] == digest(formal_cases) and
               issuance_target["poststate"]["formalOracles"]["sha256"] == digest(formal_oracles),
               "APPEND_ISSUANCE_POSTSTATE", issuance["target"]["path"])
+        predecessor = issuance["predecessorIssuance"]
+        predecessor_bytes = raw(".scratch/renderweave-template-v1/" + predecessor["target"]["path"])
+        predecessor_target = json.loads(predecessor_bytes)
+        check(digest(predecessor_bytes) == predecessor["target"]["sha256"] and
+              len(predecessor_bytes) == predecessor["target"]["byteLength"] and
+              predecessor["appendedExecutionClass"] == "EXEC::DOMAIN_SERVICES::1.0" and
+              predecessor["appendedCaseCount"] == 12 and predecessor["appendedOracleCount"] == 12,
+              "APPEND_PREDECESSOR_ISSUANCE", predecessor["target"]["path"])
+        check(predecessor_target["assignedCorpus"]["assignedCorpusDigest"] ==
+              predecessor["assignedCorpusDigest"] and
+              predecessor_target["poststate"]["formalCases"]["sha256"] ==
+              issuance_target["prestate"]["formalCases"]["sha256"] and
+              predecessor_target["poststate"]["formalOracles"]["sha256"] ==
+              issuance_target["prestate"]["formalOracles"]["sha256"] and
+              issuance_target["prestate"]["previousCapacityIssuance"]["sha256"] ==
+              predecessor["target"]["sha256"],
+              "APPEND_ISSUANCE_CHAIN", predecessor["target"]["path"])
     else:
         check(False, "FORMAL_STATUS", formal_status)
     formal_registry = {

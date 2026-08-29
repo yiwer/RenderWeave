@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = resolve(here, "..");
-const implementationRevision = "spec-registry-bootstrap/1.14";
+const implementationRevision = "spec-registry-bootstrap/1.15";
 
 function bytes(relativePath) {
   return readFileSync(resolve(root, relativePath));
@@ -56,6 +56,21 @@ for (const domainIssuancePath of [
   "domain-services/domain-services-capacity-postissuance-a2-2026-08-26.json"
 ]) {
   requiredPaths.add(domainIssuancePath);
+}
+for (const designIssuancePath of [
+  "design-input-expression/execution-class-target-v1.json",
+  "design-input-expression/java-semantic-authority-executor-manifest-v1.json",
+  "design-input-expression/typescript-independent-authoring-replayer-manifest-v1.json",
+  "design-input-expression/capacity-record-issuance-target-v1.json",
+  "design-input-expression/materialize-design-input-expression-capacity-issuance.py",
+  "design-input-expression/validate-design-input-expression-postissuance-primary.mjs",
+  "design-input-expression/validate_design_input_expression_postissuance_independent.py",
+  "design-input-expression/write-design-input-expression-postissuance-a2-evidence.mjs",
+  "design-input-expression/postissuance-primary-result-v1.json",
+  "design-input-expression/postissuance-independent-result-v1.json",
+  "design-input-expression/design-input-expression-capacity-postissuance-a2-2026-08-29.json"
+]) {
+  requiredPaths.add(designIssuancePath);
 }
 for (const editorAdmissionPath of [
   "editor-automated/execution-admission-contract-v1.json",
