@@ -615,4 +615,28 @@ class RenderingPipelineCapacityGuardTest {
         assertEquals("assetsAndFetch.occurrenceFontBytes",
                 problem.limitId().orElseThrow().value());
     }
+
+    @Test
+    void uniqueFontBytesBoundaryUsesTheFrozenProductionGuardContract() {
+        var guard = new RenderingPipelineCapacityGuard();
+
+        assertTrue(guard.admit(
+                RenderingPipelineCapacityGuard.Limit
+                        .ASSETS_AND_FETCH_UNIQUE_FONT_BYTES,
+                67_108_863L).isEmpty());
+        assertTrue(guard.admit(
+                RenderingPipelineCapacityGuard.Limit
+                        .ASSETS_AND_FETCH_UNIQUE_FONT_BYTES,
+                67_108_864L).isEmpty());
+
+        var problem = guard.admit(
+                        RenderingPipelineCapacityGuard.Limit
+                                .ASSETS_AND_FETCH_UNIQUE_FONT_BYTES,
+                        67_108_865L)
+                .orElseThrow();
+        assertEquals(EvaluationStage.ASSET_ADMISSION, problem.stage());
+        assertEquals(ProblemCode.ASSET_BUDGET_EXCEEDED, problem.code());
+        assertEquals("assetsAndFetch.uniqueFontBytes",
+                problem.limitId().orElseThrow().value());
+    }
 }

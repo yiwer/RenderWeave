@@ -917,6 +917,61 @@ class MaterializerTest {
     }
 
     @Test
+    void uniqueFontByteBudgetDeduplicatesExactContentBeforeResourceAppend() {
+        var document = canvasWith(
+                textNode("00000000-0000-4000-8000-000000000075") + ","
+                        + textNode("00000000-0000-4000-8000-000000000076"));
+        var exactCapacity = new RenderingPipelineCapacityGuard().newRequestTracker();
+        assertTrue(exactCapacity.reserve(
+                RenderingPipelineCapacityGuard.Limit
+                        .ASSETS_AND_FETCH_UNIQUE_FONT_BYTES,
+                67_108_863L).isEmpty());
+        var exactPort = new SequencedContentPort(List.of(
+                ResolvedContent.font("content-version-1", "sha256:" + "7".repeat(64), 1),
+                ResolvedContent.font("content-version-2", "sha256:" + "7".repeat(64), 1)));
+
+        var exact = materialize(
+                document, Map.of(), exactPort, absentCapability(), exactCapacity);
+
+        var exactTree = assertInstanceOf(Materializer.Materialized.class, exact).tree();
+        assertEquals(2, exactPort.resolves);
+        assertEquals(2, exactTree.resources().size());
+        assertEquals("FONT", exactTree.resources().get(0).kind());
+        assertEquals("FONT", exactTree.resources().get(1).kind());
+
+        var exceededCapacity = new RenderingPipelineCapacityGuard().newRequestTracker();
+        assertTrue(exceededCapacity.reserve(
+                RenderingPipelineCapacityGuard.Limit
+                        .ASSETS_AND_FETCH_UNIQUE_FONT_BYTES,
+                67_108_863L).isEmpty());
+        var exceededPort = new SequencedContentPort(List.of(
+                ResolvedContent.font("content-version-1", "sha256:" + "7".repeat(64), 1),
+                ResolvedContent.font("content-version-2", "sha256:" + "8".repeat(64), 1)));
+
+        var exceeded = materialize(
+                document, Map.of(), exceededPort, absentCapability(), exceededCapacity);
+
+        var failed = assertInstanceOf(Materializer.MaterializationFailed.class, exceeded);
+        assertEquals(EvaluationStage.ASSET_ADMISSION, failed.stage());
+        assertEquals(RenderingProblem.ProblemCode.ASSET_BUDGET_EXCEEDED,
+                failed.problem().code());
+        assertEquals("assetsAndFetch.uniqueFontBytes",
+                failed.problem().limitId().orElseThrow().value());
+        assertEquals(2, exceededPort.resolves);
+        assertTrue(exceededCapacity.reserve(
+                RenderingPipelineCapacityGuard.Limit
+                        .ASSETS_AND_FETCH_UNIQUE_EXACT_CONTENTS,
+                127).isPresent());
+        assertTrue(exceededCapacity.reserve(
+                RenderingPipelineCapacityGuard.Limit.ASSETS_AND_FETCH_UNIQUE_RAW_BYTES,
+                268_435_455L).isPresent());
+        assertTrue(exceededCapacity.reserve(
+                RenderingPipelineCapacityGuard.Limit
+                        .ASSETS_AND_FETCH_RENDER_RESOURCE_ENTRIES,
+                2_047).isEmpty());
+    }
+
+    @Test
     void missingAssetPortFailsClosedAtAssetAdmission() {
         var document = canvasWith(imageNode());
         var outcome = materialize(document, Map.of(), null);

@@ -1238,6 +1238,14 @@ final class Materializer {
         if (uniqueImagePixelFailure != null) {
             return uniqueImagePixelFailure;
         }
+        var uniqueFontByteFailure = reserveFontBytes(
+                RenderingPipelineCapacityGuard.Limit
+                        .ASSETS_AND_FETCH_UNIQUE_FONT_BYTES,
+                kind,
+                fact);
+        if (uniqueFontByteFailure != null) {
+            return uniqueFontByteFailure;
+        }
         exactContents.add(identity);
         return null;
     }

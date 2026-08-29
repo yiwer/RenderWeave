@@ -1004,6 +1004,12 @@ Label: wayfinder:map
   第一个使总量超过 512 MiB 的 occurrence 须在 exact-content/RenderResource append/external fetch 前以
   ASSET_ADMISSION / ASSET_BUDGET_EXCEEDED / exact limitId 零文档失败。focused 130/130、Rendering 251/251 与
   render/fast metadata 全绿；A1、无 ticket-specific A2、J0。
+- [T165 — unique FONT bytes 预算](issues/165-unique-font-bytes-capacity.md)
+  — **resolved / automated_verified**；按 `RW-T19-S8-011` 与 cap-035，仅在
+  successful FONT fact 首次引入新 `(kind, sha256, byteLength, mediaType)` exact identity 时累计声明
+  `byteLength`；duplicate identity 不重复收费，IMAGE 为零。第一个使 unique total 超过 64 MiB 的 identity 须在
+  exact-set/RenderResource append/external fetch 前以 ASSET_ADMISSION / ASSET_BUDGET_EXCEEDED / exact limitId
+  零文档失败。focused 132/132、Rendering 253/253 与 render/fast metadata 全绿；A1、无 ticket-specific A2、J0。
 
 - 改写或重解释现有 Schema/Inference v1 已提交历史，或在 dirty main 上直接实施 Template。
 - Workspace、组织/成员/分享/协作、跨 ownerScope 复制、通用 connector、任意 SQL/HTTP/文件/脚本、插件节点或运行时代码注册。
