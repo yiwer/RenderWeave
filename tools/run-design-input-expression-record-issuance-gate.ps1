@@ -32,5 +32,3 @@ finally {
 }
 
 Write-Host "Evidence: $resolvedEvidenceDir"
-
-

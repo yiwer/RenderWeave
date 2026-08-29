@@ -152,4 +152,3 @@ process.stdout.write(`${JSON.stringify({
   primaryChecks: primary.checkCount,
   independentChecks: independent.checkCount,
 })}\n`);
-

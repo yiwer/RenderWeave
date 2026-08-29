@@ -42,4 +42,3 @@ atomically advance bootstrap ordinal 3 to `EXECUTABLE_A2_REPLAYED` without issui
   Profile, invoke Renderer/provider/API Key/real data/production, or claim J1/A3/READY/Ticket 19 closure.
 - Do not modify the user's Image/Inference dirty work or stash, and do not push, tag, or create a PR.
   Claim evidence is A0; J0 pending and J1 not approved.
-
