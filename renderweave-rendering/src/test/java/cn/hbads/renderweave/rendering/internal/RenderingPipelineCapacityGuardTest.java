@@ -1021,4 +1021,27 @@ class RenderingPipelineCapacityGuardTest {
         assertThrows(IllegalArgumentException.class,
                 () -> guard.rejection(limit));
     }
+
+    @Test
+    void preCommandCancelTombstoneRequiresFrozenCodeLessDeploymentInvariant() {
+        var guard = new RenderingPipelineCapacityGuard();
+        var limit = RenderingPipelineCapacityGuard.Limit
+                .DEADLINE_AND_RETENTION_PRE_COMMAND_CANCEL_TOMBSTONE_MILLIS;
+
+        var below = guard.admitInvariant(limit, 59_999L).orElseThrow();
+        assertEquals(EvaluationStage.ENGINE, below.publicStage());
+        assertEquals("deadlineAndRetention.preCommandCancelTombstoneMillis",
+                below.limitId().value());
+        assertTrue(guard.admitInvariant(limit, 60_000L).isEmpty());
+        var above = guard.admitInvariant(limit, 60_001L).orElseThrow();
+        assertEquals(EvaluationStage.ENGINE, above.publicStage());
+        assertEquals("deadlineAndRetention.preCommandCancelTombstoneMillis",
+                above.limitId().value());
+
+        assertEquals(60_000L, guard.exactValue(limit));
+        assertThrows(IllegalArgumentException.class,
+                () -> guard.admit(limit, 60_000L));
+        assertThrows(IllegalArgumentException.class,
+                () -> guard.rejection(limit));
+    }
 }

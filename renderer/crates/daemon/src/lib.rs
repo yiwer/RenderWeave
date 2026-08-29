@@ -47,7 +47,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 #[cfg(any(unix, test))]
 const TERMINAL_REGISTRY_AND_OUTPUT_RETENTION_MILLIS: i64 = 300_000;
 #[cfg(any(unix, test))]
-const PRE_COMMAND_CANCEL_RETENTION_MILLIS: i64 = 60 * 1_000;
+const PRE_COMMAND_CANCEL_TOMBSTONE_MILLIS: i64 = 60_000;
 
 #[derive(Debug)]
 pub enum DaemonError {
@@ -698,13 +698,17 @@ impl RequestRegistry {
         let problem_payload =
             problem_bytes(&cancel.cancel.request_id, code, EngineStage::RequestControl)?;
         let terminal_response = TerminalResponse::problem(problem_payload);
+        let retain_until_epoch_millis = now_epoch_millis
+            .checked_add(PRE_COMMAND_CANCEL_TOMBSTONE_MILLIS)
+            .ok_or(ProtocolError::Invalid(
+                "pre-command cancel tombstone retention deadline overflow",
+            ))?;
         self.entries.insert(
             cancel.cancel.request_id,
             RegistryEntry {
                 command_digest: cancel.cancel.renderer_command_digest,
                 deadline_epoch_millis,
-                retain_until_epoch_millis: now_epoch_millis
-                    .saturating_add(PRE_COMMAND_CANCEL_RETENTION_MILLIS),
+                retain_until_epoch_millis,
                 terminal_response: terminal_response.clone(),
             },
         );
@@ -1283,6 +1287,95 @@ mod tests {
         let problem: Value = serde_json::from_slice(&only_frame(&response).payload).unwrap();
         assert_eq!(problem["code"], "RENDER_CANCELLED");
         assert_eq!(problem["engineStage"], "REQUEST_CONTROL");
+    }
+
+    #[test]
+    fn pre_command_cancel_retention_fails_closed_when_exact_expiry_overflows() {
+        let mut registry = request_registry();
+        let cancel = vector_json("cancel");
+
+        let error = registry
+            .handle(
+                Frame {
+                    frame_type: FrameType::Cancel,
+                    payload: cancel.into_bytes(),
+                },
+                i64::MAX - 59_999,
+            )
+            .expect_err("an inexact saturated tombstone expiry must not be accepted");
+        assert_eq!(
+            error.to_string(),
+            "pre-command cancel tombstone retention deadline overflow"
+        );
+    }
+
+    #[test]
+    fn pre_command_cancel_tombstone_expires_exactly_and_replays_do_not_renew_it() {
+        let cancel = vector_json("cancel");
+        let admitted = parse_cancel(cancel.as_bytes()).unwrap();
+        let created_at = admitted.deadline_epoch_millis - 120_000;
+        let conflicting_cancel = cancel.replace(
+            &admitted.cancel.renderer_command_digest,
+            &format!("sha256:{}", "0".repeat(64)),
+        );
+        let mut registry = request_registry();
+
+        let first = registry
+            .handle(
+                Frame {
+                    frame_type: FrameType::Cancel,
+                    payload: cancel.as_bytes().to_vec(),
+                },
+                created_at,
+            )
+            .unwrap();
+        let replay = registry
+            .handle(
+                Frame {
+                    frame_type: FrameType::Cancel,
+                    payload: cancel.as_bytes().to_vec(),
+                },
+                created_at + 1,
+            )
+            .unwrap();
+        assert_eq!(only_frame(&replay).payload, only_frame(&first).payload);
+
+        let conflict = registry
+            .handle(
+                Frame {
+                    frame_type: FrameType::Cancel,
+                    payload: conflicting_cancel.as_bytes().to_vec(),
+                },
+                created_at + 30_000,
+            )
+            .unwrap();
+        let conflict: Value = serde_json::from_slice(&only_frame(&conflict).payload).unwrap();
+        assert_eq!(conflict["code"], "RENDER_REQUEST_CONFLICT");
+
+        let last_replay = registry
+            .handle(
+                Frame {
+                    frame_type: FrameType::Cancel,
+                    payload: cancel.into_bytes(),
+                },
+                created_at + 59_999,
+            )
+            .unwrap();
+        assert_eq!(only_frame(&last_replay).payload, only_frame(&first).payload);
+
+        let after_exact_expiry = registry
+            .handle(
+                Frame {
+                    frame_type: FrameType::Cancel,
+                    payload: conflicting_cancel.into_bytes(),
+                },
+                created_at + 60_000,
+            )
+            .unwrap();
+        let after_exact_expiry: Value =
+            serde_json::from_slice(&only_frame(&after_exact_expiry).payload).unwrap();
+        assert_eq!(after_exact_expiry["code"], "RENDER_CANCELLED");
+        assert_eq!(after_exact_expiry["engineStage"], "REQUEST_CONTROL");
     }
 
     #[test]

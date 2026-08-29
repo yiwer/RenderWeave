@@ -4606,3 +4606,26 @@
   既有 wire/vector replay 不构成 T180 clock-retention 专项 A2；T180-specific A2/A3 无，J0 pending、J1 未批准。
 - cap-051/052 deferred；无 HTTP/OpenAPI/Web/migration/wire/manifest/Profile registration/certification/provider/
   API Key/真实数据/费用/push/tag/PR，OpenAPI 保持 0.13.0。
+
+# 2026-08-29 Template-v1 T181 pre-command cancel tombstone retention（resolved / automated_verified）
+
+- T180 已以 verified commit `94fbe885` 收口，worktree clean、ahead 171 且 DAG 无其他 active claim；冻结
+  `RW-T19-S8-073`、`RW-T19-S9-015/018/019` / Rendering-pipeline cap-051 是首个 unblocked residual，现按
+  single-writer claim T181。
+- cap-051 固定 `deadlineAndRetention.preCommandCancelTombstoneMillis` EXACT `60000`、observed
+  `59999/60000/60001`、REQUEST_CONTROL / public ENGINE / code-less retention invariant /
+  ALGORITHM_INVARIANT；不为 deployment/profile mismatch 发明 public Render problem code。
+- Java internal guard 负责 exact invariant；Rust `RequestRegistry` 负责从首次 pre-command cancel 固定不可续期
+  tombstone expiry，exact expiry 先 purge，overflow fail-closed。cap-050 保持独立、cap-052 deferred；claim 时 A0、J0。
+- 无 HTTP/OpenAPI/Web/migration/Profile/provider/API Key/真实数据/费用/Profile registration/push/tag/PR。
+- Java internal guard 已增加 code-less EXACT cap-051 outcome，覆盖 `59999/60000/60001` 并禁止 public rejection。
+  Rust registry 从首次 pre-command cancel 固定 `60000 ms` tombstone，matching/conflicting access 均不续期，
+  `+59999` replay、`+60000` purge；checked overflow 在 registry write 前 fail-closed。
+- TDD RED/GREEN 已收口：Java guard `43/43`；Rust focused `3/3`、Windows daemon `16+3`、Linux daemon `17+3`、
+  workspace all-target、clippy `-D warnings`、fmt；Maven 受影响 reactor Schema `20` / Validation `13` /
+  Template `86` / Asset `92` / Rendering `297` 全绿。
+- render `.sdlc/evidence/20260829-131604-render/` metadata passed/A1（2/2），fast
+  `.sdlc/evidence/20260829-131658-fast/` metadata passed/A1（3/3）；`git diff --check` 通过。既有 wire/vector replay
+  不构成 T181 clock-retention 专项 A2；T181-specific A2/A3 无，J0 pending、J1 未批准。
+- cap-050 保持独立、cap-052 deferred；无 HTTP/OpenAPI/Web/migration/wire/manifest/Profile registration/
+  certification/provider/API Key/真实数据/费用/push/tag/PR，OpenAPI 保持 0.13.0。

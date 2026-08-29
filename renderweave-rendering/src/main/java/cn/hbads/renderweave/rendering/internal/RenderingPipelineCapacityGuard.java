@@ -214,6 +214,11 @@ final class RenderingPipelineCapacityGuard {
                 300_000L,
                 Comparison.EXACT,
                 EvaluationStage.ENGINE),
+        DEADLINE_AND_RETENTION_PRE_COMMAND_CANCEL_TOMBSTONE_MILLIS(
+                "deadlineAndRetention.preCommandCancelTombstoneMillis",
+                60_000L,
+                Comparison.EXACT,
+                EvaluationStage.ENGINE),
         DEADLINE_AND_RETENTION_TOTAL_DEADLINE_MILLIS(
                 "deadlineAndRetention.totalDeadlineMillis",
                 60_000L,
