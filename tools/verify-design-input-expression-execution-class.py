@@ -78,9 +78,11 @@ def decode_json(data: bytes, location: object) -> dict[str, Any]:
     return value
 
 
-def read_json(path: Path) -> tuple[bytes, dict[str, Any]]:
+def read_json(path: Path, *, strict_lf: bool = True) -> tuple[bytes, dict[str, Any]]:
     data = path.read_bytes()
-    require(data.endswith(b"\n") and b"\r" not in data, "JSON_TEXT_FORMAT", path)
+    require(data.endswith(b"\n"), "JSON_TEXT_TERMINATOR", path)
+    if strict_lf:
+        require(b"\r" not in data, "JSON_TEXT_FORMAT", path)
     return data, decode_json(data, path)
 
 
@@ -197,10 +199,15 @@ def validate_target(repo: Path, path: Path) -> tuple[bytes, dict[str, Any], dict
              product.get("productReservationProofComplete")) == (65, 0, True),
             "TARGET_COMPONENT_PRODUCT_PROOF", product)
     require(component.get("boundary") == {
-        "formalRecordsIssued": 0,
+        "componentReplayAllowed": True,
+        "exactExecutionClassTargetCreated": False,
+        "classRequiredExecutorManifestsIssued": False,
         "preissuanceReady": False,
+        "formalRecordsIssued": 0,
         "recordIssuanceAllowed": False,
         "executionClassExecutable": False,
+        "nativeRendererInvoked": False,
+        "externalProviderAttemptsAllowed": False,
     }, "TARGET_COMPONENT_BOUNDARY", component.get("boundary"))
 
     case_source, oracle_source, case_bytes, oracle_bytes, _, oracle_ids = assigned_records(repo, revision)
@@ -310,8 +317,8 @@ def validate_reports(
     target: dict[str, Any],
     component: dict[str, Any],
 ) -> tuple[bytes, bytes]:
-    primary_bytes, primary = read_json(primary_path)
-    independent_bytes, independent = read_json(independent_path)
+    primary_bytes, primary = read_json(primary_path, strict_lf=False)
+    independent_bytes, independent = read_json(independent_path, strict_lf=False)
     component_binding = target["componentTargets"][0]
     require(primary.get("reportVersion") ==
             "renderweave-design-input-expression-capacity-primary/1",
