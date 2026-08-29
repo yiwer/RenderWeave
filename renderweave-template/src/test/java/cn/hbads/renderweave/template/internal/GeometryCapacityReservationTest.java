@@ -10,15 +10,18 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class GeometryCapacityReservationTest {
 
     private static final String MIN_POSITIVE_SCALE_64 =
             "0.0000000000000000000000000000000000000000000000000000000000000001";
+    private static final String MAX_BELOW_SCALE_64 =
+            "999.9999999999999999999999999999999999999999999999999999999999999999";
+    private static final String MAX_ABOVE_SCALE_64 =
+            "1000.0000000000000000000000000000000000000000000000000000000000000001";
 
     @Test
-    void canvasTrimObservesEachAxisAtThePublicAdmissionSeam() {
+    void canvasTrimObservesMinimumThenMaximumForEachAxisAtThePublicAdmissionSeam() {
         var recording = new RecordingAuthority();
 
         assertInstanceOf(
@@ -29,8 +32,10 @@ class GeometryCapacityReservationTest {
 
         assertEquals(
                 List.of(
-                        observation(MIN_POSITIVE_SCALE_64),
-                        observation("297")
+                        minObservation(MIN_POSITIVE_SCALE_64),
+                        maxObservation(MIN_POSITIVE_SCALE_64),
+                        minObservation("297"),
+                        maxObservation("297")
                 ),
                 recording.geometryObservations()
         );
@@ -62,16 +67,59 @@ class GeometryCapacityReservationTest {
     }
 
     @Test
+    void defaultAuthorityEnforcesMaximumBelowAtAndScale64AboveForBothAxes() {
+        assertInstanceOf(
+                DesignDslAuthority.Admitted.class,
+                new CanonicalDesignDslAuthority()
+                        .admit(canvas(MAX_BELOW_SCALE_64, "1000.000"))
+        );
+        assertGeometryRejected(
+                new CanonicalDesignDslAuthority().admit(canvas(MAX_ABOVE_SCALE_64, "297")),
+                "/designRoot/widthMm",
+                DesignDslAuthority.Limit.GEOMETRY_CANVAS_TRIM_MM_PER_AXIS_MAX
+        );
+        assertGeometryRejected(
+                new CanonicalDesignDslAuthority().admit(canvas("210", MAX_ABOVE_SCALE_64)),
+                "/designRoot/heightMm",
+                DesignDslAuthority.Limit.GEOMETRY_CANVAS_TRIM_MM_PER_AXIS_MAX
+        );
+    }
+
+    @Test
     void authorityRejectInvalidAndThrowFailClosedAtTheExactCanvasAxis() {
         for (var mode : FailureMode.values()) {
-            var authority = new FailingAuthority(mode);
+            var authority = new FailingAuthority(
+                    mode,
+                    "geometry.canvasTrimMmPerAxisExclusiveMin"
+            );
 
             assertGeometryRejected(
                     new CanonicalDesignDslAuthority(authority)
                             .admit(canvas("210", "297")),
                     "/designRoot/widthMm"
             );
-            assertEquals(List.of(observation("210")), authority.geometryObservations());
+            assertEquals(List.of(minObservation("210")), authority.geometryObservations());
+        }
+    }
+
+    @Test
+    void maximumAuthorityRejectInvalidAndThrowFailClosedAtTheExactCanvasAxis() {
+        for (var mode : FailureMode.values()) {
+            var authority = new FailingAuthority(
+                    mode,
+                    "geometry.canvasTrimMmPerAxisMax"
+            );
+
+            assertGeometryRejected(
+                    new CanonicalDesignDslAuthority(authority)
+                            .admit(canvas("210", "297")),
+                    "/designRoot/widthMm",
+                    DesignDslAuthority.Limit.GEOMETRY_CANVAS_TRIM_MM_PER_AXIS_MAX
+            );
+            assertEquals(
+                    List.of(minObservation("210"), maxObservation("210")),
+                    authority.geometryObservations()
+            );
         }
     }
 
@@ -110,7 +158,7 @@ class GeometryCapacityReservationTest {
                 """).formatted(widthMm, heightMm).getBytes(StandardCharsets.UTF_8);
     }
 
-    private static DesignInputExpressionCapacityAuthority.Observation observation(
+    private static DesignInputExpressionCapacityAuthority.Observation minObservation(
             String observedValue
     ) {
         return new DesignInputExpressionCapacityAuthority.Observation(
@@ -119,18 +167,36 @@ class GeometryCapacityReservationTest {
         );
     }
 
+    private static DesignInputExpressionCapacityAuthority.Observation maxObservation(
+            String observedValue
+    ) {
+        return new DesignInputExpressionCapacityAuthority.Observation(
+                "geometry.canvasTrimMmPerAxisMax",
+                observedValue
+        );
+    }
+
     private static void assertGeometryRejected(
             DesignDslAuthority.Admission admission,
             String pointer
+    ) {
+        assertGeometryRejected(
+                admission,
+                pointer,
+                DesignDslAuthority.Limit.GEOMETRY_CANVAS_TRIM_MM_PER_AXIS_EXCLUSIVE_MIN
+        );
+    }
+
+    private static void assertGeometryRejected(
+            DesignDslAuthority.Admission admission,
+            String pointer,
+            DesignDslAuthority.Limit limit
     ) {
         var rejected = assertInstanceOf(DesignDslAuthority.Rejected.class, admission);
         assertEquals("DESIGN_PROPERTY_CONSTRAINT_INVALID", rejected.code().name());
         assertEquals("DESIGN_PROPERTY_AND_AGGREGATE_VALIDATION", rejected.stage().name());
         assertEquals(pointer, rejected.pointer());
-        assertEquals(
-                "geometry.canvasTrimMmPerAxisExclusiveMin",
-                rejected.limit().map(DesignDslAuthority.Limit::id).orElse(null)
-        );
+        assertEquals(limit, rejected.limit().orElse(null));
     }
 
     private static final class RecordingAuthority
@@ -159,10 +225,12 @@ class GeometryCapacityReservationTest {
     private static final class FailingAuthority
             implements DesignInputExpressionCapacityAuthority {
         private final FailureMode mode;
+        private final String failingLimitId;
         private final List<Observation> observations = new ArrayList<>();
 
-        private FailingAuthority(FailureMode mode) {
+        private FailingAuthority(FailureMode mode, String failingLimitId) {
             this.mode = mode;
+            this.failingLimitId = failingLimitId;
         }
 
         @Override
@@ -172,6 +240,10 @@ class GeometryCapacityReservationTest {
                         .evaluate(observation);
             }
             observations.add(observation);
+            if (!observation.limitId().equals(failingLimitId)) {
+                return CanonicalDesignInputExpressionCapacityAuthority.INSTANCE
+                        .evaluate(observation);
+            }
             return switch (mode) {
                 case REJECT -> new Rejected(new Terminal(
                         "DESIGN_PROPERTY_CONSTRAINT_INVALID",
@@ -192,7 +264,6 @@ class GeometryCapacityReservationTest {
         }
 
         private List<Observation> geometryObservations() {
-            assertTrue(observations.size() <= 1, "failure must stop before height reservation");
             return List.copyOf(observations);
         }
     }

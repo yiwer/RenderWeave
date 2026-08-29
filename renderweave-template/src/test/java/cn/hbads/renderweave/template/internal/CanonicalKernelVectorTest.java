@@ -1,6 +1,7 @@
 package cn.hbads.renderweave.template.internal;
 
 import cn.hbads.renderweave.template.api.DesignDslAuthority;
+import cn.hbads.renderweave.template.api.DesignInputExpressionCapacityAuthority;
 import org.junit.jupiter.api.Test;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
@@ -27,7 +28,19 @@ class CanonicalKernelVectorTest {
     private static final String RESOURCE =
             "/cn/hbads/renderweave/template/canonical-kernel-v1/vectors.json";
     private final ObjectMapper json = new ObjectMapper();
-    private final DesignDslAuthority authority = new CanonicalDesignDslAuthority();
+    private final DesignDslAuthority authority = new CanonicalDesignDslAuthority(
+            CanonicalKernelVectorTest::evaluateFrozenKernelCapacity
+    );
+
+    private static DesignInputExpressionCapacityAuthority.Decision evaluateFrozenKernelCapacity(
+            DesignInputExpressionCapacityAuthority.Observation observation
+    ) {
+        if ("geometry.canvasTrimMmPerAxisMax".equals(observation.limitId())) {
+            // v1/8 freezes parser/canonical number-token bytes independently of cap-057.
+            return new DesignInputExpressionCapacityAuthority.Accepted();
+        }
+        return CanonicalDesignInputExpressionCapacityAuthority.INSTANCE.evaluate(observation);
+    }
 
     @Test
     void replaysEveryFrozenVectorAndWritesThePrimaryReport() throws Exception {

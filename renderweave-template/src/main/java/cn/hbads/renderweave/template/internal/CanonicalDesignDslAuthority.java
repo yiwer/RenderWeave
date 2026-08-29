@@ -2485,23 +2485,24 @@ final class CanonicalDesignDslAuthority implements DesignDslAuthority {
         } catch (NumberFormatException exception) {
             throw failure(FailureCode.DESIGN_VALUE_INVALID, pointer);
         }
-        DesignInputExpressionCapacityAuthority.Decision decision;
-        try {
-            decision = capacity.evaluate(new DesignInputExpressionCapacityAuthority.Observation(
-                    "geometry.canvasTrimMmPerAxisExclusiveMin",
-                    observed
-            ));
-        } catch (RuntimeException unavailable) {
-            throw geometryFailure(
-                    Limit.GEOMETRY_CANVAS_TRIM_MM_PER_AXIS_EXCLUSIVE_MIN,
-                    pointer
-            );
-        }
-        if (!(decision instanceof DesignInputExpressionCapacityAuthority.Accepted)) {
-            throw geometryFailure(
-                    Limit.GEOMETRY_CANVAS_TRIM_MM_PER_AXIS_EXCLUSIVE_MIN,
-                    pointer
-            );
+        for (var limit : List.of(
+                Limit.GEOMETRY_CANVAS_TRIM_MM_PER_AXIS_EXCLUSIVE_MIN,
+                Limit.GEOMETRY_CANVAS_TRIM_MM_PER_AXIS_MAX
+        )) {
+            DesignInputExpressionCapacityAuthority.Decision decision;
+            try {
+                decision = capacity.evaluate(
+                        new DesignInputExpressionCapacityAuthority.Observation(
+                                limit.id(),
+                                observed
+                        )
+                );
+            } catch (RuntimeException unavailable) {
+                throw geometryFailure(limit, pointer);
+            }
+            if (!(decision instanceof DesignInputExpressionCapacityAuthority.Accepted)) {
+                throw geometryFailure(limit, pointer);
+            }
         }
     }
 
