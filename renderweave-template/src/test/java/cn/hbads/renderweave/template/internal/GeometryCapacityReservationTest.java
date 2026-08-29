@@ -37,6 +37,142 @@ class GeometryCapacityReservationTest {
             "4095.9999999999999999999999999999999999999999999999999999999999999999";
     private static final String FONT_SIZE_MAX_ABOVE_SCALE_64 =
             "4096.0000000000000000000000000000000000000000000000000000000000000001";
+    private static final String TRANSFORM_SCALE_MAX_BELOW_SCALE_64 =
+            "99.9999999999999999999999999999999999999999999999999999999999999999";
+    private static final String TRANSFORM_SCALE_MAX_ABOVE_SCALE_64 =
+            "100.0000000000000000000000000000000000000000000000000000000000000001";
+
+    @Test
+    void transformScalesObserveCanonicalAbsoluteValuesAtThePublicAdmissionSeam()
+            throws Exception {
+        var recording = new RecordingAuthority();
+
+        assertInstanceOf(
+                DesignDslAuthority.Admitted.class,
+                new CanonicalDesignDslAuthority(recording).admit(canonicalVectorReplacing(
+                        "admit-transform-and-composites",
+                        "\"scaleX\":-1",
+                        "\"scaleX\":-2.500"
+                ))
+        );
+
+        assertEquals(
+                List.of(transformScaleObservation("2.5"), transformScaleObservation("1")),
+                recording.transformScaleObservations()
+        );
+    }
+
+    @Test
+    void defaultAuthorityEnforcesPositiveAndNegativeTransformScaleBoundaries()
+            throws Exception {
+        for (var accepted : List.of(
+                transformWithScales(TRANSFORM_SCALE_MAX_BELOW_SCALE_64, "-100.000"),
+                transformWithScales("-" + TRANSFORM_SCALE_MAX_BELOW_SCALE_64, "100")
+        )) {
+            assertInstanceOf(
+                    DesignDslAuthority.Admitted.class,
+                    new CanonicalDesignDslAuthority().admit(accepted)
+            );
+        }
+
+        assertTransformScaleMaximumRejected(
+                transformWithScales(TRANSFORM_SCALE_MAX_ABOVE_SCALE_64, "1"),
+                "/designRoot/children/0/transform/scaleX"
+        );
+        assertTransformScaleMaximumRejected(
+                transformWithScales("1", "-" + TRANSFORM_SCALE_MAX_ABOVE_SCALE_64),
+                "/designRoot/children/0/transform/scaleY"
+        );
+    }
+
+    @Test
+    void absentOptionalTransformProducesNoScaleObservation() throws Exception {
+        var recording = new RecordingAuthority();
+
+        assertInstanceOf(
+                DesignDslAuthority.Admitted.class,
+                new CanonicalDesignDslAuthority(recording)
+                        .admit(canonicalVector("admit-frame-in-canvas"))
+        );
+
+        assertEquals(List.of(), recording.transformScaleObservations());
+    }
+
+    @Test
+    void localNonZeroContractPrecedesTransformScaleCapacity() throws Exception {
+        var zeroXAuthority = new RecordingAuthority();
+        var zeroX = assertInstanceOf(
+                DesignDslAuthority.Rejected.class,
+                new CanonicalDesignDslAuthority(zeroXAuthority)
+                        .admit(transformWithScales("-0.000", "1"))
+        );
+        assertEquals(DesignDslAuthority.FailureCode.DESIGN_VALUE_INVALID, zeroX.code());
+        assertEquals("/designRoot/children/0/transform/scaleX", zeroX.pointer());
+        assertEquals(List.of(), zeroXAuthority.transformScaleObservations());
+
+        var zeroYAuthority = new RecordingAuthority();
+        var zeroY = assertInstanceOf(
+                DesignDslAuthority.Rejected.class,
+                new CanonicalDesignDslAuthority(zeroYAuthority)
+                        .admit(transformWithScales("-2.000", "0"))
+        );
+        assertEquals(DesignDslAuthority.FailureCode.DESIGN_VALUE_INVALID, zeroY.code());
+        assertEquals("/designRoot/children/0/transform/scaleY", zeroY.pointer());
+        assertEquals(
+                List.of(transformScaleObservation("2")),
+                zeroYAuthority.transformScaleObservations()
+        );
+    }
+
+    @Test
+    void transformScaleAuthorityRejectInvalidAndThrowFailClosedAtTheExactScale()
+            throws Exception {
+        for (var mode : FailureMode.values()) {
+            var authority = new FailingAuthority(
+                    mode,
+                    "geometry.transformScaleAbsoluteMax"
+            );
+
+            assertGeometryRejected(
+                    new CanonicalDesignDslAuthority(authority)
+                            .admit(transformWithScales("-100.00", "1")),
+                    "/designRoot/children/0/transform/scaleX",
+                    DesignDslAuthority.Limit.GEOMETRY_TRANSFORM_SCALE_ABSOLUTE_MAX
+            );
+            assertEquals(
+                    List.of(transformScaleObservation("100")),
+                    authority.transformScaleObservations()
+            );
+        }
+    }
+
+    @Test
+    void transformScaleTypeAndCanonicalExpansionPrecedeCapacityObservation()
+            throws Exception {
+        var malformedAuthority = new RecordingAuthority();
+        var malformed = assertInstanceOf(
+                DesignDslAuthority.Rejected.class,
+                new CanonicalDesignDslAuthority(malformedAuthority)
+                        .admit(transformWithScales("\"1\"", "1"))
+        );
+        assertEquals(DesignDslAuthority.FailureCode.DESIGN_STRUCTURE_INVALID, malformed.code());
+        assertEquals("/designRoot/children/0/transform/scaleX", malformed.pointer());
+        assertEquals(List.of(), malformedAuthority.transformScaleObservations());
+
+        var oversizedAuthority = new RecordingAuthority();
+        var oversized = assertInstanceOf(
+                DesignDslAuthority.Rejected.class,
+                new CanonicalDesignDslAuthority(oversizedAuthority)
+                        .admit(transformWithScales("1e16777216", "1"))
+        );
+        assertEquals(DesignDslAuthority.FailureCode.DESIGN_DSL_LIMIT_EXCEEDED,
+                oversized.code());
+        assertEquals(DesignDslAuthority.FailureStage.DESIGN_CANONICAL_COUNT,
+                oversized.stage());
+        assertEquals(DesignDslAuthority.Limit.CANONICAL_BYTES,
+                oversized.limit().orElseThrow());
+        assertEquals(List.of(), oversizedAuthority.transformScaleObservations());
+    }
 
     @Test
     void textRunFontSizesObserveCanonicalValuesAtThePublicAdmissionSeam() throws Exception {
@@ -875,6 +1011,16 @@ class GeometryCapacityReservationTest {
         return canonical.replace(target, replacement).getBytes(StandardCharsets.UTF_8);
     }
 
+    private byte[] transformWithScales(String scaleX, String scaleY) throws IOException {
+        var canonical = new String(
+                canonicalVector("admit-transform-and-composites"),
+                StandardCharsets.UTF_8
+        );
+        return canonical.replace("\"scaleX\":-1", "\"scaleX\":" + scaleX)
+                .replace("\"scaleY\":1", "\"scaleY\":" + scaleY)
+                .getBytes(StandardCharsets.UTF_8);
+    }
+
     private byte[] frameWithX(String xMm) throws IOException {
         return canonicalVectorReplacing(
                 "admit-frame-in-canvas",
@@ -916,6 +1062,15 @@ class GeometryCapacityReservationTest {
     ) {
         return new DesignInputExpressionCapacityAuthority.Observation(
                 "geometry.fontSizePtMax",
+                observedValue
+        );
+    }
+
+    private static DesignInputExpressionCapacityAuthority.Observation transformScaleObservation(
+            String observedValue
+    ) {
+        return new DesignInputExpressionCapacityAuthority.Observation(
+                "geometry.transformScaleAbsoluteMax",
                 observedValue
         );
     }
@@ -998,6 +1153,14 @@ class GeometryCapacityReservationTest {
         );
     }
 
+    private static void assertTransformScaleMaximumRejected(byte[] designDsl, String pointer) {
+        assertGeometryRejected(
+                new CanonicalDesignDslAuthority().admit(designDsl),
+                pointer,
+                DesignDslAuthority.Limit.GEOMETRY_TRANSFORM_SCALE_ABSOLUTE_MAX
+        );
+    }
+
     private static final class RecordingAuthority
             implements DesignInputExpressionCapacityAuthority {
         private final List<Observation> observations = new ArrayList<>();
@@ -1038,6 +1201,13 @@ class GeometryCapacityReservationTest {
             return observations.stream()
                     .filter(observation -> observation.limitId().startsWith(
                             "geometry.fontSizePt"))
+                    .toList();
+        }
+
+        private List<Observation> transformScaleObservations() {
+            return observations.stream()
+                    .filter(observation -> observation.limitId().equals(
+                            "geometry.transformScaleAbsoluteMax"))
                     .toList();
         }
     }
@@ -1111,6 +1281,13 @@ class GeometryCapacityReservationTest {
             return observations.stream()
                     .filter(observation -> observation.limitId().startsWith(
                             "geometry.fontSizePt"))
+                    .toList();
+        }
+
+        private List<Observation> transformScaleObservations() {
+            return observations.stream()
+                    .filter(observation -> observation.limitId().equals(
+                            "geometry.transformScaleAbsoluteMax"))
                     .toList();
         }
     }

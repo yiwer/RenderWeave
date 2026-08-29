@@ -2273,8 +2273,8 @@ final class CanonicalDesignDslAuthority implements DesignDslAuthority {
         var transform = object(value, pointer);
         rejectUnknown(transform, NodeContractCatalog.TRANSFORM_MEMBERS, pointer);
         decimalMember(transform, "rotationDeg", pointer + "/rotationDeg");
-        nonZeroDecimal(transform, "scaleX", pointer + "/scaleX");
-        nonZeroDecimal(transform, "scaleY", pointer + "/scaleY");
+        transformScaleDecimal(transform, "scaleX", pointer + "/scaleX");
+        transformScaleDecimal(transform, "scaleY", pointer + "/scaleY");
         rangedDecimal(transform, "originX", pointer + "/originX", 0, 1);
         rangedDecimal(transform, "originY", pointer + "/originY", 0, 1);
     }
@@ -2342,7 +2342,7 @@ final class CanonicalDesignDslAuthority implements DesignDslAuthority {
         }
     }
 
-    private void nonZeroDecimal(
+    private void transformScaleDecimal(
             JsonValue.ObjectValue object,
             String name,
             String pointer
@@ -2351,6 +2351,11 @@ final class CanonicalDesignDslAuthority implements DesignDslAuthority {
         if (value.signum() == 0) {
             throw failure(FailureCode.DESIGN_VALUE_INVALID, pointer);
         }
+        reserveCapacityDecimal(
+                value.abs(),
+                pointer,
+                Limit.GEOMETRY_TRANSFORM_SCALE_ABSOLUTE_MAX
+        );
     }
 
     private void rangedDecimal(

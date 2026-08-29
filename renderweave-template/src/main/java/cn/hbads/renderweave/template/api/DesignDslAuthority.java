@@ -118,7 +118,8 @@ public interface DesignDslAuthority {
         GEOMETRY_AUTHORED_COORDINATE_OR_LENGTH_MM_ABSOLUTE_MAX(
                 "geometry.authoredCoordinateOrLengthMmAbsoluteMax"),
         GEOMETRY_FONT_SIZE_PT_EXCLUSIVE_MIN("geometry.fontSizePtExclusiveMin"),
-        GEOMETRY_FONT_SIZE_PT_MAX("geometry.fontSizePtMax");
+        GEOMETRY_FONT_SIZE_PT_MAX("geometry.fontSizePtMax"),
+        GEOMETRY_TRANSFORM_SCALE_ABSOLUTE_MAX("geometry.transformScaleAbsoluteMax");
 
         private final String id;
 
