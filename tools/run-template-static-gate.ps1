@@ -130,7 +130,10 @@ try {
     $previousGitDir = [Environment]::GetEnvironmentVariable('GIT_DIR', 'Process')
     $previousGitWorkTree = [Environment]::GetEnvironmentVariable('GIT_WORK_TREE', 'Process')
     [Environment]::SetEnvironmentVariable('GIT_DIR', $repoGitDir, 'Process')
-    [Environment]::SetEnvironmentVariable('GIT_WORK_TREE', $null, 'Process')
+    # Git for Windows may stat a long revision:path against the current directory before
+    # resolving it as an object name. Bind the short, real work tree while replay code
+    # continues to read all authority bytes from the isolated temp copy.
+    [Environment]::SetEnvironmentVariable('GIT_WORK_TREE', $repoRoot, 'Process')
     Push-Location $tempSpecRoot
     try {
         Invoke-Checked 'template-design-input-expression-postissuance-replay' {

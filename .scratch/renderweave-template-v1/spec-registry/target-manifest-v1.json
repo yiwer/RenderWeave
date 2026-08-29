@@ -2,7 +2,7 @@
   "artifactVersion": "renderweave-spec-registry-target-manifest/1.0",
   "targetId": "SPEC_TARGET::REGISTRY::1.0",
   "status": "ISSUED_APPEND_ONLY_EXACT_TARGET",
-  "implementationRevision": "spec-registry-bootstrap/1.14",
+  "implementationRevision": "spec-registry-bootstrap/1.15",
   "executionClass": "EXEC::SPEC_REGISTRY::1.0",
   "canonicalProfile": "renderweave-conformance-c14n/1.0",
   "probeProfile": "renderweave-conformance-probes/1.0",
@@ -25,8 +25,8 @@
     },
     {
       "path": "conformance-bootstrap-order-v1.json",
-      "sha256": "sha256:fd112f7b9f91fa42b7317b282cd77155381ce2b6b4260200ea71d9f6b3f04b78",
-      "byteLength": 11128
+      "sha256": "sha256:b1677b84cc408f0cd729e4a34de1cec16900519fd8222aa2b602f103284cdee1",
+      "byteLength": 12573
     },
     {
       "path": "conformance-canonical-profile-v1.json",
@@ -50,8 +50,8 @@
     },
     {
       "path": "conformance-execution-classes-v1.json",
-      "sha256": "sha256:f7963e4fb555e87ab59f55bc2afce559b7b7b3de6b90edc1369415b0cd7a6968",
-      "byteLength": 10701
+      "sha256": "sha256:dea2d2ae7796e2e8956b15d67408938d74e6d9729af7cef3043e6e88cc58f76c",
+      "byteLength": 12110
     },
     {
       "path": "conformance-generator-manifests-v1.json",
@@ -149,6 +149,61 @@
       "byteLength": 19435
     },
     {
+      "path": "design-input-expression/capacity-record-issuance-target-v1.json",
+      "sha256": "sha256:b5227039abe50a0b2f5f14ba90070e01dc28e34c783e141cd13ed67211dbed9d",
+      "byteLength": 27043
+    },
+    {
+      "path": "design-input-expression/design-input-expression-capacity-postissuance-a2-2026-08-29.json",
+      "sha256": "sha256:eb1dbf68d1e2626b5f2a053f51fe8da16841be5ea16b35ce6d7a3bb5e1b03712",
+      "byteLength": 4563
+    },
+    {
+      "path": "design-input-expression/execution-class-target-v1.json",
+      "sha256": "sha256:0629760e9ec6232709ffe20943733232996a379d17303a12dd1596e8118e765c",
+      "byteLength": 5823
+    },
+    {
+      "path": "design-input-expression/java-semantic-authority-executor-manifest-v1.json",
+      "sha256": "sha256:3b582c15572b12f383be852f18ae49710d21c3b330de98c19cc454d24a645259",
+      "byteLength": 1784
+    },
+    {
+      "path": "design-input-expression/materialize-design-input-expression-capacity-issuance.py",
+      "sha256": "sha256:727253bb8c38fc6d91c97abf8fe362c9fcc70881b1e4ecdfa17cf926b499a27d",
+      "byteLength": 31205
+    },
+    {
+      "path": "design-input-expression/postissuance-independent-result-v1.json",
+      "sha256": "sha256:1f642c21b615701294a4b88a9b701d2cb6106869732f461c471384eb3c3437d0",
+      "byteLength": 1108
+    },
+    {
+      "path": "design-input-expression/postissuance-primary-result-v1.json",
+      "sha256": "sha256:9a2a3b5322775a37b946a45e3876c511f20270e68fbab00700de88aa699f4250",
+      "byteLength": 1093
+    },
+    {
+      "path": "design-input-expression/typescript-independent-authoring-replayer-manifest-v1.json",
+      "sha256": "sha256:da4e806f63566137fb8391358fa7dfa758bdff4bb1295535c858c074088ca68e",
+      "byteLength": 1673
+    },
+    {
+      "path": "design-input-expression/validate-design-input-expression-postissuance-primary.mjs",
+      "sha256": "sha256:5c16e0690e4c07ae256ae44827b755cbdd5c37420333fb78d7dcfe8be1be8f6f",
+      "byteLength": 20012
+    },
+    {
+      "path": "design-input-expression/validate_design_input_expression_postissuance_independent.py",
+      "sha256": "sha256:1cf1945f93f5186b196e97736e6fcb9c64310bb5caa5840f02ff900775932b7f",
+      "byteLength": 23942
+    },
+    {
+      "path": "design-input-expression/write-design-input-expression-postissuance-a2-evidence.mjs",
+      "sha256": "sha256:8c7df5c4febca246182a2003b46eeae3e0b22b50a18ade6eebe2c01932835c7a",
+      "byteLength": 5658
+    },
+    {
       "path": "domain-services/capacity-record-issuance-target-v1.json",
       "sha256": "sha256:44c1d878848ab87fc4e4485c4b6142f1710204f39b64578c0a95102a7b0288e2",
       "byteLength": 11104
@@ -220,18 +275,18 @@
     },
     {
       "path": "editor-automated/atomic-candidate-independent-result-v1.json",
-      "sha256": "sha256:3a8bc629de867aed225034342d8f4976b84e27ab1b35b62c428524f923e47c94",
-      "byteLength": 6155
+      "sha256": "sha256:d4a1e4c5af3dd2ec6b9ed39a0d129f1aa55d7dda82bce73cf989f5c60268f3ac",
+      "byteLength": 6158
     },
     {
       "path": "editor-automated/atomic-candidate-primary-result-v1.json",
-      "sha256": "sha256:e1d6f3f8705b60c446623b4ad9b4247cfef101cf05a427b18723012a2c034158",
-      "byteLength": 20689
+      "sha256": "sha256:98cf3e9fc19be8b11cc9ae89fcd9341323a79e6aa2c11a2a9a1c26f328d51011",
+      "byteLength": 20718
     },
     {
       "path": "editor-automated/atomic-candidate-readiness-audit-v1.json",
-      "sha256": "sha256:6baf2ae558f1a15fa79b9dad5a684e8aaefa5a7a4cfa119617300f658ebc188d",
-      "byteLength": 11204
+      "sha256": "sha256:62ba35de726c574c8ca8790cf7282500ba9c8b5b1ce7c162bf5ed6d7a31c4d3e",
+      "byteLength": 11206
     },
     {
       "path": "editor-automated/atomic-scenario-candidates-v1.json",
@@ -265,8 +320,8 @@
     },
     {
       "path": "editor-automated/editor-atomic-candidates-static-a2-2026-08-17.json",
-      "sha256": "sha256:9ce39ddb03ee36e26adf872ab6833f4715a0738b855f812ac630aee5e3c01f63",
-      "byteLength": 10795
+      "sha256": "sha256:d672684067a15ab1396323826e71d29169e68fa47596eaf4f9edb7e398de653a",
+      "byteLength": 10798
     },
     {
       "path": "editor-automated/editor-automation-admission-static-a2-2026-08-17.json",
@@ -480,8 +535,8 @@
     },
     {
       "path": "editor-automated/generate-editor-atomic-candidates.mjs",
-      "sha256": "sha256:47d2b49197a9dc1af84badbae315e9dce577509c9b035c15b3ce788173c146a0",
-      "byteLength": 164204
+      "sha256": "sha256:2d9adfbf7ed4c187bd8db962c08275e6467d96cedaa0781c8d6f41235d62da27",
+      "byteLength": 164232
     },
     {
       "path": "editor-automated/generate-editor-automation-admission.mjs",
@@ -1655,8 +1710,8 @@
     },
     {
       "path": "editor-automated/validate_editor_atomic_candidates_independent.py",
-      "sha256": "sha256:f9031f13c68b19446391903ec04c8f92b4c4a5d8885e61335e975751a361c9c8",
-      "byteLength": 71622
+      "sha256": "sha256:1eaac92e0b0b02e9c19d160382ee441719163686bebcf31fa77ee2e15c7203eb",
+      "byteLength": 71666
     },
     {
       "path": "editor-automated/validate_editor_automation_admission_independent.py",
@@ -1670,8 +1725,8 @@
     },
     {
       "path": "editor-automated/write-editor-atomic-candidate-evidence.mjs",
-      "sha256": "sha256:1c383612d2a80b61ab41dc33f7695ecc9aaad0a50a59e4ab9f0489c6e6580913",
-      "byteLength": 10390
+      "sha256": "sha256:e6a5d46182b7e82a0cca872ed500b61700ee2946a63ac647801d4c260d4f1cd2",
+      "byteLength": 10394
     },
     {
       "path": "editor-automated/write-editor-automation-admission-evidence.mjs",
@@ -1965,8 +2020,8 @@
     },
     {
       "path": "spec-registry/refresh-spec-registry-postissuance-target.mjs",
-      "sha256": "sha256:18ddba3e5e309022bbd7933425e0dc3db281190cbe5480683d537f321a65c75f",
-      "byteLength": 7961
+      "sha256": "sha256:b6f432894da4051f9166881ae61e7758693c4d695254d904274ebff8fb2e266f",
+      "byteLength": 8918
     },
     {
       "path": "spec-registry/scenario-catalog-v1.json",
@@ -1987,27 +2042,40 @@
     },
     "formalCases": {
       "path": "conformance-cases-v1.jsonl",
-      "expectedSha256": "sha256:bba2e350cc29c5fc8faae7f4bdb47c8bd0e2e60a3dd78d6f64d9d355b2440add",
-      "observedSha256": "sha256:bba2e350cc29c5fc8faae7f4bdb47c8bd0e2e60a3dd78d6f64d9d355b2440add"
+      "expectedSha256": "sha256:54704176be36d7e1ca5058eb987a17d42378bf157593cca9bc9e5c243935bcb7",
+      "observedSha256": "sha256:54704176be36d7e1ca5058eb987a17d42378bf157593cca9bc9e5c243935bcb7"
     },
     "formalOracles": {
       "path": "conformance-oracles-v1.jsonl",
-      "expectedSha256": "sha256:a0f513b0d305d00b1797f32db38488b92e5775fa8c19a3fcb00d4e2394e3d2db",
-      "observedSha256": "sha256:a0f513b0d305d00b1797f32db38488b92e5775fa8c19a3fcb00d4e2394e3d2db"
+      "expectedSha256": "sha256:66ad0cb8e8580e66bef38b3e5e2ecd64da36813dfa84f8c0339fd97f7f306141",
+      "observedSha256": "sha256:66ad0cb8e8580e66bef38b3e5e2ecd64da36813dfa84f8c0339fd97f7f306141"
     },
     "formalStatus": "ISSUED_APPEND_ONLY_PREFIX",
     "appendOnlyIssuance": {
-      "target": {
-        "path": "domain-services/capacity-record-issuance-target-v1.json",
-        "sha256": "sha256:44c1d878848ab87fc4e4485c4b6142f1710204f39b64578c0a95102a7b0288e2",
-        "byteLength": 11104
+      "predecessorIssuance": {
+        "target": {
+          "path": "domain-services/capacity-record-issuance-target-v1.json",
+          "sha256": "sha256:44c1d878848ab87fc4e4485c4b6142f1710204f39b64578c0a95102a7b0288e2",
+          "byteLength": 11104
+        },
+        "preservedCasePrefixSha256": "sha256:ebe58e84977ee84befe89f8c126f37fbec7076cd7725b29f1b7609448fe7ef16",
+        "preservedOraclePrefixSha256": "sha256:3825b9fb40c1b43c484da3ebdf29429ed749e622012212ca79f9cea5b9cb9339",
+        "appendedExecutionClass": "EXEC::DOMAIN_SERVICES::1.0",
+        "appendedCaseCount": 12,
+        "appendedOracleCount": 12,
+        "assignedCorpusDigest": "sha256:5a236de3cf36155df7244b049b045cefda55960cf16efe8212c3981e5463844f"
       },
-      "preservedCasePrefixSha256": "sha256:ebe58e84977ee84befe89f8c126f37fbec7076cd7725b29f1b7609448fe7ef16",
-      "preservedOraclePrefixSha256": "sha256:3825b9fb40c1b43c484da3ebdf29429ed749e622012212ca79f9cea5b9cb9339",
-      "appendedExecutionClass": "EXEC::DOMAIN_SERVICES::1.0",
-      "appendedCaseCount": 12,
-      "appendedOracleCount": 12,
-      "assignedCorpusDigest": "sha256:5a236de3cf36155df7244b049b045cefda55960cf16efe8212c3981e5463844f"
+      "target": {
+        "path": "design-input-expression/capacity-record-issuance-target-v1.json",
+        "sha256": "sha256:b5227039abe50a0b2f5f14ba90070e01dc28e34c783e141cd13ed67211dbed9d",
+        "byteLength": 27043
+      },
+      "preservedCasePrefixSha256": "sha256:bba2e350cc29c5fc8faae7f4bdb47c8bd0e2e60a3dd78d6f64d9d355b2440add",
+      "preservedOraclePrefixSha256": "sha256:a0f513b0d305d00b1797f32db38488b92e5775fa8c19a3fcb00d4e2394e3d2db",
+      "appendedExecutionClass": "EXEC::DESIGN_INPUT_EXPRESSION::1.0",
+      "appendedCaseCount": 195,
+      "appendedOracleCount": 195,
+      "assignedCorpusDigest": "sha256:d50b78e0bc2e6bf3bd3708784e4d90001d8d51e76f33068b10272a74ff3a4776"
     }
   },
   "networkReadsAllowed": false,

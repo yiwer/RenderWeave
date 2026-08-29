@@ -1,0 +1,29 @@
+{
+  "reportVersion": "renderweave-design-input-expression-postissuance-primary/1",
+  "engine": "node-primary-registry-validator",
+  "runtime": "v24.12.0",
+  "status": "PASS",
+  "checkCount": 5632,
+  "failureCount": 0,
+  "failures": [],
+  "targetManifest": {
+    "path": ".scratch/renderweave-template-v1/design-input-expression/capacity-record-issuance-target-v1.json",
+    "sha256": "sha256:b5227039abe50a0b2f5f14ba90070e01dc28e34c783e141cd13ed67211dbed9d",
+    "byteLength": 27043
+  },
+  "implementationRevision": "74ebc88c8a32d5b7f511d361af21203aed519546",
+  "executionClass": "EXEC::DESIGN_INPUT_EXPRESSION::1.0",
+  "formalCaseCount": 253,
+  "formalOracleCount": 253,
+  "issuedDesignInputExpressionCaseCount": 195,
+  "issuedDesignInputExpressionOracleCount": 195,
+  "issuedCapacityCaseCount": 207,
+  "issuedCapacityOracleCount": 207,
+  "assignedCorpusDigest": "sha256:d50b78e0bc2e6bf3bd3708784e4d90001d8d51e76f33068b10272a74ff3a4776",
+  "boundary": {
+    "productMutationPerformed": false,
+    "externalNetworkAllowed": false,
+    "rendererReady": false,
+    "ticket19Closed": false
+  }
+}

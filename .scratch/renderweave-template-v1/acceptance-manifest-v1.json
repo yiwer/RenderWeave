@@ -64,7 +64,7 @@
     }
   },
   "conformanceRegistries": {
-    "status": "spec-registry-and-domain-services-issued-a2-replayed-12-of-525-capacity-records-executable-other-class-product-gates-pending",
+    "status": "spec-registry-domain-services-and-design-input-expression-issued-a2-replayed-207-of-525-capacity-records-executable-other-class-product-gates-pending",
     "canonicalProfile": {
       "path": "conformance-canonical-profile-v1.json",
       "profileId": "renderweave-conformance-c14n/1.0",
@@ -80,16 +80,16 @@
     },
     "executionClassCatalog": {
       "path": "conformance-execution-classes-v1.json",
-      "sha256": "f7963e4fb555e87ab59f55bc2afce559b7b7b3de6b90edc1369415b0cd7a6968",
+      "sha256": "dea2d2ae7796e2e8956b15d67408938d74e6d9729af7cef3043e6e88cc58f76c",
       "classCount": 6,
-      "executorManifestStatus": "SPEC_REGISTRY_AND_DOMAIN_SERVICES_FROZEN_OTHER_CLASSES_PENDING",
-      "targetManifestStatus": "SPEC_REGISTRY_AND_DOMAIN_SERVICES_FROZEN_OTHER_CLASSES_PENDING"
+      "executorManifestStatus": "SPEC_REGISTRY_DOMAIN_SERVICES_AND_DESIGN_INPUT_EXPRESSION_FROZEN_OTHER_CLASSES_PENDING",
+      "targetManifestStatus": "SPEC_REGISTRY_DOMAIN_SERVICES_AND_DESIGN_INPUT_EXPRESSION_FROZEN_OTHER_CLASSES_PENDING"
     },
     "bootstrapOrder": {
       "path": "conformance-bootstrap-order-v1.json",
-      "sha256": "fd112f7b9f91fa42b7317b282cd77155381ce2b6b4260200ea71d9f6b3f04b78",
+      "sha256": "b1677b84cc408f0cd729e4a34de1cec16900519fd8222aa2b602f103284cdee1",
       "currentPhase": "CAPACITY_BOUNDARY",
-      "status": "domain-services-12-capacity-records-issued-a2-other-class-product-gates-pending"
+      "status": "domain-services-12-and-design-input-expression-195-capacity-records-issued-a2-other-class-product-gates-pending"
     },
     "probeProfile": {
       "path": "conformance-probe-profile-v1.json",
@@ -141,7 +141,7 @@
       "status": "mapping-frozen-shape-candidates-static-replayed-all-assigned-class-fixtures-referenceable-product-gates-pending"
     },
     "capacityBoundaryMaterialization": {
-      "status": "DOMAIN_SERVICES_12_ISSUED_A2_OTHER_CAPACITY_CLASSES_BLOCKED",
+      "status": "DOMAIN_SERVICES_12_AND_DESIGN_INPUT_EXPRESSION_195_ISSUED_A2_OTHER_CAPACITY_CLASSES_BLOCKED",
       "manifest": {
         "path": "capacity-boundary/materialization-manifest-v1.json",
         "sha256": "0e7a5b8d1b2b8e9b816dc4434456b0c0c0868a9aff8c4dfa5c1dc60092669252"
@@ -169,8 +169,8 @@
         "failureCount": 0
       },
       "evidence": "capacity-boundary/capacity-boundary-static-a2-2026-08-17.json",
-      "formalCapacityCaseCount": 12,
-      "formalCapacityOracleCount": 12,
+      "formalCapacityCaseCount": 207,
+      "formalCapacityOracleCount": 207,
       "productExecutionEvidence": true,
       "recordIssuanceAllowed": false
     },
@@ -244,7 +244,7 @@
       "postIssuanceEvidence": "domain-services/domain-services-capacity-postissuance-a2-2026-08-26.json"
     },
     "designInputExpressionFixtureBootstrap": {
-      "status": "FIXTURE_GENERATOR_A2_STATIC_REPLAYED_PRODUCT_TARGET_PENDING",
+      "status": "EXECUTABLE_A2_REPLAYED",
       "executionClass": "EXEC::DESIGN_INPUT_EXPRESSION::1.0",
       "capacityAxisCount": 65,
       "capacityFixtureCount": 195,
@@ -282,15 +282,35 @@
         "failureCount": 0
       },
       "evidence": "design-input-expression/design-input-expression-fixture-static-a2-2026-08-17.json",
-      "remainingBlockers": [
-        "EXACT_TARGET_MANIFEST_PENDING",
-        "REQUIRED_EXECUTOR_MANIFESTS_PENDING",
-        "INDEPENDENT_EXECUTION_REPLAY_PENDING"
+      "remainingBlockers": [],
+      "productExecutionEvidence": true,
+      "formalCapacityRecordCount": 195,
+      "recordIssuanceAllowed": true,
+      "executable": true,
+      "exactProductTarget": {
+        "path": "design-input-expression/execution-class-target-v1.json",
+        "sha256": "sha256:0629760e9ec6232709ffe20943733232996a379d17303a12dd1596e8118e765c",
+        "byteLength": 5823
+      },
+      "executorManifests": [
+        {
+          "path": "design-input-expression/java-semantic-authority-executor-manifest-v1.json",
+          "sha256": "sha256:3b582c15572b12f383be852f18ae49710d21c3b330de98c19cc454d24a645259",
+          "byteLength": 1784
+        },
+        {
+          "path": "design-input-expression/typescript-independent-authoring-replayer-manifest-v1.json",
+          "sha256": "sha256:da4e806f63566137fb8391358fa7dfa758bdff4bb1295535c858c074088ca68e",
+          "byteLength": 1673
+        }
       ],
-      "productExecutionEvidence": false,
-      "formalCapacityRecordCount": 0,
-      "recordIssuanceAllowed": false,
-      "executable": false
+      "recordIssuanceTarget": {
+        "path": "design-input-expression/capacity-record-issuance-target-v1.json",
+        "sha256": "sha256:b5227039abe50a0b2f5f14ba90070e01dc28e34c783e141cd13ed67211dbed9d",
+        "byteLength": 27043
+      },
+      "assignedActiveCorpusDigest": "sha256:d50b78e0bc2e6bf3bd3708784e4d90001d8d51e76f33068b10272a74ff3a4776",
+      "postIssuanceEvidence": "design-input-expression/design-input-expression-capacity-postissuance-a2-2026-08-29.json"
     },
     "renderingPipelineFixtureBootstrap": {
       "status": "FIXTURE_GENERATOR_A2_STATIC_REPLAYED_PRODUCT_TARGET_PENDING",
@@ -723,30 +743,30 @@
         "path": "spec-registry/coverage-v1.json",
         "sha256": "cee064438155142b69dfe076ac7395f85bfef380024ee8ac9de73420197dba57"
       },
-      "implementationRevision": "spec-registry-bootstrap/1.14",
+      "implementationRevision": "spec-registry-bootstrap/1.15",
       "targetManifest": {
         "path": "spec-registry/target-manifest-v1.json",
-        "sha256": "64019fa9b8c91d999032ce0fb6fbe689ef2d242d65307e0e81566321a32901fc",
-        "byteLength": 80323,
-        "artifactCount": 393
+        "sha256": "883469487d253371e8dc8e17ad127a9fcbd11e4eaa98282761b7e2a7be9bbf8a",
+        "byteLength": 83508,
+        "artifactCount": 404
       },
       "executorManifests": [
         {
           "role": "primary-registry-validator",
           "path": "spec-registry/primary-executor-manifest-v1.json",
-          "sha256": "7085bd2ab755ef0df03fc1d72ded35283e63d30d13e034ffed3e90ad46efca57",
+          "sha256": "6598feb69e17bc73255486c0ed0af5e2ed72cb4ba6fed0d2998af74351dc8118",
           "byteLength": 950
         },
         {
           "role": "independent-schema-and-graph-replayer",
           "path": "spec-registry/independent-executor-manifest-v1.json",
-          "sha256": "921f639edc10e30b47f2e9e37306101178335d389a7707014aa786130819abbd",
+          "sha256": "d8b463b781332b2e0d0b82405eb4edadf3dddb8302187350067ba4c60d4e9857",
           "byteLength": 973
         }
       ],
       "evidence": "spec-registry/spec-registry-a2-2026-08-17.json",
-      "primaryReplayCheckCount": 22974,
-      "independentReplayCheckCount": 22882,
+      "primaryReplayCheckCount": 23377,
+      "independentReplayCheckCount": 23285,
       "targetAndExecutorHashesBoundByEvidence": true
     },
     "caseRegistry": {
@@ -754,8 +774,8 @@
       "recordSchema": "conformance-case-record-schema-v1.json",
       "recordSchemaSha256": "e5d3b07f88776f821f5971e7b591205b1a93bef522021fe71e6dad8db8405038",
       "format": "UTF-8 JSON Lines without BOM; one immutable case record per nonblank line",
-      "recordCount": 58,
-      "sha256": "bba2e350cc29c5fc8faae7f4bdb47c8bd0e2e60a3dd78d6f64d9d355b2440add",
+      "recordCount": 253,
+      "sha256": "54704176be36d7e1ca5058eb987a17d42378bf157593cca9bc9e5c243935bcb7",
       "appendOnly": true,
       "idPatterns": [
         "CAP::<limitId>::<below|at|above>",
@@ -784,8 +804,8 @@
       "recordSchema": "conformance-oracle-record-schema-v1.json",
       "recordSchemaSha256": "950de19b858ebe1b2a1ce2de613199f338ceb2fb980e7300eb1b75eff424b936",
       "format": "UTF-8 JSON Lines without BOM; one immutable oracle record per nonblank line",
-      "recordCount": 58,
-      "sha256": "a0f513b0d305d00b1797f32db38488b92e5775fa8c19a3fcb00d4e2394e3d2db",
+      "recordCount": 253,
+      "sha256": "66ad0cb8e8580e66bef38b3e5e2ecd64da36813dfa84f8c0339fd97f7f306141",
       "appendOnly": true,
       "idPattern": "ORC::<one of the ten exact Oracle families>::<six-digit-ordinal>",
       "assertionIdPattern": "A<three-digit-oracle-local-ordinal>",
@@ -867,8 +887,8 @@
     ],
     "caseIdPattern": "CAP::<limitId>::<variant>",
     "plannedGeneratedBoundaryCaseCount": 525,
-    "executableBoundaryCaseCount": 12,
-    "materializationStatus": "domain-services-12-issued-a2-other-capacity-class-product-gates-and-formal-issuance-pending",
+    "executableBoundaryCaseCount": 207,
+    "materializationStatus": "domain-services-12-and-design-input-expression-195-issued-a2-other-capacity-class-product-gates-and-formal-issuance-pending",
     "isolationRule": "Each generated case targets exactly one limitId; every other contract cell retains explicit safe margin.",
     "comparatorAssignmentStatus": "planning-frozen",
     "requiredOracleAssertions": [
@@ -1154,14 +1174,14 @@
     "plannedContractBoundaryCases": 525,
     "staticShapeCandidateContractBoundaryCases": 525,
     "staticShapeCandidateCapacityOracles": 525,
-    "executableContractBoundaryCases": 12,
+    "executableContractBoundaryCases": 207,
     "minimumCombinedWorstPathCases": 18,
     "strictContractBoundaryFloor": 543,
     "editorAtomicScenarioCandidates": 108,
     "nonCapacityAtomicCases": null,
-    "fullAutomatedCorpus": "46 executable SPEC_REGISTRY cases plus 12 executable DOMAIN_SERVICES capacity cases; the remaining 513 isolated capacity, 18 combined, 108 non-issued Editor candidates, and still-unmapped nonCapacityAtomicCases remain non-executable",
-    "issuedCapacityBoundaryCases": 12,
-    "issuedCapacityBoundaryOracles": 12
+    "fullAutomatedCorpus": "46 executable SPEC_REGISTRY cases plus 12 executable DOMAIN_SERVICES and 195 executable DESIGN_INPUT_EXPRESSION capacity cases; the remaining 318 isolated capacity, 18 combined, 108 non-issued Editor candidates, and still-unmapped nonCapacityAtomicCases remain non-executable",
+    "issuedCapacityBoundaryCases": 207,
+    "issuedCapacityBoundaryOracles": 207
   },
   "executionMatrix": {
     "catalog": "conformance-execution-classes-v1.json",

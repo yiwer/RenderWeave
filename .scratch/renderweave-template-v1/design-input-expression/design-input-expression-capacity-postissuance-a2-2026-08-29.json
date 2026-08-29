@@ -1,0 +1,119 @@
+{
+  "evidenceVersion": "renderweave-design-input-expression-capacity-postissuance-a2/1.0",
+  "evidenceId": "DESIGN_INPUT_EXPRESSION_CAPACITY_POSTISSUANCE_A2::2026-08-29::000001",
+  "status": "PASS",
+  "grade": "A2_INDEPENDENTLY_REPLAYED",
+  "executionClass": "EXEC::DESIGN_INPUT_EXPRESSION::1.0",
+  "implementationRevision": "74ebc88c8a32d5b7f511d361af21203aed519546",
+  "issuanceTarget": {
+    "path": "design-input-expression/capacity-record-issuance-target-v1.json",
+    "sha256": "sha256:b5227039abe50a0b2f5f14ba90070e01dc28e34c783e141cd13ed67211dbed9d",
+    "byteLength": 27043
+  },
+  "productExecutionClosure": {
+    "target": {
+      "path": "design-input-expression/execution-class-target-v1.json",
+      "sha256": "sha256:0629760e9ec6232709ffe20943733232996a379d17303a12dd1596e8118e765c",
+      "byteLength": 5823
+    },
+    "executorManifests": [
+      {
+        "path": "design-input-expression/java-semantic-authority-executor-manifest-v1.json",
+        "sha256": "sha256:3b582c15572b12f383be852f18ae49710d21c3b330de98c19cc454d24a645259",
+        "byteLength": 1784
+      },
+      {
+        "path": "design-input-expression/typescript-independent-authoring-replayer-manifest-v1.json",
+        "sha256": "sha256:da4e806f63566137fb8391358fa7dfa758bdff4bb1295535c858c074088ca68e",
+        "byteLength": 1673
+      }
+    ],
+    "assignedCorpusDigest": "sha256:d50b78e0bc2e6bf3bd3708784e4d90001d8d51e76f33068b10272a74ff3a4776",
+    "preissuanceReplayRequiredAndPassed": true,
+    "freshProductGateRequiredForResolution": true
+  },
+  "registryBindings": {
+    "formalCases": {
+      "path": "conformance-cases-v1.jsonl",
+      "sha256": "sha256:54704176be36d7e1ca5058eb987a17d42378bf157593cca9bc9e5c243935bcb7",
+      "byteLength": 851625,
+      "recordCount": 253,
+      "exactPreservedPrefixSha256": "sha256:bba2e350cc29c5fc8faae7f4bdb47c8bd0e2e60a3dd78d6f64d9d355b2440add",
+      "appendedRecordCount": 195
+    },
+    "formalOracles": {
+      "path": "conformance-oracles-v1.jsonl",
+      "sha256": "sha256:66ad0cb8e8580e66bef38b3e5e2ecd64da36813dfa84f8c0339fd97f7f306141",
+      "byteLength": 303185,
+      "recordCount": 253,
+      "exactPreservedPrefixSha256": "sha256:a0f513b0d305d00b1797f32db38488b92e5775fa8c19a3fcb00d4e2394e3d2db",
+      "appendedRecordCount": 195
+    },
+    "executionClassCatalog": {
+      "path": "conformance-execution-classes-v1.json",
+      "sha256": "sha256:dea2d2ae7796e2e8956b15d67408938d74e6d9729af7cef3043e6e88cc58f76c",
+      "byteLength": 12110
+    },
+    "bootstrapOrder": {
+      "path": "conformance-bootstrap-order-v1.json",
+      "sha256": "sha256:b1677b84cc408f0cd729e4a34de1cec16900519fd8222aa2b602f103284cdee1",
+      "byteLength": 12573
+    }
+  },
+  "replay": {
+    "primary": {
+      "result": {
+        "path": "design-input-expression/postissuance-primary-result-v1.json",
+        "sha256": "sha256:9a2a3b5322775a37b946a45e3876c511f20270e68fbab00700de88aa699f4250",
+        "byteLength": 1093
+      },
+      "status": "PASS",
+      "checkCount": 5632,
+      "failureCount": 0,
+      "runtime": "v24.12.0"
+    },
+    "independent": {
+      "result": {
+        "path": "design-input-expression/postissuance-independent-result-v1.json",
+        "sha256": "sha256:1f642c21b615701294a4b88a9b701d2cb6106869732f461c471384eb3c3437d0",
+        "byteLength": 1108
+      },
+      "status": "PASS",
+      "checkCount": 5632,
+      "failureCount": 0,
+      "runtime": "Python 3.13.13"
+    },
+    "sharedSemanticLibrary": null,
+    "differentRuntimeAndParserImplementations": true
+  },
+  "observedFrontier": {
+    "issuedSpecRegistryCaseCount": 46,
+    "issuedSpecRegistryOracleCount": 46,
+    "issuedDomainServicesCapacityCaseCount": 12,
+    "issuedDomainServicesCapacityOracleCount": 12,
+    "issuedDesignInputExpressionCapacityCaseCount": 195,
+    "issuedDesignInputExpressionCapacityOracleCount": 195,
+    "issuedCapacityCaseCount": 207,
+    "issuedCapacityOracleCount": 207,
+    "totalFormalCaseCount": 253,
+    "totalFormalOracleCount": 253,
+    "totalCapacityCandidateCount": 525,
+    "remainingUnissuedCapacityCaseCount": 318,
+    "currentPhase": "CAPACITY_BOUNDARY",
+    "designInputExpressionExecutable": true
+  },
+  "sideEffects": {
+    "historicalFormalRecordsMutated": 0,
+    "productApiChanges": 0,
+    "externalProviderAttempts": 0,
+    "externalNetworkAttempts": 0
+  },
+  "boundary": {
+    "allCapacityRecordsIssued": false,
+    "combinedCapacityRecordsIssued": 0,
+    "fullAutomatedCorpusExecutable": false,
+    "rendererCertified": false,
+    "rendererReady": false,
+    "ticket19Closed": false
+  }
+}

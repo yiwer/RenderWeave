@@ -14,8 +14,8 @@
     },
     "audit": {
       "path": "editor-automated/atomic-candidate-readiness-audit-v1.json",
-      "sha256": "sha256:6baf2ae558f1a15fa79b9dad5a684e8aaefa5a7a4cfa119617300f658ebc188d",
-      "byteLength": 11204
+      "sha256": "sha256:62ba35de726c574c8ca8790cf7282500ba9c8b5b1ce7c162bf5ed6d7a31c4d3e",
+      "byteLength": 11206
     },
     "sourceAssignment": {
       "path": "editor-automated/non-capacity-assignment-v1.json",
@@ -89,13 +89,13 @@
     },
     "formalCases": {
       "path": "conformance-cases-v1.jsonl",
-      "sha256": "sha256:bba2e350cc29c5fc8faae7f4bdb47c8bd0e2e60a3dd78d6f64d9d355b2440add",
-      "byteLength": 187511
+      "sha256": "sha256:54704176be36d7e1ca5058eb987a17d42378bf157593cca9bc9e5c243935bcb7",
+      "byteLength": 851625
     },
     "formalOracles": {
       "path": "conformance-oracles-v1.jsonl",
-      "sha256": "sha256:a0f513b0d305d00b1797f32db38488b92e5775fa8c19a3fcb00d4e2394e3d2db",
-      "byteLength": 76967
+      "sha256": "sha256:66ad0cb8e8580e66bef38b3e5e2ecd64da36813dfa84f8c0339fd97f7f306141",
+      "byteLength": 303185
     }
   },
   "status": "PASS_STATIC_CANDIDATE_DECOMPOSITION",
@@ -614,11 +614,11 @@
       "details": null
     },
     {
-      "name": "global formal JSONL counts include the issued Domain Services suffix",
+      "name": "global formal JSONL counts include issued Domain Services and Design/Input/Expression suffixes",
       "pass": true,
       "details": {
-        "cases": 58,
-        "oracles": 58
+        "cases": 253,
+        "oracles": 253
       }
     },
     {
