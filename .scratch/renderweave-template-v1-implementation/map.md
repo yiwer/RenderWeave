@@ -1140,6 +1140,12 @@ Label: wayfinder:map
   `expression.explicitRoundingScaleMax=64` 已由 Rendering.internal 单一 guard 承载；真实 parser→analyzer 与
   closure-wide static admission 对全部 unused Expression 在任何 downstream work 前返回 exact capacity outcome。
   受影响 reactor 524/524，`render`/`fast` passed/A1；T186-specific A2/A3 无、J0 pending、J1 未批准。
+- [T187 — Expression source UTF-8 capacity authority](issues/187-expression-source-utf8-capacity.md)
+  — **resolved / automated_verified**；blocked by T21/T126/T186（均 resolved）。cap-039
+  `expression.sourceUtf8BytesPerExpression=65536` 已合流到现有 Rendering.internal guard；真实 parser、
+  closure-wide unused Expression admission 与 defensive late path 共同保留 exact capacity identity，并在
+  decode/AST/Input/Capability/Asset/materialization 前 fail closed。focused 120/120、受影响 reactor 527/527，
+  `render`/`fast` passed/A1；T187-specific A2/A3 无、J0 pending、J1 未批准。
 
 - 改写或重解释现有 Schema/Inference v1 已提交历史，或在 dirty main 上直接实施 Template。
 - Workspace、组织/成员/分享/协作、跨 ownerScope 复制、通用 connector、任意 SQL/HTTP/文件/脚本、插件节点或运行时代码注册。

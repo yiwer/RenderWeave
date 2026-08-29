@@ -1,5 +1,16 @@
 # NOTES.md
 
+# 2026-08-29 Template-v1 T187 Expression source UTF-8 capacity（resolved / automated_verified）
+- 冻结 cap-039 `expression.sourceUtf8BytesPerExpression=65536` 已合流到现有 Rendering.internal 单一 guard；
+  parser 在 decode/AST 前对 `65535/65536/65537` 返回 exact typed outcome，移除了裸 `65_536`、重复 limitId 与
+  ordinary source-limit parse taxonomy。
+- closure-wide admission 覆盖全部 snapshot/unused Expression，并在 Input/Capability/Asset/materialization 前传播
+  TEMPLATE_CLOSURE / EXPRESSION_LIMIT_EXCEEDED；DefinitionEngine defensive path 保留同一 identity，RANDOM input
+  provider demand=0。focused 120/120、受影响 reactor 527/527；`render`
+  `.sdlc/evidence/20260829-155413-render/metadata.json` 与 `fast`
+  `.sdlc/evidence/20260829-155510-fast/metadata.json` 均 passed/A1。T187-specific A2/A3 无，J0 pending、J1 未批准；
+  无 public/app/Profile/provider/API Key/真实数据/费用/push/tag/PR 变化。
+
 # 2026-08-29 Template-v1 T186 Expression explicit rounding scale capacity（resolved / automated_verified）
 
 - 冻结 cap-055 `expression.explicitRoundingScaleMax=64` 已由单一 internal guard 承载，MAX_INCLUSIVE

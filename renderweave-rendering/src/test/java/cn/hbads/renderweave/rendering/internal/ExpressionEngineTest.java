@@ -35,12 +35,18 @@ class ExpressionEngineTest {
     // ------------------------------------------------------------------
 
     @Test
-    void oversizedSourceIsRejected() {
-        var source = ("'" + "a".repeat(70_000) + "'").getBytes(StandardCharsets.UTF_8);
-        var result = ExpressionParser.parse(source);
-        var rejected = assertInstanceOf(ExpressionParser.ParseRejected.class, result);
-        assertEquals(ExpressionParser.ParseFailureKind.SOURCE_LIMIT_EXCEEDED,
-                rejected.failure().kind());
+    void sourceUtf8BoundaryReturnsFrozenCapacityOutcome() {
+        assertInstanceOf(ExpressionParser.ParsedAst.class,
+                ExpressionParser.parse(asciiTextExpression(65_535)));
+        assertInstanceOf(ExpressionParser.ParsedAst.class,
+                ExpressionParser.parse(asciiTextExpression(65_536)));
+
+        var result = ExpressionParser.parse(asciiTextExpression(65_537));
+        var limited = assertInstanceOf(ExpressionParser.ParseLimitExceeded.class, result);
+        assertEquals(EvaluationStage.TEMPLATE_CLOSURE, limited.problem().stage());
+        assertEquals(ProblemCode.EXPRESSION_LIMIT_EXCEEDED, limited.problem().code());
+        assertEquals("expression.sourceUtf8BytesPerExpression",
+                limited.problem().limitId().orElseThrow().value());
     }
 
     @Test
@@ -312,12 +318,33 @@ class ExpressionEngineTest {
 
     @Test
     void definitionEnginePreservesScaleCapacityIdentityBeforeLazyEvaluation() {
+        assertDefinitionCapacityBeforeDemand(
+                "round(input.draw, 65, 'HALF_UP')",
+                "expression.explicitRoundingScaleMax");
+    }
+
+    @Test
+    void definitionEnginePreservesSourceCapacityIdentityBeforeLazyEvaluation() {
+        assertDefinitionCapacityBeforeDemand(
+                asciiConditionalExpression(65_537),
+                "expression.sourceUtf8BytesPerExpression");
+    }
+
+    private static void assertDefinitionCapacityBeforeDemand(
+            String source,
+            String expectedLimitId
+    ) {
         var definitionId = "00000000-0000-4000-8000-0000000000d1";
         var definition = new ObjectNode(Map.of(
                 "definitionId", new Text(definitionId),
                 "kind", new Text("expression"),
-                "inputs", new ArrayNode(List.of()),
-                "source", new Text("round(1, 65, 'HALF_UP')")));
+                "inputs", new ArrayNode(List.of(new ObjectNode(Map.of(
+                        "alias", new Text("draw"),
+                        "source", new ObjectNode(Map.of(
+                                "kind", new Text("capability"),
+                                "capability", new Text("RANDOM"),
+                                "operation", new Text("UNIFORM_DECIMAL_0_1"))))))),
+                "source", new Text(source)));
         var engine = new DefinitionEngine(List.of(definition));
         var capabilityDemands = new java.util.concurrent.atomic.AtomicInteger();
         var scope = new DefinitionEngine.ResolutionScope() {
@@ -361,7 +388,7 @@ class ExpressionEngineTest {
         var error = assertInstanceOf(ExpressionEvaluator.EvalError.class, outcome);
         assertEquals(ExpressionEvaluator.RuntimeFailureKind.EXPRESSION_LIMIT_EXCEEDED,
                 error.failure().kind());
-        assertEquals("expression.explicitRoundingScaleMax", error.failure().limitId());
+        assertEquals(expectedLimitId, error.failure().limitId());
         assertEquals(0, capabilityDemands.get());
     }
 
@@ -386,6 +413,27 @@ class ExpressionEngineTest {
     private static ExpressionAst parse(String source) {
         var result = ExpressionParser.parse(source.getBytes(StandardCharsets.UTF_8));
         return ((ExpressionParser.ParsedAst) result).ast();
+    }
+
+    private static byte[] asciiTextExpression(int sourceUtf8Bytes) {
+        if (sourceUtf8Bytes < 2) {
+            throw new IllegalArgumentException("text expression needs two quote bytes");
+        }
+        return ("'" + "a".repeat(sourceUtf8Bytes - 2) + "'")
+                .getBytes(StandardCharsets.UTF_8);
+    }
+
+    private static String asciiConditionalExpression(int sourceUtf8Bytes) {
+        var prefix = "if(input.draw < 0.5, '";
+        var suffix = "', 'B')";
+        if (sourceUtf8Bytes < prefix.length() + suffix.length()) {
+            throw new IllegalArgumentException("conditional expression is too short");
+        }
+        var source = prefix
+                + "a".repeat(sourceUtf8Bytes - prefix.length() - suffix.length())
+                + suffix;
+        assertEquals(sourceUtf8Bytes, source.getBytes(StandardCharsets.UTF_8).length);
+        return source;
     }
 
     private static ExpressionEvaluator.EvalOutcome runOk(

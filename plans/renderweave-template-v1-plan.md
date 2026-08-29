@@ -1,5 +1,27 @@
 # RenderWeave Template v1 Implementation Plan
 
+## 187. TV1-T187 执行卡
+
+- 状态：`resolved / automated_verified`；single writer: Codex；blocked by T21/T126/T186（均 resolved）。
+- authority：Ticket 19 `RW-T19-S7-047` 与 design-input-expression cap-039；
+  `expression.sourceUtf8BytesPerExpression` MAX_INCLUSIVE `65536`，observed `65535/65536/65537`，
+  EXPRESSION_PARSE_AND_STATIC_ANALYSIS / public TEMPLATE_CLOSURE /
+  EXPRESSION_LIMIT_EXCEEDED / ZERO_WRITE_AND_DOWNSTREAM。
+- seam：深化 Rendering.internal 单一 `DesignInputExpressionCapacityGuard`；`ExpressionParser` 在 decode/AST 与
+  lazy execution 前消费同一 authority 并返回 distinct capacity outcome；closure-wide admission 与
+  DefinitionEngine defensive late path 保留 exact problem，不新增 public API/SPI 或重复 guard。
+- TDD：先取得 missing-enum/typed-outcome compile RED 与 unused oversized Expression behavioral RED，再覆盖
+  guard/parser 65535/65536/65537、ordinary syntax 与 zero downstream/demand；随后 focused Rendering、受影响
+  reactor、render/fast。
+- 边界：fixture tracer 不冒充 complete execution-class target、formal records 或 A2/A3；不实现 app/Profile/
+  provider/真实数据，不 push/tag/PR；claim 时 A0、J0 pending、J1 未批准。
+- Resolution：现有 internal guard 已承载 cap-039，parser 在 decode/AST 前返回 distinct typed capacity outcome；
+  closure-wide admission 覆盖全部 snapshot/unused Expression，DefinitionEngine defensive path 保留 exact
+  identity 且 RANDOM provider demand=0。focused 120/120，受影响 reactor 527/527；`render`
+  `.sdlc/evidence/20260829-155413-render/metadata.json` 与 `fast`
+  `.sdlc/evidence/20260829-155510-fast/metadata.json` 均 passed/A1。T187-specific A2/A3 无，J0 pending、
+  J1 未批准；无 public/app/Profile/provider/push/tag/PR 变化。
+
 ## 186. TV1-T186 执行卡
 
 - 状态：`resolved / automated_verified`；single writer: Codex；blocked by T21/T126/T185（均 resolved）。

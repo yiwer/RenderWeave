@@ -497,6 +497,11 @@ final class DefinitionEngine {
         var parseResult = parsedExpressions.computeIfAbsent(
                 definitionId, key -> ExpressionParser.parse(
                         source.value().getBytes(java.nio.charset.StandardCharsets.UTF_8)));
+        if (parseResult instanceof ExpressionParser.ParseLimitExceeded limited) {
+            return new EvalError(new RuntimeFailure(
+                    RuntimeFailureKind.EXPRESSION_LIMIT_EXCEEDED,
+                    limited.problem().limitId().orElseThrow().value()));
+        }
         if (parseResult instanceof ExpressionParser.ParseRejected) {
             return dependencyError();
         }

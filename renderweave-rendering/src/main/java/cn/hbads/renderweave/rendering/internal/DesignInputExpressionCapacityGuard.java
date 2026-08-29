@@ -19,6 +19,11 @@ import java.util.Optional;
 final class DesignInputExpressionCapacityGuard {
 
     enum Limit {
+        SOURCE_UTF8_BYTES_PER_EXPRESSION(
+                "expression.sourceUtf8BytesPerExpression",
+                65_536,
+                ProblemCode.EXPRESSION_LIMIT_EXCEEDED,
+                EvaluationStage.TEMPLATE_CLOSURE),
         EXPLICIT_ROUNDING_SCALE_MAX(
                 "expression.explicitRoundingScaleMax",
                 64,

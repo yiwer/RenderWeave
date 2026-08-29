@@ -1,9 +1,12 @@
 package cn.hbads.renderweave.rendering.internal;
 
+import cn.hbads.renderweave.rendering.api.RenderingProblem;
+
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * renderweave-expression/1.0 词法与语法分析。source 是 exact UTF-8 文本：可多行、无注释、
@@ -13,25 +16,31 @@ import java.util.List;
  */
 final class ExpressionParser {
 
-    static final int MAX_SOURCE_UTF8_BYTES = 65_536;
     static final int MAX_AST_NODES = 4_096;
+    private static final DesignInputExpressionCapacityGuard CAPACITY_GUARD =
+            new DesignInputExpressionCapacityGuard();
 
     enum ParseFailureKind {
         SYNTAX_INVALID,
-        SOURCE_LIMIT_EXCEEDED,
         AST_LIMIT_EXCEEDED
     }
 
     record ParseFailure(ParseFailureKind kind, int position, String limitId) {
     }
 
-    sealed interface ParseResult permits ParsedAst, ParseRejected {
+    sealed interface ParseResult permits ParsedAst, ParseRejected, ParseLimitExceeded {
     }
 
     record ParsedAst(ExpressionAst ast) implements ParseResult {
     }
 
     record ParseRejected(ParseFailure failure) implements ParseResult {
+    }
+
+    record ParseLimitExceeded(RenderingProblem problem) implements ParseResult {
+        ParseLimitExceeded {
+            Objects.requireNonNull(problem, "problem");
+        }
     }
 
     private final String source;
@@ -44,10 +53,11 @@ final class ExpressionParser {
     }
 
     static ParseResult parse(byte[] sourceUtf8) {
-        if (sourceUtf8.length > MAX_SOURCE_UTF8_BYTES) {
-            return new ParseRejected(new ParseFailure(
-                    ParseFailureKind.SOURCE_LIMIT_EXCEEDED, 0,
-                    "expression.sourceUtf8BytesPerExpression"));
+        var capacityProblem = CAPACITY_GUARD.admit(
+                DesignInputExpressionCapacityGuard.Limit.SOURCE_UTF8_BYTES_PER_EXPRESSION,
+                sourceUtf8.length);
+        if (capacityProblem.isPresent()) {
+            return new ParseLimitExceeded(capacityProblem.orElseThrow());
         }
         var parser = new ExpressionParser(new String(sourceUtf8, StandardCharsets.UTF_8));
         var expression = parser.parseExpression();

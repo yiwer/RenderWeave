@@ -68,6 +68,9 @@ final class ExpressionCapacityAdmission {
                     }
                     var parsed = ExpressionParser.parse(
                             source.value().getBytes(StandardCharsets.UTF_8));
+                    if (parsed instanceof ExpressionParser.ParseLimitExceeded limited) {
+                        return new Rejected(limited.problem());
+                    }
                     if (!(parsed instanceof ExpressionParser.ParsedAst parsedAst)) {
                         return new Fault();
                     }
