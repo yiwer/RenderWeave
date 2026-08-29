@@ -1016,6 +1016,12 @@ Label: wayfinder:map
   root frame 前预留 2 bytes，每个 entry 在 resource-entry reserve/append 前原子预留。空数组与双 FONT manifest
   `1013` bytes exact/above 均锁定，focused 158/158、Rendering 255/255 与 render/fast metadata 全绿；A1、既有
   RenderDocument bytes 独立重放 83/83、无 T166 行为路径专属 A2/A3、J0。
+- [T167 — static Capability sources production guard 合流](issues/167-static-capability-sources-production-guard.md)
+  — **resolved / automated_verified**；blocked by T21/T131/T166（均 resolved）。按 `RW-T19-S8-024` 与 cap-037，
+  已将 T131 closure static-source admission 合流到唯一 production guard；删除重复 frozen maximum/比较并保留
+  fingerprint-bound deployment tightening。下一 source 在 declaration aggregation 前逐项失败关闭，第三 snapshot
+  不再解释；focused 120/120、受影响 reactor 20/13/84/92/257 与 render/fast metadata 全绿；A1、无 T167 专属
+  A2/A3、J0。
 
 - 改写或重解释现有 Schema/Inference v1 已提交历史，或在 dirty main 上直接实施 Template。
 - Workspace、组织/成员/分享/协作、跨 ownerScope 复制、通用 connector、任意 SQL/HTTP/文件/脚本、插件节点或运行时代码注册。

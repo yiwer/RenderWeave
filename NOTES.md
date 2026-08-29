@@ -4254,3 +4254,28 @@
   J0 pending、J1 未批准。未重复 server/full；无 app wiring/API/Web/migration/Profile 变化，provider attempts/
   API Key reads/真实数据/Profile registration/push/tag/PR 均为 0。
 - 状态回填后的 resolution `fast` `.sdlc/evidence/20260829-082750-fast/` metadata 为 `passed`，3/3 steps 全绿。
+
+# 2026-08-29 Template-v1 T167 static Capability sources guard 合流（resolved / automated_verified）
+
+- T166 已以 verified commit `d9d41325` 收口，worktree clean、ahead 157 且 DAG 无其他 active claim；冻结
+  `RW-T19-S8-024` / cap-037 是下一个 unblocked frontier，现按 single-writer claim T167。
+- cap-037 固定 `capabilityRuntime.staticCapabilitySources` MAX_INCLUSIVE `4096`、observed `4095/4096/4097`，
+  CAPABILITY_STATIC_ADMISSION / public TEMPLATE_CLOSURE / CAPABILITY_BUDGET_EXCEEDED /
+  ZERO_EVALUATION_DOCUMENT_OUTPUT，reservation point 为下一 static source 加入前。
+- T131 已有真实 admission，但 frozen fixture 要求 exact production guard 且禁止 duplicate implementation；本票只做
+  guard 合流与逐 source reservation，保留 effectiveBudgetVector 认证收紧，不重做 Capability 产品语义。
+- cap-038+ demand 轴继续 deferred；claim 时 A0、J0。无 app wiring/API/Web/migration/Profile/provider/API Key/
+  真实数据/费用/Profile registration/push/tag/PR。
+- TDD 首轮 5 个 compile RED 锁定缺失 seam；补 guard 后出现唯一行为 RED（snapshot semantic calls 期望 2、实际
+  3），证明 post-scan total check 不满足 reservation point。最终 production guard 成为 frozen id/4096/problem/stage
+  唯一权威，effective maximum 只可在 `0..4096` 收紧；`CapabilityBudget` 不再持有重复 static-source 常量/比较。
+- declaration scan 在每个有效 source 加入 aggregate 前 reserve。effective max `1` 时第一项成功、第二项以 exact
+  `CAPABILITY_BUDGET_EXCEEDED` / `TEMPLATE_CLOSURE` / `capabilityRuntime.staticCapabilitySources` 拒绝，第三 snapshot
+  不解释；Evaluator max `0` 路径继续锁定 CapabilityState/runtime work 为零。
+- 最终 expanded focused 120/120；受影响 reactor Schema 20/20、Validation 13/13、Template 84/84、Asset 92/92、
+  Rendering 257/257，均 0 failure/error；`git diff --check` 通过。
+- A1 `render` `.sdlc/evidence/20260829-083706-render/`（2/2）与 `fast`
+  `.sdlc/evidence/20260829-083756-fast/`（3/3）metadata 均 `passed`。cap-037 只执行 exact production guard，故无
+  T167 行为路径专属 A2/A3；render 内既有 RenderDocument 独立 replay 83/83 不冒充本票 A2。J0 pending、J1 未批准；
+  未重复 server/full。provider attempts/API Key reads/真实数据/费用/Profile registration/push/tag/PR 均为 0。
+- 状态回填后的 `fast` A1 `.sdlc/evidence/20260829-084134-fast/` metadata 为 `passed`，3/3 steps 全绿。

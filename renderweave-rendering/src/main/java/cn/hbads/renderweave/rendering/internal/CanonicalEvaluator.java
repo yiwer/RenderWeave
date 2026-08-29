@@ -125,18 +125,18 @@ final class CanonicalEvaluator implements Evaluator {
             return rejected(EvaluationStage.TEMPLATE_CLOSURE,
                     ProblemCode.RENDER_INTERNAL_ERROR, null);
         }
-        var declarationOutcome = CapabilityDeclarations.scan(closure, semantics);
+        var declarationOutcome = CapabilityDeclarations.scan(
+                closure, semantics, capabilityBudget);
         if (declarationOutcome instanceof CapabilityDeclarations.DeclarationFault) {
             return rejected(EvaluationStage.TEMPLATE_CLOSURE,
                     ProblemCode.RENDER_INTERNAL_ERROR, null);
         }
-        var declarations = (CapabilityDeclarations.Declared) declarationOutcome;
-        var staticCapabilityLimit = capabilityBudget.admitStaticSources(declarations.sourceCount());
-        if (staticCapabilityLimit != null) {
-            return rejected(EvaluationStage.TEMPLATE_CLOSURE,
-                    ProblemCode.CAPABILITY_BUDGET_EXCEEDED,
-                    staticCapabilityLimit.limitId());
+        if (declarationOutcome
+                instanceof CapabilityDeclarations.DeclarationCapacityExceeded exceeded) {
+            return new EvaluationOutcome.Rejected(
+                    exceeded.problem().stage(), exceeded.problem());
         }
+        var declarations = (CapabilityDeclarations.Declared) declarationOutcome;
 
         var admission = InputAdmission.admit(
                 command.rawRenderInputUtf8(), rootSnapshot, validationResolver);

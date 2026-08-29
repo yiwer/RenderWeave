@@ -5,6 +5,7 @@ import cn.hbads.renderweave.rendering.api.RenderingProblem.ProblemCode;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class RenderingPipelineCapacityGuardTest {
@@ -662,5 +663,29 @@ class RenderingPipelineCapacityGuardTest {
         assertEquals(ProblemCode.ASSET_BUDGET_EXCEEDED, problem.code());
         assertEquals("assetsAndFetch.manifestBytes",
                 problem.limitId().orElseThrow().value());
+    }
+
+    @Test
+    void staticCapabilitySourcesBoundaryUsesTheFrozenProductionGuardContract() {
+        var guard = new RenderingPipelineCapacityGuard();
+        var limit = RenderingPipelineCapacityGuard.Limit
+                .CAPABILITY_RUNTIME_STATIC_CAPABILITY_SOURCES;
+
+        assertTrue(guard.admit(limit, 4_095L).isEmpty());
+        assertTrue(guard.admit(limit, 4_096L).isEmpty());
+
+        var problem = guard.admit(limit, 4_097L)
+                .orElseThrow();
+        assertEquals(EvaluationStage.TEMPLATE_CLOSURE, problem.stage());
+        assertEquals(ProblemCode.CAPABILITY_BUDGET_EXCEEDED, problem.code());
+        assertEquals("capabilityRuntime.staticCapabilitySources",
+                problem.limitId().orElseThrow().value());
+
+        assertTrue(guard.admit(limit, 1, 1).isEmpty());
+        assertEquals("capabilityRuntime.staticCapabilitySources",
+                guard.admit(limit, 2, 1).orElseThrow()
+                        .limitId().orElseThrow().value());
+        assertThrows(IllegalArgumentException.class,
+                () -> guard.admit(limit, 1, 4_097));
     }
 }

@@ -1,5 +1,7 @@
 package cn.hbads.renderweave.rendering.internal;
 
+import cn.hbads.renderweave.rendering.api.EvaluationStage;
+import cn.hbads.renderweave.rendering.api.RenderingProblem.ProblemCode;
 import cn.hbads.renderweave.rendering.spi.RenderingCapabilityRuntime.CapabilityContract;
 import cn.hbads.renderweave.schema.definition.StaticSchemaRef;
 import cn.hbads.renderweave.schema.identity.SchemaKey;
@@ -15,6 +17,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
@@ -25,6 +28,7 @@ class CapabilityDeclarationsTest {
             SchemaKey.systemProvided("system-empty"), VersionTag.of("v1"));
     private static final String ROOT_ID = "00000000-0000-4000-8000-0000000000a1";
     private static final String CHILD_ID = "00000000-0000-4000-8000-0000000000a2";
+    private static final String THIRD_ID = "00000000-0000-4000-8000-0000000000a3";
 
     @Test
     void collectsExactContractsAcrossEverySemanticClosureSnapshot() {
@@ -79,6 +83,39 @@ class CapabilityDeclarationsTest {
                 CapabilityDeclarations.scan(closure(snapshot), fault));
     }
 
+    @Test
+    void rejectsTheNextStaticSourceThroughTheProductionGuard() {
+        var root = snapshot(ROOT_ID, designWithCapability(
+                "CLOCK", "UTC_DATE", "date", "today"));
+        var child = snapshot(CHILD_ID, designWithCapability(
+                "RANDOM", "UNIFORM_DECIMAL_0_1", "decimal", "draw"));
+        var third = snapshot(THIRD_ID, designWithCapability(
+                "CLOCK", "UTC_TIME", "time", "now"));
+        var budget = CapabilityBudget.fromEffectiveVector(capabilityBudgetVector(1));
+        var atLimit = assertInstanceOf(CapabilityDeclarations.Declared.class,
+                CapabilityDeclarations.scan(
+                        closure(root), TemplateModule.designSemanticAuthority(), budget));
+        assertEquals(1, atLimit.sourceCount());
+        var semanticCalls = new AtomicInteger();
+        var authority = TemplateModule.designSemanticAuthority();
+        DesignSemanticAuthority countingAuthority = bytes -> {
+            semanticCalls.incrementAndGet();
+            return authority.interpret(bytes);
+        };
+
+        var outcome = CapabilityDeclarations.scan(
+                closure(root, child, third), countingAuthority, budget);
+
+        var exceeded = assertInstanceOf(
+                CapabilityDeclarations.DeclarationCapacityExceeded.class, outcome);
+        assertEquals(EvaluationStage.TEMPLATE_CLOSURE, exceeded.problem().stage());
+        assertEquals(ProblemCode.CAPABILITY_BUDGET_EXCEEDED,
+                exceeded.problem().code());
+        assertEquals("capabilityRuntime.staticCapabilitySources",
+                exceeded.problem().limitId().orElseThrow().value());
+        assertEquals(2, semanticCalls.get());
+    }
+
     private static TemplateClosureAuthority.ClosureSnapshot closure(
             TemplateClosureAuthority.TemplateSnapshot... snapshots) {
         return new TemplateClosureAuthority.ClosureSnapshot(
@@ -119,5 +156,16 @@ class CapabilityDeclarationsTest {
                 + "\"designRoot\":{\"nodeId\":\"00000000-0000-4000-8000-000000000001\","
                 + "\"kind\":\"canvas\",\"widthMm\":210,\"heightMm\":297,"
                 + "\"bindings\":[],\"children\":[]}}";
+    }
+
+    private static String capabilityBudgetVector(long staticSources) {
+        return "{\"groups\":{\"capabilityRuntime\":{\"limits\":{"
+                + "\"staticCapabilitySources\":" + staticSources + ","
+                + "\"totalDemands\":8192,\"clockDemands\":4096,"
+                + "\"randomDemands\":4096,\"positionCanonicalBytesPerDemand\":2048,"
+                + "\"positionCanonicalBytesTotal\":16777216,"
+                + "\"capabilityStateRecordBytes\":1048576,"
+                + "\"resultDigestStreamingBytes\":16777216,"
+                + "\"initializationAttempts\":3,\"randomRejectionAttempts\":128}}}}";
     }
 }

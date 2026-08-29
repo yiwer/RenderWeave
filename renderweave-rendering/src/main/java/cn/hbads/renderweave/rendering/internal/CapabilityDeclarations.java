@@ -1,5 +1,6 @@
 package cn.hbads.renderweave.rendering.internal;
 
+import cn.hbads.renderweave.rendering.api.RenderingProblem;
 import cn.hbads.renderweave.rendering.spi.RenderingCapabilityRuntime.CapabilityContract;
 import cn.hbads.renderweave.template.api.DesignSemanticAuthority;
 import cn.hbads.renderweave.template.api.DesignSemanticAuthority.ArrayNode;
@@ -19,7 +20,7 @@ import java.util.stream.Collectors;
  */
 final class CapabilityDeclarations {
 
-    sealed interface Outcome permits Declared, DeclarationFault {
+    sealed interface Outcome permits Declared, DeclarationFault, DeclarationCapacityExceeded {
     }
 
     record Declared(Set<CapabilityContract> contracts, int sourceCount) implements Outcome {
@@ -44,12 +45,27 @@ final class CapabilityDeclarations {
     record DeclarationFault() implements Outcome {
     }
 
+    record DeclarationCapacityExceeded(RenderingProblem problem) implements Outcome {
+        DeclarationCapacityExceeded {
+            Objects.requireNonNull(problem, "problem");
+        }
+    }
+
     private CapabilityDeclarations() {
     }
 
     static Outcome scan(ClosureSnapshot closure, DesignSemanticAuthority semantics) {
+        return scan(closure, semantics, CapabilityBudget.frozen());
+    }
+
+    static Outcome scan(
+            ClosureSnapshot closure,
+            DesignSemanticAuthority semantics,
+            CapabilityBudget budget
+    ) {
         Objects.requireNonNull(closure, "closure");
         Objects.requireNonNull(semantics, "semantics");
+        Objects.requireNonNull(budget, "budget");
         var contracts = EnumSet.noneOf(CapabilityContract.class);
         int sourceCount = 0;
         for (var snapshot : closure.snapshots()) {
@@ -91,6 +107,10 @@ final class CapabilityDeclarations {
                     var contract = contract(text(source, "capability"), text(source, "operation"));
                     if (contract == null) {
                         return new DeclarationFault();
+                    }
+                    var capacityProblem = budget.admitStaticSources(sourceCount + 1L);
+                    if (capacityProblem != null) {
+                        return new DeclarationCapacityExceeded(capacityProblem);
                     }
                     contracts.add(contract);
                     sourceCount++;

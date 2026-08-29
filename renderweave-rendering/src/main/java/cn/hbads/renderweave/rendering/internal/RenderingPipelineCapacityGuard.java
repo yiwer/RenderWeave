@@ -138,7 +138,12 @@ final class RenderingPipelineCapacityGuard {
                 "assetsAndFetch.manifestBytes",
                 4_194_304L,
                 ProblemCode.ASSET_BUDGET_EXCEEDED,
-                EvaluationStage.ASSET_ADMISSION);
+                EvaluationStage.ASSET_ADMISSION),
+        CAPABILITY_RUNTIME_STATIC_CAPABILITY_SOURCES(
+                "capabilityRuntime.staticCapabilitySources",
+                4_096L,
+                ProblemCode.CAPABILITY_BUDGET_EXCEEDED,
+                EvaluationStage.TEMPLATE_CLOSURE);
 
         private final String id;
         private final long maximumInclusive;
@@ -165,17 +170,35 @@ final class RenderingPipelineCapacityGuard {
     }
 
     Optional<RenderingProblem> admit(Limit limit, long observedValue) {
+        return admit(limit, observedValue, limit.maximumInclusive);
+    }
+
+    Optional<RenderingProblem> admit(
+            Limit limit,
+            long observedValue,
+            long effectiveMaximumInclusive
+    ) {
         Objects.requireNonNull(limit, "limit");
         if (observedValue < 0) {
             throw new IllegalArgumentException("observedValue must be non-negative");
         }
-        if (observedValue <= limit.maximumInclusive) {
+        if (effectiveMaximumInclusive < 0
+                || effectiveMaximumInclusive > limit.maximumInclusive) {
+            throw new IllegalArgumentException(
+                    "effective maximum must be within the frozen limit");
+        }
+        if (observedValue <= effectiveMaximumInclusive) {
             return Optional.empty();
         }
         return Optional.of(RenderingProblem.ofLimit(
                 limit.problemCode,
                 limit.publicStage,
                 new LimitId(limit.id)));
+    }
+
+    long maximumInclusive(Limit limit) {
+        Objects.requireNonNull(limit, "limit");
+        return limit.maximumInclusive;
     }
 
     RequestTracker newRequestTracker() {

@@ -1,5 +1,7 @@
 package cn.hbads.renderweave.rendering.internal;
 
+import cn.hbads.renderweave.rendering.api.RenderingProblem;
+
 import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 
@@ -10,7 +12,8 @@ import java.util.Objects;
  */
 final class CapabilityBudget {
 
-    private static final long MAX_STATIC_SOURCES = 4_096;
+    private static final RenderingPipelineCapacityGuard CAPACITY_GUARD =
+            new RenderingPipelineCapacityGuard();
     private static final long MAX_TOTAL_DEMANDS = 8_192;
     private static final long MAX_CLOCK_DEMANDS = 4_096;
     private static final long MAX_RANDOM_DEMANDS = 4_096;
@@ -29,7 +32,8 @@ final class CapabilityBudget {
 
     static CapabilityBudget frozen() {
         return new CapabilityBudget(new Limits(
-                MAX_STATIC_SOURCES,
+                CAPACITY_GUARD.maximumInclusive(RenderingPipelineCapacityGuard.Limit
+                        .CAPABILITY_RUNTIME_STATIC_CAPABILITY_SOURCES),
                 MAX_TOTAL_DEMANDS,
                 MAX_CLOCK_DEMANDS,
                 MAX_RANDOM_DEMANDS,
@@ -55,7 +59,9 @@ final class CapabilityBudget {
         var limits = objectMember(capabilityRuntime, "limits");
         exactLimit(limits, "randomRejectionAttempts", MAX_RANDOM_REJECTION_ATTEMPTS);
         return new CapabilityBudget(new Limits(
-                limit(limits, "staticCapabilitySources", MAX_STATIC_SOURCES),
+                limit(limits, "staticCapabilitySources",
+                        CAPACITY_GUARD.maximumInclusive(RenderingPipelineCapacityGuard.Limit
+                                .CAPABILITY_RUNTIME_STATIC_CAPABILITY_SOURCES)),
                 limit(limits, "totalDemands", MAX_TOTAL_DEMANDS),
                 limit(limits, "clockDemands", MAX_CLOCK_DEMANDS),
                 limit(limits, "randomDemands", MAX_RANDOM_DEMANDS),
@@ -69,11 +75,13 @@ final class CapabilityBudget {
                 exactLimit(limits, "initializationAttempts", MAX_INITIALIZATION_ATTEMPTS)));
     }
 
-    LimitExceeded admitStaticSources(long sourceCount) {
-        if (sourceCount > limits.staticSources()) {
-            return new LimitExceeded("capabilityRuntime.staticCapabilitySources");
-        }
-        return null;
+    RenderingProblem admitStaticSources(long sourceCount) {
+        return CAPACITY_GUARD.admit(
+                        RenderingPipelineCapacityGuard.Limit
+                                .CAPABILITY_RUNTIME_STATIC_CAPABILITY_SOURCES,
+                        sourceCount,
+                        limits.staticSources())
+                .orElse(null);
     }
 
     LimitExceeded admitStateRecord(long recordBytes) {
