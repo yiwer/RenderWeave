@@ -20,7 +20,8 @@ import java.util.stream.Collectors;
  */
 final class CapabilityDeclarations {
 
-    sealed interface Outcome permits Declared, DeclarationFault, DeclarationCapacityExceeded {
+    sealed interface Outcome permits Declared, DeclarationFault, DeclarationCapacityExceeded,
+            DeclarationDeadlineExceeded {
     }
 
     record Declared(Set<CapabilityContract> contracts, int sourceCount) implements Outcome {
@@ -51,6 +52,9 @@ final class CapabilityDeclarations {
         }
     }
 
+    record DeclarationDeadlineExceeded() implements Outcome {
+    }
+
     private CapabilityDeclarations() {
     }
 
@@ -63,21 +67,52 @@ final class CapabilityDeclarations {
             DesignSemanticAuthority semantics,
             CapabilityBudget budget
     ) {
+        return scan(
+                closure,
+                semantics,
+                budget,
+                EvaluationStageControl.unbounded());
+    }
+
+    static Outcome scan(
+            ClosureSnapshot closure,
+            DesignSemanticAuthority semantics,
+            CapabilityBudget budget,
+            EvaluationStageControl stageControl
+    ) {
         Objects.requireNonNull(closure, "closure");
         Objects.requireNonNull(semantics, "semantics");
         Objects.requireNonNull(budget, "budget");
+        Objects.requireNonNull(stageControl, "stageControl");
+        try {
+            return scanControlled(closure, semantics, budget, stageControl);
+        } catch (EvaluationStageControl.DeadlineExceeded ignored) {
+            return new DeclarationDeadlineExceeded();
+        }
+    }
+
+    private static Outcome scanControlled(
+            ClosureSnapshot closure,
+            DesignSemanticAuthority semantics,
+            CapabilityBudget budget,
+            EvaluationStageControl stageControl
+    ) {
+        stageControl.checkpoint();
         var contracts = EnumSet.noneOf(CapabilityContract.class);
         int sourceCount = 0;
         for (var snapshot : closure.snapshots()) {
+            stageControl.checkpoint();
             var interpretation = semantics.interpret(snapshot.canonicalDesignDslUtf8());
             if (!(interpretation instanceof DesignSemanticAuthority.Interpreted interpreted)) {
                 return new DeclarationFault();
             }
+            stageControl.checkpoint();
             var definitionsValue = interpreted.document().members().get("definitions");
             if (!(definitionsValue instanceof ArrayNode definitions)) {
                 return new DeclarationFault();
             }
             for (var definitionValue : definitions.items()) {
+                stageControl.checkpoint();
                 if (!(definitionValue instanceof ObjectNode definition)) {
                     return new DeclarationFault();
                 }
@@ -93,6 +128,7 @@ final class CapabilityDeclarations {
                     return new DeclarationFault();
                 }
                 for (var inputValue : inputs.items()) {
+                    stageControl.checkpoint();
                     if (!(inputValue instanceof ObjectNode input)
                             || !(input.members().get("source") instanceof ObjectNode source)) {
                         return new DeclarationFault();
@@ -117,6 +153,7 @@ final class CapabilityDeclarations {
                 }
             }
         }
+        stageControl.checkpoint();
         return new Declared(contracts, sourceCount);
     }
 

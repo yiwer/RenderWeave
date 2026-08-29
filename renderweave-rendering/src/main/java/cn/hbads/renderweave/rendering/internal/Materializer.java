@@ -97,7 +97,8 @@ final class Materializer {
     record SidecarEntry(String occurrencePath, String sourceNodeId) {
     }
 
-    sealed interface MaterializationOutcome permits Materialized, MaterializationFailed {
+    sealed interface MaterializationOutcome permits Materialized, MaterializationFailed,
+            MaterializationDeadlineExceeded {
     }
 
     record Materialized(MaterializedTree tree) implements MaterializationOutcome {
@@ -105,6 +106,9 @@ final class Materializer {
 
     record MaterializationFailed(EvaluationStage stage, RenderingProblem problem)
             implements MaterializationOutcome, AssetResolutionStep, ValueStep {
+    }
+
+    record MaterializationDeadlineExceeded() implements MaterializationOutcome {
     }
 
     private final ClosureSnapshot closure;
@@ -116,6 +120,7 @@ final class Materializer {
     private final AssetResolutionPort.RendererAudience audience;
     private final long deadlineEpochMilli;
     private final String ownerScope;
+    private final EvaluationStageControl stageControl;
 
     private final Map<String, ObjectNode> documentsByTemplate = new HashMap<>();
     private final Map<String, DefinitionEngine> enginesByTemplate = new HashMap<>();
@@ -139,7 +144,8 @@ final class Materializer {
             AssetResolutionPort.RendererAudience audience,
             long deadlineEpochMilli,
             String ownerScope,
-            RenderingPipelineCapacityGuard.RequestTracker requestCapacity
+            RenderingPipelineCapacityGuard.RequestTracker requestCapacity,
+            EvaluationStageControl stageControl
     ) {
         this.closure = closure;
         this.semantics = semantics;
@@ -151,6 +157,7 @@ final class Materializer {
         this.deadlineEpochMilli = deadlineEpochMilli;
         this.ownerScope = ownerScope;
         this.requestCapacity = Objects.requireNonNull(requestCapacity, "requestCapacity");
+        this.stageControl = Objects.requireNonNull(stageControl, "stageControl");
     }
 
     static MaterializationOutcome materialize(
@@ -192,13 +199,79 @@ final class Materializer {
             long deadlineEpochMilli,
             RenderingPipelineCapacityGuard.RequestTracker requestCapacity
     ) {
+        return materialize(
+                assetAdmission,
+                closure,
+                semantics,
+                dslAuthority,
+                assets,
+                capabilities,
+                admittedInput,
+                renderRequestId,
+                audience,
+                deadlineEpochMilli,
+                requestCapacity,
+                EvaluationStageControl.unbounded());
+    }
+
+    static MaterializationOutcome materialize(
+            AssetAdmission.Admitted assetAdmission,
+            ClosureSnapshot closure,
+            DesignSemanticAuthority semantics,
+            DesignDslAuthority dslAuthority,
+            AssetResolutionPort assets,
+            DefinitionEngine.CapabilityProvider capabilities,
+            AdmittedRenderInput admittedInput,
+            RenderRequestId renderRequestId,
+            AssetResolutionPort.RendererAudience audience,
+            long deadlineEpochMilli,
+            EvaluationStageControl stageControl
+    ) {
+        return materialize(
+                assetAdmission,
+                closure,
+                semantics,
+                dslAuthority,
+                assets,
+                capabilities,
+                admittedInput,
+                renderRequestId,
+                audience,
+                deadlineEpochMilli,
+                CAPACITY_GUARD.newRequestTracker(),
+                stageControl);
+    }
+
+    private static MaterializationOutcome materialize(
+            AssetAdmission.Admitted assetAdmission,
+            ClosureSnapshot closure,
+            DesignSemanticAuthority semantics,
+            DesignDslAuthority dslAuthority,
+            AssetResolutionPort assets,
+            DefinitionEngine.CapabilityProvider capabilities,
+            AdmittedRenderInput admittedInput,
+            RenderRequestId renderRequestId,
+            AssetResolutionPort.RendererAudience audience,
+            long deadlineEpochMilli,
+            RenderingPipelineCapacityGuard.RequestTracker requestCapacity,
+            EvaluationStageControl stageControl
+    ) {
         Objects.requireNonNull(assetAdmission, "assetAdmission");
         Objects.requireNonNull(closure, "closure");
         var materializer = new Materializer(
                 closure, semantics, dslAuthority, assets, capabilities,
                 renderRequestId, audience, deadlineEpochMilli,
-                closure.ownerScope().value(), requestCapacity);
+                closure.ownerScope().value(), requestCapacity, stageControl);
 
+        try {
+            return materializer.materializeRoot(admittedInput);
+        } catch (EvaluationStageControl.DeadlineExceeded ignored) {
+            return new MaterializationDeadlineExceeded();
+        }
+    }
+
+    private MaterializationOutcome materializeRoot(AdmittedRenderInput admittedInput) {
+        stageControl.checkpoint();
         var rootSnapshot = closure.snapshots().stream()
                 .filter(snapshot -> snapshot.templateId().equals(closure.rootTemplateId()))
                 .findFirst()
@@ -206,7 +279,7 @@ final class Materializer {
         if (rootSnapshot == null) {
             return failed(EvaluationStage.TEMPLATE_CLOSURE, ProblemCode.RENDER_INTERNAL_ERROR, null);
         }
-        var document = materializer.documentOf(rootSnapshot);
+        var document = documentOf(rootSnapshot);
         if (document == null) {
             return failed(EvaluationStage.TEMPLATE_CLOSURE, ProblemCode.RENDER_INTERNAL_ERROR, null);
         }
@@ -215,18 +288,18 @@ final class Materializer {
             return failed(EvaluationStage.TEMPLATE_CLOSURE, ProblemCode.RENDER_INTERNAL_ERROR, null);
         }
 
-        var manifestBaseFailure = materializer.reserveResourceManifestBytes(2);
+        var manifestBaseFailure = reserveResourceManifestBytes(2);
         if (manifestBaseFailure != null) {
             return manifestBaseFailure;
         }
-        var invocationFailure = materializer.reserveTemplateInvocation(1);
+        var invocationFailure = reserveTemplateInvocation(1);
         if (invocationFailure != null) {
             return invocationFailure;
         }
         var rootScope = new InvocationScope(
                 admittedInput.rootDocument(),
                 admittedInput.customs(),
-                materializer.engineOf(rootSnapshot),
+                engineOf(rootSnapshot),
                 DefinitionEngine.LoopFrames.EMPTY,
                 capabilities,
                 CapabilityCallPosition.root(
@@ -234,7 +307,7 @@ final class Materializer {
                 1,
                 0);
         var children = new ArrayList<MaterializedNode>();
-        var expandFailure = materializer.expandNode(
+        var expandFailure = expandNode(
                 designRoot, rootSnapshot, rootScope, "", children);
         if (expandFailure != null) {
             return expandFailure;
@@ -242,9 +315,9 @@ final class Materializer {
         if (children.size() != 1) {
             return failed(EvaluationStage.MATERIALIZATION, ProblemCode.RENDER_INTERNAL_ERROR, null);
         }
+        stageControl.checkpoint();
         return new Materialized(new MaterializedTree(
-                children.get(0), List.copyOf(materializer.resources),
-                List.copyOf(materializer.sidecar)));
+                children.get(0), List.copyOf(resources), List.copyOf(sidecar)));
     }
 
     // ------------------------------------------------------------------
@@ -258,6 +331,7 @@ final class Materializer {
             String path,
             List<MaterializedNode> output
     ) {
+        stageControl.checkpoint();
         if (!(node.members().get("kind") instanceof Text kindValue)) {
             return failed(EvaluationStage.MATERIALIZATION, ProblemCode.RENDER_INTERNAL_ERROR, null);
         }
@@ -291,10 +365,12 @@ final class Materializer {
         if (conditionWire == null) {
             return failed(EvaluationStage.MATERIALIZATION, ProblemCode.RENDER_INTERNAL_ERROR, null);
         }
+        stageControl.checkpoint();
         var condition = scope.definitions().resolveSource(conditionWire, scope);
         if (condition instanceof EvalError error) {
             return valueFailure(error);
         }
+        stageControl.checkpoint();
         boolean flag;
         if (condition instanceof EvalAbsent) {
             if ("FALSE".equals(textMember(node, "absentPolicy"))) {
@@ -328,10 +404,12 @@ final class Materializer {
         if (capacityFailure != null) {
             return capacityFailure;
         }
+        stageControl.checkpoint();
         var items = scope.definitions().resolveSource(itemsWire, scope);
         if (items instanceof EvalError error) {
             return valueFailure(error);
         }
+        stageControl.checkpoint();
         List<DesignValue> itemList;
         if (items instanceof EvalAbsent) {
             if ("EMPTY".equals(textMember(node, "absentPolicy"))) {
@@ -360,6 +438,7 @@ final class Materializer {
         var itemNodes = new ArrayList<MaterializedNode>(itemList.size());
         var index = 0;
         for (var item : itemList) {
+            stageControl.checkpoint();
             capacityFailure = reserveLogicalOperation();
             if (capacityFailure != null) {
                 return capacityFailure;
@@ -424,11 +503,12 @@ final class Materializer {
         return recordSidecar(path, node);
     }
 
-    private static List<MaterializedNode> lowerPackedChildren(
+    private List<MaterializedNode> lowerPackedChildren(
             List<MaterializedNode> children,
             PackingShape shape) {
         var lowered = new ArrayList<MaterializedNode>(children.size());
         for (var index = 0; index < children.size(); index++) {
+            stageControl.checkpoint();
             var child = children.get(index);
             if (!(child.members().members().get("placement") instanceof ObjectNode placement)
                     || !"PACK".equals(textMember(placement, "type"))) {
@@ -444,11 +524,12 @@ final class Materializer {
         return List.copyOf(lowered);
     }
 
-    private static List<MaterializedNode> placeGeneratedChildren(
+    private List<MaterializedNode> placeGeneratedChildren(
             List<MaterializedNode> children,
             PackingShape shape) {
         var placed = new ArrayList<MaterializedNode>(children.size());
         for (var index = 0; index < children.size(); index++) {
+            stageControl.checkpoint();
             var child = children.get(index);
             var members = new LinkedHashMap<>(child.members().members());
             members.put("placement", generatedPackingPlacement(shape, index));
@@ -493,7 +574,7 @@ final class Materializer {
         members.put("column", new NumberToken(Integer.toString(index % shape.columns())));
     }
 
-    private static ObjectNode packingNodeMembers(
+    private ObjectNode packingNodeMembers(
             ObjectNode packing,
             PackingShape shape,
             ObjectNode placement,
@@ -517,9 +598,10 @@ final class Materializer {
         return new ObjectNode(members);
     }
 
-    private static ArrayNode autoTracks(int count) {
+    private ArrayNode autoTracks(int count) {
         var tracks = new ArrayList<DesignNodeValue>(count);
         for (var index = 0; index < count; index++) {
+            stageControl.checkpoint();
             tracks.add(new ObjectNode(Map.of("type", new Text("AUTO"))));
         }
         return new ArrayNode(tracks);
@@ -617,6 +699,7 @@ final class Materializer {
     ) {
         if (node.members().get("children") instanceof ArrayNode childArray) {
             for (var child : childArray.items()) {
+                stageControl.checkpoint();
                 if (!(child instanceof ObjectNode childObject)) {
                     return failed(EvaluationStage.MATERIALIZATION,
                             ProblemCode.RENDER_INTERNAL_ERROR, null);
@@ -694,17 +777,20 @@ final class Materializer {
         var childCustoms = new HashMap<>(childEngine.customDefaults());
         if (node.members().get("fills") instanceof ArrayNode fills) {
             for (var fill : fills.items()) {
+                stageControl.checkpoint();
                 if (!(fill instanceof ObjectNode fillObject)
                         || !(fillObject.members().get("targetDefinitionId") instanceof Text target)
                         || fillObject.members().get("source") == null) {
                     return failed(EvaluationStage.MATERIALIZATION,
                             ProblemCode.RENDER_INTERNAL_ERROR, null);
                 }
+                stageControl.checkpoint();
                 var value = scope.definitions().resolveSource(
                         fillObject.members().get("source"), scope);
                 if (value instanceof EvalError error) {
                     return valueFailure(error);
                 }
+                stageControl.checkpoint();
                 if (value instanceof EvalAbsent) {
                     continue;
                 }
@@ -785,6 +871,7 @@ final class Materializer {
     }
 
     private MaterializationOutcome reserveMaterializedNode() {
+        stageControl.checkpoint();
         nodes++;
         var capacityFailure = capacityFailure(CAPACITY_GUARD.admit(
                 RenderingPipelineCapacityGuard.Limit.MATERIALIZED_STATIC_NODES,
@@ -799,6 +886,7 @@ final class Materializer {
     }
 
     private MaterializationOutcome reserveTemplateInvocation(int invocationDepth) {
+        stageControl.checkpoint();
         var capacityFailure = capacityFailure(CAPACITY_GUARD.admit(
                 RenderingPipelineCapacityGuard.Limit.INVOCATION_DEPTH,
                 invocationDepth));
@@ -812,6 +900,7 @@ final class Materializer {
     }
 
     private MaterializationOutcome reserveCompositionViewport() {
+        stageControl.checkpoint();
         compositionViewports++;
         return capacityFailure(CAPACITY_GUARD.admit(
                 RenderingPipelineCapacityGuard.Limit.COMPOSITION_VIEWPORTS,
@@ -819,6 +908,7 @@ final class Materializer {
     }
 
     private MaterializationOutcome reserveLoopFrame() {
+        stageControl.checkpoint();
         loopFrames++;
         return capacityFailure(CAPACITY_GUARD.admit(
                 RenderingPipelineCapacityGuard.Limit.LOOP_FRAMES_TOTAL,
@@ -826,12 +916,14 @@ final class Materializer {
     }
 
     private MaterializationOutcome reserveGeneratedEntries(PackingShape shape) {
+        stageControl.checkpoint();
         return capacityFailure(requestCapacity.reserve(
                 RenderingPipelineCapacityGuard.Limit.GENERATED_TRACK_AND_CELL_ENTRIES,
                 shape.generatedEntries()));
     }
 
     private MaterializationOutcome reserveLogicalOperation() {
+        stageControl.checkpoint();
         return capacityFailure(requestCapacity.reserve(
                 RenderingPipelineCapacityGuard.Limit.LOGICAL_OPERATIONS,
                 1));
@@ -863,6 +955,7 @@ final class Materializer {
         }
         var members = new LinkedHashMap<>(node.members());
         for (var binding : bindingList.items()) {
+            stageControl.checkpoint();
             if (!(binding instanceof ObjectNode bindingObject)) {
                 return new OverlayFailed(failed(
                         EvaluationStage.MATERIALIZATION, ProblemCode.EVALUATION_FAILED, null));
@@ -873,10 +966,12 @@ final class Materializer {
                 return new OverlayFailed(failed(
                         EvaluationStage.MATERIALIZATION, ProblemCode.EVALUATION_FAILED, null));
             }
+            stageControl.checkpoint();
             var value = scope.definitions().resolveSource(sourceWire, scope);
             if (value instanceof EvalError error) {
                 return new OverlayFailed(valueFailure(error));
             }
+            stageControl.checkpoint();
             if (!(value instanceof EvalValue evalValue)) {
                 return new OverlayFailed(failed(
                         EvaluationStage.MATERIALIZATION, ProblemCode.EVALUATION_FAILED, null));
@@ -981,12 +1076,20 @@ final class Materializer {
         if (rebuilt == null) {
             return false;
         }
+        stageControl.checkpoint();
         var bytes = DesignJsonWriter.write(rebuilt);
-        return dslAuthority.admit(bytes) instanceof DesignDslAuthority.Admitted;
+        stageControl.checkpoint();
+        var admission = dslAuthority.admit(bytes);
+        if (admission instanceof DesignDslAuthority.Admitted) {
+            stageControl.checkpoint();
+            return true;
+        }
+        return false;
     }
 
     private DesignNodeValue replaceByIdentity(
             DesignNodeValue value, String nodeId, ObjectNode replacement) {
+        stageControl.checkpoint();
         if (value instanceof ObjectNode object) {
             if (object.members().get("nodeId") instanceof Text id
                     && id.value().equals(nodeId)) {
@@ -995,6 +1098,7 @@ final class Materializer {
             var changed = false;
             var members = new LinkedHashMap<String, DesignNodeValue>();
             for (var entry : object.members().entrySet()) {
+                stageControl.checkpoint();
                 var updated = replaceByIdentity(entry.getValue(), nodeId, replacement);
                 if (updated != entry.getValue()) {
                     changed = true;
@@ -1007,6 +1111,7 @@ final class Materializer {
             var changed = false;
             var items = new ArrayList<DesignNodeValue>(array.items().size());
             for (var item : array.items()) {
+                stageControl.checkpoint();
                 var updated = replaceByIdentity(item, nodeId, replacement);
                 if (updated != item) {
                     changed = true;
@@ -1029,8 +1134,10 @@ final class Materializer {
     }
 
     private AssetResolutionStep resolveAssetsIn(ObjectNode members, String path) {
+        stageControl.checkpoint();
         var updated = new LinkedHashMap<String, DesignNodeValue>();
         for (var entry : members.members().entrySet()) {
+            stageControl.checkpoint();
             if ("children".equals(entry.getKey())) {
                 // children 是结构成员：由展开单独处理，避免 occurrence 双重 resolve。
                 updated.put(entry.getKey(), entry.getValue());
@@ -1052,6 +1159,7 @@ final class Materializer {
     }
 
     private ValueStep resolveValueAssets(String memberName, DesignNodeValue value, String path) {
+        stageControl.checkpoint();
         if (value instanceof ObjectNode object) {
             if (isAssetRefShape(object)
                     && ("imageRef".equals(memberName) || "fontRef".equals(memberName))) {
@@ -1059,6 +1167,7 @@ final class Materializer {
             }
             var updated = new LinkedHashMap<String, DesignNodeValue>();
             for (var entry : object.members().entrySet()) {
+                stageControl.checkpoint();
                 var step = resolveValueAssets(entry.getKey(), entry.getValue(), path);
                 if (step instanceof MaterializationFailed failure) {
                     return failure;
@@ -1070,6 +1179,7 @@ final class Materializer {
         if (value instanceof ArrayNode array) {
             var updatedItems = new ArrayList<DesignNodeValue>(array.items().size());
             for (var item : array.items()) {
+                stageControl.checkpoint();
                 var step = resolveValueAssets(memberName, item, path);
                 if (step instanceof MaterializationFailed failure) {
                     return failure;
@@ -1082,6 +1192,7 @@ final class Materializer {
     }
 
     private ValueStep resolveAtom(String memberName, ObjectNode atom, String path) {
+        stageControl.checkpoint();
         var capacityFailure = capacityFailure(requestCapacity.reserve(
                 RenderingPipelineCapacityGuard.Limit
                         .ASSETS_AND_FETCH_ACTUAL_RESOLVE_OCCURRENCES,
@@ -1133,7 +1244,9 @@ final class Materializer {
             return failed(EvaluationStage.ASSET_RESOLUTION,
                     ProblemCode.RENDER_INTERNAL_ERROR, null);
         }
+        stageControl.checkpoint();
         var fact = resolved.fact();
+        stageControl.checkpoint();
         var occurrenceRawByteFailure = capacityFailure(requestCapacity.reserve(
                 RenderingPipelineCapacityGuard.Limit
                         .ASSETS_AND_FETCH_OCCURRENCE_DECLARED_RAW_BYTES,
@@ -1189,10 +1302,12 @@ final class Materializer {
             return resourceCapacityFailure;
         }
         resources.add(resource);
+        stageControl.checkpoint();
         return new ResolvedValue(new ObjectNode(Map.of("resourceId", new Text(resourceId.value()))));
     }
 
     private MaterializationFailed reserveResourceManifestBytes(long bytes) {
+        stageControl.checkpoint();
         return capacityFailure(requestCapacity.reserve(
                 RenderingPipelineCapacityGuard.Limit.ASSETS_AND_FETCH_MANIFEST_BYTES,
                 bytes));
@@ -1203,6 +1318,7 @@ final class Materializer {
             AssetKind kind,
             AssetResolutionPort.ResolvedAssetFact fact
     ) {
+        stageControl.checkpoint();
         if (kind != AssetKind.IMAGE) {
             return null;
         }
@@ -1219,6 +1335,7 @@ final class Materializer {
             AssetKind kind,
             AssetResolutionPort.ResolvedAssetFact fact
     ) {
+        stageControl.checkpoint();
         if (kind != AssetKind.FONT) {
             return null;
         }
@@ -1229,6 +1346,7 @@ final class Materializer {
             AssetKind kind,
             AssetResolutionPort.ResolvedAssetFact fact
     ) {
+        stageControl.checkpoint();
         var identity = new ExactContentIdentity(
                 kind, fact.sha256(), fact.byteLength(), fact.mediaType());
         if (exactContents.contains(identity)) {
@@ -1275,9 +1393,13 @@ final class Materializer {
         return documentsByTemplate.computeIfAbsent(
                 snapshot.templateId().value(),
                 key -> {
+                    stageControl.checkpoint();
                     var outcome = semantics.interpret(snapshot.canonicalDesignDslUtf8());
-                    return outcome instanceof DesignSemanticAuthority.Interpreted interpreted
-                            ? interpreted.document() : null;
+                    if (outcome instanceof DesignSemanticAuthority.Interpreted interpreted) {
+                        stageControl.checkpoint();
+                        return interpreted.document();
+                    }
+                    return null;
                 });
     }
 
@@ -1287,6 +1409,7 @@ final class Materializer {
     }
 
     private DefinitionEngine engineOf(TemplateSnapshot snapshot) {
+        stageControl.checkpoint();
         return enginesByTemplate.computeIfAbsent(snapshot.templateId().value(), key -> {
             var document = documentOf(snapshot);
             if (document == null
@@ -1306,6 +1429,7 @@ final class Materializer {
     }
 
     private MaterializationFailed recordSidecar(String path, ObjectNode node) {
+        stageControl.checkpoint();
         var capacityFailure = capacityFailure(requestCapacity.reserve(
                 RenderingPipelineCapacityGuard.Limit.DIAGNOSTICS_SIDECAR_ITEMS, 1));
         if (capacityFailure != null) {
@@ -1317,7 +1441,8 @@ final class Materializer {
         return null;
     }
 
-    private static DesignNodeValue toWireValue(DesignValue value) {
+    private DesignNodeValue toWireValue(DesignValue value) {
+        stageControl.checkpoint();
         if (value instanceof DesignValue.Text text) {
             return new Text(text.value());
         }
@@ -1345,6 +1470,7 @@ final class Materializer {
         if (value instanceof DesignValue.ListValue list) {
             var items = new ArrayList<DesignNodeValue>(list.items().size());
             for (var item : list.items()) {
+                stageControl.checkpoint();
                 items.add(toWireValue(item));
             }
             return new ArrayNode(items);
@@ -1352,7 +1478,8 @@ final class Materializer {
         throw new IllegalStateException("unknown DesignValue variant");
     }
 
-    private static TypedValue toTypedValue(DesignValue value) {
+    private TypedValue toTypedValue(DesignValue value) {
+        stageControl.checkpoint();
         if (value instanceof DesignValue.Text text) {
             return new TypedValue.Text(text.value());
         }
@@ -1371,6 +1498,7 @@ final class Materializer {
         if (value instanceof DesignValue.ListValue list) {
             var items = new ArrayList<TypedValue>(list.items().size());
             for (var item : list.items()) {
+                stageControl.checkpoint();
                 items.add(toTypedValue(item));
             }
             return new TypedValue.Array(items);

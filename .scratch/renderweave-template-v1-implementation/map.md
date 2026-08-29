@@ -1091,6 +1091,13 @@ Label: wayfinder:map
   覆盖 closure retry/IO/integrity/DFS/consistency。focused 22/40/73/14、app assembly 2/2、受影响 reactor
   20/13/86/92/283，template/render/fast/server metadata 全部 passed/A1；T178-specific A2/A3 无，J0 pending。
   cap-049+ 继续 deferred；无 HTTP/OpenAPI/Web/migration/Profile/provider/push/tag/PR 变化。
+- [T179 — Evaluation + RenderDocument seal 15 秒 stage deadline 合流](issues/179-evaluation-document-seal-stage-deadline.md)
+  — **resolved / automated_verified**；blocked by T21/T178（均 resolved）。cap-049 EXACT `15000` 与 taxonomy
+  已合流到唯一 production guard；closure freeze-relative monotonic control 贯穿 declaration、Input/Asset/
+  Capability/materialization/resolve/seal，保持 first-fail 并在 seal 到期时原子丢弃全部未提交产物。最终受影响
+  reactor 为 20/13/86/92/295；render `.sdlc/evidence/20260829-122619-render/` 与 fast
+  `.sdlc/evidence/20260829-122749-fast/` metadata 均 passed/A1，`git diff --check` 通过。T179-specific A2/A3
+  无，J0 pending；cap-050+ deferred，无 API/OpenAPI/Web/migration/Profile/provider/push/tag/PR 变化。
 
 - 改写或重解释现有 Schema/Inference v1 已提交历史，或在 dirty main 上直接实施 Template。
 - Workspace、组织/成员/分享/协作、跨 ownerScope 复制、通用 connector、任意 SQL/HTTP/文件/脚本、插件节点或运行时代码注册。

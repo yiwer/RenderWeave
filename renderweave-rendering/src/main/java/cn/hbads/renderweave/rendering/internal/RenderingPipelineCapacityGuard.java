@@ -203,6 +203,12 @@ final class RenderingPipelineCapacityGuard {
                 Comparison.EXACT,
                 ProblemCode.RENDER_DEADLINE_EXCEEDED,
                 EvaluationStage.TEMPLATE_CLOSURE),
+        DEADLINE_AND_RETENTION_EVALUATION_AND_DOCUMENT_SEAL_MILLIS(
+                "deadlineAndRetention.evaluationAndDocumentSealMillis",
+                15_000L,
+                Comparison.EXACT,
+                ProblemCode.RENDER_DEADLINE_EXCEEDED,
+                EvaluationStage.DOCUMENT_SEAL),
         DEADLINE_AND_RETENTION_TOTAL_DEADLINE_MILLIS(
                 "deadlineAndRetention.totalDeadlineMillis",
                 60_000L,

@@ -4560,3 +4560,24 @@
 - cap-049+ 与其他阶段 deadline/Renderer retention 继续 deferred；T178-specific A2/A3 无，J0 pending、J1 未批准。
   provider attempts/API Key reads/真实数据/费用/Profile registration/push/tag/PR 均为 0 或未推进；无 HTTP/OpenAPI/
   Web/migration/Profile 变化，OpenAPI 保持 0.13.0。
+
+# 2026-08-29 Template-v1 T179 Evaluation + document seal stage deadline（resolved / automated_verified）
+
+- T178 已以 verified commit `279b4f5f` 收口，worktree clean、ahead 169 且 DAG 无其他 active claim；冻结
+  `RW-T19-S8-054`、`RW-T19-S9-015/018/019` / cap-049 是首个 unblocked residual，现按 single-writer claim T179。
+- cap-049 固定 `deadlineAndRetention.evaluationAndDocumentSealMillis` EXACT `15000`、observed
+  `14999/15000/15001`、EVALUATION_AND_SEAL_DEADLINE / public DOCUMENT_SEAL /
+  RENDER_DEADLINE_EXCEEDED / ALGORITHM_INVARIANT。
+- stage window 在 closure 成功 transition 固定一次，不能用 admission-origin 固定 slot 借用前一阶段余量；Rendering
+  内部 cooperative control 覆盖 declaration、Input/Asset admission、CapabilityState、materialization/resolve 与
+  seal，继续同时受 60 秒 total deadline。cap-050+ deferred；claim 时 A0、J0。
+- `RenderingPipelineCapacityGuard` 现独占 exact value/limitId/comparison/problem；同一 request-local monotonic
+  control 覆盖 CapabilityState recovery、capability demand 与 Asset resolve 的外部边界，retry 和 wall drift 不重置。
+  first-fail 领域错误保持优先，seal 到期丢弃 builder、canonical bytes、digests 与 `SealedDocument`，零 Engine。
+- TDD RED/GREEN 覆盖 14999/15000/15001、closure-relative 起点、各阶段及外部调用后截止、first-fail 和 atomic
+  seal discard；最终 reactor 为 Schema 20 / Validation 13 / Template 86 / Asset 92 / Rendering 295，全部绿色。
+- A1：render `.sdlc/evidence/20260829-122619-render/` 2/2、fast
+  `.sdlc/evidence/20260829-122749-fast/` 3/3，metadata 均 passed；`git diff --check` 通过。T179-specific A2/A3
+  无，J0 pending、J1 未批准，因此状态为 `automated_verified`；未重复 server/full。
+- cap-050+ deferred；无 HTTP/OpenAPI/Web/migration/Profile/provider/API Key/真实数据/费用/Profile
+  registration/push/tag/PR，OpenAPI 保持 0.13.0。

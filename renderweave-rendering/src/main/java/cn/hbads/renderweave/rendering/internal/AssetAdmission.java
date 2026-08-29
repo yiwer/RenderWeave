@@ -35,7 +35,7 @@ final class AssetAdmission {
     private static final RenderingPipelineCapacityGuard CAPACITY_GUARD =
             new RenderingPipelineCapacityGuard();
 
-    sealed interface Outcome permits Admitted, Rejected {
+    sealed interface Outcome permits Admitted, Rejected, AdmissionDeadlineExceeded {
     }
 
     /** Opaque proof that stage 5 completed for this Evaluation. */
@@ -47,11 +47,15 @@ final class AssetAdmission {
     record Rejected(EvaluationStage stage, RenderingProblem problem) implements Outcome {
     }
 
+    record AdmissionDeadlineExceeded() implements Outcome {
+    }
+
     private final ClosureSnapshot closure;
     private final DesignSemanticAuthority semantics;
     private final AssetResolutionPort assets;
     private final String ownerScope;
     private final RenderingPipelineCapacityGuard.RequestTracker requestCapacity;
+    private final EvaluationStageControl stageControl;
     private final Map<String, ObjectNode> documentsByTemplate = new HashMap<>();
     private final Set<String> logicalAssetIds = new HashSet<>();
 
@@ -59,13 +63,15 @@ final class AssetAdmission {
             ClosureSnapshot closure,
             DesignSemanticAuthority semantics,
             AssetResolutionPort assets,
-            RenderingPipelineCapacityGuard.RequestTracker requestCapacity
+            RenderingPipelineCapacityGuard.RequestTracker requestCapacity,
+            EvaluationStageControl stageControl
     ) {
         this.closure = closure;
         this.semantics = semantics;
         this.assets = assets;
         this.ownerScope = closure.ownerScope().value();
         this.requestCapacity = Objects.requireNonNull(requestCapacity, "requestCapacity");
+        this.stageControl = Objects.requireNonNull(stageControl, "stageControl");
     }
 
     static Outcome admit(
@@ -92,8 +98,55 @@ final class AssetAdmission {
             ExternalAssetReadAuthorization externalAssetReadAuthorization,
             RenderingPipelineCapacityGuard.RequestTracker requestCapacity
     ) {
-        var admission = new AssetAdmission(closure, semantics, assets, requestCapacity);
-        return admission.admit(admittedInput, externalAssetReadAuthorization);
+        return admit(
+                closure,
+                semantics,
+                assets,
+                admittedInput,
+                externalAssetReadAuthorization,
+                requestCapacity,
+                EvaluationStageControl.unbounded());
+    }
+
+    static Outcome admit(
+            ClosureSnapshot closure,
+            DesignSemanticAuthority semantics,
+            AssetResolutionPort assets,
+            AdmittedRenderInput admittedInput,
+            ExternalAssetReadAuthorization externalAssetReadAuthorization,
+            EvaluationStageControl stageControl
+    ) {
+        return admit(
+                closure,
+                semantics,
+                assets,
+                admittedInput,
+                externalAssetReadAuthorization,
+                CAPACITY_GUARD.newRequestTracker(),
+                stageControl);
+    }
+
+    private static Outcome admit(
+            ClosureSnapshot closure,
+            DesignSemanticAuthority semantics,
+            AssetResolutionPort assets,
+            AdmittedRenderInput admittedInput,
+            ExternalAssetReadAuthorization externalAssetReadAuthorization,
+            RenderingPipelineCapacityGuard.RequestTracker requestCapacity,
+            EvaluationStageControl stageControl
+    ) {
+        var admission = new AssetAdmission(
+                closure, semantics, assets, requestCapacity, stageControl);
+        try {
+            stageControl.checkpoint();
+            var outcome = admission.admit(admittedInput, externalAssetReadAuthorization);
+            if (outcome instanceof Admitted) {
+                stageControl.checkpoint();
+            }
+            return outcome;
+        } catch (EvaluationStageControl.DeadlineExceeded ignored) {
+            return new AdmissionDeadlineExceeded();
+        }
     }
 
     private Outcome admit(
@@ -104,21 +157,24 @@ final class AssetAdmission {
         for (var custom : admittedInput.externalCustomOverrides().entrySet().stream()
                 .sorted(Map.Entry.comparingByKey())
                 .toList()) {
-            collectExternalAtoms(custom.getValue(), externalAtoms);
+            stageControl.checkpoint();
+            collectExternalAtoms(custom.getValue(), externalAtoms, stageControl);
         }
         var authored = new ArrayList<AssetAtom>();
         for (var snapshot : closure.snapshots()) {
+            stageControl.checkpoint();
             var document = documentOf(snapshot.templateId().value(), snapshot.canonicalDesignDslUtf8());
             if (document == null) {
                 return rejected(EvaluationStage.TEMPLATE_CLOSURE,
                         ProblemCode.RENDER_INTERNAL_ERROR, null);
             }
-            collectAuthoredAtoms(document, authored);
+            collectAuthoredAtoms(document, authored, stageControl);
         }
         if (authored.isEmpty() && externalAtoms.isEmpty()) {
             return new Admitted();
         }
         for (var atom : authored) {
+            stageControl.checkpoint();
             var capacityFailure = reserveAuthoredAtom();
             if (capacityFailure != null) {
                 return capacityFailure;
@@ -149,6 +205,7 @@ final class AssetAdmission {
             return rejected(EvaluationStage.ASSET_ADMISSION, ProblemCode.EVALUATION_FAILED, null);
         }
         for (var atom : externalAtoms) {
+            stageControl.checkpoint();
             var capacityFailure = reserveLogicalAsset(atom);
             if (capacityFailure != null) {
                 return capacityFailure;
@@ -163,13 +220,22 @@ final class AssetAdmission {
 
     private ObjectNode documentOf(String templateId, byte[] canonicalDesignDslUtf8) {
         return documentsByTemplate.computeIfAbsent(templateId, ignored -> {
+            stageControl.checkpoint();
             var outcome = semantics.interpret(canonicalDesignDslUtf8);
-            return outcome instanceof DesignSemanticAuthority.Interpreted interpreted
-                    ? interpreted.document() : null;
+            if (outcome instanceof DesignSemanticAuthority.Interpreted interpreted) {
+                stageControl.checkpoint();
+                return interpreted.document();
+            }
+            return null;
         });
     }
 
-    private static void collectExternalAtoms(DesignValue value, List<AssetAtom> atoms) {
+    private static void collectExternalAtoms(
+            DesignValue value,
+            List<AssetAtom> atoms,
+            EvaluationStageControl stageControl
+    ) {
+        stageControl.checkpoint();
         if (value instanceof DesignValue.ImageRef ref) {
             atoms.add(new AssetAtom(
                     ref.assetId(), AssetKind.IMAGE));
@@ -178,14 +244,20 @@ final class AssetAdmission {
                     ref.assetId(), AssetKind.FONT));
         } else if (value instanceof DesignValue.ListValue list) {
             for (var item : list.items()) {
-                collectExternalAtoms(item, atoms);
+                collectExternalAtoms(item, atoms, stageControl);
             }
         }
     }
 
-    private static void collectAuthoredAtoms(DesignNodeValue value, List<AssetAtom> atoms) {
+    private static void collectAuthoredAtoms(
+            DesignNodeValue value,
+            List<AssetAtom> atoms,
+            EvaluationStageControl stageControl
+    ) {
+        stageControl.checkpoint();
         if (value instanceof ObjectNode object) {
             for (var entry : canonicalMembers(object)) {
+                stageControl.checkpoint();
                 var kind = assetKind(entry.getKey());
                 if (kind != null && entry.getValue() instanceof ObjectNode ref
                         && isAssetRefShape(ref)) {
@@ -195,11 +267,13 @@ final class AssetAdmission {
             var typedKind = typedAssetKind(object);
             if (typedKind != null) {
                 for (var memberName : List.of("defaultValue", "value")) {
+                    stageControl.checkpoint();
                     var member = object.members().get(memberName);
                     if (member instanceof ObjectNode ref && isAssetRefShape(ref)) {
                         atoms.add(new AssetAtom(assetId(ref), typedKind));
                     } else if (member instanceof ArrayNode array) {
                         for (var item : array.items()) {
+                            stageControl.checkpoint();
                             if (item instanceof ObjectNode ref && isAssetRefShape(ref)) {
                                 atoms.add(new AssetAtom(assetId(ref), typedKind));
                             }
@@ -208,11 +282,11 @@ final class AssetAdmission {
                 }
             }
             for (var entry : canonicalMembers(object)) {
-                collectAuthoredAtoms(entry.getValue(), atoms);
+                collectAuthoredAtoms(entry.getValue(), atoms, stageControl);
             }
         } else if (value instanceof ArrayNode array) {
             for (var item : array.items()) {
-                collectAuthoredAtoms(item, atoms);
+                collectAuthoredAtoms(item, atoms, stageControl);
             }
         }
     }
@@ -250,6 +324,7 @@ final class AssetAdmission {
     }
 
     private Rejected reserveAuthoredAtom() {
+        stageControl.checkpoint();
         return requestCapacity.reserve(
                         RenderingPipelineCapacityGuard.Limit
                                 .ASSETS_AND_FETCH_AUTHORED_ASSET_OCCURRENCES,
@@ -259,6 +334,7 @@ final class AssetAdmission {
     }
 
     private Rejected reserveLogicalAsset(AssetAtom atom) {
+        stageControl.checkpoint();
         if (logicalAssetIds.contains(atom.assetId())) {
             return null;
         }
@@ -285,10 +361,15 @@ final class AssetAdmission {
     }
 
     private Rejected precheck(AssetAtom atom) {
-        return precheck(assets.precheckAdmission(
+        stageControl.checkpoint();
+        var failure = precheck(assets.precheckAdmission(
                 new OwnerScope(ownerScope),
                 new AssetId(atom.assetId()),
                 atom.kind()));
+        if (failure == null) {
+            stageControl.checkpoint();
+        }
+        return failure;
     }
 
     private static boolean isAssetRefShape(ObjectNode object) {

@@ -173,6 +173,60 @@ class SealerTest {
     }
 
     @Test
+    void deadlineReachedWhileComputingResultDigestDiscardsCanonicalDocument() {
+        var monotonicNanos = new long[]{0L};
+        var stageControl = EvaluationStageControl.start(
+                () -> monotonicNanos[0], 15_000L);
+        var resource = entry("rwres_" + "a".repeat(64), "asset-a");
+        var iterationPasses = new int[]{0};
+        List<Materializer.ResourceEntry> resources =
+                new java.util.AbstractList<>() {
+                    @Override
+                    public Materializer.ResourceEntry get(int index) {
+                        if (index != 0) {
+                            throw new IndexOutOfBoundsException(index);
+                        }
+                        return resource;
+                    }
+
+                    @Override
+                    public int size() {
+                        return 1;
+                    }
+
+                    @Override
+                    public java.util.Iterator<Materializer.ResourceEntry> iterator() {
+                        var pass = ++iterationPasses[0];
+                        var delegate = List.of(resource).iterator();
+                        return new java.util.Iterator<>() {
+                            @Override
+                            public boolean hasNext() {
+                                return delegate.hasNext();
+                            }
+
+                            @Override
+                            public Materializer.ResourceEntry next() {
+                                var next = delegate.next();
+                                if (pass == 2) {
+                                    monotonicNanos[0] = 15_000_000_000L;
+                                }
+                                return next;
+                            }
+                        };
+                    }
+                };
+        var baseTree = minimalTree();
+        var tree = new Materializer.MaterializedTree(
+                baseTree.root(), resources, baseTree.sidecar());
+
+        var outcome = Sealer.seal(
+                closure(), admitted(), tree, "sha256:" + "c".repeat(64), stageControl);
+
+        assertInstanceOf(Sealer.SealDeadlineExceeded.class, outcome);
+        assertEquals(2, iterationPasses[0]);
+    }
+
+    @Test
     void selectionDigestIsOrderSensitive() {
         var entryA = entry("rwres_" + "a".repeat(64), "asset-a");
         var entryB = entry("rwres_" + "b".repeat(64), "asset-b");

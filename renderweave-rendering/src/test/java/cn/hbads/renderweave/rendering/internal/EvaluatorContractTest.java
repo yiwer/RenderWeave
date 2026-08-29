@@ -17,6 +17,7 @@ import cn.hbads.renderweave.schema.definition.StaticSchemaRef;
 import cn.hbads.renderweave.schema.identity.SchemaKey;
 import cn.hbads.renderweave.schema.identity.VersionTag;
 import cn.hbads.renderweave.template.api.DesignDslAuthority;
+import cn.hbads.renderweave.template.api.DesignSemanticAuthority;
 import cn.hbads.renderweave.template.api.TemplateApplication;
 import cn.hbads.renderweave.template.api.TemplateClosureAuthority;
 import cn.hbads.renderweave.template.api.TemplateClosureAuthority.ClosureEdge;
@@ -41,10 +42,12 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.LongSupplier;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -1119,6 +1122,485 @@ class EvaluatorContractTest {
                 "{\"rootDocument\":{}}", 61_000L, 60_000L, 5_000L));
 
         assertInstanceOf(EvaluationOutcome.SealedDocument.class, outcome);
+    }
+
+    @Test
+    void inputAdmissionThatConsumesTheEvaluationWindowStopsBeforeAssetAdmission() {
+        var ticker = new MutableTicker(0L);
+        var frozenClosure = closureWith(canvasWithImage());
+        TemplateClosureAuthority closureCompletesAtFourSeconds =
+                (renderRequestId, rootTemplateId, control) -> {
+                    ticker.setNanos(4_000_000_000L);
+                    return new TemplateClosureAuthority.ClosureFrozen(frozenClosure);
+                };
+        var targetResolver = resolver();
+        ValidationTargetResolver inputConsumesFifteenSeconds = target -> {
+            ticker.setNanos(19_000_000_000L);
+            return targetResolver.resolve(target);
+        };
+        var assets = new CapturingAssetPort();
+        var evaluator = new CanonicalEvaluator(
+                closureCompletesAtFourSeconds,
+                TemplateModule.designSemanticAuthority(),
+                TemplateModule.designDslAuthority(),
+                assets,
+                scriptedRuntime(),
+                new RecordingCapabilityStateStore(),
+                DEFAULT_BUDGET_VECTOR,
+                inputConsumesFifteenSeconds,
+                new MutableClock(1_000L),
+                ticker);
+
+        var outcome = evaluator.evaluate(command(
+                "{\"rootDocument\":{}}",
+                61_000L,
+                60_000_000_000L,
+                5_000_000_000L));
+
+        var rejected = assertInstanceOf(EvaluationOutcome.Rejected.class, outcome);
+        assertEquals(EvaluationStage.DOCUMENT_SEAL, rejected.stage());
+        assertEquals(RenderingProblem.ProblemCode.RENDER_DEADLINE_EXCEEDED,
+                rejected.problem().code());
+        assertEquals("deadlineAndRetention.evaluationAndDocumentSealMillis",
+                rejected.problem().limitId().orElseThrow().value());
+        assertNull(assets.lastRequest);
+    }
+
+    @Test
+    void evaluationWindowStartsAtClosureFreezeAndAllowsFourteenPointNineNineNineSeconds() {
+        var ticker = new MutableTicker(0L);
+        var frozenClosure = closureWith(canvasWithRect());
+        TemplateClosureAuthority closureCompletesAtFourSeconds =
+                (renderRequestId, rootTemplateId, control) -> {
+                    ticker.setNanos(4_000_000_000L);
+                    return new TemplateClosureAuthority.ClosureFrozen(frozenClosure);
+                };
+        var targetResolver = resolver();
+        ValidationTargetResolver inputCompletesOneMillisecondInsideWindow = target -> {
+            ticker.setNanos(18_999_000_000L);
+            return targetResolver.resolve(target);
+        };
+        var evaluator = new CanonicalEvaluator(
+                closureCompletesAtFourSeconds,
+                TemplateModule.designSemanticAuthority(),
+                TemplateModule.designDslAuthority(),
+                null,
+                scriptedRuntime(),
+                new RecordingCapabilityStateStore(),
+                DEFAULT_BUDGET_VECTOR,
+                inputCompletesOneMillisecondInsideWindow,
+                new MutableClock(1_000L),
+                ticker);
+
+        var outcome = evaluator.evaluate(command(
+                "{\"rootDocument\":{}}",
+                61_000L,
+                60_000_000_000L,
+                5_000_000_000L));
+
+        assertInstanceOf(EvaluationOutcome.SealedDocument.class, outcome);
+    }
+
+    @Test
+    void assetAdmissionThatConsumesTheEvaluationWindowStopsBeforeResolution() {
+        var ticker = new MutableTicker(0L);
+        var frozenClosure = closureWith(canvasWithImage());
+        TemplateClosureAuthority closureCompletesAtFourSeconds =
+                (renderRequestId, rootTemplateId, control) -> {
+                    ticker.setNanos(4_000_000_000L);
+                    return new TemplateClosureAuthority.ClosureFrozen(frozenClosure);
+                };
+        var resolveCalls = new AtomicInteger();
+        AssetResolutionPort assets = new AssetResolutionPort() {
+            @Override
+            public PrecheckOutcome precheckAdmission(
+                    cn.hbads.renderweave.asset.api.AssetApplication.OwnerScope ownerScope,
+                    cn.hbads.renderweave.asset.api.AssetApplication.AssetId assetId,
+                    cn.hbads.renderweave.asset.api.AssetAcceptanceAuthority.AssetKind expectedKind
+            ) {
+                ticker.setNanos(19_000_000_000L);
+                return new PrecheckOutcome.PrecheckPassed();
+            }
+
+            @Override
+            public ResolveOutcome resolve(ResolveRequest request) {
+                resolveCalls.incrementAndGet();
+                return new CapturingAssetPort().resolve(request);
+            }
+        };
+        var evaluator = new CanonicalEvaluator(
+                closureCompletesAtFourSeconds,
+                TemplateModule.designSemanticAuthority(),
+                TemplateModule.designDslAuthority(),
+                assets,
+                scriptedRuntime(),
+                new RecordingCapabilityStateStore(),
+                DEFAULT_BUDGET_VECTOR,
+                resolver(),
+                new MutableClock(1_000L),
+                ticker);
+
+        var outcome = evaluator.evaluate(command(
+                "{\"rootDocument\":{}}",
+                61_000L,
+                60_000_000_000L,
+                5_000_000_000L));
+
+        var rejected = assertInstanceOf(EvaluationOutcome.Rejected.class, outcome);
+        assertEquals(EvaluationStage.DOCUMENT_SEAL, rejected.stage());
+        assertEquals("deadlineAndRetention.evaluationAndDocumentSealMillis",
+                rejected.problem().limitId().orElseThrow().value());
+        assertEquals(0, resolveCalls.get());
+    }
+
+    @Test
+    void assetAdmissionStopsBetweenSuccessfulPrechecksWhenTheWindowExpires() {
+        var ticker = new MutableTicker(0L);
+        var frozenClosure = closureWith(canvasWithTwoImages());
+        TemplateClosureAuthority closureCompletesAtFourSeconds =
+                (renderRequestId, rootTemplateId, control) -> {
+                    ticker.setNanos(4_000_000_000L);
+                    return new TemplateClosureAuthority.ClosureFrozen(frozenClosure);
+                };
+        var precheckCalls = new AtomicInteger();
+        AssetResolutionPort assets = new AssetResolutionPort() {
+            @Override
+            public PrecheckOutcome precheckAdmission(
+                    cn.hbads.renderweave.asset.api.AssetApplication.OwnerScope ownerScope,
+                    cn.hbads.renderweave.asset.api.AssetApplication.AssetId assetId,
+                    cn.hbads.renderweave.asset.api.AssetAcceptanceAuthority.AssetKind expectedKind
+            ) {
+                if (precheckCalls.incrementAndGet() == 1) {
+                    ticker.setNanos(19_000_000_000L);
+                }
+                return new PrecheckOutcome.PrecheckPassed();
+            }
+
+            @Override
+            public ResolveOutcome resolve(ResolveRequest request) {
+                throw new AssertionError("resolution must not begin after admission deadline");
+            }
+        };
+        var evaluator = new CanonicalEvaluator(
+                closureCompletesAtFourSeconds,
+                TemplateModule.designSemanticAuthority(),
+                TemplateModule.designDslAuthority(),
+                assets,
+                scriptedRuntime(),
+                new RecordingCapabilityStateStore(),
+                DEFAULT_BUDGET_VECTOR,
+                resolver(),
+                new MutableClock(1_000L),
+                ticker);
+
+        var outcome = evaluator.evaluate(command(
+                "{\"rootDocument\":{}}",
+                61_000L,
+                60_000_000_000L,
+                5_000_000_000L));
+
+        var rejected = assertInstanceOf(EvaluationOutcome.Rejected.class, outcome);
+        assertEquals(EvaluationStage.DOCUMENT_SEAL, rejected.stage());
+        assertEquals("deadlineAndRetention.evaluationAndDocumentSealMillis",
+                rejected.problem().limitId().orElseThrow().value());
+        assertEquals(1, precheckCalls.get());
+    }
+
+    @Test
+    void assetRejectionObservedAtTheWindowBoundaryKeepsItsSpecificFailure() {
+        var ticker = new MutableTicker(0L);
+        var frozenClosure = closureWith(canvasWithImage());
+        TemplateClosureAuthority closureCompletesAtFourSeconds =
+                (renderRequestId, rootTemplateId, control) -> {
+                    ticker.setNanos(4_000_000_000L);
+                    return new TemplateClosureAuthority.ClosureFrozen(frozenClosure);
+                };
+        AssetResolutionPort assets = new AssetResolutionPort() {
+            @Override
+            public PrecheckOutcome precheckAdmission(
+                    cn.hbads.renderweave.asset.api.AssetApplication.OwnerScope ownerScope,
+                    cn.hbads.renderweave.asset.api.AssetApplication.AssetId assetId,
+                    cn.hbads.renderweave.asset.api.AssetAcceptanceAuthority.AssetKind expectedKind
+            ) {
+                ticker.setNanos(19_000_000_000L);
+                return new PrecheckOutcome.PrecheckRejected(AdmissionRejection.NOT_FOUND);
+            }
+
+            @Override
+            public ResolveOutcome resolve(ResolveRequest request) {
+                throw new AssertionError("rejected admission must stop resolution");
+            }
+        };
+        var evaluator = new CanonicalEvaluator(
+                closureCompletesAtFourSeconds,
+                TemplateModule.designSemanticAuthority(),
+                TemplateModule.designDslAuthority(),
+                assets,
+                scriptedRuntime(),
+                new RecordingCapabilityStateStore(),
+                DEFAULT_BUDGET_VECTOR,
+                resolver(),
+                new MutableClock(1_000L),
+                ticker);
+
+        var outcome = evaluator.evaluate(command(
+                "{\"rootDocument\":{}}",
+                61_000L,
+                60_000_000_000L,
+                5_000_000_000L));
+
+        var rejected = assertInstanceOf(EvaluationOutcome.Rejected.class, outcome);
+        assertEquals(EvaluationStage.ASSET_ADMISSION, rejected.stage());
+        assertEquals(RenderingProblem.ProblemCode.ASSET_NOT_FOUND,
+                rejected.problem().code());
+        assertTrue(rejected.problem().limitId().isEmpty());
+    }
+
+    @Test
+    void capabilityInitializationThatConsumesTheEvaluationWindowDoesNotCommitState() {
+        var ticker = new MutableTicker(0L);
+        var frozenClosure = closureWith(withUnusedClock(canvasWithRect()));
+        TemplateClosureAuthority closureCompletesAtFourSeconds =
+                (renderRequestId, rootTemplateId, control) -> {
+                    ticker.setNanos(4_000_000_000L);
+                    return new TemplateClosureAuthority.ClosureFrozen(frozenClosure);
+                };
+        var stateStore = new RecordingCapabilityStateStore();
+        var runtime = new DeadlineAdvancingRuntime(ticker, 19_000_000_000L);
+        var evaluator = new CanonicalEvaluator(
+                closureCompletesAtFourSeconds,
+                TemplateModule.designSemanticAuthority(),
+                TemplateModule.designDslAuthority(),
+                null,
+                runtime,
+                stateStore,
+                DEFAULT_BUDGET_VECTOR,
+                resolver(),
+                new MutableClock(1_000L),
+                ticker);
+
+        var outcome = evaluator.evaluate(command(
+                "{\"rootDocument\":{}}",
+                61_000L,
+                60_000_000_000L,
+                5_000_000_000L));
+
+        var rejected = assertInstanceOf(EvaluationOutcome.Rejected.class, outcome);
+        assertEquals(EvaluationStage.DOCUMENT_SEAL, rejected.stage());
+        assertEquals(RenderingProblem.ProblemCode.RENDER_DEADLINE_EXCEEDED,
+                rejected.problem().code());
+        assertEquals("deadlineAndRetention.evaluationAndDocumentSealMillis",
+                rejected.problem().limitId().orElseThrow().value());
+        assertEquals(1, runtime.establishCalls);
+        assertEquals(0, stateStore.saveCalls);
+    }
+
+    @Test
+    void successfulAssetResolveThatConsumesTheEvaluationWindowStopsMaterialization() {
+        var ticker = new MutableTicker(0L);
+        var frozenClosure = closureWith(canvasWithTwoImages());
+        TemplateClosureAuthority closureCompletesAtFourSeconds =
+                (renderRequestId, rootTemplateId, control) -> {
+                    ticker.setNanos(4_000_000_000L);
+                    return new TemplateClosureAuthority.ClosureFrozen(frozenClosure);
+                };
+        var resolveCalls = new AtomicInteger();
+        AssetResolutionPort assets = new AssetResolutionPort() {
+            @Override
+            public PrecheckOutcome precheckAdmission(
+                    cn.hbads.renderweave.asset.api.AssetApplication.OwnerScope ownerScope,
+                    cn.hbads.renderweave.asset.api.AssetApplication.AssetId assetId,
+                    cn.hbads.renderweave.asset.api.AssetAcceptanceAuthority.AssetKind expectedKind
+            ) {
+                return new PrecheckOutcome.PrecheckPassed();
+            }
+
+            @Override
+            public ResolveOutcome resolve(ResolveRequest request) {
+                if (resolveCalls.incrementAndGet() == 1) {
+                    ticker.setNanos(19_000_000_000L);
+                }
+                return new CapturingAssetPort().resolve(request);
+            }
+        };
+        var evaluator = new CanonicalEvaluator(
+                closureCompletesAtFourSeconds,
+                TemplateModule.designSemanticAuthority(),
+                TemplateModule.designDslAuthority(),
+                assets,
+                scriptedRuntime(),
+                new RecordingCapabilityStateStore(),
+                DEFAULT_BUDGET_VECTOR,
+                resolver(),
+                new MutableClock(1_000L),
+                ticker);
+
+        var outcome = evaluator.evaluate(command(
+                "{\"rootDocument\":{}}",
+                61_000L,
+                60_000_000_000L,
+                5_000_000_000L));
+
+        var rejected = assertInstanceOf(EvaluationOutcome.Rejected.class, outcome);
+        assertEquals(EvaluationStage.DOCUMENT_SEAL, rejected.stage());
+        assertEquals("deadlineAndRetention.evaluationAndDocumentSealMillis",
+                rejected.problem().limitId().orElseThrow().value());
+        assertEquals(1, resolveCalls.get());
+    }
+
+    @Test
+    void successfulCapabilityDemandThatConsumesTheWindowStopsBeforeTheNextDemand() {
+        var ticker = new MutableTicker(0L);
+        var frozenClosure = closureWith(twoRandomAliasCapabilityDocument());
+        TemplateClosureAuthority closureCompletesAtFourSeconds =
+                (renderRequestId, rootTemplateId, control) -> {
+                    ticker.setNanos(4_000_000_000L);
+                    return new TemplateClosureAuthority.ClosureFrozen(frozenClosure);
+                };
+        var supplyCalls = new AtomicInteger();
+        RenderingCapabilityRuntime runtime = new RenderingCapabilityRuntime() {
+            @Override
+            public Established establish(CapabilityRequirements requirements) {
+                return new Established(provider(), new byte[]{1});
+            }
+
+            @Override
+            public Runtime restore(CapabilityRequirements requirements, byte[] sealedState) {
+                return provider();
+            }
+
+            @Override
+            public Set<CapabilityContract> supportedContracts() {
+                return Set.of(CapabilityContract.RANDOM_1_0);
+            }
+
+            private Runtime provider() {
+                return (capability, operation, callPosition) -> {
+                    if (supplyCalls.incrementAndGet() == 1) {
+                        ticker.setNanos(19_000_000_000L);
+                    }
+                    return new Supplied(new DecimalResult(new BigDecimal("0.5")));
+                };
+            }
+        };
+        var evaluator = new CanonicalEvaluator(
+                closureCompletesAtFourSeconds,
+                TemplateModule.designSemanticAuthority(),
+                TemplateModule.designDslAuthority(),
+                null,
+                runtime,
+                new RecordingCapabilityStateStore(),
+                DEFAULT_BUDGET_VECTOR,
+                resolver(),
+                new MutableClock(1_000L),
+                ticker);
+
+        var outcome = evaluator.evaluate(command(
+                "{\"rootDocument\":{}}",
+                61_000L,
+                60_000_000_000L,
+                5_000_000_000L));
+
+        var rejected = assertInstanceOf(EvaluationOutcome.Rejected.class, outcome);
+        assertEquals(EvaluationStage.DOCUMENT_SEAL, rejected.stage());
+        assertEquals("deadlineAndRetention.evaluationAndDocumentSealMillis",
+                rejected.problem().limitId().orElseThrow().value());
+        assertEquals(1, supplyCalls.get());
+    }
+
+    @Test
+    void declarationScanThatConsumesTheEvaluationWindowStopsBeforeInputAdmission() {
+        var ticker = new MutableTicker(0L);
+        var frozenClosure = closureWith(canvasWithRect());
+        TemplateClosureAuthority closureCompletesAtFourSeconds =
+                (renderRequestId, rootTemplateId, control) -> {
+                    ticker.setNanos(4_000_000_000L);
+                    return new TemplateClosureAuthority.ClosureFrozen(frozenClosure);
+                };
+        var semanticDelegate = TemplateModule.designSemanticAuthority();
+        DesignSemanticAuthority declarationConsumesFifteenSeconds = bytes -> {
+            ticker.setNanos(19_000_000_000L);
+            return semanticDelegate.interpret(bytes);
+        };
+        var inputResolutions = new AtomicInteger();
+        var targetResolver = resolver();
+        ValidationTargetResolver recordingResolver = target -> {
+            inputResolutions.incrementAndGet();
+            return targetResolver.resolve(target);
+        };
+        var evaluator = new CanonicalEvaluator(
+                closureCompletesAtFourSeconds,
+                declarationConsumesFifteenSeconds,
+                TemplateModule.designDslAuthority(),
+                null,
+                scriptedRuntime(),
+                new RecordingCapabilityStateStore(),
+                DEFAULT_BUDGET_VECTOR,
+                recordingResolver,
+                new MutableClock(1_000L),
+                ticker);
+
+        var outcome = evaluator.evaluate(command(
+                "{\"rootDocument\":{}}",
+                61_000L,
+                60_000_000_000L,
+                5_000_000_000L));
+
+        var rejected = assertInstanceOf(EvaluationOutcome.Rejected.class, outcome);
+        assertEquals(EvaluationStage.DOCUMENT_SEAL, rejected.stage());
+        assertEquals("deadlineAndRetention.evaluationAndDocumentSealMillis",
+                rejected.problem().limitId().orElseThrow().value());
+        assertEquals(0, inputResolutions.get());
+    }
+
+    @Test
+    void declarationScanStopsBetweenSnapshotsWhenTheEvaluationWindowExpires() {
+        var ticker = new MutableTicker(0L);
+        var frozenClosure = closureWithTemplateUseChildren(1);
+        TemplateClosureAuthority closureCompletesAtFourSeconds =
+                (renderRequestId, rootTemplateId, control) -> {
+                    ticker.setNanos(4_000_000_000L);
+                    return new TemplateClosureAuthority.ClosureFrozen(frozenClosure);
+                };
+        var interpretations = new AtomicInteger();
+        var semanticDelegate = TemplateModule.designSemanticAuthority();
+        DesignSemanticAuthority firstSnapshotConsumesTheWindow = bytes -> {
+            var outcome = semanticDelegate.interpret(bytes);
+            if (interpretations.incrementAndGet() == 1) {
+                ticker.setNanos(19_000_000_000L);
+            }
+            return outcome;
+        };
+        var inputResolutions = new AtomicInteger();
+        var targetResolver = resolver();
+        ValidationTargetResolver recordingResolver = target -> {
+            inputResolutions.incrementAndGet();
+            return targetResolver.resolve(target);
+        };
+        var evaluator = new CanonicalEvaluator(
+                closureCompletesAtFourSeconds,
+                firstSnapshotConsumesTheWindow,
+                TemplateModule.designDslAuthority(),
+                null,
+                scriptedRuntime(),
+                new RecordingCapabilityStateStore(),
+                DEFAULT_BUDGET_VECTOR,
+                recordingResolver,
+                new MutableClock(1_000L),
+                ticker);
+
+        var outcome = evaluator.evaluate(command(
+                "{\"rootDocument\":{}}",
+                61_000L,
+                60_000_000_000L,
+                5_000_000_000L));
+
+        var rejected = assertInstanceOf(EvaluationOutcome.Rejected.class, outcome);
+        assertEquals(EvaluationStage.DOCUMENT_SEAL, rejected.stage());
+        assertEquals("deadlineAndRetention.evaluationAndDocumentSealMillis",
+                rejected.problem().limitId().orElseThrow().value());
+        assertEquals(1, interpretations.get());
+        assertEquals(0, inputResolutions.get());
     }
 
     @Test
@@ -2368,6 +2850,23 @@ class EvaluatorContractTest {
                 + "\"xMm\":0,\"yMm\":0,\"widthMode\":\"FIXED\",\"widthMm\":10,"
                 + "\"heightMode\":\"FIXED\",\"heightMm\":10},"
                 + "\"imageRef\":{\"assetId\":\"00000000-0000-4000-8000-0000000000aa\"}}]}}";
+    }
+
+    private static String canvasWithTwoImages() {
+        return canvasWithChildren(
+                imageNode("00000000-0000-4000-8000-000000000011",
+                        "00000000-0000-4000-8000-0000000000aa")
+                        + ","
+                        + imageNode("00000000-0000-4000-8000-000000000012",
+                        "00000000-0000-4000-8000-0000000000ab"));
+    }
+
+    private static String imageNode(String nodeId, String assetId) {
+        return "{\"nodeId\":\"" + nodeId + "\",\"kind\":\"image\",\"bindings\":[],"
+                + "\"placement\":{\"type\":\"ABSOLUTE\",\"xMm\":0,\"yMm\":0,"
+                + "\"widthMode\":\"FIXED\",\"widthMm\":10,"
+                + "\"heightMode\":\"FIXED\",\"heightMm\":10},"
+                + "\"imageRef\":{\"assetId\":\"" + assetId + "\"}}";
     }
 
     private static String canvasWithPublicImageCustom() {

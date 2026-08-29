@@ -50,7 +50,7 @@ final class Sealer {
     ) {
     }
 
-    sealed interface SealOutcome permits Sealed, SealRejected {
+    sealed interface SealOutcome permits Sealed, SealRejected, SealDeadlineExceeded {
     }
 
     record Sealed(SealedEvaluation evaluation) implements SealOutcome {
@@ -62,13 +62,21 @@ final class Sealer {
         }
     }
 
+    record SealDeadlineExceeded() implements SealOutcome {
+    }
+
     private long occurrenceCounter;
     private final List<String> occurrenceIdsInPreorder = new ArrayList<>();
     private final RenderNodeContractCatalog nodeContracts = RenderNodeContractCatalog.instance();
     private final RenderingPipelineCapacityGuard.RequestTracker requestCapacity;
+    private final EvaluationStageControl stageControl;
 
-    private Sealer(RenderingPipelineCapacityGuard.RequestTracker requestCapacity) {
+    private Sealer(
+            RenderingPipelineCapacityGuard.RequestTracker requestCapacity,
+            EvaluationStageControl stageControl
+    ) {
         this.requestCapacity = Objects.requireNonNull(requestCapacity, "requestCapacity");
+        this.stageControl = Objects.requireNonNull(stageControl, "stageControl");
     }
 
     static SealOutcome seal(
@@ -92,10 +100,46 @@ final class Sealer {
             String capabilityResultDigest,
             RenderingPipelineCapacityGuard.RequestTracker requestCapacity
     ) {
-        var sealer = new Sealer(requestCapacity);
+        return seal(
+                closure,
+                admittedInput,
+                tree,
+                capabilityResultDigest,
+                requestCapacity,
+                EvaluationStageControl.unbounded());
+    }
+
+    static SealOutcome seal(
+            ClosureSnapshot closure,
+            AdmittedRenderInput admittedInput,
+            Materializer.MaterializedTree tree,
+            String capabilityResultDigest,
+            EvaluationStageControl stageControl
+    ) {
+        return seal(
+                closure,
+                admittedInput,
+                tree,
+                capabilityResultDigest,
+                CAPACITY_GUARD.newRequestTracker(),
+                stageControl);
+    }
+
+    private static SealOutcome seal(
+            ClosureSnapshot closure,
+            AdmittedRenderInput admittedInput,
+            Materializer.MaterializedTree tree,
+            String capabilityResultDigest,
+            RenderingPipelineCapacityGuard.RequestTracker requestCapacity,
+            EvaluationStageControl stageControl
+    ) {
+        var sealer = new Sealer(requestCapacity, stageControl);
         try {
+            sealer.stageControl.checkpoint();
             var canvasJson = sealer.sealCanvas(tree.root());
+            sealer.stageControl.checkpoint();
             var resourcesJson = sealer.sealResources(tree.resources());
+            sealer.stageControl.checkpoint();
             var envelope = new TreeMap<String, CanonicalJson.CanonicalValue>();
             envelope.put("canvas", canvasJson);
             envelope.put("dslVersion", CanonicalJson.stringValue(RENDER_DSL_VERSION));
@@ -103,14 +147,19 @@ final class Sealer {
             envelope.put("resources", CanonicalJson.arrayValue(resourcesJson));
             var canonical = RenderDocumentCanonicalWriter.write(
                     CanonicalJson.objectValue(envelope), sealer.requestCapacity);
+            sealer.stageControl.checkpoint();
             var documentDigest = RenderingDigests.renderDocumentDigest(canonical);
-            var resultDigest = evaluationResultDigest(
+            sealer.stageControl.checkpoint();
+            var resultDigest = sealer.evaluationResultDigest(
                     closure, admittedInput, tree, capabilityResultDigest);
+            sealer.stageControl.checkpoint();
             return new Sealed(new SealedEvaluation(canonical, documentDigest, resultDigest));
         } catch (RenderDocumentCanonicalWriter.CapacityExceeded capacity) {
             return new SealRejected(capacity.problem());
         } catch (SealCapacityExceeded capacity) {
             return new SealRejected(capacity.problem());
+        } catch (EvaluationStageControl.DeadlineExceeded ignored) {
+            return new SealDeadlineExceeded();
         }
     }
 
@@ -126,7 +175,7 @@ final class Sealer {
         }
     }
 
-    private static String evaluationResultDigest(
+    private String evaluationResultDigest(
             ClosureSnapshot closure,
             AdmittedRenderInput admittedInput,
             Materializer.MaterializedTree tree,
@@ -136,7 +185,7 @@ final class Sealer {
                 closure.ownerScope().value(),
                 ClosureManifests.digest(closure),
                 AdmittedInputCanonicalizer.digest(admittedInput),
-                assetSelectionDigest(tree.resources()),
+                assetSelectionDigest(tree.resources(), stageControl),
                 capabilityResultDigest);
     }
 
@@ -164,8 +213,16 @@ final class Sealer {
 
     /** 按 resource encounter order 的 domain-separated selection digest（票据 13 §117）。 */
     static String assetSelectionDigest(List<Materializer.ResourceEntry> resources) {
+        return assetSelectionDigest(resources, EvaluationStageControl.unbounded());
+    }
+
+    private static String assetSelectionDigest(
+            List<Materializer.ResourceEntry> resources,
+            EvaluationStageControl stageControl
+    ) {
         var framed = new java.io.ByteArrayOutputStream();
         for (var resource : resources) {
+            stageControl.checkpoint();
             var entry = new TreeMap<String, String>();
             entry.put("acceptanceProfileId", CanonicalJson.string(resource.acceptanceProfileId()));
             entry.put("assetId", CanonicalJson.string(resource.assetId()));
@@ -184,6 +241,7 @@ final class Sealer {
             var bytes = CanonicalJson.object(entry).getBytes(StandardCharsets.UTF_8);
             framed.writeBytes(lengthFrame(bytes.length));
             framed.writeBytes(bytes);
+            stageControl.checkpoint();
         }
         return RenderingDigests.digestWithDomain(ASSET_SELECTION_DOMAIN, framed.toByteArray());
     }
@@ -193,6 +251,7 @@ final class Sealer {
     // ------------------------------------------------------------------
 
     private CanonicalJson.CanonicalValue sealCanvas(Materializer.MaterializedNode node) {
+        stageControl.checkpoint();
         if (!"canvas".equals(node.kind())) {
             throw new IllegalStateException("render document root must be the canvas");
         }
@@ -201,6 +260,7 @@ final class Sealer {
         members.put("occurrenceId", CanonicalJson.stringValue(nextOccurrenceId()));
         members.put("kind", CanonicalJson.stringValue("canvas"));
         for (var entry : expanded.members().entrySet()) {
+            stageControl.checkpoint();
             if (AUTHORING_ONLY_MEMBERS.contains(entry.getKey())
                     || "kind".equals(entry.getKey())) {
                 continue;
@@ -217,6 +277,7 @@ final class Sealer {
             ObjectNode expandedParent) {
         var items = new ArrayList<CanonicalJson.CanonicalValue>();
         for (var child : children) {
+            stageControl.checkpoint();
             reserveChildEdge();
             items.add(sealNode(child, expandedParent));
         }
@@ -226,6 +287,7 @@ final class Sealer {
     private CanonicalJson.CanonicalValue sealNode(
             Materializer.MaterializedNode node,
             ObjectNode expandedParent) {
+        stageControl.checkpoint();
         if ("compositionViewport".equals(node.kind())) {
             return sealViewport(node, expandedParent);
         }
@@ -234,6 +296,7 @@ final class Sealer {
         members.put("kind", CanonicalJson.stringValue(node.kind()));
         members.put("occurrenceId", CanonicalJson.stringValue(nextOccurrenceId()));
         for (var entry : expanded.members().entrySet()) {
+            stageControl.checkpoint();
             if (AUTHORING_ONLY_MEMBERS.contains(entry.getKey())
                     || "kind".equals(entry.getKey())) {
                 continue;
@@ -259,11 +322,13 @@ final class Sealer {
     private CanonicalJson.CanonicalValue sealViewport(
             Materializer.MaterializedNode node,
             ObjectNode expandedParent) {
+        stageControl.checkpoint();
         var expanded = expandNode(node, expandedParent);
         var members = new TreeMap<String, CanonicalJson.CanonicalValue>();
         members.put("kind", CanonicalJson.stringValue("compositionViewport"));
         members.put("occurrenceId", CanonicalJson.stringValue(nextOccurrenceId()));
         for (var entry : expanded.members().entrySet()) {
+            stageControl.checkpoint();
             if (AUTHORING_ONLY_MEMBERS.contains(entry.getKey())
                     || "kind".equals(entry.getKey())) {
                 continue;
@@ -277,6 +342,7 @@ final class Sealer {
             var sourceMembers = new TreeMap<String, CanonicalJson.CanonicalValue>();
             sourceMembers.put("occurrenceId", CanonicalJson.stringValue(nextOccurrenceId()));
             for (var entry : expandedSource.members().entrySet()) {
+                stageControl.checkpoint();
                 if (AUTHORING_ONLY_MEMBERS.contains(entry.getKey())
                         || "kind".equals(entry.getKey())
                         || "bleed".equals(entry.getKey())) {
@@ -333,6 +399,7 @@ final class Sealer {
     }
 
     private CanonicalJson.CanonicalValue lowerValue(DesignNodeValue value) {
+        stageControl.checkpoint();
         if (value instanceof Text text) {
             return CanonicalJson.stringValue(text.value());
         }
@@ -345,6 +412,7 @@ final class Sealer {
         if (value instanceof ObjectNode object) {
             var members = new TreeMap<String, CanonicalJson.CanonicalValue>();
             for (var entry : object.members().entrySet()) {
+                stageControl.checkpoint();
                 putLowered(members, entry.getKey(), entry.getValue());
             }
             return CanonicalJson.objectValue(members);
@@ -352,6 +420,7 @@ final class Sealer {
         if (value instanceof ArrayNode array) {
             var items = new ArrayList<CanonicalJson.CanonicalValue>(array.items().size());
             for (var item : array.items()) {
+                stageControl.checkpoint();
                 items.add(lowerValue(item));
             }
             return CanonicalJson.arrayValue(items);
@@ -369,12 +438,15 @@ final class Sealer {
             List<Materializer.ResourceEntry> resources) {
         var items = new ArrayList<CanonicalJson.CanonicalValue>(resources.size());
         for (var resource : resources) {
+            stageControl.checkpoint();
             items.add(RenderResourceCanonicalizer.canonicalValue(resource));
+            stageControl.checkpoint();
         }
         return items;
     }
 
     private void reserveChildEdge() {
+        stageControl.checkpoint();
         var capacityProblem = requestCapacity.reserve(
                 RenderingPipelineCapacityGuard.Limit.RENDER_DOCUMENT_CHILD_EDGES,
                 1);
@@ -389,6 +461,7 @@ final class Sealer {
         }
         var items = new ArrayList<CanonicalJson.CanonicalValue>();
         for (var run : runs.items()) {
+            stageControl.checkpoint();
             reserveRun();
             items.add(lowerRun(run));
         }
@@ -405,6 +478,7 @@ final class Sealer {
     }
 
     private void reserveRun() {
+        stageControl.checkpoint();
         var capacityProblem = requestCapacity.reserve(
                 RenderingPipelineCapacityGuard.Limit.RENDER_DOCUMENT_RUNS,
                 1);
@@ -414,6 +488,7 @@ final class Sealer {
     }
 
     private void reserveTextScalars(String text) {
+        stageControl.checkpoint();
         var scalarCount = text.codePointCount(0, text.length());
         var capacityProblem = requestCapacity.reserve(
                 RenderingPipelineCapacityGuard.Limit.RENDER_DOCUMENT_TEXT_SCALARS,
@@ -437,6 +512,7 @@ final class Sealer {
         }
         var items = new ArrayList<CanonicalJson.CanonicalValue>();
         for (var entry : entries.items()) {
+            stageControl.checkpoint();
             reserveVectorEntry();
             items.add(lowerValue(entry));
         }
@@ -444,6 +520,7 @@ final class Sealer {
     }
 
     private void reserveVectorEntry() {
+        stageControl.checkpoint();
         var capacityProblem = requestCapacity.reserve(
                 RenderingPipelineCapacityGuard.Limit.RENDER_DOCUMENT_VECTOR_ENTRIES,
                 1);
@@ -453,6 +530,7 @@ final class Sealer {
     }
 
     private String nextOccurrenceId() {
+        stageControl.checkpoint();
         if (occurrenceCounter < 0) {
             throw new IllegalStateException("RenderDocument occurrence ordinal overflow");
         }

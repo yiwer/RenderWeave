@@ -973,4 +973,29 @@ class RenderingPipelineCapacityGuardTest {
         assertThrows(IllegalArgumentException.class,
                 () -> guard.admit(limit, 5_000L, 5_000L));
     }
+
+    @Test
+    void evaluationAndDocumentSealDeadlineRequiresFrozenExactDurationAndSealTaxonomy() {
+        var guard = new RenderingPipelineCapacityGuard();
+        var limit = RenderingPipelineCapacityGuard.Limit
+                .DEADLINE_AND_RETENTION_EVALUATION_AND_DOCUMENT_SEAL_MILLIS;
+
+        var below = guard.admit(limit, 14_999L).orElseThrow();
+        assertEquals(EvaluationStage.DOCUMENT_SEAL, below.stage());
+        assertEquals(ProblemCode.RENDER_DEADLINE_EXCEEDED, below.code());
+        assertEquals("deadlineAndRetention.evaluationAndDocumentSealMillis",
+                below.limitId().orElseThrow().value());
+        assertTrue(guard.admit(limit, 15_000L).isEmpty());
+        var above = guard.admit(limit, 15_001L).orElseThrow();
+        assertEquals(EvaluationStage.DOCUMENT_SEAL, above.stage());
+        assertEquals(ProblemCode.RENDER_DEADLINE_EXCEEDED, above.code());
+        assertEquals("deadlineAndRetention.evaluationAndDocumentSealMillis",
+                above.limitId().orElseThrow().value());
+
+        assertEquals(15_000L, guard.exactValue(limit));
+        assertThrows(IllegalArgumentException.class,
+                () -> guard.maximumInclusive(limit));
+        assertThrows(IllegalArgumentException.class,
+                () -> guard.admit(limit, 15_000L, 15_000L));
+    }
 }

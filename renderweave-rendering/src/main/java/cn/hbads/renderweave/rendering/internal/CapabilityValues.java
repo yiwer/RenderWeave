@@ -51,21 +51,29 @@ final class CapabilityValues {
     private final CapabilityState state;
     private final cn.hbads.renderweave.rendering.spi.RenderingCapabilityRuntime.Runtime externalRuntime;
     private final CapabilityBudget.Tracker budget;
+    private final EvaluationStageControl stageControl;
     private final List<DemandEntry> demands = new ArrayList<>();
     private final List<byte[]> framedEntries = new ArrayList<>();
 
-    private CapabilityValues(CapabilityState state, CapabilityBudget.Tracker budget) {
+    private CapabilityValues(
+            CapabilityState state,
+            CapabilityBudget.Tracker budget,
+            EvaluationStageControl stageControl
+    ) {
         this.state = state;
         this.externalRuntime = null;
         this.budget = Objects.requireNonNull(budget, "budget");
+        this.stageControl = Objects.requireNonNull(stageControl, "stageControl");
     }
 
     private CapabilityValues(
             cn.hbads.renderweave.rendering.spi.RenderingCapabilityRuntime.Runtime externalRuntime,
-            CapabilityBudget.Tracker budget) {
+            CapabilityBudget.Tracker budget,
+            EvaluationStageControl stageControl) {
         this.state = null;
         this.externalRuntime = externalRuntime;
         this.budget = Objects.requireNonNull(budget, "budget");
+        this.stageControl = Objects.requireNonNull(stageControl, "stageControl");
     }
 
     static CapabilityState establish(Clock clock, SecureRandom entropy) {
@@ -76,14 +84,24 @@ final class CapabilityValues {
     }
 
     static CapabilityValues forState(CapabilityState state) {
-        return new CapabilityValues(state, CapabilityBudget.frozen().newTracker());
+        return new CapabilityValues(
+                state,
+                CapabilityBudget.frozen().newTracker(),
+                EvaluationStageControl.unbounded());
     }
 
     /** 包装外部 spi runtime：demand 记账与 result digest 留在 Rendering 内部。 */
     static CapabilityValues wrapping(
             cn.hbads.renderweave.rendering.spi.RenderingCapabilityRuntime.Runtime runtime,
             CapabilityBudget.Tracker budget) {
-        return new CapabilityValues(runtime, budget);
+        return wrapping(runtime, budget, EvaluationStageControl.unbounded());
+    }
+
+    static CapabilityValues wrapping(
+            cn.hbads.renderweave.rendering.spi.RenderingCapabilityRuntime.Runtime runtime,
+            CapabilityBudget.Tracker budget,
+            EvaluationStageControl stageControl) {
+        return new CapabilityValues(runtime, budget, stageControl);
     }
 
     record DemandEntry(String capability, String operation, byte[] callPosition, DesignValue result) {
@@ -102,6 +120,7 @@ final class CapabilityValues {
     }
 
     private EvalOutcome supply(String capability, String operation, byte[] callPosition) {
+        stageControl.checkpoint();
         if (!("CLOCK".equals(capability) || "RANDOM".equals(capability))) {
             return new EvalError(new RuntimeFailure(RuntimeFailureKind.TYPE_FAULT, null));
         }
@@ -119,6 +138,7 @@ final class CapabilityValues {
                     .RandomRejectionExhausted) {
                 return capabilityResultInvalid();
             }
+            stageControl.checkpoint();
             var value = ((cn.hbads.renderweave.rendering.spi.RenderingCapabilityRuntime.Supplied) outcome).value();
             return record(toDesignValue(value), capability, operation, callPosition);
         }
@@ -132,6 +152,7 @@ final class CapabilityValues {
                 if (derived == null) {
                     yield capabilityResultInvalid();
                 }
+                stageControl.checkpoint();
                 yield record(new DesignValue.Decimal(derived), capability, operation, callPosition);
             }
             default -> new EvalError(new RuntimeFailure(RuntimeFailureKind.TYPE_FAULT, null));
@@ -157,12 +178,14 @@ final class CapabilityValues {
 
     private EvalOutcome record(DesignValue result, String capability, String operation,
                                byte[] callPosition) {
+        stageControl.checkpoint();
         var demand = new DemandEntry(capability, operation, callPosition, result);
         var entry = canonicalEntry(demand).getBytes(StandardCharsets.UTF_8);
         var capacity = budget.reserveResultDigestBytes(8L + entry.length);
         if (capacity != null) {
             return capabilityBudgetExceeded(capacity.limitId());
         }
+        stageControl.checkpoint();
         demands.add(demand);
         framedEntries.add(entry);
         return new EvalValue(result);
@@ -204,10 +227,13 @@ final class CapabilityValues {
      * bytes，作为 object 原样嵌入 entry，不转为 string/Base64。
      */
     String capabilityResultDigest() {
+        stageControl.checkpoint();
         var framed = new java.io.ByteArrayOutputStream();
         for (var entry : framedEntries) {
+            stageControl.checkpoint();
             framed.writeBytes(lengthFrame(entry.length));
             framed.writeBytes(entry);
+            stageControl.checkpoint();
         }
         return RenderingDigests.digestWithDomain(RESULTS_DOMAIN, framed.toByteArray());
     }

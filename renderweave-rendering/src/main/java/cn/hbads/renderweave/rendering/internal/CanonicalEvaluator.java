@@ -35,6 +35,10 @@ final class CanonicalEvaluator implements Evaluator {
             ADMISSION_AND_CLOSURE_DEADLINE_LIMIT =
             RenderingPipelineCapacityGuard.Limit
                     .DEADLINE_AND_RETENTION_ADMISSION_AND_CLOSURE_MILLIS;
+    private static final RenderingPipelineCapacityGuard.Limit
+            EVALUATION_AND_DOCUMENT_SEAL_DEADLINE_LIMIT =
+            RenderingPipelineCapacityGuard.Limit
+                    .DEADLINE_AND_RETENTION_EVALUATION_AND_DOCUMENT_SEAL_MILLIS;
     private static final RenderingPipelineCapacityGuard.Limit TOTAL_DEADLINE_LIMIT =
             RenderingPipelineCapacityGuard.Limit
                     .DEADLINE_AND_RETENTION_TOTAL_DEADLINE_MILLIS;
@@ -152,6 +156,9 @@ final class CanonicalEvaluator implements Evaluator {
             return rejected(EvaluationStage.TEMPLATE_CLOSURE,
                     ProblemCode.RENDER_INTERNAL_ERROR, null);
         }
+        var evaluationControl = EvaluationStageControl.start(
+                monotonicNanos,
+                CAPACITY_GUARD.exactValue(EVALUATION_AND_DOCUMENT_SEAL_DEADLINE_LIMIT));
         var closure = frozen.closure();
         if (!closure.ownerScope().value().equals(command.ownerScope().value())) {
             return rejected(EvaluationStage.REQUEST_ADMISSION,
@@ -166,7 +173,7 @@ final class CanonicalEvaluator implements Evaluator {
                     ProblemCode.RENDER_INTERNAL_ERROR, null);
         }
         var declarationOutcome = CapabilityDeclarations.scan(
-                closure, semantics, capabilityBudget);
+                closure, semantics, capabilityBudget, evaluationControl);
         if (declarationOutcome instanceof CapabilityDeclarations.DeclarationFault) {
             return rejected(EvaluationStage.TEMPLATE_CLOSURE,
                     ProblemCode.RENDER_INTERNAL_ERROR, null);
@@ -176,10 +183,19 @@ final class CanonicalEvaluator implements Evaluator {
             return new EvaluationOutcome.Rejected(
                     exceeded.problem().stage(), exceeded.problem());
         }
+        if (declarationOutcome instanceof CapabilityDeclarations.DeclarationDeadlineExceeded) {
+            return deadlineRejected(EVALUATION_AND_DOCUMENT_SEAL_DEADLINE_LIMIT);
+        }
         var declarations = (CapabilityDeclarations.Declared) declarationOutcome;
+        if (evaluationControl.deadlineExceeded()) {
+            return deadlineRejected(EVALUATION_AND_DOCUMENT_SEAL_DEADLINE_LIMIT);
+        }
 
         var admission = InputAdmission.admit(
-                command.rawRenderInputUtf8(), rootSnapshot, validationResolver);
+                command.rawRenderInputUtf8(),
+                rootSnapshot,
+                validationResolver,
+                evaluationControl);
         if (admission instanceof InputAdmission.AdmissionRejected admissionRejected) {
             return new EvaluationOutcome.Rejected(
                     admissionRejected.problems().get(0).stage(),
@@ -189,9 +205,15 @@ final class CanonicalEvaluator implements Evaluator {
             return rejected(EvaluationStage.INPUT_ADMISSION,
                     ProblemCode.EVALUATION_FAILED, null);
         }
+        if (admission instanceof InputAdmission.AdmissionDeadlineExceeded) {
+            return deadlineRejected(EVALUATION_AND_DOCUMENT_SEAL_DEADLINE_LIMIT);
+        }
         if (!(admission instanceof InputAdmission.AdmissionAdmitted admitted)) {
             return rejected(EvaluationStage.INPUT_ADMISSION,
                     ProblemCode.RENDER_INTERNAL_ERROR, null);
+        }
+        if (evaluationControl.deadlineExceeded()) {
+            return deadlineRejected(EVALUATION_AND_DOCUMENT_SEAL_DEADLINE_LIMIT);
         }
 
         var assetAdmission = AssetAdmission.admit(
@@ -199,18 +221,34 @@ final class CanonicalEvaluator implements Evaluator {
                 semantics,
                 assets,
                 admitted.input(),
-                command.externalAssetReadAuthorization());
+                command.externalAssetReadAuthorization(),
+                evaluationControl);
         if (assetAdmission instanceof AssetAdmission.Rejected rejected) {
             return new EvaluationOutcome.Rejected(rejected.stage(), rejected.problem());
         }
+        if (assetAdmission instanceof AssetAdmission.AdmissionDeadlineExceeded) {
+            return deadlineRejected(EVALUATION_AND_DOCUMENT_SEAL_DEADLINE_LIMIT);
+        }
         var admittedAssets = (AssetAdmission.Admitted) assetAdmission;
+        if (evaluationControl.deadlineExceeded()) {
+            return deadlineRejected(EVALUATION_AND_DOCUMENT_SEAL_DEADLINE_LIMIT);
+        }
 
-        var runtimeOutcome = capabilityRuntime(command, closure, admitted.input(), declarations);
+        var runtimeOutcome = capabilityRuntime(
+                command, closure, admitted.input(), declarations, evaluationControl);
         if (runtimeOutcome instanceof CapabilityRuntimeRejected rejected) {
             return rejected(EvaluationStage.CAPABILITY_STATE, rejected.code(), rejected.limitId());
         }
+        if (runtimeOutcome instanceof CapabilityRuntimeStageDeadlineExceeded) {
+            return deadlineRejected(EVALUATION_AND_DOCUMENT_SEAL_DEADLINE_LIMIT);
+        }
         var runtime = CapabilityValues.wrapping(
-                ((CapabilityRuntimeReady) runtimeOutcome).runtime(), capabilityBudget.newTracker());
+                ((CapabilityRuntimeReady) runtimeOutcome).runtime(),
+                capabilityBudget.newTracker(),
+                evaluationControl);
+        if (evaluationControl.deadlineExceeded()) {
+            return deadlineRejected(EVALUATION_AND_DOCUMENT_SEAL_DEADLINE_LIMIT);
+        }
         var audience = new AssetResolutionPort.RendererAudience(command.rendererProfile());
         var materialization = Materializer.materialize(
                 admittedAssets,
@@ -222,26 +260,46 @@ final class CanonicalEvaluator implements Evaluator {
                 admitted.input(),
                 command.renderRequestId(),
                 audience,
-                command.deadlineAtEpochMilli());
+                command.deadlineAtEpochMilli(),
+                evaluationControl);
         if (materialization instanceof Materializer.MaterializationFailed failed) {
             return new EvaluationOutcome.Rejected(failed.stage(), failed.problem());
+        }
+        if (materialization instanceof Materializer.MaterializationDeadlineExceeded) {
+            return deadlineRejected(EVALUATION_AND_DOCUMENT_SEAL_DEADLINE_LIMIT);
         }
         if (!(materialization instanceof Materializer.Materialized materialized)) {
             return rejected(EvaluationStage.MATERIALIZATION,
                     ProblemCode.RENDER_INTERNAL_ERROR, null);
         }
+        if (evaluationControl.deadlineExceeded()) {
+            return deadlineRejected(EVALUATION_AND_DOCUMENT_SEAL_DEADLINE_LIMIT);
+        }
 
+        final String capabilityResultDigest;
+        try {
+            capabilityResultDigest = runtime.capabilityResultDigest();
+        } catch (EvaluationStageControl.DeadlineExceeded ignored) {
+            return deadlineRejected(EVALUATION_AND_DOCUMENT_SEAL_DEADLINE_LIMIT);
+        }
         var seal = Sealer.seal(
                 closure,
                 admitted.input(),
                 materialized.tree(),
-                runtime.capabilityResultDigest());
+                capabilityResultDigest,
+                evaluationControl);
         // Capability state is established or restored before materialization can demand it.
         if (seal instanceof Sealer.SealRejected sealRejected) {
             return new EvaluationOutcome.Rejected(
                     sealRejected.problem().stage(), sealRejected.problem());
         }
+        if (seal instanceof Sealer.SealDeadlineExceeded) {
+            return deadlineRejected(EVALUATION_AND_DOCUMENT_SEAL_DEADLINE_LIMIT);
+        }
         var sealed = ((Sealer.Sealed) seal).evaluation();
+        if (evaluationControl.deadlineExceeded()) {
+            return deadlineRejected(EVALUATION_AND_DOCUMENT_SEAL_DEADLINE_LIMIT);
+        }
         return new EvaluationOutcome.SealedDocument(
                 command.renderRequestId(),
                 sealed.renderDocumentCanonicalUtf8(),
@@ -255,7 +313,8 @@ final class CanonicalEvaluator implements Evaluator {
             EvaluationCommand command,
             TemplateClosureAuthority.ClosureSnapshot closure,
             AdmittedRenderInput admittedInput,
-            CapabilityDeclarations.Declared declarations
+            CapabilityDeclarations.Declared declarations,
+            EvaluationStageControl evaluationControl
     ) {
         var declaredContracts = declarations.contracts();
         if (declaredContracts.isEmpty()) {
@@ -277,16 +336,25 @@ final class CanonicalEvaluator implements Evaluator {
                 contractIdentity,
                 "renderweave-asset-acceptance/1.0",
                 effectiveBudgetVector);
+        if (evaluationControl.deadlineExceeded()) {
+            return new CapabilityRuntimeStageDeadlineExceeded();
+        }
         var loaded = capabilityStates.load(command.renderRequestId(), fingerprint);
         if (loaded instanceof CapabilityStateStore.LoadOutcome.Loaded state) {
             return restoreCapabilityRuntime(
-                    requirements, state, command.deadlineAtMonotonicNanos());
+                    requirements,
+                    state,
+                    command.deadlineAtMonotonicNanos(),
+                    evaluationControl);
         }
         if (loaded instanceof CapabilityStateStore.LoadOutcome.LoadFingerprintConflict) {
             return new CapabilityRuntimeRejected(ProblemCode.CAPABILITY_STATE_CONFLICT);
         }
         if (loaded instanceof CapabilityStateStore.LoadOutcome.LoadUnavailable) {
             return new CapabilityRuntimeRejected(ProblemCode.CAPABILITY_STATE_UNAVAILABLE);
+        }
+        if (evaluationControl.deadlineExceeded()) {
+            return new CapabilityRuntimeStageDeadlineExceeded();
         }
         var issuedAt = clock.instant().getEpochSecond();
         var deadlineMillis = command.deadlineAtEpochMilli();
@@ -298,6 +366,9 @@ final class CanonicalEvaluator implements Evaluator {
         while (true) {
             if (deadlineExpired(deadlineAtMonotonicNanos)) {
                 return new CapabilityRuntimeRejected(ProblemCode.CAPABILITY_DEADLINE_EXCEEDED);
+            }
+            if (evaluationControl.deadlineExceeded()) {
+                return new CapabilityRuntimeStageDeadlineExceeded();
             }
             var attemptLimit = initializationAttempts.reserve();
             if (attemptLimit != null) {
@@ -315,11 +386,17 @@ final class CanonicalEvaluator implements Evaluator {
             if (deadlineExpired(deadlineAtMonotonicNanos)) {
                 return new CapabilityRuntimeRejected(ProblemCode.CAPABILITY_DEADLINE_EXCEEDED);
             }
+            if (evaluationControl.deadlineExceeded()) {
+                return new CapabilityRuntimeStageDeadlineExceeded();
+            }
             var stateRecordLimit = capabilityBudget.admitStateRecord(
                     established.sealedState().length);
             if (stateRecordLimit != null) {
                 return new CapabilityRuntimeRejected(
                         ProblemCode.CAPABILITY_BUDGET_EXCEEDED, stateRecordLimit.limitId());
+            }
+            if (evaluationControl.deadlineExceeded()) {
+                return new CapabilityRuntimeStageDeadlineExceeded();
             }
             var saved = capabilityStates.save(new CapabilityStateStore.SaveRequest(
                     command.renderRequestId(), fingerprint, established.sealedState(),
@@ -328,6 +405,9 @@ final class CanonicalEvaluator implements Evaluator {
                 if (deadlineExpired(deadlineAtMonotonicNanos)) {
                     return new CapabilityRuntimeRejected(
                             ProblemCode.CAPABILITY_DEADLINE_EXCEEDED);
+                }
+                if (evaluationControl.deadlineExceeded()) {
+                    return new CapabilityRuntimeStageDeadlineExceeded();
                 }
                 return new CapabilityRuntimeReady(established.runtime());
             }
@@ -339,13 +419,23 @@ final class CanonicalEvaluator implements Evaluator {
                 var replay = capabilityStates.load(command.renderRequestId(), fingerprint);
                 if (replay instanceof CapabilityStateStore.LoadOutcome.Loaded state) {
                     return restoreCapabilityRuntime(
-                            requirements, state, deadlineAtMonotonicNanos);
+                            requirements,
+                            state,
+                            deadlineAtMonotonicNanos,
+                            evaluationControl);
                 }
                 if (replay instanceof CapabilityStateStore.LoadOutcome.LoadFingerprintConflict) {
                     return new CapabilityRuntimeRejected(ProblemCode.CAPABILITY_STATE_CONFLICT);
                 }
                 if (saved instanceof CapabilityStateStore.SaveOutcome.SaveUnavailable
                         && replay instanceof CapabilityStateStore.LoadOutcome.Missing) {
+                    if (deadlineExpired(deadlineAtMonotonicNanos)) {
+                        return new CapabilityRuntimeRejected(
+                                ProblemCode.CAPABILITY_DEADLINE_EXCEEDED);
+                    }
+                    if (evaluationControl.deadlineExceeded()) {
+                        return new CapabilityRuntimeStageDeadlineExceeded();
+                    }
                     continue;
                 }
                 return new CapabilityRuntimeRejected(ProblemCode.CAPABILITY_STATE_UNAVAILABLE);
@@ -357,16 +447,23 @@ final class CanonicalEvaluator implements Evaluator {
     private CapabilityRuntimeOutcome restoreCapabilityRuntime(
             CapabilityRequirements requirements,
             CapabilityStateStore.LoadOutcome.Loaded state,
-            long deadlineAtMonotonicNanos
+            long deadlineAtMonotonicNanos,
+            EvaluationStageControl evaluationControl
     ) {
         if (deadlineExpired(deadlineAtMonotonicNanos)) {
             return new CapabilityRuntimeRejected(ProblemCode.CAPABILITY_DEADLINE_EXCEEDED);
+        }
+        if (evaluationControl.deadlineExceeded()) {
+            return new CapabilityRuntimeStageDeadlineExceeded();
         }
         try {
             var restored = Objects.requireNonNull(
                     capabilities.restore(requirements, state.sealedState()), "restored");
             if (deadlineExpired(deadlineAtMonotonicNanos)) {
                 return new CapabilityRuntimeRejected(ProblemCode.CAPABILITY_DEADLINE_EXCEEDED);
+            }
+            if (evaluationControl.deadlineExceeded()) {
+                return new CapabilityRuntimeStageDeadlineExceeded();
             }
             return new CapabilityRuntimeReady(restored);
         } catch (RuntimeException invalid) {
@@ -386,7 +483,8 @@ final class CanonicalEvaluator implements Evaluator {
         return new EvaluationOutcome.Rejected(problem.stage(), problem);
     }
 
-    private sealed interface CapabilityRuntimeOutcome permits CapabilityRuntimeReady, CapabilityRuntimeRejected { }
+    private sealed interface CapabilityRuntimeOutcome permits CapabilityRuntimeReady,
+            CapabilityRuntimeRejected, CapabilityRuntimeStageDeadlineExceeded { }
     private record CapabilityRuntimeReady(
             RenderingCapabilityRuntime.Runtime runtime)
             implements CapabilityRuntimeOutcome { }
@@ -396,6 +494,8 @@ final class CanonicalEvaluator implements Evaluator {
             this(code, null);
         }
     }
+    private record CapabilityRuntimeStageDeadlineExceeded()
+            implements CapabilityRuntimeOutcome { }
 
     private static EvaluationOutcome.Rejected rejected(
             EvaluationStage stage, ProblemCode code, String limitId) {
