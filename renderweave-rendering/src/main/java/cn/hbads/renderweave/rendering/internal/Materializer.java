@@ -1145,6 +1145,14 @@ final class Materializer {
         if (occurrenceImagePixelFailure != null) {
             return occurrenceImagePixelFailure;
         }
+        var occurrenceFontByteFailure = reserveFontBytes(
+                RenderingPipelineCapacityGuard.Limit
+                        .ASSETS_AND_FETCH_OCCURRENCE_FONT_BYTES,
+                kind,
+                fact);
+        if (occurrenceFontByteFailure != null) {
+            return occurrenceFontByteFailure;
+        }
         var exactContentFailure = reserveExactContent(kind, fact);
         if (exactContentFailure != null) {
             return exactContentFailure;
@@ -1187,6 +1195,17 @@ final class Materializer {
         }
         long logicalPixels = (long) image.logicalWidthPx() * image.logicalHeightPx();
         return capacityFailure(requestCapacity.reserve(limit, logicalPixels));
+    }
+
+    private MaterializationFailed reserveFontBytes(
+            RenderingPipelineCapacityGuard.Limit limit,
+            AssetKind kind,
+            AssetResolutionPort.ResolvedAssetFact fact
+    ) {
+        if (kind != AssetKind.FONT) {
+            return null;
+        }
+        return capacityFailure(requestCapacity.reserve(limit, fact.byteLength()));
     }
 
     private MaterializationFailed reserveExactContent(

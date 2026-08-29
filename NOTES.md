@@ -4174,3 +4174,28 @@
   T163-specific A2/A3；J0 pending、J1 未批准。未重复 server/full；cap-024 继续 deferred；provider attempts/
   API Key reads/真实数据/Profile registration/push/tag/PR 均为 0。
 - 状态回填后的 resolution `fast` `.sdlc/evidence/20260829-075521-fast/` metadata 为 `passed`，3/3 steps 全绿。
+
+# 2026-08-29 Template-v1 T164 occurrence FONT bytes（resolved / automated_verified）
+
+- T163 已以 verified commit `af043a41` 收口，worktree clean、ahead 154 且 DAG 无其他 current active claim；冻结
+  `RW-T19-S8-008` / cap-034 是下一个 unblocked frontier，现按 single-writer claim T164。
+- `assetsAndFetch.occurrenceFontBytes` 固定 MAX_INCLUSIVE `536870912`、observed
+  `536870911/536870912/536870913`，ASSET_ADMISSION_AND_RESOLUTION / public ASSET_ADMISSION /
+  ASSET_BUDGET_EXCEEDED / ZERO_DOCUMENT_OUTPUT，reservation point 为下一 authored/resolved Asset unit 与 external
+  fetch 前。
+- 每个 Text Run `fontRef` successful FONT fact 按声明 `byteLength` 收费；duplicate/cache hit 不减免，IMAGE 为零。
+  顺序为 occurrence raw bytes → occurrence FONT bytes → unique exact count/raw/pixels → resource entry。
+- claim 时 A0、J0；cap-024 继续 deferred；provider/API Key/真实数据/费用/Profile registration/push/tag/PR 均为 0。
+- guard/Materializer TDD 先得到 5 个缺失 catalog enum 的 compile RED；补唯一 guard 项后 guard 26/26 绿，
+  Materializer 精确保留 1 个 behavioral RED，证明尚未累计 occurrence FONT bytes。
+- `resolveAtom` 现于 occurrence raw reservation 后、exact admission 前对 FONT 按 `fact.byteLength()` reserve；IMAGE
+  零收费。测试使用真实 Text Run `fontRef`，并断言 Resolver 的 expectedKind 与 `FontDescriptor/font/ttf` fact。
+  prefix `536870910` + 两个 duplicate one-byte FONT occurrence exact-at；prefix `536870911` 时第二次 Resolver 仍
+  执行但第二项 exact reject，且 unique count/raw/resource-entry 下游 tracker 均只含首项。
+- focused guard 26 + Materializer 30 + Evaluator 68 + architecture 6 = 130/130；受影响 reactor Schema 20、
+  Validation 13、Template 84、Asset 92、Rendering 251 全绿，零 failure/error；`git diff --check` 通过。
+- A1 `render` `.sdlc/evidence/20260829-080152-render/`（2/2）与 `fast`
+  `.sdlc/evidence/20260829-080242-fast/`（3/3）metadata 均 `passed`。cap-034 fixture 只执行 production guard，故无
+  T164-specific A2/A3；J0 pending、J1 未批准。未重复 server/full；cap-024 继续 deferred；provider attempts/
+  API Key reads/真实数据/Profile registration/push/tag/PR 均为 0。
+- 状态回填后的 resolution `fast` `.sdlc/evidence/20260829-080354-fast/` metadata 为 `passed`，3/3 steps 全绿。

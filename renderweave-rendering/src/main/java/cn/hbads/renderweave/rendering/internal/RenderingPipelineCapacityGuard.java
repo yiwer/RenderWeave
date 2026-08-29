@@ -123,6 +123,11 @@ final class RenderingPipelineCapacityGuard {
                 "assetsAndFetch.uniqueImagePixels",
                 125_000_000L,
                 ProblemCode.ASSET_BUDGET_EXCEEDED,
+                EvaluationStage.ASSET_ADMISSION),
+        ASSETS_AND_FETCH_OCCURRENCE_FONT_BYTES(
+                "assetsAndFetch.occurrenceFontBytes",
+                536_870_912L,
+                ProblemCode.ASSET_BUDGET_EXCEEDED,
                 EvaluationStage.ASSET_ADMISSION);
 
         private final String id;

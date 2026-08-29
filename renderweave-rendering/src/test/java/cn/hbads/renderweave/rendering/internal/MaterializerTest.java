@@ -1,6 +1,9 @@
 package cn.hbads.renderweave.rendering.internal;
 
 import cn.hbads.renderweave.asset.api.AssetAcceptanceAuthority.AssetKind;
+import cn.hbads.renderweave.asset.api.AssetAcceptanceAuthority.FontDescriptor;
+import cn.hbads.renderweave.asset.api.AssetAcceptanceAuthority.FontFlavor;
+import cn.hbads.renderweave.asset.api.AssetAcceptanceAuthority.TechnicalDescriptor;
 import cn.hbads.renderweave.asset.api.AssetApplication.AssetId;
 import cn.hbads.renderweave.asset.api.AssetApplication.OwnerScope;
 import cn.hbads.renderweave.rendering.api.EvaluationStage;
@@ -859,6 +862,61 @@ class MaterializerTest {
     }
 
     @Test
+    void occurrenceFontByteBudgetCountsDuplicateExactContentBeforeAdmission() {
+        var document = canvasWith(
+                textNode("00000000-0000-4000-8000-000000000073") + ","
+                        + textNode("00000000-0000-4000-8000-000000000074"));
+        var exactCapacity = new RenderingPipelineCapacityGuard().newRequestTracker();
+        assertTrue(exactCapacity.reserve(
+                RenderingPipelineCapacityGuard.Limit
+                        .ASSETS_AND_FETCH_OCCURRENCE_FONT_BYTES,
+                536_870_910L).isEmpty());
+        var exactPort = new SequencedContentPort(List.of(
+                ResolvedContent.font("content-version-1", "sha256:" + "5".repeat(64), 1),
+                ResolvedContent.font("content-version-2", "sha256:" + "5".repeat(64), 1)));
+
+        var exact = materialize(
+                document, Map.of(), exactPort, absentCapability(), exactCapacity);
+
+        var exactTree = assertInstanceOf(Materializer.Materialized.class, exact).tree();
+        assertEquals(2, exactPort.resolves);
+        assertEquals(2, exactTree.resources().size());
+        assertEquals("FONT", exactTree.resources().get(0).kind());
+        assertEquals("FONT", exactTree.resources().get(1).kind());
+
+        var exceededCapacity = new RenderingPipelineCapacityGuard().newRequestTracker();
+        assertTrue(exceededCapacity.reserve(
+                RenderingPipelineCapacityGuard.Limit
+                        .ASSETS_AND_FETCH_OCCURRENCE_FONT_BYTES,
+                536_870_911L).isEmpty());
+        var exceededPort = new SequencedContentPort(List.of(
+                ResolvedContent.font("content-version-1", "sha256:" + "5".repeat(64), 1),
+                ResolvedContent.font("content-version-2", "sha256:" + "6".repeat(64), 1)));
+
+        var exceeded = materialize(
+                document, Map.of(), exceededPort, absentCapability(), exceededCapacity);
+
+        var failed = assertInstanceOf(Materializer.MaterializationFailed.class, exceeded);
+        assertEquals(EvaluationStage.ASSET_ADMISSION, failed.stage());
+        assertEquals(RenderingProblem.ProblemCode.ASSET_BUDGET_EXCEEDED,
+                failed.problem().code());
+        assertEquals("assetsAndFetch.occurrenceFontBytes",
+                failed.problem().limitId().orElseThrow().value());
+        assertEquals(2, exceededPort.resolves);
+        assertTrue(exceededCapacity.reserve(
+                RenderingPipelineCapacityGuard.Limit
+                        .ASSETS_AND_FETCH_UNIQUE_EXACT_CONTENTS,
+                127).isEmpty());
+        assertTrue(exceededCapacity.reserve(
+                RenderingPipelineCapacityGuard.Limit.ASSETS_AND_FETCH_UNIQUE_RAW_BYTES,
+                268_435_455L).isEmpty());
+        assertTrue(exceededCapacity.reserve(
+                RenderingPipelineCapacityGuard.Limit
+                        .ASSETS_AND_FETCH_RENDER_RESOURCE_ENTRIES,
+                2_047).isEmpty());
+    }
+
+    @Test
     void missingAssetPortFailsClosedAtAssetAdmission() {
         var document = canvasWith(imageNode());
         var outcome = materialize(document, Map.of(), null);
@@ -929,6 +987,15 @@ class MaterializerTest {
         return "{\"nodeId\":\"" + nodeId + "\",\"kind\":\"image\","
                 + "\"bindings\":[],\"placement\":" + absolute() + ","
                 + "\"imageRef\":{\"assetId\":\"" + ASSET_ID + "\"}}";
+    }
+
+    private static String textNode(String nodeId) {
+        return "{\"nodeId\":\"" + nodeId + "\",\"kind\":\"text\","
+                + "\"bindings\":[],\"placement\":" + absolute() + ","
+                + "\"horizontalAlign\":\"LEFT\",\"runs\":[{\"text\":\"Hi\","
+                + "\"fontRef\":{\"assetId\":\"" + ASSET_ID + "\"},"
+                + "\"fontSizePt\":12,\"color\":\"#FF000000\",\"decoration\":\"NONE\","
+                + "\"letterSpacingPt\":0}]}";
     }
 
     private static final String DEFINITION_ID = "00000000-0000-4000-8000-0000000000d1";
@@ -1240,10 +1307,31 @@ class MaterializerTest {
             String sha256,
             long byteLength,
             int logicalWidthPx,
-            int logicalHeightPx
+            int logicalHeightPx,
+            AssetKind kind
     ) {
         private ResolvedContent(String contentVersion, String sha256, long byteLength) {
-            this(contentVersion, sha256, byteLength, 10, 10);
+            this(contentVersion, sha256, byteLength, 10, 10, AssetKind.IMAGE);
+        }
+
+        private ResolvedContent(
+                String contentVersion,
+                String sha256,
+                long byteLength,
+                int logicalWidthPx,
+                int logicalHeightPx
+        ) {
+            this(contentVersion, sha256, byteLength,
+                    logicalWidthPx, logicalHeightPx, AssetKind.IMAGE);
+        }
+
+        private static ResolvedContent font(
+                String contentVersion,
+                String sha256,
+                long byteLength
+        ) {
+            return new ResolvedContent(
+                    contentVersion, sha256, byteLength, 0, 0, AssetKind.FONT);
         }
     }
 
@@ -1264,17 +1352,22 @@ class MaterializerTest {
         @Override
         public ResolveOutcome resolve(ResolveRequest request) {
             var content = contents.get(resolves++);
+            assertEquals(content.kind(), request.expectedKind());
+            TechnicalDescriptor descriptor = switch (content.kind()) {
+                case IMAGE -> new cn.hbads.renderweave.asset.api.AssetAcceptanceAuthority.ImageDescriptor(
+                        content.logicalWidthPx(), content.logicalHeightPx(),
+                        cn.hbads.renderweave.asset.api.AssetAcceptanceAuthority.Orientation.IDENTITY,
+                        content.logicalWidthPx(), content.logicalHeightPx(), 1,
+                        cn.hbads.renderweave.asset.api.AssetAcceptanceAuthority.ColorEncoding.SRGB_8BIT);
+                case FONT -> new FontDescriptor(0, FontFlavor.TRUETYPE_GLYF, 1_000);
+            };
             return new ResolveOutcome.Resolved(new ResolvedAssetFact(
                     content.contentVersion(),
                     content.sha256(),
-                    "image/png",
+                    content.kind() == AssetKind.IMAGE ? "image/png" : "font/ttf",
                     content.byteLength(),
                     "renderweave-asset-acceptance/1.0",
-                    new cn.hbads.renderweave.asset.api.AssetAcceptanceAuthority.ImageDescriptor(
-                            content.logicalWidthPx(), content.logicalHeightPx(),
-                            cn.hbads.renderweave.asset.api.AssetAcceptanceAuthority.Orientation.IDENTITY,
-                            content.logicalWidthPx(), content.logicalHeightPx(), 1,
-                            cn.hbads.renderweave.asset.api.AssetAcceptanceAuthority.ColorEncoding.SRGB_8BIT),
+                    descriptor,
                     "https://assets.internal/fetch/" + request.resourceId().value(),
                     2_000L));
         }
