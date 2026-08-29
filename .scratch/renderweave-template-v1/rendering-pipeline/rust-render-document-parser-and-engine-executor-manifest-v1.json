@@ -1,0 +1,50 @@
+{
+  "artifactVersion": "renderweave-rendering-pipeline-executor-manifest/1.0",
+  "executorId": "RENDERING_PIPELINE_EXECUTOR::RUST_DOCUMENT_ENGINE::1.0",
+  "role": "rust-render-document-parser-and-engine",
+  "executionClass": "EXEC::RENDERING_PIPELINE::1.0",
+  "targetId": "RENDERING_PIPELINE_TARGET::JAVA_RUST_RESOURCE_FREE_ROOT::1.0",
+  "targetManifest": {
+    "path": ".scratch/renderweave-template-v1/rendering-pipeline/execution-class-target-v1.json",
+    "sha256": "sha256:a834125e93cd8debe2748b55a4f9b0d1dbd933214a15ca19a9068a70e1c99bd9",
+    "byteLength": 9911
+  },
+  "implementationRevision": "9782359c57f2ae0284408db64a68695ac4c3b4bd",
+  "runtime": "Rust 1.89",
+  "entrypoint": {
+    "path": "renderer/crates/daemon/tests/rendering_pipeline_execution_class.rs",
+    "sha256": "sha256:4c7a002f755dd00bdc04a1f522a74e03e702134936921cb078e7a12876ac4c50",
+    "byteLength": 6149
+  },
+  "productSeams": [
+    {
+      "path": "renderer/crates/protocol/src/lib.rs",
+      "sha256": "sha256:b10a389433234ecfecf3f7d9dbace6c3b78863f62bb322564b8d1cc3deee9f03",
+      "byteLength": 52079
+    },
+    {
+      "path": "renderer/crates/document/src/lib.rs",
+      "sha256": "sha256:fc9fa40226531359f22e4fa8908c0300cb39465d217bd67a12b1c4d94060f776",
+      "byteLength": 71981
+    },
+    {
+      "path": "renderer/crates/resource/src/pipeline.rs",
+      "sha256": "sha256:6b0c8c0fcc2ca928e999a596e5b9eae891d94d75b09b074604a2499e62965651",
+      "byteLength": 29266
+    },
+    {
+      "path": "renderer/crates/engine/src/lib.rs",
+      "sha256": "sha256:4a215065ce9ecbd6053f140ebabc840f6ae6f651a1ad1e4300feae63fcb5f255",
+      "byteLength": 71577
+    },
+    {
+      "path": "renderer/crates/daemon/src/lib.rs",
+      "sha256": "sha256:64530b2791b37cfe89091cec890a4a77766a5596545a3e52da1c27b618b43a65",
+      "byteLength": 122774
+    }
+  ],
+  "command": "cargo test --manifest-path renderer/Cargo.toml -p renderweave-renderer-daemon --test rendering_pipeline_execution_class",
+  "expectedValuesVisibleToExecutor": false,
+  "networkReadsAllowed": false,
+  "productMutationAllowed": false
+}

@@ -1,0 +1,239 @@
+{
+  "artifactVersion": "renderweave-rendering-pipeline-execution-class-target/1.0",
+  "targetId": "RENDERING_PIPELINE_TARGET::JAVA_RUST_RESOURCE_FREE_ROOT::1.0",
+  "status": "FROZEN_PREISSUANCE_EXACT_TARGET",
+  "implementationRevision": "9782359c57f2ae0284408db64a68695ac4c3b4bd",
+  "executionClass": "EXEC::RENDERING_PIPELINE::1.0",
+  "targetKind": "one exact resource-free system-empty root render target",
+  "requiredExecutorRoles": [
+    "java-evaluator-and-sealer",
+    "rust-render-document-parser-and-engine"
+  ],
+  "productWiring": {
+    "axisCount": 52,
+    "wiredAxisCount": 52,
+    "remainingAxisCount": 0,
+    "javaTemplateClosureAxisCount": 5,
+    "javaRenderingAxisCount": 47,
+    "resourceFreeBaselineCount": 1
+  },
+  "artifacts": [
+    {
+      "role": "baseline",
+      "path": ".scratch/renderweave-template-v1/rendering-pipeline/baseline-v1.json",
+      "sha256": "sha256:9efddc6a2cfe43be255828bf32e3ef6e126fd188a61f2cfda6a9d101e06ddbfb",
+      "byteLength": 1545
+    },
+    {
+      "role": "fixtureContract",
+      "path": ".scratch/renderweave-template-v1/rendering-pipeline/fixture-contract-v1.json",
+      "sha256": "sha256:ba09b8d38f7f3f6ee45a1ce067afdc625a507d1925992d71ac46d297a9eaf441",
+      "byteLength": 3687
+    },
+    {
+      "role": "fixtureGeneratorTarget",
+      "path": ".scratch/renderweave-template-v1/rendering-pipeline/generator-target-manifest-v1.json",
+      "sha256": "sha256:8b792d30b96ad567fd01325ee1447d86b8b1f65737a4eef51fd51b5477800b8b",
+      "byteLength": 38604
+    },
+    {
+      "role": "fixtureStaticEvidence",
+      "path": ".scratch/renderweave-template-v1/rendering-pipeline/rendering-pipeline-fixture-static-a2-2026-08-17.json",
+      "sha256": "sha256:9848340728c8dcc745099c92726c783d5acc9b237811a063cee8bc52a8efc081",
+      "byteLength": 46273
+    },
+    {
+      "role": "observationAdapter",
+      "path": ".scratch/renderweave-template-v1/rendering-pipeline/observation-adapter-v1.json",
+      "sha256": "sha256:bc16d95de8cf80da63a071c246692ecbe37ad86a53ffa21500dcaf1c595c48fa",
+      "byteLength": 6603
+    },
+    {
+      "role": "capacityCoverage",
+      "path": ".scratch/renderweave-template-v1/conformance-capacity-coverage-v1.json",
+      "sha256": "sha256:d9662c79464f0fe726ff9067068d9317565e4f4d1caa13b04cf5c0b2e0e60582",
+      "byteLength": 318460
+    },
+    {
+      "role": "capacityCandidateCases",
+      "path": ".scratch/renderweave-template-v1/capacity-boundary/candidate/conformance-cases-v1.jsonl",
+      "sha256": "sha256:30ee645c8dd472cfaf66550f26dd9234371d3f797d34c90df9de16de0569d284",
+      "byteLength": 1773865
+    },
+    {
+      "role": "capacityCandidateOracles",
+      "path": ".scratch/renderweave-template-v1/capacity-boundary/candidate/conformance-oracles-v1.jsonl",
+      "sha256": "sha256:271ce23304e246f7a03ceee25385888de49620607ce8a5cc597429026f8833c2",
+      "byteLength": 603573
+    },
+    {
+      "role": "formalCases",
+      "path": ".scratch/renderweave-template-v1/conformance-cases-v1.jsonl",
+      "sha256": "sha256:54704176be36d7e1ca5058eb987a17d42378bf157593cca9bc9e5c243935bcb7",
+      "byteLength": 851625
+    },
+    {
+      "role": "formalOracles",
+      "path": ".scratch/renderweave-template-v1/conformance-oracles-v1.jsonl",
+      "sha256": "sha256:66ad0cb8e8580e66bef38b3e5e2ecd64da36813dfa84f8c0339fd97f7f306141",
+      "byteLength": 303185
+    },
+    {
+      "role": "executionClasses",
+      "path": ".scratch/renderweave-template-v1/conformance-execution-classes-v1.json",
+      "sha256": "sha256:dea2d2ae7796e2e8956b15d67408938d74e6d9729af7cef3043e6e88cc58f76c",
+      "byteLength": 12110
+    },
+    {
+      "role": "bootstrapOrder",
+      "path": ".scratch/renderweave-template-v1/conformance-bootstrap-order-v1.json",
+      "sha256": "sha256:b1677b84cc408f0cd729e4a34de1cec16900519fd8222aa2b602f103284cdee1",
+      "byteLength": 12573
+    },
+    {
+      "role": "acceptanceManifest",
+      "path": ".scratch/renderweave-template-v1/acceptance-manifest-v1.json",
+      "sha256": "sha256:3ff9d585dbbe315adb33b66f60408998c7e8c63a3375f60d8d25fe5d08192fd1",
+      "byteLength": 57104
+    },
+    {
+      "role": "executionClassVerifier",
+      "path": "tools/verify-rendering-pipeline-execution-class.py",
+      "sha256": "sha256:eee9500ad31175fb884c45bbcb0bdd7ddb7144b4eeddc51642ea728435efd8b7",
+      "byteLength": 29450
+    },
+    {
+      "role": "executionClassGate",
+      "path": "tools/run-rendering-pipeline-execution-class-gate.ps1",
+      "sha256": "sha256:6085f1ebcf62bd0336be53c6f5be445c073aed0b50b624bf8e3a0e86e120f904",
+      "byteLength": 7633
+    },
+    {
+      "role": "targetMaterializer",
+      "path": ".scratch/renderweave-template-v1/rendering-pipeline/materialize-execution-class-target.py",
+      "sha256": "sha256:0dbccfeee85b05c17f64c90f655cad291874052915b5d92d3069d6b60a79f04f",
+      "byteLength": 14009
+    }
+  ],
+  "javaEntrypoints": [
+    {
+      "path": "renderweave-template/src/test/java/cn/hbads/renderweave/template/internal/TemplateClosureCapacityConformanceTest.java",
+      "sha256": "sha256:246a4fb9ed29b994bcfe3994125564907740e382229cf77c91ea88456fdcc23c",
+      "byteLength": 9163
+    },
+    {
+      "path": "renderweave-rendering/src/test/java/cn/hbads/renderweave/rendering/internal/RenderingPipelineExecutionClassTest.java",
+      "sha256": "sha256:951f99336b5a8560076f3eb9c7691d74443e35d49ec05456f4b358e02b1e13f7",
+      "byteLength": 23466
+    }
+  ],
+  "rustEntrypoint": {
+    "path": "renderer/crates/daemon/tests/rendering_pipeline_execution_class.rs",
+    "sha256": "sha256:4c7a002f755dd00bdc04a1f522a74e03e702134936921cb078e7a12876ac4c50",
+    "byteLength": 6149
+  },
+  "javaProductSeams": [
+    {
+      "path": "renderweave-template/src/main/java/cn/hbads/renderweave/template/internal/TemplateClosureCapacityGuard.java",
+      "sha256": "sha256:1c76fc4385c567d0ec408e536fae725b888e7c80dc7f4d5979bc244f81a24901",
+      "byteLength": 4014
+    },
+    {
+      "path": "renderweave-template/src/main/java/cn/hbads/renderweave/template/internal/CanonicalTemplateClosureAuthority.java",
+      "sha256": "sha256:aa1b7961ffc55e35df2bf7c4a389f9b75d7c1427c25cc3ecade7d22a32dc01e8",
+      "byteLength": 13967
+    },
+    {
+      "path": "renderweave-rendering/src/main/java/cn/hbads/renderweave/rendering/internal/RenderingPipelineCapacityGuard.java",
+      "sha256": "sha256:6cba1bbf88e120d1a91a6e8634af92f99f671fdffd60e3491e3030af5e70d5ba",
+      "byteLength": 20150
+    },
+    {
+      "path": "renderweave-rendering/src/main/java/cn/hbads/renderweave/rendering/internal/CanonicalEvaluator.java",
+      "sha256": "sha256:8f2b66ea1afa22feee32571a6757fdee0027396313edf22b67ddc6316a8f18ee",
+      "byteLength": 27620
+    },
+    {
+      "path": "renderweave-rendering/src/main/java/cn/hbads/renderweave/rendering/internal/Sealer.java",
+      "sha256": "sha256:b1e05a2c93000c20e85710557de9f5fcf5e6ed81abe99e1af3137ef5317ec867",
+      "byteLength": 25425
+    }
+  ],
+  "rustProductSeams": [
+    {
+      "path": "renderer/crates/protocol/src/lib.rs",
+      "sha256": "sha256:b10a389433234ecfecf3f7d9dbace6c3b78863f62bb322564b8d1cc3deee9f03",
+      "byteLength": 52079
+    },
+    {
+      "path": "renderer/crates/document/src/lib.rs",
+      "sha256": "sha256:fc9fa40226531359f22e4fa8908c0300cb39465d217bd67a12b1c4d94060f776",
+      "byteLength": 71981
+    },
+    {
+      "path": "renderer/crates/resource/src/pipeline.rs",
+      "sha256": "sha256:6b0c8c0fcc2ca928e999a596e5b9eae891d94d75b09b074604a2499e62965651",
+      "byteLength": 29266
+    },
+    {
+      "path": "renderer/crates/engine/src/lib.rs",
+      "sha256": "sha256:4a215065ce9ecbd6053f140ebabc840f6ae6f651a1ad1e4300feae63fcb5f255",
+      "byteLength": 71577
+    },
+    {
+      "path": "renderer/crates/daemon/src/lib.rs",
+      "sha256": "sha256:64530b2791b37cfe89091cec890a4a77766a5596545a3e52da1c27b618b43a65",
+      "byteLength": 122774
+    }
+  ],
+  "assignedCorpus": {
+    "sourceCases": {
+      "path": ".scratch/renderweave-template-v1/capacity-boundary/candidate/conformance-cases-v1.jsonl",
+      "sha256": "sha256:30ee645c8dd472cfaf66550f26dd9234371d3f797d34c90df9de16de0569d284",
+      "byteLength": 1773865
+    },
+    "sourceOracles": {
+      "path": ".scratch/renderweave-template-v1/capacity-boundary/candidate/conformance-oracles-v1.jsonl",
+      "sha256": "sha256:271ce23304e246f7a03ceee25385888de49620607ce8a5cc597429026f8833c2",
+      "byteLength": 603573
+    },
+    "assignedCaseCount": 156,
+    "assignedOracleCount": 156,
+    "assignedCasesSha256": "sha256:6532d0b0c5572573ca3c959d968f2b5a7d0a09206afbc3576d7c00549ad0d6a4",
+    "assignedOraclesSha256": "sha256:c76e94eaba8a66366f6aeca59a3874b581a9255c2a1b97bc99f017c222aed83a",
+    "assignedCorpusDigest": "sha256:a91ad6cc0a8a3e52f926004af9b4115f3d2ef9ac1a9fcbf5481e0a655365ad4c"
+  },
+  "runtimeTargets": {
+    "java": "21",
+    "rust": "1.89",
+    "independentClosureVerifier": "Python 3.13"
+  },
+  "formalRegistryBoundary": {
+    "cases": {
+      "path": ".scratch/renderweave-template-v1/conformance-cases-v1.jsonl",
+      "sha256": "sha256:54704176be36d7e1ca5058eb987a17d42378bf157593cca9bc9e5c243935bcb7",
+      "byteLength": 851625,
+      "recordCount": 253
+    },
+    "oracles": {
+      "path": ".scratch/renderweave-template-v1/conformance-oracles-v1.jsonl",
+      "sha256": "sha256:66ad0cb8e8580e66bef38b3e5e2ecd64da36813dfa84f8c0339fd97f7f306141",
+      "byteLength": 303185,
+      "recordCount": 253
+    },
+    "issuedRenderingPipelineCaseCount": 0,
+    "issuedRenderingPipelineOracleCount": 0,
+    "appendPerformed": false
+  },
+  "boundary": {
+    "productApiSurfaceCreated": false,
+    "rendererKernelReplayRequired": true,
+    "rendererDaemonOrDeploymentInvoked": false,
+    "rendererProfileRegistered": false,
+    "networkAndExternalProviderAttemptsAllowed": false,
+    "formalRecordsIssued": false,
+    "preissuanceReplayRequired": true,
+    "recordIssuanceAllowed": false,
+    "executionClassExecutable": false
+  }
+}

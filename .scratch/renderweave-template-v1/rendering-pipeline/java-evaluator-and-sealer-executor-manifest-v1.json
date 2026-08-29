@@ -1,0 +1,57 @@
+{
+  "artifactVersion": "renderweave-rendering-pipeline-executor-manifest/1.0",
+  "executorId": "RENDERING_PIPELINE_EXECUTOR::JAVA_EVALUATOR_AND_SEALER::1.0",
+  "role": "java-evaluator-and-sealer",
+  "executionClass": "EXEC::RENDERING_PIPELINE::1.0",
+  "targetId": "RENDERING_PIPELINE_TARGET::JAVA_RUST_RESOURCE_FREE_ROOT::1.0",
+  "targetManifest": {
+    "path": ".scratch/renderweave-template-v1/rendering-pipeline/execution-class-target-v1.json",
+    "sha256": "sha256:a834125e93cd8debe2748b55a4f9b0d1dbd933214a15ca19a9068a70e1c99bd9",
+    "byteLength": 9911
+  },
+  "implementationRevision": "9782359c57f2ae0284408db64a68695ac4c3b4bd",
+  "runtime": "Java 21",
+  "entrypoints": [
+    {
+      "path": "renderweave-template/src/test/java/cn/hbads/renderweave/template/internal/TemplateClosureCapacityConformanceTest.java",
+      "sha256": "sha256:246a4fb9ed29b994bcfe3994125564907740e382229cf77c91ea88456fdcc23c",
+      "byteLength": 9163
+    },
+    {
+      "path": "renderweave-rendering/src/test/java/cn/hbads/renderweave/rendering/internal/RenderingPipelineExecutionClassTest.java",
+      "sha256": "sha256:951f99336b5a8560076f3eb9c7691d74443e35d49ec05456f4b358e02b1e13f7",
+      "byteLength": 23466
+    }
+  ],
+  "productSeams": [
+    {
+      "path": "renderweave-template/src/main/java/cn/hbads/renderweave/template/internal/TemplateClosureCapacityGuard.java",
+      "sha256": "sha256:1c76fc4385c567d0ec408e536fae725b888e7c80dc7f4d5979bc244f81a24901",
+      "byteLength": 4014
+    },
+    {
+      "path": "renderweave-template/src/main/java/cn/hbads/renderweave/template/internal/CanonicalTemplateClosureAuthority.java",
+      "sha256": "sha256:aa1b7961ffc55e35df2bf7c4a389f9b75d7c1427c25cc3ecade7d22a32dc01e8",
+      "byteLength": 13967
+    },
+    {
+      "path": "renderweave-rendering/src/main/java/cn/hbads/renderweave/rendering/internal/RenderingPipelineCapacityGuard.java",
+      "sha256": "sha256:6cba1bbf88e120d1a91a6e8634af92f99f671fdffd60e3491e3030af5e70d5ba",
+      "byteLength": 20150
+    },
+    {
+      "path": "renderweave-rendering/src/main/java/cn/hbads/renderweave/rendering/internal/CanonicalEvaluator.java",
+      "sha256": "sha256:8f2b66ea1afa22feee32571a6757fdee0027396313edf22b67ddc6316a8f18ee",
+      "byteLength": 27620
+    },
+    {
+      "path": "renderweave-rendering/src/main/java/cn/hbads/renderweave/rendering/internal/Sealer.java",
+      "sha256": "sha256:b1e05a2c93000c20e85710557de9f5fcf5e6ed81abe99e1af3137ef5317ec867",
+      "byteLength": 25425
+    }
+  ],
+  "command": "mvn -B -ntp -pl renderweave-rendering -am -Dtest=TemplateClosureCapacityConformanceTest,RenderingPipelineExecutionClassTest -D<write-once-evidence-properties> test",
+  "expectedValuesVisibleToExecutor": false,
+  "networkReadsAllowed": false,
+  "productMutationAllowed": false
+}
