@@ -6382,3 +6382,29 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
   `.sdlc/evidence/20260829-192419-template/` 与 `fast` `.sdlc/evidence/20260829-192451-fast/` passed/A1，Template
   Java/Python 211/211 且 static/registry replay 通过。A3 无，J0 pending、J1 未批准；本票非 app wiring，未重复
   server/full，formal records 仍为 0。claim 已释放，下一 frontier 从 cap-058 起登记。
+
+## 197. TV1-T197 执行卡
+
+- 状态：`resolved / automated_verified / unclaimed`；Blocked by T196（resolved）。
+- authority：Ticket 19 `RW-T19-S7-109 / RW-T19-S9-017 / RW-T19-S9-019` 与 cap-058 固定
+  `geometry.bleedMmPerSideMin=0`、MIN_INCLUSIVE / CANONICAL_DECIMAL；terminal 为
+  `DESIGN_PROPERTY_CONSTRAINT_INVALID / DESIGN_PROPERTY_AND_AGGREGATE_VALIDATION`，public stage
+  TEMPLATE_CLOSURE，reservation point 为 persisted write/Evaluation 前，zero boundary 为
+  ZERO_WRITE_AND_DOWNSTREAM。
+- seam：只深化既有 `DesignDslAuthority.admit(rawUtf8)`；可选 Canvas bleed 缺失时不观察，存在时按
+  `topMm -> rightMm -> bottomMm -> leftMm` 把 bounded canonical decimal 投入唯一 Template-owned capacity
+  authority。任一失败立即停止，不新增 Interface 或第二 authority。
+- TDD：先以真实 Canvas JSON 在公共 admission seam 取得 bleed-min observation 缺失 RED；再覆盖 absent、四边
+  顺序、below/at/scale-64 above、canonical zero 与 authority reject/invalid/throw 的 exact GREEN。
+- target/gates：冻结 immutable component target v10，目标 wired 58/65、remaining geometry 7；执行 focused
+  Template、component Java/TypeScript、canonical vectors、`template`、`fast`。无 app wiring，server/full 复用最近
+  未变输入的绿色证据。
+- boundary：不接线 cap-059–065，不发行 formal records/class manifests，不运行 Renderer/Profile/provider/API Key/
+  真实数据/生产/J1/A3/READY，不改用户 dirty work/stash，不 push/tag/PR。
+- 实现/证据：实现基线 `21ff1c45440c25c8d8e7f0edebd2d8b29d6d8902`；immutable v10 target SHA-256
+  `3d12b38b84b00c3f1961a31f337f5ea0e1d729d9dfa8d3af98c93291ddd39609`、21354 bytes。public seam RED 后
+  focused 28/28、Template module 151/151；component `.sdlc/evidence/20260829-1934-template-t197-component/`
+  Java primary 195/195（A1）+ TypeScript independent 195/195、2692 checks（A2）；`template`
+  `.sdlc/evidence/20260829-193558-template/` 与 `fast` `.sdlc/evidence/20260829-193637-fast/` passed/A1，Template
+  Java/Python 211/211 且 static/registry replay 通过。A3 无，J0 pending、J1 未批准；本票非 app wiring，未重复
+  server/full，formal records 仍为 0。claim 已释放，下一 unblocked frontier 为 cap-059，尚未登记或 claim。
