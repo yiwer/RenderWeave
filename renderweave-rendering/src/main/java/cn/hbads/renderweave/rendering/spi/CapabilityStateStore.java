@@ -15,7 +15,7 @@ public interface CapabilityStateStore {
 
     SaveOutcome save(SaveRequest request);
 
-    LoadOutcome load(CapabilityStateId id, String evaluationFingerprint);
+    LoadOutcome load(RenderRequestId renderRequestId, String evaluationFingerprint);
 
     /** store 返回的不透明短期记录身份。 */
     record CapabilityStateId(String value) {
@@ -36,8 +36,8 @@ public interface CapabilityStateStore {
             RenderRequestId renderRequestId,
             String evaluationFingerprint,
             byte[] sealedState,
-            long issuedAtEpochSecond,
-            long expiresAtEpochSecond
+            long issuedAtEpochMilli,
+            long expiresAtEpochMilli
     ) {
         public SaveRequest {
             Objects.requireNonNull(renderRequestId, "renderRequestId");
@@ -49,7 +49,7 @@ public interface CapabilityStateStore {
             if (sealedState.length == 0) {
                 throw new IllegalArgumentException("sealedState must not be empty");
             }
-            if (expiresAtEpochSecond <= issuedAtEpochSecond) {
+            if (expiresAtEpochMilli <= issuedAtEpochMilli) {
                 throw new IllegalArgumentException("expiresAt must be after issuedAt");
             }
             sealedState = sealedState.clone();
@@ -90,7 +90,7 @@ public interface CapabilityStateStore {
             permits LoadOutcome.Loaded, LoadOutcome.LoadFingerprintConflict, LoadOutcome.Missing,
                     LoadOutcome.LoadUnavailable {
 
-        record Loaded(byte[] sealedState, long expiresAtEpochSecond) implements LoadOutcome {
+        record Loaded(byte[] sealedState, long expiresAtEpochMilli) implements LoadOutcome {
             public Loaded {
                 Objects.requireNonNull(sealedState, "sealedState");
                 if (sealedState.length == 0) {

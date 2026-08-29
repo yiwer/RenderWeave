@@ -21,12 +21,21 @@ import java.time.Duration;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.locks.LockSupport;
+import java.util.function.LongSupplier;
 import java.util.regex.Pattern;
 
 /** Rendering 产品操作的唯一授权、Profile、Evaluation、Engine 与结果释放编排。 */
 final class CanonicalRenderingApplication implements RenderingApplication {
 
-    private static final long TOTAL_DEADLINE_MILLIS = 60_000L;
+    private static final RenderingPipelineCapacityGuard CAPACITY_GUARD =
+            new RenderingPipelineCapacityGuard();
+    private static final RenderingPipelineCapacityGuard.Limit
+            ADMISSION_AND_CLOSURE_DEADLINE_LIMIT =
+            RenderingPipelineCapacityGuard.Limit
+                    .DEADLINE_AND_RETENTION_ADMISSION_AND_CLOSURE_MILLIS;
+    private static final RenderingPipelineCapacityGuard.Limit TOTAL_DEADLINE_LIMIT =
+            RenderingPipelineCapacityGuard.Limit
+                    .DEADLINE_AND_RETENTION_TOTAL_DEADLINE_MILLIS;
     private static final String COMMAND_CONTRACT = "renderweave-render-command/1.0";
     private static final Pattern SHA256 = Pattern.compile("sha256:[0-9a-f]{64}");
 
@@ -36,6 +45,7 @@ final class CanonicalRenderingApplication implements RenderingApplication {
     private final RendererProfileAuthority profiles;
     private final Clock clock;
     private final long retryDelayNanos;
+    private final LongSupplier monotonicNanos;
 
     CanonicalRenderingApplication(
             Evaluator evaluator,
@@ -44,6 +54,18 @@ final class CanonicalRenderingApplication implements RenderingApplication {
             RendererProfileAuthority profiles,
             Clock clock,
             Duration retryDelay
+    ) {
+        this(evaluator, engine, authority, profiles, clock, retryDelay, System::nanoTime);
+    }
+
+    CanonicalRenderingApplication(
+            Evaluator evaluator,
+            RenderEngine engine,
+            RenderingAuthority authority,
+            RendererProfileAuthority profiles,
+            Clock clock,
+            Duration retryDelay,
+            LongSupplier monotonicNanos
     ) {
         this.evaluator = Objects.requireNonNull(evaluator, "evaluator");
         this.engine = Objects.requireNonNull(engine, "engine");
@@ -55,6 +77,7 @@ final class CanonicalRenderingApplication implements RenderingApplication {
             throw new IllegalArgumentException("retryDelay must be within 0..1 second");
         }
         this.retryDelayNanos = retryDelay.toNanos();
+        this.monotonicNanos = Objects.requireNonNull(monotonicNanos, "monotonicNanos");
     }
 
     @Override
@@ -63,12 +86,15 @@ final class CanonicalRenderingApplication implements RenderingApplication {
         Objects.requireNonNull(command, "command");
         var operationId = new RenderOperationId(UUID.randomUUID().toString());
 
-        final long deadlineAt;
+        final RequestDeadline deadline;
         try {
-            deadlineAt = Math.addExact(clock.millis(), TOTAL_DEADLINE_MILLIS);
+            deadline = RequestDeadline.start(
+                    clock.millis(),
+                    monotonicNanos.getAsLong(),
+                    CAPACITY_GUARD.exactValue(TOTAL_DEADLINE_LIMIT),
+                    CAPACITY_GUARD.exactValue(ADMISSION_AND_CLOSURE_DEADLINE_LIMIT));
         } catch (ArithmeticException overflow) {
-            return rejected(operationId, EvaluationStage.REQUEST_ADMISSION,
-                    RenderingProblem.ProblemCode.RENDER_DEADLINE_EXCEEDED);
+            return deadlineExceeded(operationId);
         }
 
         var authorization = authority.authorize(
@@ -85,6 +111,9 @@ final class CanonicalRenderingApplication implements RenderingApplication {
             return new RenderOutcome.AuthorityUnavailable(operationId);
         }
         var authorized = (RenderingAuthority.Authorized) authorization;
+        if (deadline.admissionAndClosureExpired(monotonicNanos)) {
+            return release(authorized, admissionAndClosureDeadlineExceeded(operationId));
+        }
 
         var profileSelection = profiles.select(command.outputSelection());
         if (profileSelection instanceof RendererProfileAuthority.Unavailable) {
@@ -93,22 +122,26 @@ final class CanonicalRenderingApplication implements RenderingApplication {
                     new RenderOutcome.RendererUnavailable(operationId));
         }
         var available = (RendererProfileAuthority.Available) profileSelection;
-        if (clock.millis() >= deadlineAt) {
-            return release(authorized, rejected(
-                    operationId,
-                    EvaluationStage.REQUEST_ADMISSION,
-                    RenderingProblem.ProblemCode.RENDER_DEADLINE_EXCEEDED));
+        if (deadline.admissionAndClosureExpired(monotonicNanos)) {
+            return release(authorized, admissionAndClosureDeadlineExceeded(operationId));
+        }
+        if (deadline.expired(monotonicNanos)) {
+            return release(authorized, deadlineExceeded(operationId));
         }
 
         var requestId = distinctRequestId(operationId);
         var evaluation = evaluator.evaluate(new EvaluationCommand(
                 requestId,
                 authorized.ownerScope(),
+                authorized.authorizationContextDigest(),
+                authorized.externalAssetReadAuthorization(),
                 command.rootTemplateId(),
                 command.rawRenderInputUtf8(),
                 command.outputSelection(),
                 available.rendererProfile(),
-                deadlineAt));
+                deadline.deadlineAtEpochMilli(),
+                deadline.monotonicDeadlineNanos(),
+                deadline.admissionAndClosureDeadlineAtMonotonicNanos()));
         if (evaluation instanceof EvaluationOutcome.Rejected rejected) {
             return release(authorized, new RenderOutcome.Rejected(
                     operationId,
@@ -129,17 +162,17 @@ final class CanonicalRenderingApplication implements RenderingApplication {
                 COMMAND_CONTRACT,
                 requestId,
                 available.rendererProfile(),
-                deadlineAt,
+                deadline.deadlineAtEpochMilli(),
                 sealed.renderDocumentDigest(),
                 sealed.renderDocumentCanonicalUtf8(),
                 command.outputSelection(),
                 false);
 
-        while (clock.millis() < deadlineAt) {
+        while (!deadline.expired(monotonicNanos)) {
             var engineOutcome = engine.execute(rendererCommand);
             if (engineOutcome instanceof EngineOutcome.Unknown
                     || isBusy(engineOutcome)) {
-                waitBeforeRetry(deadlineAt);
+                waitBeforeRetry(deadline);
                 continue;
             }
             if (engineOutcome instanceof EngineOutcome.TerminalProblem terminal) {
@@ -159,10 +192,7 @@ final class CanonicalRenderingApplication implements RenderingApplication {
             }
             return release(authorized, new RenderOutcome.Rendered(operationId, output));
         }
-        return release(authorized, rejected(
-                operationId,
-                EvaluationStage.ENGINE,
-                RenderingProblem.ProblemCode.RENDER_DEADLINE_EXCEEDED));
+        return release(authorized, deadlineExceeded(operationId));
     }
 
     private RenderOutcome release(
@@ -200,18 +230,29 @@ final class CanonicalRenderingApplication implements RenderingApplication {
                         problem.limitId()));
     }
 
-    private void waitBeforeRetry(long deadlineAt) {
+    private void waitBeforeRetry(RequestDeadline deadline) {
         if (retryDelayNanos == 0) {
             return;
         }
-        long remainingMillis = deadlineAt - clock.millis();
-        if (remainingMillis <= 0) {
+        long remainingNanos = deadline.remainingNanos(monotonicNanos);
+        if (remainingNanos == 0) {
             return;
         }
-        long remainingNanos = remainingMillis > Long.MAX_VALUE / 1_000_000L
-                ? Long.MAX_VALUE
-                : remainingMillis * 1_000_000L;
         LockSupport.parkNanos(Math.min(retryDelayNanos, remainingNanos));
+    }
+
+    private static RenderOutcome.Rejected deadlineExceeded(RenderOperationId operationId) {
+        return new RenderOutcome.Rejected(
+                operationId,
+                CAPACITY_GUARD.rejection(TOTAL_DEADLINE_LIMIT));
+    }
+
+    private static RenderOutcome.Rejected admissionAndClosureDeadlineExceeded(
+            RenderOperationId operationId
+    ) {
+        return new RenderOutcome.Rejected(
+                operationId,
+                CAPACITY_GUARD.rejection(ADMISSION_AND_CLOSURE_DEADLINE_LIMIT));
     }
 
     private static boolean isBusy(EngineOutcome outcome) {
@@ -249,5 +290,52 @@ final class CanonicalRenderingApplication implements RenderingApplication {
         return new RenderOutcome.Rejected(
                 operationId,
                 RenderingProblem.of(code, stage));
+    }
+
+    private record RequestDeadline(
+            long deadlineAtEpochMilli,
+            long monotonicDeadlineNanos,
+            long admissionAndClosureDeadlineAtMonotonicNanos
+    ) {
+        private static RequestDeadline start(
+                long admittedAtEpochMilli,
+                long admittedAtMonotonicNanos,
+                long totalDeadlineMillis,
+                long admissionAndClosureDeadlineMillis
+        ) {
+            if (totalDeadlineMillis <= 0) {
+                throw new IllegalArgumentException("totalDeadlineMillis must be positive");
+            }
+            if (admissionAndClosureDeadlineMillis <= 0
+                    || admissionAndClosureDeadlineMillis > totalDeadlineMillis) {
+                throw new IllegalArgumentException(
+                        "admissionAndClosureDeadlineMillis must be within total deadline");
+            }
+            var totalDeadlineNanos = Math.multiplyExact(
+                    totalDeadlineMillis,
+                    1_000_000L);
+            var admissionAndClosureDeadlineNanos = Math.multiplyExact(
+                    admissionAndClosureDeadlineMillis,
+                    1_000_000L);
+            return new RequestDeadline(
+                    Math.addExact(admittedAtEpochMilli, totalDeadlineMillis),
+                    admittedAtMonotonicNanos + totalDeadlineNanos,
+                    admittedAtMonotonicNanos + admissionAndClosureDeadlineNanos);
+        }
+
+        private boolean admissionAndClosureExpired(LongSupplier monotonicNanos) {
+            return admissionAndClosureDeadlineAtMonotonicNanos
+                    - monotonicNanos.getAsLong() <= 0;
+        }
+
+        private boolean expired(LongSupplier monotonicNanos) {
+            return remainingNanos(monotonicNanos) == 0;
+        }
+
+        private long remainingNanos(LongSupplier monotonicNanos) {
+            // Signed subtraction is wrap-safe for System.nanoTime intervals below 2^63 ns.
+            var remaining = monotonicDeadlineNanos - monotonicNanos.getAsLong();
+            return Math.max(0L, remaining);
+        }
     }
 }

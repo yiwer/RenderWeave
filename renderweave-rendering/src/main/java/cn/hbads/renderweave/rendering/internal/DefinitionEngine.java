@@ -46,6 +46,8 @@ final class DefinitionEngine {
         DefinitionEngine definitions();
 
         CapabilityProvider capabilities();
+
+        CapabilityCallPosition.RuntimePath capabilityPath();
     }
 
     /** loopId → 实际 loop frame（typed item + 零基 index）。 */
@@ -83,7 +85,7 @@ final class DefinitionEngine {
         }
     }
 
-    EvalOutcome resolveDefinition(String definitionId, ResolutionScope scope, String frameKey) {
+    EvalOutcome resolveDefinition(String definitionId, ResolutionScope scope) {
         var wire = definitionWires.get(definitionId);
         if (wire == null) {
             return dependencyError();
@@ -93,17 +95,25 @@ final class DefinitionEngine {
             var value = scope.customs().get(definitionId);
             return value == null ? dependencyError() : new EvalValue(value);
         }
-        var memoKey = definitionId + "#" + frameKey;
-        var memo = "expression".equals(kind) || "mapping".equals(kind)
-                ? (frameKey.equals("invocation") ? invocationMemo : frameMemo)
-                : invocationMemo;
+        var loopId = declarationLoopId((ObjectNode) wire);
+        CapabilityCallPosition.DeclarationFrame declarationFrame;
+        try {
+            declarationFrame = loopId == null
+                    ? scope.capabilityPath().invocationFrame()
+                    : scope.capabilityPath().loopFrame(loopId);
+        } catch (IllegalArgumentException invalidFrame) {
+            return dependencyError();
+        }
+        var memoKey = definitionId + "#" + declarationFrame.memoKey();
+        var memo = loopId == null ? invocationMemo : frameMemo;
         var cached = memo.get(memoKey);
         if (cached != null) {
             return cached;
         }
         var result = switch (kind) {
-            case "mapping" -> evaluateMapping((ObjectNode) wire, scope, frameKey);
-            case "expression" -> evaluateExpression((ObjectNode) wire, scope, frameKey);
+            case "mapping" -> evaluateMapping((ObjectNode) wire, scope);
+            case "expression" -> evaluateExpression(
+                    (ObjectNode) wire, scope, declarationFrame);
             default -> dependencyError();
         };
         memo.put(memoKey, result);
@@ -114,7 +124,7 @@ final class DefinitionEngine {
     // ValueSource resolution
     // ------------------------------------------------------------------
 
-    EvalOutcome resolveSource(DesignNodeValue sourceWire, ResolutionScope scope, String frameKey) {
+    EvalOutcome resolveSource(DesignNodeValue sourceWire, ResolutionScope scope) {
         if (!(sourceWire instanceof ObjectNode source)) {
             return dependencyError();
         }
@@ -130,35 +140,22 @@ final class DefinitionEngine {
                 if (!(source.members().get("definitionId") instanceof Text target)) {
                     yield dependencyError();
                 }
-                yield resolveDefinition(target.value(), scope, frameKeyOf(source, scope, frameKey));
+                yield resolveDefinition(target.value(), scope);
             }
-            case "capability" -> {
-                if (!(source.members().get("capability") instanceof Text capability)
-                        || !(source.members().get("operation") instanceof Text operation)) {
-                    yield dependencyError();
-                }
-                yield scope.capabilities().supply(
-                        capability.value(), operation.value(),
-                        callPositionOf(source, frameKey));
-            }
+            // Capability 只允许由 Expression input alias 经 declaration frame demand。
+            case "capability" -> dependencyError();
             default -> dependencyError();
         };
     }
 
-    /** definition source 的消费 frame：loop-domain definition 在其声明 loop frame 求值。 */
-    private String frameKeyOf(ObjectNode source, ResolutionScope scope, String consumerFrameKey) {
-        return consumerFrameKey;
-    }
-
-    /** capability demand 位置 canonical bytes：source wire + 消费 frame。 */
-    static byte[] callPositionOf(ObjectNode source, String frameKey) {
-        var wire = DesignJsonWriter.write(source);
-        var framed = new byte[wire.length + 1 + frameKey.length()];
-        System.arraycopy(wire, 0, framed, 0, wire.length);
-        framed[wire.length] = 0;
-        var keyBytes = frameKey.getBytes(java.nio.charset.StandardCharsets.UTF_8);
-        System.arraycopy(keyBytes, 0, framed, wire.length + 1, keyBytes.length);
-        return framed;
+    private static String declarationLoopId(ObjectNode definition) {
+        if (definition.members().get("domain") instanceof ObjectNode domain
+                && domain.members().get("kind") instanceof Text kind
+                && "loop".equals(kind.value())
+                && domain.members().get("loopId") instanceof Text loopId) {
+            return loopId.value();
+        }
+        return null;
     }
 
     private EvalOutcome decodeLiteral(ObjectNode literal) {
@@ -304,12 +301,12 @@ final class DefinitionEngine {
     // Mapping
     // ------------------------------------------------------------------
 
-    private EvalOutcome evaluateMapping(ObjectNode wire, ResolutionScope scope, String frameKey) {
+    private EvalOutcome evaluateMapping(ObjectNode wire, ResolutionScope scope) {
         var inputWire = wire.members().get("input");
         if (inputWire == null) {
             return dependencyError();
         }
-        var input = resolveSource(inputWire, scope, frameKey);
+        var input = resolveSource(inputWire, scope);
         if (input instanceof EvalError) {
             return input;
         }
@@ -326,13 +323,13 @@ final class DefinitionEngine {
                 if (matches instanceof EvalValue matched && matched.valueBool()) {
                     var thenWire = mappingCase.members().get("then");
                     return thenWire == null ? dependencyError()
-                            : resolveSource(thenWire, scope, frameKey);
+                            : resolveSource(thenWire, scope);
                 }
             }
         }
         var otherwiseWire = wire.members().get("otherwise");
         return otherwiseWire == null ? dependencyError()
-                : resolveSource(otherwiseWire, scope, frameKey);
+                : resolveSource(otherwiseWire, scope);
     }
 
     private EvalOutcome matchCase(ObjectNode mappingCase, EvalOutcome input) {
@@ -497,7 +494,11 @@ final class DefinitionEngine {
     // Expression definition
     // ------------------------------------------------------------------
 
-    private EvalOutcome evaluateExpression(ObjectNode wire, ResolutionScope scope, String frameKey) {
+    private EvalOutcome evaluateExpression(
+            ObjectNode wire,
+            ResolutionScope scope,
+            CapabilityCallPosition.DeclarationFrame declarationFrame
+    ) {
         if (!(wire.members().get("source") instanceof Text source)) {
             return dependencyError();
         }
@@ -526,9 +527,39 @@ final class DefinitionEngine {
         }
         return ExpressionEvaluator.evaluate(ast, alias -> {
             var inputSource = inputWires.get(alias);
-            return inputSource == null ? dependencyError()
-                    : resolveSource(inputSource, scope, frameKey);
+            if (inputSource == null) {
+                return dependencyError();
+            }
+            if (inputSource instanceof ObjectNode capabilitySource
+                    && capabilitySource.members().get("kind") instanceof Text kind
+                    && "capability".equals(kind.value())) {
+                return resolveCapabilityInput(
+                        capabilitySource, scope, declarationFrame, definitionId, alias);
+            }
+            return resolveSource(inputSource, scope);
         }, capacityAuthority);
+    }
+
+    private EvalOutcome resolveCapabilityInput(
+            ObjectNode source,
+            ResolutionScope scope,
+            CapabilityCallPosition.DeclarationFrame declarationFrame,
+            String definitionId,
+            String inputAlias
+    ) {
+        if (!(source.members().get("capability") instanceof Text capability)
+                || !(source.members().get("operation") instanceof Text operation)) {
+            return dependencyError();
+        }
+        byte[] position;
+        try {
+            position = declarationFrame.canonicalBytes(
+                    definitionId, inputAlias, capability.value(), operation.value());
+        } catch (IllegalArgumentException invalidContract) {
+            return dependencyError();
+        }
+        return scope.capabilities().supply(
+                capability.value(), operation.value(), position);
     }
 
     private ExpressionAnalyzer.InputDeclaration declareInput(

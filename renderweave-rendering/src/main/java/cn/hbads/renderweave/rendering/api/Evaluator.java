@@ -43,6 +43,16 @@ public interface Evaluator {
     }
 
     /**
+     * Host 在请求准入时冻结的 external PUBLIC AssetRef 读取授权事实。
+     * 它不是 RenderInput 字段，也不适用于 authored/default/child AssetRef。
+     */
+    enum ExternalAssetReadAuthorization {
+        GRANTED,
+        DENIED,
+        UNAVAILABLE
+    }
+
+    /**
      * 一次根 Evaluation 的封闭命令。
      *
      * @param renderRequestId     Rendering 创建的请求级身份
@@ -51,20 +61,35 @@ public interface Evaluator {
      * @param rawRenderInputUtf8  原始 RenderInput strict-JSON envelope bytes
      * @param outputSelection     bounded output 选择；缺省已在构造前展开为 96/90
      * @param rendererProfile     availability authority 服务端选择的 exact Renderer Profile
-     * @param deadlineAtEpochMilli public admission 一次展开且不可延长的 absolute deadline
+     * @param deadlineAtEpochMilli public admission 一次展开且不可延长的 absolute wire/lease deadline
+     * @param deadlineAtMonotonicNanos Rendering 在同一 admission 捕获的进程内 monotonic deadline；
+     *                                 仅用于 cooperative request control，不进入 wire/digest/persistence
+     * @param admissionAndClosureDeadlineAtMonotonicNanos 与 total deadline 同源的 stage 2–3
+     *                                 cooperative monotonic deadline；不进入 wire/digest/persistence
      */
     record EvaluationCommand(
             RenderRequestId renderRequestId,
             OwnerScope ownerScope,
+            String authorizationContextDigest,
+            ExternalAssetReadAuthorization externalAssetReadAuthorization,
             cn.hbads.renderweave.template.api.TemplateApplication.TemplateId rootTemplateId,
             byte[] rawRenderInputUtf8,
             OutputSelection outputSelection,
             String rendererProfile,
-            long deadlineAtEpochMilli
+            long deadlineAtEpochMilli,
+            long deadlineAtMonotonicNanos,
+            long admissionAndClosureDeadlineAtMonotonicNanos
     ) {
         public EvaluationCommand {
             Objects.requireNonNull(renderRequestId, "renderRequestId");
             Objects.requireNonNull(ownerScope, "ownerScope");
+            Objects.requireNonNull(authorizationContextDigest, "authorizationContextDigest");
+            if (!authorizationContextDigest.matches("sha256:[0-9a-f]{64}")) {
+                throw new IllegalArgumentException("authorizationContextDigest must be sha256");
+            }
+            Objects.requireNonNull(
+                    externalAssetReadAuthorization,
+                    "externalAssetReadAuthorization");
             Objects.requireNonNull(rootTemplateId, "rootTemplateId");
             Objects.requireNonNull(rawRenderInputUtf8, "rawRenderInputUtf8");
             Objects.requireNonNull(outputSelection, "outputSelection");

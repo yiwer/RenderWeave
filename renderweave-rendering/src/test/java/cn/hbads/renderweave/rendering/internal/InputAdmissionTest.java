@@ -83,6 +83,8 @@ class InputAdmissionTest {
         assertEquals(new DesignValue.Text("win"), input.customs().get(PUBLIC_DEFINITION_ID));
         assertEquals(new DesignValue.Decimal(new BigDecimal("5")),
                 input.customs().get(PRIVATE_DEFINITION_ID));
+        assertEquals(Map.of(PUBLIC_DEFINITION_ID, new DesignValue.Text("win")),
+                input.externalCustomOverrides());
     }
 
     @Test

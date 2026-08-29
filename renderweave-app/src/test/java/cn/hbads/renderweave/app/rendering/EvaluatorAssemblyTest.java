@@ -3,6 +3,7 @@ package cn.hbads.renderweave.app.rendering;
 import cn.hbads.renderweave.rendering.api.Evaluator;
 import cn.hbads.renderweave.rendering.api.Evaluator.EvaluationCommand;
 import cn.hbads.renderweave.rendering.api.Evaluator.EvaluationOutcome;
+import cn.hbads.renderweave.rendering.api.Evaluator.ExternalAssetReadAuthorization;
 import cn.hbads.renderweave.rendering.api.Evaluator.OutputSelection;
 import cn.hbads.renderweave.rendering.api.Evaluator.OwnerScope;
 import cn.hbads.renderweave.rendering.api.Evaluator.RenderRequestId;
@@ -87,15 +88,20 @@ class EvaluatorAssemblyTest {
         var created = (TemplateApplication.CreatedReadable) templates.create(
                 invocation,
                 new TemplateApplication.CreateCommand(SYSTEM_EMPTY, DESIGN));
+        var admittedAtMonotonicNanos = System.nanoTime();
 
         var outcome = evaluator.evaluate(new EvaluationCommand(
                 new RenderRequestId("00000000-0000-4000-8000-000000000101"),
                 new OwnerScope("owner-a"),
+                "sha256:" + "5".repeat(64),
+                ExternalAssetReadAuthorization.GRANTED,
                 created.current().templateId(),
                 "{\"rootDocument\":{}}".getBytes(StandardCharsets.UTF_8),
                 OutputSelection.defaultPng(),
                 "renderweave-renderer/1.0",
-                System.currentTimeMillis() + 60_000L));
+                System.currentTimeMillis() + 60_000L,
+                admittedAtMonotonicNanos + 60_000_000_000L,
+                admittedAtMonotonicNanos + 5_000_000_000L));
 
         assertThat(outcome).isInstanceOf(EvaluationOutcome.SealedDocument.class);
         var sealed = (EvaluationOutcome.SealedDocument) outcome;
@@ -111,14 +117,19 @@ class EvaluatorAssemblyTest {
 
     @Test
     void evaluatingUnknownTemplateRejectsAtClosureStage() {
+        var admittedAtMonotonicNanos = System.nanoTime();
         var outcome = evaluator.evaluate(new EvaluationCommand(
                 new RenderRequestId("00000000-0000-4000-8000-000000000102"),
                 new OwnerScope("owner-a"),
+                "sha256:" + "5".repeat(64),
+                ExternalAssetReadAuthorization.GRANTED,
                 new TemplateApplication.TemplateId("00000000-0000-4000-8000-0000000000f9"),
                 "{\"rootDocument\":{}}".getBytes(StandardCharsets.UTF_8),
                 OutputSelection.defaultPng(),
                 "renderweave-renderer/1.0",
-                System.currentTimeMillis() + 60_000L));
+                System.currentTimeMillis() + 60_000L,
+                admittedAtMonotonicNanos + 60_000_000_000L,
+                admittedAtMonotonicNanos + 5_000_000_000L));
 
         assertThat(outcome).isInstanceOf(EvaluationOutcome.Rejected.class);
         var rejected = (EvaluationOutcome.Rejected) outcome;

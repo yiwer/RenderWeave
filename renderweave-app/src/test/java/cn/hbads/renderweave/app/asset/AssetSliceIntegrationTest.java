@@ -377,6 +377,16 @@ class AssetSliceIntegrationTest {
                 firstOutcome
         ).asset();
         assertEquals(0, first.contentVersion());
+        var fixedRecordExpiry = jdbc.sql("""
+                        select record_expires_at
+                        from asset_render_selection
+                        where render_request_id = 'render-resolve-1'
+                          and resource_id = :resourceId
+                        """)
+                .param("resourceId", "rwres_" + "0".repeat(64))
+                .query(Long.class)
+                .single();
+        assertEquals(deadline + 300_000L, fixedRecordExpiry);
 
         var replacement = assertInstanceOf(
                 AssetApplication.ReplaceApplied.class,
@@ -395,6 +405,15 @@ class AssetSliceIntegrationTest {
         assertEquals(0, replay.contentVersion());
         assertEquals(first.sha256(), replay.sha256());
         assertEquals(first.lease(), replay.lease());
+        assertEquals(fixedRecordExpiry, jdbc.sql("""
+                        select record_expires_at
+                        from asset_render_selection
+                        where render_request_id = 'render-resolve-1'
+                          and resource_id = :resourceId
+                        """)
+                .param("resourceId", "rwres_" + "0".repeat(64))
+                .query(Long.class)
+                .single());
 
         var laterOccurrence = assertInstanceOf(
                 AssetResolver.Resolved.class,
@@ -631,14 +650,19 @@ class AssetSliceIntegrationTest {
             String renderRequestId,
             TemplateApplication.TemplateId templateId
     ) {
+        var admittedAtMonotonicNanos = System.nanoTime();
         return new Evaluator.EvaluationCommand(
                 new Evaluator.RenderRequestId(renderRequestId),
                 new Evaluator.OwnerScope("it-scope"),
+                "sha256:" + "5".repeat(64),
+                Evaluator.ExternalAssetReadAuthorization.GRANTED,
                 templateId,
                 "{\"rootDocument\":{}}".getBytes(StandardCharsets.UTF_8),
                 Evaluator.OutputSelection.defaultPng(),
                 "renderweave-renderer/1.0",
-                System.currentTimeMillis() + 60_000L);
+                System.currentTimeMillis() + 60_000L,
+                admittedAtMonotonicNanos + 60_000_000_000L,
+                admittedAtMonotonicNanos + 5_000_000_000L);
     }
 
     private static byte[] imageDesign(AssetApplication.AssetId assetId) {

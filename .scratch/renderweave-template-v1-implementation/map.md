@@ -27,6 +27,12 @@ Label: wayfinder:map
 - 付费 provider、真实数据、API Key、生产部署和新的外部授权均不在自动执行范围。局部受阻时继续其他安全 frontier；只有产品语义必须改变、需要新授权或确实无安全路径时才询问用户。
 - Goal（2026-08-20 恢复，用户明确指示）：持续推进 Template v1 直到完成。本会话已通过 goal tracker
   恢复为 active；本 tracker 继续作为票据/DAG 记账面，single-writer 纪律不变。
+- 2026-08-29 合并编号规则：main-line TV1-T123–T136 保持原编号；并行
+  `feature/template-v1` 的同号历史以 TV1-F123–F194 作为合并后别名，issue 文件名与历史 commit message
+  不改写。新的统一实施票从 TV1-T195 继续。合并完成并恢复 main 原有 tracked stash 前不 claim 新 frontier。
+- TV1-F186–F194 的历史 tracker 仍保留证据，但当前实现已语义合流到 Template-owned
+  `DesignInputExpressionCapacityAuthority`、Template parser/immutable AST 与 Rendering closure re-admission；
+  不存在第二套 Rendering-owned parser、阈值或 guard。
 
 ## Decisions so far
 
@@ -642,6 +648,8 @@ Label: wayfinder:map
   Rendering/app、`fast`、sequential `server` 与 17-step Goal `full` 均绿；默认无 Certified Profile 时仍在 payload
   work 前 fail closed。Profile/daemon success/public Rendering API/E6/正式 `/templates` route 与 native build 保持
   关闭，`/prototype` 不计最终交付。
+### Main-line T123–T136
+
 - [实现 Renderer daemon 单槽 FIFO 与并发控制帧纵切](issues/123-renderer-daemon-fifo-control.md) —
   **resolved / automated_verified**；ADR-0045 UDS 生产路径现以持续 reader、单槽 worker/FIFO scheduler 与串行 writer
   物化 1 active + 4 waiting、5 秒 queue wait、同连接并发 `CANCEL`、join/replay/conflict、deadline/cancel final fence 与
@@ -725,6 +733,18 @@ Label: wayfinder:map
   **implementation_complete / final_gate_pending / unclaimed**；真实 DesignDSL admission 与 Rendering evaluation 七轴接线、
   不可变 v7 target、component 195/195、`template` 与 `fast` 已绿，wired 55/65、remaining geometry 10。顺序 `server`、
   Goal `full` 与 resolution `fast` 因当前产品 smoke runtime 延后；smoke 后必须恢复，不提前报 automated_verified。
+### Imported feature-lineage F123–F194
+
+- [F123 — 物化 Asset audit event outbound seam](issues/123-asset-audit-event-outbound-seam.md) —
+  **resolved / automated_verified**；Template STALE consumer 已只消费 Asset-owned `AssetAuditEventSource`，
+  `asset_audit_event` SQL 由 Asset app adapter 独占；Template cursor/STALE 事务、有界 replay 与事件顺序保持不变，
+  Asset API→SPI 残留 import 已删除。Asset 92/92、app focused 26/26、server 363 tests 与 17-step full 均绿；
+  reservation/delete 线性化、Renderer/Profile/public route 不在本票范围。
+- [F124 — 物化 AssetReferenceAuthority reservation seam](issues/124-asset-reference-reservation-seam.md) —
+  **resolved / automated_verified**；PostgreSQL transaction-scoped advisory shared/exclusive reservation 已替代
+  Template 对 Asset-owned `asset_aggregate` 的直接锁/读；Asset dependency facts 由 Asset adapter 在独立只读事务
+  重取，保留 Template current 与 confirmed delete 的 assetId 线性化及 proof-recompute，且不共享表或事务。
+  focused 25/25、server 365 tests 与 17-step full 均绿；产品 route/Profile/native build 不在本票范围。
 - [验证 Product Editor 状态、恢复与权威预览架构](issues/09-validate-product-editor-architecture.md) —
   throwaway 逻辑原型（`/prototype/editor-state-model`，不进产品 route）把冻结编辑器规则编码为确定性
   fixture 状态机：10 个引导走查场景 37/37 断言 + 自由操作冒烟 + 键盘焦点检查全部通过（Playwright A1，
@@ -882,6 +902,400 @@ Label: wayfinder:map
   认证与最终生命周期升级仍须以届时真实产品 artifact 和 executor 为输入另行切票；Ticket 19 保持 open。
 
 ## Out of scope
+
+## Current frontier
+
+- [F125 — 物化 Evaluator CapabilityState 持久化重放纵切](issues/125-capability-state-orchestration.md) — **resolved / automated_verified**；
+  stage 6 以完整 evaluation fingerprint 绑定授权摘要、closure/input digest、冻结 contracts/Profile/budget vector，
+  并经既有加密 store 完成首次建立、同 fingerprint 恢复、异 fingerprint 冲突与 unavailable fail-closed。
+- [F126 — 物化 Rendering closure outcome 精确 problem taxonomy](issues/126-rendering-closure-problem-taxonomy.md)
+  — **resolved / automated_verified**；root missing/deleted、dependency invalid 与 authority unavailable
+  已从含糊的 `EVALUATION_FAILED`/internal fold 分离为冻结 Template 领域 code，integrity/current-drift
+  既有语义保持不变。
+- [F127 — 同步 Template catalog API contractVersion 0.16.0](issues/127-api-contract-version-identity.md)
+  — **resolved / automated_verified**；修复 T114 后 OpenAPI info 0.16.0 与
+  runtime/SystemStatus schema/generated SDK 仍为 0.15.0 的合同身份漂移，公共 canary
+  RED→GREEN 且四个合同身份点现已一致。
+- [F128 — 物化 CapabilityCallPosition 完整 OccurrencePath](issues/128-capability-call-position-occurrence-path.md)
+  — **resolved / automated_verified**；已移除 T21 的 source-wire/frameKey 近似，以 declaration-frame
+  ROOT/TEMPLATE_USE/REPEAT path 形成 exact canonical position，修正 invocation/loop memo、child isolation
+  与 capability result digest 的 canonical object 嵌入；focused 27/27 及 render/fast/server/full 全绿。
+- [F129 — 物化 Capability 声明目录与按需 CapabilityState 组件](issues/129-capability-declaration-selective-state.md)
+  — **resolved / automated_verified**；已以 Template-owned semantic closure catalog 替代 canonical JSON
+  substring，显式 stage 5 `AssetAdmission` 先于 state，runtime 仅建立/恢复 exact 声明的 CLOCK/RANDOM 组件，
+  无 capability 时零 state work；focused 143/143 + 17/17 及 render/asset/fast/web/server/full 17/17 全绿。
+  external PUBLIC override caller `asset.read` 与 demand/position/digest 容量轴留给后续独立 frontier。
+- [F130 — 强制 root PUBLIC AssetRef override 的 caller `asset.read`](issues/130-external-asset-override-read-authorization.md)
+  — **resolved / automated_verified**；已以 Asset-owned Host capability seam 在请求准入时冻结同 scope
+  `asset.read` 事实，并仅在 stage 5 external PUBLIC winner admission 消费；authored/default/child 引用继续
+  不要求 caller `asset.read`。focused 公共 seam 与 app adapter、render/asset/fast/web/server/full 17/17 全绿。
+- [F131 — 强制 Capability demand/position/result-digest 容量](issues/131-capability-demand-capacity.md)
+  — **resolved / automated_verified**；已在 `Evaluator.evaluate` 公共 seam 下以单一 Rendering-internal
+  capacity authority 物化 static source、total/kind demand、position canonical bytes 与 result-digest streaming
+  bytes 七个冻结上限，并保留 lazy/memo 与 first-error 顺序。focused 32/32、Rendering 157/157、app assembly
+  9/9，render/fast/server metadata 全绿；初始化重试、state-record bytes、Random rejection 与 Ticket 19 records
+  继续另票。
+- [F132 — 强制 CapabilityState record bytes 容量](issues/132-capability-state-record-capacity.md)
+  — **resolved / automated_verified**；已深化 T131 的单一 capacity authority，从 fingerprint-bound effective
+  vector 执行 `capabilityStateRecordBytes` exact inclusive pre-commit admission；超限以 exact stage/code/limitId
+  fail closed 且零 store write。focused 34/34、Rendering 159/159、app assembly 7/7，render/fast/server metadata
+  全绿；初始化 retry、Random rejection 与 Ticket 19 records 继续另票。
+- [F133 — CapabilityState 初始化有界重试与 unknown-commit 恢复](issues/133-capability-state-initialization-retry.md)
+  — **resolved / automated_verified**；在公开 `Evaluator.evaluate` seam 下物化 `initializationAttempts<=3`、
+  deployment tightening、precommit transient retry、unknown-save query-before-resample、固定 expiry 与 deadline
+  race 封闭。focused 43/43、Rendering 168/168、app assembly/architecture 12/12，render/fast/server metadata 全绿；
+  resolution fast 亦 3/3 passed；Random rejection 与正式 Ticket 19 records 继续另票。
+- [F134 — 强制 Random rejection attempt bound 与 result-invalid 终态](issues/134-capability-random-rejection-bound.md)
+  — **resolved / automated_verified**；在公开 `Evaluator.evaluate` seam 下强制 fingerprint-bound profile exact
+  `randomRejectionAttempts=128`，HMAC exhaustion 以 exact MATERIALIZATION/CAPABILITY_RESULT_INVALID/limitId
+  first-fail；focused 45/45、Rendering 170/170、App 12/12 与 render/fast/server metadata 全绿；正式 Ticket 19
+  records 与 fault-schedule executor 继续另票。
+- [F135 — 校正 CapabilityState initializationAttempts exact profile](issues/135-capability-initialization-exact-profile.md)
+  — **resolved / automated_verified**；机器 capacity coverage 将该轴固定为 comparator `EXACT`、value `3`，现已
+  纠正 T133 的 deployment-tightening 解释：effective profile `2/4` fail closed，持续 transient failure 恰好执行
+  三次 establish 后以 CAPABILITY_STATE/CAPABILITY_STATE_UNAVAILABLE/exact limitId 零文档终止。公开 seam
+  46/46、Rendering 171/171、App 12/12 与 render/fast/server metadata 全绿。
+- [F136 — 强制 closure canonical DesignDSL bytes 容量](issues/136-closure-canonical-design-bytes-capacity.md)
+  — **resolved / automated_verified**；按机器 capacity coverage 的 MAX_INCLUSIVE `33,554,432`，在加入下一份
+  unique snapshot canonical byte length 前做 request-local overflow-safe 累计预留；diamond reuse 不重复计费，
+  current-drift 新 attempt 重置。Evaluator 公开投影 exact TEMPLATE_CLOSURE /
+  TEMPLATE_CLOSURE_LIMIT_EXCEEDED / full limitId。公开 seam RED→GREEN，Template 20/20、Evaluator 47/47、
+  Template 84/84、Rendering 172/172 与 template/render/fast/server metadata 全绿；A1、J0。
+- [F137 — 强制 actual Template invocations 容量](issues/137-actual-template-invocations-capacity.md)
+  — **resolved / automated_verified**；root invocation + 每个 surviving、fills 成功并即将创建 child frame 的 TemplateUse
+  occurrence 独立计数，SKIP 不消费；MAX_INCLUSIVE `256`，第 257 个在 frame 前以 MATERIALIZATION /
+  EVALUATION_BUDGET_EXCEEDED / exact limitId 零文档失败。公开 Evaluator seam 先做 255/256/257 与 SKIP
+  behavioral RED→GREEN；Evaluator 51/51、Rendering 176/176 与 render/fast/server metadata 全绿。A1、J0。
+- [F138 — 强制 Template invocation depth 容量](issues/138-invocation-depth-capacity.md)
+  — **resolved / automated_verified**；root-counted path-local depth `1`，surviving TemplateUse child frame `+1`，
+  Repeat、sibling 与 SKIP 不累计。MAX_INCLUSIVE `16`；公开 Evaluator seam 以 scripted frozen chain 取得 depth 17
+  错误 seal RED，再实现 exact MATERIALIZATION / EVALUATION_BUDGET_EXCEEDED / full limitId 零文档边界；depth
+  15/16 成功。Evaluator 54/54、Rendering 179/179 与 render/fast/server metadata 全绿。A1、J0。
+- [F139 — 强制 compositionViewport 容量与生产 guard seam](issues/139-composition-viewport-capacity.md)
+  — **resolved / automated_verified**；已物化冻结 `renderweave-rendering-pipeline-capacity-guard/1.0` internal seam，
+  隔离重放被 actual-invocation 轴支配的 compositionViewports `255/256/257`，并把 Materializer authoritative
+  counter、T137/T138 已有判断接入唯一 catalog。guard/Evaluator/architecture 61/61、Rendering 180/180，render/
+  fast metadata 全绿；无正式 product executor/A2，J0。
+- [F140 — 强制 Repeat collection per-occurrence 容量](issues/140-repeat-collection-items-capacity.md)
+  — **resolved / automated_verified**；按 `RW-T19-S7-076` 在首个 Loop frame/materialized node 前 admission 每个
+  actual Repeat 的完整 collection length，MAX_INCLUSIVE `1000`，公开 Evaluator seam 重放 `999/1000/1001`，
+  guard 同时覆盖 zero。9×1000 + 995 sibling 回归证明不跨 occurrence 累计；focused 73/73、Rendering 184/184
+  与 render/fast metadata 全绿。A1、无 ticket-specific A2、J0。
+- [F141 — 强制 Repeat nesting depth 容量](issues/141-repeat-nesting-depth-capacity.md)
+  — **resolved / automated_verified**；按 `RW-T19-S7-077` 将 active actual Repeat path 固定为 root `0`、enter
+  `+1`、MAX_INCLUSIVE `8`，公开 Evaluator seam 重放 `7/8/9`；sibling 不累计、render:false 不进入，TemplateUse
+  只隔离 lexical frame 而不能重置物理 depth。focused 66/66、Rendering 191/191 与 render/fast metadata 全绿；
+  A1、无 ticket-specific A2、J0。
+- [F142 — 强制 request-total Loop frames 容量](issues/142-loop-frames-total-capacity.md)
+  — **resolved / automated_verified**；按 `RW-T19-S7-078` 在每个 Repeat item frame 创建和 descendant pruning 前执行
+  request-global reservation，MAX_INCLUSIVE `10000`，公开 Evaluator seam 重放 `9999/10000/10001` 与 nested
+  overflow；零项不收费，第 10001 个在 capability supply 前 exact fail。focused 72/72、Rendering 197/197 与
+  render/fast metadata 全绿；A1、无 ticket-specific A2、J0。
+- [F143 — 强制 request-total Render occurrences 容量](issues/143-render-occurrences-capacity.md)
+  — **resolved / automated_verified**；按 `RW-T19-S7-082` 与 cap-012 将 MAX_INCLUSIVE `25000` 的 dominated axis 从
+  `Materializer` ad-hoc/wrong-code 检查迁入唯一 production guard，隔离重放 `24999/25000/25001`，并保持
+  `materializedStaticNodes=20000` 产品 first-fail。focused 19/19、Rendering 198/198 与 render/fast metadata
+  全绿；A1、无 ticket-specific A2、J0。
+- [F144 — 强制 materialized static Nodes 容量](issues/144-materialized-static-nodes-capacity.md)
+  — **resolved / automated_verified**；按 `RW-T19-S7-083` 与 cap-013 将 MAX_INCLUSIVE `20000` 从 Materializer
+  ad-hoc/wrong-code 检查迁入唯一 production guard；真实 Materializer seam 精确重放 `19999/20000/20001`，并与
+  DOCUMENT_SEAL-owned `renderDocument.staticNodes` 分离。focused 22/22、Rendering 201/201 与 render/fast
+  metadata 全绿；A1、无 ticket-specific A2、J0。
+- [F145 — 强制 generated track/cell entries 容量](issues/145-generated-track-cell-capacity.md)
+  — **resolved / automated_verified**；按 `RW-T19-S7-084` 与 cap-014 物化 MAX_INCLUSIVE `100000` 的唯一 production
+  guard/counter，并在 Repeat GRID lowering 校正 effectiveColumns、compact surviving cell 与 pruned zero-charge。
+  exact guard 重放 `99999/100000/100001`；focused 25/25、Rendering 204/204 与 render/fast metadata 全绿；
+  A1、无 ticket-specific A2、J0。
+- [F146 — Repeat item logical-operation 预算基础](issues/146-repeat-item-logical-operation-budget.md)
+  — **resolved / automated_verified**；按 `RW-T19-S7-079` 在每个 actual Repeat item 的 frame/pruning 前预留一个
+  request-global logical operation，并把 cap-015 `1000000` 接入唯一 production guard。focused 29/29、Rendering
+  208/208 与 render/fast metadata 全绿；其余 Evaluator logical-unit taxonomy 尚未被冻结，本票不虚报完整
+  `RW-T19-S7-085..088` 或整轴完成。A1、无 ticket-specific A2、J0。
+- [F147 — RenderDocument canonical-byte seal 预算](issues/147-render-document-canonical-byte-capacity.md)
+  — **resolved / automated_verified**；按 `RW-T19-S7-089` 将 cap-016 `67108864` 接入唯一 production guard，并以
+  pre-write chunked UTF-8 writer 取代 Sealer 的整串/整数组分配后手写检查。frozen 305-byte at/above 产品 seam、
+  focused 87/87、Rendering 211/211 与 render/fast metadata 全绿；仅完成 canonicalBytes，不提前宣称其余
+  RenderDocument 容量轴。A1、无 ticket-specific A2、J0。
+- [F148 — RenderDocument strict JSON depth 预算](issues/148-render-document-json-depth-capacity.md)
+  — **resolved / automated_verified**；按 `RW-T19-S7-090` 与 cap-017 将 strict JSON container depth `127/128/129`
+  接入 T147 已建立的唯一 production canonical writer/guard；mixed object/array exact boundary、string punctuation 与
+  sibling non-accumulation 均绿。focused 91/91、Rendering 215/215 与 render/fast metadata 全绿；仅完成 jsonDepth，
+  不提前宣称其余 seal/Engine 容量轴。A1、无 ticket-specific A2、J0。
+- [F149 — RenderDocument final static Nodes 预算](issues/149-render-document-static-nodes-capacity.md)
+  — **resolved / automated_verified**；按 `RW-T19-S7-091` 与 cap-018 将 final static Nodes `19999/20000/20001`
+  接入 Sealer occurrenceId allocation seam；root 与 sourceCanvas 产品边界均精确通过，并与 T144 materialization
+  轴保持 limitId/stage/code/counter 隔离。focused 94/94、Rendering 218/218 与 render/fast metadata 全绿；A1、
+  无 ticket-specific A2、J0。
+- [F150 — RenderDocument child edges 预算](issues/150-render-document-child-edges-capacity.md)
+  — **resolved / automated_verified**；按 `RW-T19-S7-092` 与 cap-019 将 child edges `19998/19999/20000` 接入
+  Sealer pre-child allocation seam；`children[]` item 与 compositionViewport→sourceCanvas link 均计 `1`，root/empty
+  array 计 `0`，并与 T149 static Nodes 保持独立 counter。focused 97/97、Rendering 221/221 与 render/fast metadata
+  全绿；A1、无 ticket-specific A2、J0。
+- [F151 — RenderDocument Runs 预算](issues/151-render-document-runs-capacity.md)
+  — **resolved / automated_verified**；按 `RW-T19-S7-093` 与 cap-020 将 final Text Run `9999/10000/10001` 接入
+  Sealer pre-Run allocation seam；按 surviving Text occurrence/Run index request-total 计数，`visible:false` 与
+  `opacity:0` 仍计，并与 authored Runs、textScalars、Nodes/edges、FONT Asset occurrence 保持独立 counter。
+  focused 99/99、Rendering 223/223 与 render/fast metadata 全绿；A1、无 ticket-specific A2、J0。
+- [F152 — RenderDocument text scalars 预算](issues/152-render-document-text-scalars-capacity.md)
+  — **resolved / automated_verified**；按 `RW-T19-S7-094` 与 cap-021 将 final Text Run `text` Unicode scalars
+  `999999/1000000/1000001` 接入 Sealer pre-string allocation seam；按 surviving occurrence/Run index request-total
+  计数，保留非 BMP、组合序列、LF 与空 Run 的 frozen scalar 语义，并与 Runs/authored text/Engine shaping 独立。
+  focused 101/101、Rendering 225/225 与 render/fast metadata 全绿；A1、无 ticket-specific A2、J0。
+- [F153 — RenderDocument vector entries 预算](issues/153-render-document-vector-entries-capacity.md)
+  — **resolved / automated_verified**；按 `RW-T19-S7-095` 与 cap-022 将 final Polygon/Polyline Point 与 Path Command
+  `99999/100000/100001` 接入 Sealer pre-entry allocation seam；三种 item 共享 request-total counter，按 final tree/
+  array order 逐项预留，并与 authored vectors、其他 RenderDocument 容量及 Engine paint items 独立。
+  focused 103/103、Rendering 227/227 与 render/fast metadata 全绿；A1、无 ticket-specific A2、J0。
+- [F154 — diagnostic sidecar items 预算](issues/154-diagnostic-sidecar-items-capacity.md)
+  — **resolved / automated_verified**；按 `RW-T19-S7-103` 与 cap-023 将现有 Materializer sidecar 的静默截断替换为
+  `diagnostics.sidecarItems=25000` request-total atomic reservation；第 25001 项须以 MATERIALIZATION /
+  RENDER_DIAGNOSTIC_LIMIT_EXCEEDED / exact limitId 零文档失败。focused 112/112、Rendering 229/229 与 render/fast
+  metadata 全绿；A1、无 ticket-specific A2、J0，不推进 sidecar bytes 或 LayoutTrace。
+- [F155 — authored Asset occurrences 预算](issues/155-authored-asset-occurrences-capacity.md)
+  — **resolved / automated_verified**；按 `RW-T19-S8-001` 与 cap-025 将 AssetAdmission 私有 4096 手写计数迁入唯一
+  production guard；重复 assetId 逐 authored occurrence 收费，external PUBLIC override 不收费，第 4097 项须在
+  Asset-owned precheck 前以 ASSET_ADMISSION / ASSET_BUDGET_EXCEEDED / exact limitId 零文档失败。focused 95/95、
+  Rendering 232/232 与 render/fast metadata 全绿；A1、无 ticket-specific A2、J0。cap-024 因最终 sidecar
+  canonical locator shape 尚未物化而 deferred。
+- [F156 — unique logical Assets 预算](issues/156-unique-logical-assets-capacity.md)
+  — **resolved / automated_verified**；按 `RW-T19-S8-002` 与 cap-026 将 request-total unique logical Asset
+  `511/512/513`
+  接入同一 production guard；按 ownerScope + assetId 去重，authored 与已授权 external override 共享集合，重复
+  occurrence 仍逐次 precheck，第 513 个新 Asset 须在 port 前以 ASSET_ADMISSION / ASSET_BUDGET_EXCEEDED /
+  exact limitId 零文档失败。focused 98/98、Rendering 235/235 与 render/fast metadata 全绿；A1、无
+  ticket-specific A2、J0。
+- [F157 — actual Asset resolve occurrences 预算](issues/157-actual-resolve-occurrences-capacity.md)
+  — **resolved / automated_verified**；按 `RW-T19-S8-003` 与 cap-027 将 Materializer 私有 2048 手写 resolve counter
+  迁入唯一 request tracker；相同 Asset 按实际 consumer occurrence 重计，第 2049 次须在
+  `AssetResolutionPort.resolve` 前以 ASSET_RESOLUTION / RESOURCE_BUDGET_EXCEEDED / exact limitId 零文档失败。
+  focused 116/116、Rendering 237/237 与 render/fast metadata 全绿；A1、无 ticket-specific A2、J0。
+- [F158 — RenderResource entries 预算](issues/158-render-resource-entries-capacity.md)
+  — **resolved / automated_verified**；按 `RW-T19-S8-004` 与 cap-028 将 Materializer 私有 2048 `resources.size()` 判断
+  迁入唯一 request tracker；第 2049 个成功 ResolvedAsset 在 append one-to-one RenderResource entry 前以
+  ASSET_RESOLUTION / RESOURCE_BUDGET_EXCEEDED / exact limitId 零文档失败。focused 118/118、Rendering 239/239
+  与 render/fast metadata 全绿；A1、无 ticket-specific A2、J0。
+- [F159 — unique exact contents 预算](issues/159-unique-exact-contents-capacity.md)
+  — **resolved / automated_verified**；按 `RW-T19-S8-005` 与 cap-029，以 request-local
+  `(kind, sha256, byteLength, mediaType)` 去重 successful ResolvedAsset exact content；第 129 个新 identity 须在
+  RenderResource append/external fetch 前以 ASSET_ADMISSION / ASSET_BUDGET_EXCEEDED / exact limitId 零文档失败。
+  focused 120/120、Rendering 241/241 与 render/fast metadata 全绿；A1、无 ticket-specific A2、J0。
+- [F160 — occurrence declared raw bytes 预算](issues/160-occurrence-declared-raw-bytes-capacity.md)
+  — **resolved / automated_verified**；按 `RW-T19-S8-006` 与 cap-030，将每个 successful resolved occurrence 的声明
+  `byteLength` request-total 累计接入唯一 production guard；重复 exact content/cache hit 不减免，第一个使总量
+  超过 2 GiB 的 occurrence 须在 unique-content/RenderResource append/external fetch 前以 ASSET_ADMISSION /
+  ASSET_BUDGET_EXCEEDED / exact limitId 零文档失败。focused 122/122、Rendering 243/243 与 render/fast metadata
+  全绿；A1、无 ticket-specific A2、J0。
+- [F161 — unique raw bytes 预算](issues/161-unique-raw-bytes-capacity.md)
+  — **resolved / automated_verified**；按 `RW-T19-S8-007` 与 cap-031，将新 exact-content identity 的声明 `byteLength`
+  request-total 累计接入唯一 production guard；相同 identity 的后续 occurrence 不重复收费，第一个使 unique total
+  超过 256 MiB 的 identity 须在 RenderResource append/external fetch 前以 ASSET_ADMISSION /
+  ASSET_BUDGET_EXCEEDED / exact limitId 零文档失败。focused 124/124、Rendering 245/245 与 render/fast metadata
+  全绿；A1、无 ticket-specific A2、J0。
+- [F162 — occurrence IMAGE pixels 预算](issues/162-occurrence-image-pixels-capacity.md)
+  — **resolved / automated_verified**；按 `RW-T19-S8-007` 与 cap-032，将每个 successful IMAGE occurrence 的 orientation 后
+  `logicalWidthPx × logicalHeightPx` request-total 累计接入唯一 production guard；duplicate/cache hit 不减免，
+  第一个使总量超过 1,000,000,000 pixels 的 occurrence 须在 unique-content/RenderResource append/external fetch
+  前以 ASSET_ADMISSION / ASSET_BUDGET_EXCEEDED / exact limitId 零文档失败。focused 126/126、Rendering 247/247
+  与 render/fast metadata 全绿；A1、无 ticket-specific A2、J0。
+- [F163 — unique IMAGE pixels 预算](issues/163-unique-image-pixels-capacity.md)
+  — **resolved / automated_verified**；按 `RW-T19-S8-010` 与 cap-033，仅在 successful IMAGE fact 首次引入新
+  `(kind, sha256, byteLength, mediaType)` exact identity 时累计 orientation 后
+  `logicalWidthPx × logicalHeightPx`；duplicate identity 不重复收费。第一个使 unique total 超过 125,000,000
+  pixels 的 identity 须在 exact-set/RenderResource append/external fetch 前以 ASSET_ADMISSION /
+  ASSET_BUDGET_EXCEEDED / exact limitId 零文档失败。focused 128/128、Rendering 249/249 与 render/fast metadata
+  全绿；A1、无 ticket-specific A2、J0。
+- [F164 — occurrence FONT bytes 预算](issues/164-occurrence-font-bytes-capacity.md)
+  — **resolved / automated_verified**；按 `RW-T19-S8-008` 与 cap-034，将每个 successful FONT occurrence 的声明
+  `byteLength` request-total 累计接入唯一 production guard；duplicate/cache hit 不减免，IMAGE 收费为零。
+  第一个使总量超过 512 MiB 的 occurrence 须在 exact-content/RenderResource append/external fetch 前以
+  ASSET_ADMISSION / ASSET_BUDGET_EXCEEDED / exact limitId 零文档失败。focused 130/130、Rendering 251/251 与
+  render/fast metadata 全绿；A1、无 ticket-specific A2、J0。
+- [F165 — unique FONT bytes 预算](issues/165-unique-font-bytes-capacity.md)
+  — **resolved / automated_verified**；按 `RW-T19-S8-011` 与 cap-035，仅在
+  successful FONT fact 首次引入新 `(kind, sha256, byteLength, mediaType)` exact identity 时累计声明
+  `byteLength`；duplicate identity 不重复收费，IMAGE 为零。第一个使 unique total 超过 64 MiB 的 identity 须在
+  exact-set/RenderResource append/external fetch 前以 ASSET_ADMISSION / ASSET_BUDGET_EXCEEDED / exact limitId
+  零文档失败。focused 132/132、Rendering 253/253 与 render/fast metadata 全绿；A1、无 ticket-specific A2、J0。
+- [F166 — RenderResource manifest bytes 预算](issues/166-render-resource-manifest-bytes-capacity.md)
+  — **resolved / automated_verified**；按 `RW-T19-S8-020` 与 cap-036，对最终 closed `resources` array 的 canonical
+  UTF-8（含 `[]`/comma/entry、排除 business identity）使用 Materializer/Sealer 共用 projector 流式计量；空数组在
+  root frame 前预留 2 bytes，每个 entry 在 resource-entry reserve/append 前原子预留。空数组与双 FONT manifest
+  `1013` bytes exact/above 均锁定，focused 158/158、Rendering 255/255 与 render/fast metadata 全绿；A1、既有
+  RenderDocument bytes 独立重放 83/83、无 T166 行为路径专属 A2/A3、J0。
+- [F167 — static Capability sources production guard 合流](issues/167-static-capability-sources-production-guard.md)
+  — **resolved / automated_verified**；blocked by T21/T131/T166（均 resolved）。按 `RW-T19-S8-024` 与 cap-037，
+  已将 T131 closure static-source admission 合流到唯一 production guard；删除重复 frozen maximum/比较并保留
+  fingerprint-bound deployment tightening。下一 source 在 declaration aggregation 前逐项失败关闭，第三 snapshot
+  不再解释；focused 120/120、受影响 reactor 20/13/84/92/257 与 render/fast metadata 全绿；A1、无 T167 专属
+  A2/A3、J0。
+- [F168 — total Capability demands production guard 合流](issues/168-total-capability-demands-production-guard.md)
+  — **resolved / automated_verified**；blocked by T21/T131/T167（均 resolved）。按 `RW-T19-S8-025` 与 cap-038，
+  已将 T131 lazy total-demand admission 合流到唯一 production guard；删除重复 frozen maximum/比较并保留
+  fingerprint-bound tightening、total→kind→position first-failure 与全 admission 成功后才提交 counters 的原子边界。
+  4096 CLOCK + 4096 RANDOM exact-at 后下一 demand 先以 total limitId 失败；focused 119/119、受影响 reactor
+  20/13/84/92/259 与 render/fast metadata 全绿；A1、无 T168 专属 A2/A3、J0。
+- [F169 — CLOCK Capability demands production guard 合流](issues/169-clock-capability-demands-production-guard.md)
+  — **resolved / automated_verified**；blocked by T21/T131/T168（均 resolved）。按 `RW-T19-S8-026` 与 cap-039，
+  已将 T131 CLOCK first-demand admission 合流到唯一 production guard；删除重复 frozen maximum/比较并保留
+  total→CLOCK→RANDOM→position 顺序、effective tightening 与失败不提交 counters 的原子边界。4096 CLOCK exact-at、
+  第 4097 个以 clock limitId 失败，随后 4096 RANDOM 仍可将 total 推至 8192；focused 121/121、受影响 reactor
+  20/13/84/92/261 与 render/fast metadata 全绿；A1、无 T169 专属 A2/A3、J0。
+- [F170 — RANDOM Capability demands production guard 合流](issues/170-random-capability-demands-production-guard.md)
+  — **resolved / automated_verified**；blocked by T21/T131/T169（均 resolved）。按 `RW-T19-S8-027` 与 cap-040，
+  已将 T131 RANDOM first-demand admission 合流到唯一 production guard；删除重复 frozen maximum/比较并保留
+  total→kind→position 顺序、effective tightening 与失败不提交 counters 的原子边界。4096 RANDOM exact-at、第 4097
+  个以 random limitId 失败，随后 4096 CLOCK 仍可将 total 推至 8192；focused 123/123、受影响 reactor
+  20/13/84/92/263 与 render/fast metadata 全绿；A1、无 T170 专属 A2/A3、J0。
+- [F171 — Capability position bytes per-demand production guard 合流](issues/171-capability-position-bytes-per-demand-production-guard.md)
+  — **resolved / automated_verified**；blocked by T21/T131/T170（均 resolved）。按 `RW-T19-S8-028` 与 cap-041，
+  已将 T131 position canonical bytes per-demand admission 合流到唯一 production guard；删除重复 frozen
+  maximum/比较并保留 total→kind→per-demand→position-total 顺序、effective tightening 与失败不提交 counters 的
+  原子边界。2049-byte 拒绝后 4096 CLOCK + 4096 RANDOM × 2048 bytes 仍精确填满全部相关轴；focused 125/125、
+  受影响 reactor 20/13/84/92/265 与 render/fast metadata 全绿；A1、无 T171 专属 A2/A3、J0。
+- [F172 — Capability position bytes total production guard 合流](issues/172-capability-position-bytes-total-production-guard.md)
+  — **resolved / automated_verified**；blocked by T21/T131/T171（均 resolved）。按 `RW-T19-S8-029` 与 cap-042，
+  已将 T131 cumulative position canonical bytes admission 合流到唯一 production guard；删除重复 frozen
+  maximum/比较并保留 total→kind→per-demand→position-total 顺序、overflow-safe projected sum、effective
+  tightening 与失败不提交 counters 的原子边界。有效收紧 vector 证明 position-total first-failure 后仍可精确填满
+  demand counters；focused 127/127、受影响 reactor 20/13/84/92/267 与 render/fast metadata 全绿；A1、无 T172
+  专属 A2/A3、J0。
+- [F173 — CapabilityState record bytes production guard 合流](issues/173-capability-state-record-bytes-production-guard.md)
+  — **resolved / automated_verified**；blocked by T21/T132/T172（均 resolved）。按 `RW-T19-S8-030` 与 cap-043，
+  已将 T132 pre-commit state-record bytes admission 合流到唯一 production guard；删除重复 frozen maximum/比较并
+  保持 effective tightening、exact CAPABILITY_STATE taxonomy、超限零 store write 与 replay 不重复收费。
+  focused 128/128、受影响 reactor 20/13/84/92/268 与 render/fast metadata 全绿；A1、无 T173 专属 A2/A3、J0。
+- [F174 — Capability result-digest streaming bytes production guard 合流](issues/174-capability-result-digest-bytes-production-guard.md)
+  — **resolved / automated_verified**；blocked by T21/T131/T173（均 resolved）。按 `RW-T19-S8-031` 与 cap-044，
+  已将 T131 cumulative framed-byte admission 合流到唯一 production guard；删除重复 frozen maximum/比较并保持
+  effective tightening、provider 后/结果返回前 reservation、overflow-safe projected sum 与失败不提交 result-byte
+  counter。focused 130/130、受影响 reactor 20/13/84/92/270 与 render/fast metadata 全绿；A1、无 T174 专属
+  A2/A3、J0。
+- [F175 — CapabilityState initialization attempts production guard 合流](issues/175-capability-initialization-attempts-production-guard.md)
+  — **resolved / automated_verified**；blocked by T21/T133/T135/T174（均 resolved）。按
+  `RW-T19-S8-032` 与 cap-045，已将 exact-profile `2/3/4` 与 runtime 第 1–3 次可尝试、第 4 次前拒绝合流到
+  唯一 production guard；删除重复 frozen value/比较/stored maximum/手写 limitId，并保持 retry、
+  unknown-commit recovery 与零第 4 次 store/provider 交互。focused 131/131、受影响 reactor
+  20/13/84/92/271 与 render/fast metadata 全绿；A1、无 T175 专属 A2/A3、J0。cap-046 继续 deferred。
+- [F176 — Capability random rejection attempts production guard 合流](issues/176-capability-random-rejection-attempts-production-guard.md)
+  — **resolved / automated_verified**；blocked by T21/T134/T175（均 resolved）。按 `RW-T19-S8-033` 与
+  cap-046，已将 exact-profile `127/128/129`、counter `0…127` runtime ceiling 与 exhaustion taxonomy 合流到
+  唯一 production guard；删除 budget/result projection 的重复 frozen value/比较/手写 limitId，guard 直接引用
+  唯一 HMAC 算法 constant 并保持首 demand fail-closed 边界。focused 132/132、受影响 reactor
+  20/13/84/92/272 与 render/fast metadata 全绿；A1、无 T176 专属 A2/A3、J0。
+- [F177 — total Render deadline production guard 与 monotonic admission 合流](issues/177-total-render-deadline-monotonic-guard.md)
+  — **resolved / automated_verified**；blocked by T21/T122/T176（均 resolved）。按 `RW-T19-S8-052`、
+  `RW-T19-S9-015/018/019` 与 cap-047，将 EXACT `60000` profile/taxonomy 合流到唯一 production guard，删除
+  application 重复 constant，并把公共准入时一次 wall deadline 转换为贯穿 Java Evaluation seam、不可重置的
+  request-local monotonic deadline；wire absolute deadline 保持不变。focused 132/132、受影响 reactor
+  20/13/84/92/277，asset/server/web、17-step full、render 与 resolution fast 均 passed/A1；T177-specific
+  A2/A3 无，J0 pending。
+  cap-048+ 继续 deferred；无 HTTP/OpenAPI/Web/migration/Profile/provider/push/tag/PR 变化。
+- [F178 — admission + closure 5 秒 stage deadline 合流](issues/178-admission-closure-stage-deadline.md)
+  — **resolved / automated_verified**；blocked by T21/T177（均 resolved）。按 `RW-T19-S8-053/058/059`、
+  `RW-T19-S9-015/018/019` 与 cap-048，已将 EXACT `5000` profile/taxonomy 合流到唯一 production guard；从 T177
+  同一 admission monotonic origin 派生不可重置 stage deadline，并以 Template-owned opaque cooperative control
+  覆盖 closure retry/IO/integrity/DFS/consistency。focused 22/40/73/14、app assembly 2/2、受影响 reactor
+  20/13/86/92/283，template/render/fast/server metadata 全部 passed/A1；T178-specific A2/A3 无，J0 pending。
+  cap-049+ 继续 deferred；无 HTTP/OpenAPI/Web/migration/Profile/provider/push/tag/PR 变化。
+- [F179 — Evaluation + RenderDocument seal 15 秒 stage deadline 合流](issues/179-evaluation-document-seal-stage-deadline.md)
+  — **resolved / automated_verified**；blocked by T21/T178（均 resolved）。cap-049 EXACT `15000` 与 taxonomy
+  已合流到唯一 production guard；closure freeze-relative monotonic control 贯穿 declaration、Input/Asset/
+  Capability/materialization/resolve/seal，保持 first-fail 并在 seal 到期时原子丢弃全部未提交产物。最终受影响
+  reactor 为 20/13/86/92/295；render `.sdlc/evidence/20260829-122619-render/` 与 fast
+  `.sdlc/evidence/20260829-122749-fast/` metadata 均 passed/A1，`git diff --check` 通过。T179-specific A2/A3
+  无，J0 pending；cap-050+ deferred，无 API/OpenAPI/Web/migration/Profile/provider/push/tag/PR 变化。
+- [F180 — terminal registry 与 sealed output 5 分钟 retention 合流](issues/180-terminal-registry-output-retention.md)
+  — **resolved / automated_verified**；blocked by T21/T22/T98/T122/T179（均 resolved）。code-less EXACT `300000`
+  invariant 已进入 Java internal guard；Rust `RequestRegistry` 以真实 terminal seal 与 deadline 较晚者固定不可续期
+  expiry，覆盖 `299999/300000/300001` 与 exact expiry purge。Java guard `42/42`，Rust daemon `14+3`、workspace
+  all-target/clippy/fmt 与 Maven 20/13/86/92/296 均绿；render `20260829-124606` 2/2、fast `20260829-124806`
+  3/3 metadata passed/A1。T180 专项 A2/A3 无、J0 pending；cap-051+ deferred，无 public/app/wire/manifest/Profile
+  或 provider/push/tag/PR 变化。
+- [F181 — pre-command cancel tombstone 60 秒 retention](issues/181-pre-command-cancel-tombstone-retention.md)
+  — **resolved / automated_verified**；blocked by T21/T22/T98/T122/T180（均 resolved）。code-less EXACT `60000`
+  invariant 已进入唯一 Java internal guard；Rust `RequestRegistry` 以首次 cancel 固定不可续期 expiry，覆盖
+  `+59999/+60000`、matching/conflicting access 与 overflow fail-closed。Java guard `43/43`，Rust Windows `16+3`、
+  Linux `17+3`、workspace all-target/clippy/fmt 与 Maven 20/13/86/92/297 均绿；render `20260829-131604` 2/2、
+  fast `20260829-131658` 3/3 metadata passed/A1。T181 专项 A2/A3 无、J0 pending；cap-052+ deferred，无
+  public/app/wire/manifest/Profile 或 provider/push/tag/PR 变化。
+- [F182 — CapabilityState / AssetResolver recovery 5 分钟 retention](issues/182-capability-resolver-recovery-retention.md)
+  — **resolved / automated_verified**；blocked by T13/T21/T122/T181（均 resolved）。cap-052 已固定
+  CapabilityState 与 Asset selection recovery record 为原始 deadline 后 EXACT `300000 ms`：毫秒精度、checked
+  arithmetic、retry/load/cancel/downstream 均不续期。guard `44/44`、Evaluator `84/84`、AssetResolver `4/4`、
+  app PostgreSQL slices `17/17`；asset/server/web/full metadata 全部 passed/A1，full `17/17` steps。T182-specific
+  A2/A3 无、J0 pending、J1 未批准；cap-053+ deferred，无 HTTP/OpenAPI/Web/Flyway/Profile/provider/push/tag/PR 变化。
+- [F183 — Renderer Stack water-fill round formula guard](issues/183-stack-water-fill-round-formula-guard.md)
+  — **resolved / automated_verified**；blocked by T120/T122/T182（均 resolved）。Renderer exact-output cap-053 的
+  FORMULA_MAX `fillChildCount+1` 已从 Rust Stack inline loop 收口到唯一
+  `renderweave-renderer-exact-output-capacity-guard/1.0` seam；真实 loop 在每轮 work 前与 isolated tracer 共用
+  checked guard。focused layout `7/7`、workspace all-target/fmt/clippy、render 2/2 与 fast 3/3 全绿。T183-specific
+  A2/A3 无、J0 pending、J1 未批准；cap-054+ deferred，无 API/OpenAPI/Web/Flyway/Profile/provider/push/tag/PR 变化。
+- [F184 — Renderer Grid span constraint exact-pass guard](issues/184-grid-span-pass-exact-guard.md)
+  — **resolved / automated_verified**；blocked by T66/T122/T183（均 resolved）。Renderer exact-output cap-054 的
+  EXACT `1` 已进入同一唯一 guard；稳定排序后的真实 Grid loop 按值消费每条 constraint，并在 span/deficit work
+  前调用 guard。focused layout `8/8`、workspace all-target `97/97`、fmt/clippy、render 2/2 与 fast 3/3 全绿。
+  T184-specific A2/A3 无、J0 pending、J1 未批准；无 API/OpenAPI/Web/Flyway/Profile/provider/push/tag/PR 变化。
+- [F185 — canonical diagnostic sidecar 与字节预算](issues/185-diagnostic-sidecar-canonical-bytes.md)
+  — **resolved / automated_verified**；blocked by T13/T21/T128/T154/T166/T184（均 resolved）。ADR-0044 exact
+  OccurrencePath、opaque occurrence/resource locator 与 request-local canonical sidecar 已物化；cap-024
+  `diagnostics.sidecarBytes=8388608` exact-at/above 已由唯一 production guard 原子执行。closed ConsumerPropertyRef
+  同步收口，受影响 reactor 519/519；
+  `render` 与 `fast` passed/A1。T185-specific A2/A3 无、J0 pending、J1 未批准；无 public/app/Profile/provider 变化。
+- [F186 — Expression explicit rounding scale capacity authority](issues/186-expression-explicit-rounding-scale-capacity.md)
+  — **resolved / automated_verified**；blocked by T21/T126/T185（均 resolved）。cap-055
+  `expression.explicitRoundingScaleMax=64` 已由 Rendering.internal 单一 guard 承载；真实 parser→analyzer 与
+  closure-wide static admission 对全部 unused Expression 在任何 downstream work 前返回 exact capacity outcome。
+  受影响 reactor 524/524，`render`/`fast` passed/A1；T186-specific A2/A3 无、J0 pending、J1 未批准。
+- [F187 — Expression source UTF-8 capacity authority](issues/187-expression-source-utf8-capacity.md)
+  — **resolved / automated_verified**；blocked by T21/T126/T186（均 resolved）。cap-039
+  `expression.sourceUtf8BytesPerExpression=65536` 已合流到现有 Rendering.internal guard；真实 parser、
+  closure-wide unused Expression admission 与 defensive late path 共同保留 exact capacity identity，并在
+  decode/AST/Input/Capability/Asset/materialization 前 fail closed。focused 120/120、受影响 reactor 527/527，
+  `render`/`fast` passed/A1；T187-specific A2/A3 无、J0 pending、J1 未批准。
+- [F188 — Expression source total capacity authority](issues/188-expression-source-total-capacity.md)
+  — **resolved / automated_verified**；blocked by T21/T126/T187（均 resolved）。cap-040
+  `expression.sourceUtf8BytesTotal=1048576` 已由现有 Rendering.internal guard 的 per-DesignDSL SourceBudget
+  承载；先单项后总量、按 snapshot 重置，并在真实 parser decode/AST 前累计全部 unused Expression source。
+  root/child 各 exact-at 成功，单 DSL above 以 exact closure problem 且零 downstream 拒绝；focused 124/124、
+  受影响 reactor 531/531，`render`/`fast` 均 passed/A1。T188-specific A2/A3 无，J0 pending、J1 未批准。
+- [F189 — Expression inputs per-expression capacity authority](issues/189-expression-inputs-per-expression-capacity.md)
+  — **resolved / automated_verified**；blocked by T21/T126/T188（均 resolved）。cap-041
+  `expression.inputsPerExpression=32` 已由现有 Rendering.internal guard 承载；closure admission 对每 snapshot 的
+  每个 ExpressionDefinition 在读取/解析 source 前检查 admitted `inputs`。31/32/33 guard identity、32-input
+  real closure success 与 33-input parser-precedence/零 downstream 均已覆盖；focused 127/127、受影响 reactor
+  534/534，`render`/`fast` 均 passed/A1。cap-042+ deferred；T189-specific A2/A3 无，J0 pending、J1 未批准。
+- [F190 — Expression inputs total capacity authority](issues/190-expression-inputs-total-capacity.md)
+  — **resolved / automated_verified**；blocked by T21/T126/T189（均 resolved）。cap-042
+  `expression.inputsTotal=4096` 已由现有 Rendering.internal guard 的 per-DesignDSL `InputBudget` 承载；逐
+  Expression 先 cap-041、再 cap-042，并在读取/解析 source 前原子预留。4095/4096/4097 identity、4097
+  invalid-source precedence/零 downstream、单 DSL exact-at 与 root/child 各 exact-at 重置均已覆盖；focused
+  132/132、受影响 reactor 539/539，`render`/`fast` 均 passed/A1。cap-043+ deferred；T190-specific A2/A3
+  无，J0 pending、J1 未批准。
+- [F191 — Mapping cases per-definition capacity authority](issues/191-mapping-cases-per-definition-capacity.md)
+  — **resolved / automated_verified**；blocked by T21/T126/T190（均 resolved）。cap-043
+  `expression.mappingCasesPerDefinition=256` 已由现有 Rendering.internal guard 承载；closure admission 对
+  每 snapshot 的每个 MappingDefinition 在 InputAdmission/惰性求值前检查完整 authored `cases`。255/256/257
+  identity、unused 257-case static rejection/零 downstream 与 exact-at seal 均已覆盖；focused 135/135、受影响
+  reactor 542/542，`render`/`fast` 均 passed/A1。cap-044+ deferred；T191-specific A2/A3 无，J0 pending、J1 未批准。
+- [F192 — Mapping cases total capacity authority](issues/192-mapping-cases-total-capacity.md)
+  — **resolved / automated_verified**；blocked by T21/T126/T191（均 resolved）。cap-044
+  `expression.mappingCasesTotal=8192` 已由现有 Rendering.internal guard 的 per-DesignDSL budget 承载；逐
+  Mapping 先 cap-043、再 cap-044，成功后才提交累计值。8191/8192/8193 identity、unused above/零 downstream、
+  exact-at 与 root/child 各 exact-at 重置均已覆盖；focused 140/140、受影响 reactor 547/547，`render`/`fast`
+  均 passed/A1。cap-045+ deferred；T192-specific A2/A3 无，J0 pending、J1 未批准。
+- [F193 — Expression AST nodes per-expression capacity authority](issues/193-expression-ast-nodes-per-expression-capacity.md)
+  — **resolved / automated_verified**；blocked by T21/T126/T192（均 resolved）。cap-045
+  `expression.astNodesPerExpression=4096` 已合流到现有 Rendering.internal guard；parser 重复最大值、手写比较、
+  limitId 与 AST rejection kind 已删除，overflow 现在返回 `ParseLimitExceeded`。4095/4096/4097 平衡 AST、unused
+  above exact closure problem/零 downstream 与 exact-at seal 均已覆盖；focused 143/143、受影响 reactor 550/550，
+  `render`/`fast` 均 passed/A1。cap-046+ deferred；T193-specific A2/A3 无，J0 pending、J1 未批准。
+- [F194 — Expression AST nodes total capacity authority](issues/194-expression-ast-nodes-total-capacity.md)
+  — **resolved / automated_verified**；blocked by T21/T126/T193（均 resolved）。cap-046
+  `expression.astNodesTotal=65536` 已由现有 Rendering.internal guard 的 per-DesignDSL `AstNodeBudget` 承载；
+  parser 逐节点先 cap-045、再 cap-046，仅成功后提交累计值。65535/65536/65537 identity、unused above 的 exact
+  closure problem/零 downstream、16×4096 exact-at seal 与 root/child 各自 exact-at 重置均已覆盖；focused
+  148/148、受影响 reactor 555/555，`render`/`fast` 均 passed/A1。cap-047+ deferred；T194-specific A2/A3 无，
+  J0 pending、J1 未批准。
 
 - 改写或重解释现有 Schema/Inference v1 已提交历史，或在 dirty main 上直接实施 Template。
 - Workspace、组织/成员/分享/协作、跨 ownerScope 复制、通用 connector、任意 SQL/HTTP/文件/脚本、插件节点或运行时代码注册。

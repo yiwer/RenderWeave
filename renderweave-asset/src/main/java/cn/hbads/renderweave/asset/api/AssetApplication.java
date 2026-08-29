@@ -1,7 +1,5 @@
 package cn.hbads.renderweave.asset.api;
 
-import cn.hbads.renderweave.asset.spi.AssetPersistence;
-
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;

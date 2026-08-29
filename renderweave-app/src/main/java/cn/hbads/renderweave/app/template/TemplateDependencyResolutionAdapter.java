@@ -1,5 +1,6 @@
 package cn.hbads.renderweave.app.template;
 
+import cn.hbads.renderweave.app.coordination.AssetDependencyFacts;
 import cn.hbads.renderweave.schema.definition.StaticSchemaRef;
 import cn.hbads.renderweave.schema.identity.SchemaKey;
 import cn.hbads.renderweave.schema.identity.VersionTag;
@@ -15,35 +16,16 @@ import java.util.Objects;
 /** System-level exact dependency fact resolver over Asset and Template aggregates. */
 class TemplateDependencyResolutionAdapter implements DependencyResolution {
     private final JdbcClient jdbc;
+    private final AssetDependencyFacts assetFacts;
 
-    TemplateDependencyResolutionAdapter(JdbcClient jdbc) {
+    TemplateDependencyResolutionAdapter(JdbcClient jdbc, AssetDependencyFacts assetFacts) {
         this.jdbc = Objects.requireNonNull(jdbc, "jdbc");
+        this.assetFacts = Objects.requireNonNull(assetFacts, "assetFacts");
     }
 
     @Override
     public AssetResolution resolveAsset(String assetId) {
-        try {
-            return jdbc.sql("""
-                            select owner_scope, kind, lifecycle, asset_revision,
-                                   current_content_version
-                            from asset_aggregate
-                            where asset_id = :assetId
-                            """)
-                    .param("assetId", assetId)
-                    .query((resultSet, rowNumber) -> new AssetResolved(new AssetState(
-                            new OwnerScopeAuthority.OwnerScope(
-                                    resultSet.getString("owner_scope")),
-                            resultSet.getString("kind"),
-                            Lifecycle.valueOf(resultSet.getString("lifecycle")),
-                            resultSet.getLong("asset_revision"),
-                            resultSet.getLong("current_content_version")
-                    )))
-                    .optional()
-                    .<AssetResolution>map(value -> value)
-                    .orElseGet(AssetMissing::new);
-        } catch (DataAccessException | IllegalArgumentException unavailable) {
-            return new AssetUnavailable();
-        }
+        return assetFacts.resolve(assetId);
     }
 
     @Override

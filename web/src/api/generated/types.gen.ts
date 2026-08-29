@@ -8,7 +8,7 @@ export type SystemStatus = {
     service: 'renderweave-api';
     status: 'ready';
     database: 'ready';
-    contractVersion: '0.15.0';
+    contractVersion: '0.16.0';
 };
 
 export type AssetDeletePrecheckResponse = {

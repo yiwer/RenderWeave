@@ -1,5 +1,8 @@
 package cn.hbads.renderweave.app.rendering;
 
+import cn.hbads.renderweave.asset.api.AssetApplication;
+import cn.hbads.renderweave.asset.spi.AssetOwnerScopeAuthority;
+import cn.hbads.renderweave.rendering.api.Evaluator.ExternalAssetReadAuthorization;
 import cn.hbads.renderweave.rendering.api.Evaluator.OutputSelection;
 import cn.hbads.renderweave.rendering.api.RenderingApplication.RenderInvocationRef;
 import cn.hbads.renderweave.rendering.api.RenderingApplication.RenderPurpose;
@@ -18,7 +21,10 @@ import java.util.Set;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.any;
 
 class RenderingAuthorityAdapterTest {
 
@@ -51,13 +57,16 @@ class RenderingAuthorityAdapterTest {
         var renderOnly = new ConfiguredSingleOwnerRenderingAuthority(
                 "owner-a",
                 Set.of("template.render"),
-                activeTemplates("owner-a"));
+                activeTemplates("owner-a"),
+                assets(new AssetOwnerScopeAuthority.CatalogForbidden()));
 
         var formal = (RenderingAuthority.Authorized) renderOnly.authorize(
                 INVOCATION,
                 TEMPLATE,
                 RenderPurpose.FORMAL_OUTPUT);
         assertThat(formal.disclosure()).isEqualTo(RenderingAuthority.Disclosure.OPAQUE);
+        assertThat(formal.externalAssetReadAuthorization())
+                .isEqualTo(ExternalAssetReadAuthorization.DENIED);
         assertThat(renderOnly.recheck(formal.recheckIdentity()))
                 .isInstanceOf(RenderingAuthority.RecheckGranted.class);
         assertThat(renderOnly.recheck(formal.recheckIdentity()))
@@ -71,7 +80,8 @@ class RenderingAuthorityAdapterTest {
         var readOnly = new ConfiguredSingleOwnerRenderingAuthority(
                 "owner-a",
                 Set.of("template.read"),
-                activeTemplates("owner-a"));
+                activeTemplates("owner-a"),
+                assets(new AssetOwnerScopeAuthority.CatalogForbidden()));
         assertThat(readOnly.authorize(
                 INVOCATION,
                 TEMPLATE,
@@ -86,7 +96,8 @@ class RenderingAuthorityAdapterTest {
         var preview = new ConfiguredSingleOwnerRenderingAuthority(
                 "owner-a",
                 Set.of("template.read", "template.render"),
-                activeTemplates("owner-a"));
+                activeTemplates("owner-a"),
+                assets(new AssetOwnerScopeAuthority.CatalogForbidden()));
         var granted = (RenderingAuthority.Authorized) preview.authorize(
                 INVOCATION,
                 TEMPLATE,
@@ -104,12 +115,14 @@ class RenderingAuthorityAdapterTest {
                         "template.update",
                         "template.delete",
                         "template.render"),
-                activeTemplates("owner-a"));
+                activeTemplates("owner-a"),
+                assets(new AssetOwnerScopeAuthority.CatalogForbidden()));
 
         assertThatThrownBy(() -> new ConfiguredSingleOwnerRenderingAuthority(
                 "owner-a",
                 Set.of("template.admin"),
-                activeTemplates("owner-a")))
+                activeTemplates("owner-a"),
+                assets(new AssetOwnerScopeAuthority.CatalogForbidden())))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("unknown Template single-owner capability");
     }
@@ -119,7 +132,8 @@ class RenderingAuthorityAdapterTest {
         var authority = new ConfiguredSingleOwnerRenderingAuthority(
                 "owner-a",
                 Set.of("template.render"),
-                activeTemplates("owner-a"));
+                activeTemplates("owner-a"),
+                assets(new AssetOwnerScopeAuthority.CatalogForbidden()));
         var oldest = ((RenderingAuthority.Authorized) authority.authorize(
                 INVOCATION,
                 TEMPLATE,
@@ -147,7 +161,8 @@ class RenderingAuthorityAdapterTest {
         var authority = new ConfiguredSingleOwnerRenderingAuthority(
                 "owner-a",
                 Set.of("template.read", "template.render"),
-                templates);
+                templates,
+                assets(new AssetOwnerScopeAuthority.CatalogForbidden()));
 
         var granted = (RenderingAuthority.Authorized) authority.authorize(
                 INVOCATION,
@@ -160,7 +175,8 @@ class RenderingAuthorityAdapterTest {
         var crossScope = new ConfiguredSingleOwnerRenderingAuthority(
                 "owner-a",
                 Set.of("template.read", "template.render"),
-                activeTemplates("owner-b"));
+                activeTemplates("owner-b"),
+                assets(new AssetOwnerScopeAuthority.CatalogForbidden()));
         assertThat(crossScope.authorize(
                 INVOCATION,
                 TEMPLATE,
@@ -168,11 +184,75 @@ class RenderingAuthorityAdapterTest {
                 .isInstanceOf(RenderingAuthority.Hidden.class);
     }
 
+    @Test
+    void externalAssetReadDecisionIsScopedAndBoundIntoAuthorizationContext() {
+        var grantedAuthority = new ConfiguredSingleOwnerRenderingAuthority(
+                "owner-a",
+                Set.of("template.render"),
+                activeTemplates("owner-a"),
+                assets(new AssetOwnerScopeAuthority.CatalogGranted(
+                        new AssetApplication.OwnerScope("owner-a"))));
+        var mismatchedAuthority = new ConfiguredSingleOwnerRenderingAuthority(
+                "owner-a",
+                Set.of("template.render"),
+                activeTemplates("owner-a"),
+                assets(new AssetOwnerScopeAuthority.CatalogGranted(
+                        new AssetApplication.OwnerScope("owner-b"))));
+        var unavailableAuthority = new ConfiguredSingleOwnerRenderingAuthority(
+                "owner-a",
+                Set.of("template.render"),
+                activeTemplates("owner-a"),
+                assets(new AssetOwnerScopeAuthority.CatalogUnavailable()));
+
+        var granted = (RenderingAuthority.Authorized) grantedAuthority.authorize(
+                INVOCATION, TEMPLATE, RenderPurpose.FORMAL_OUTPUT);
+        var mismatched = (RenderingAuthority.Authorized) mismatchedAuthority.authorize(
+                INVOCATION, TEMPLATE, RenderPurpose.FORMAL_OUTPUT);
+        var unavailable = (RenderingAuthority.Authorized) unavailableAuthority.authorize(
+                INVOCATION, TEMPLATE, RenderPurpose.FORMAL_OUTPUT);
+
+        assertThat(granted.externalAssetReadAuthorization())
+                .isEqualTo(ExternalAssetReadAuthorization.GRANTED);
+        assertThat(mismatched.externalAssetReadAuthorization())
+                .isEqualTo(ExternalAssetReadAuthorization.DENIED);
+        assertThat(unavailable.externalAssetReadAuthorization())
+                .isEqualTo(ExternalAssetReadAuthorization.UNAVAILABLE);
+        assertThat(granted.authorizationContextDigest())
+                .isNotEqualTo(mismatched.authorizationContextDigest())
+                .isNotEqualTo(unavailable.authorizationContextDigest());
+    }
+
+    @Test
+    void rootReleaseRecheckDoesNotReauthorizeExternalAssetRead() {
+        var assetAuthority = assets(new AssetOwnerScopeAuthority.CatalogGranted(
+                new AssetApplication.OwnerScope("owner-a")));
+        var authority = new ConfiguredSingleOwnerRenderingAuthority(
+                "owner-a",
+                Set.of("template.render"),
+                activeTemplates("owner-a"),
+                assetAuthority);
+
+        var granted = (RenderingAuthority.Authorized) authority.authorize(
+                INVOCATION, TEMPLATE, RenderPurpose.FORMAL_OUTPUT);
+        assertThat(authority.recheck(granted.recheckIdentity()))
+                .isInstanceOf(RenderingAuthority.RecheckGranted.class);
+
+        verify(assetAuthority, times(1)).authorizeCatalog(any());
+    }
+
     private static TemplatePersistence activeTemplates(String ownerScope) {
         var templates = mock(TemplatePersistence.class);
         when(templates.locate(TEMPLATE)).thenReturn(
                 located(ownerScope, TemplatePersistence.Lifecycle.ACTIVE));
         return templates;
+    }
+
+    private static AssetOwnerScopeAuthority assets(
+            AssetOwnerScopeAuthority.CatalogDecision decision
+    ) {
+        var authority = mock(AssetOwnerScopeAuthority.class);
+        when(authority.authorizeCatalog(any())).thenReturn(decision);
+        return authority;
     }
 
     private static TemplatePersistence.Located located(

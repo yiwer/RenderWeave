@@ -193,7 +193,7 @@ class RenderDocumentContractTest {
                         "format", text("CODE_128"), "value", text("123"))),
                 node("compositionViewport", Map.of(
                         "placement", absoluteFixed("10", "10")),
-                        List.of(canvas(List.of()))));
+                        List.of(canvas(List.of(), "/compositionViewport/sourceCanvas"))));
 
         var resources = List.of(
                 fontEntry(fontResourceId), imageEntry(imageResourceId));
@@ -282,10 +282,16 @@ class RenderDocumentContractTest {
     }
 
     private static Materializer.MaterializedNode canvas(List<Materializer.MaterializedNode> children) {
+        return canvas(children, "/canvas");
+    }
+
+    private static Materializer.MaterializedNode canvas(
+            List<Materializer.MaterializedNode> children,
+            String occurrencePath) {
         return node("canvas", Map.of(
                 "nodeId", text("00000000-0000-4000-8000-000000000001"),
                 "widthMm", number("210"),
-                "heightMm", number("297")), children);
+                "heightMm", number("297")), children, occurrencePath);
     }
 
     private static Materializer.MaterializedNode node(
@@ -297,10 +303,19 @@ class RenderDocumentContractTest {
             String kind,
             Map<String, DesignNodeValue> members,
             List<Materializer.MaterializedNode> children) {
+        return node(kind, members, children, "/" + kind);
+    }
+
+    private static Materializer.MaterializedNode node(
+            String kind,
+            Map<String, DesignNodeValue> members,
+            List<Materializer.MaterializedNode> children,
+            String occurrencePath) {
         var values = new java.util.LinkedHashMap<String, DesignNodeValue>();
         values.put("kind", text(kind));
         values.putAll(members);
-        return new Materializer.MaterializedNode(kind, new ObjectNode(values), children, "/" + kind);
+        return new Materializer.MaterializedNode(
+                kind, new ObjectNode(values), children, occurrencePath);
     }
 
     private static ObjectNode absoluteFixed(String widthMm, String heightMm) {
@@ -339,7 +354,10 @@ class RenderDocumentContractTest {
                 resourceId, "FONT", "https://assets.internal/font", 2_000L,
                 "sha256:" + "a".repeat(64), "font/ttf", 256,
                 "renderweave-asset-acceptance/1.0", "asset-font", "font-v1",
-                "/text", "fontRef",
+                OccurrencePath.testing("/text", "text"),
+                ConsumerPropertyRef.of("runs", List.of(
+                        new ConsumerPropertyRef.IndexSelector(0),
+                        new ConsumerPropertyRef.MemberSelector("fontRef"))),
                 new cn.hbads.renderweave.asset.api.AssetAcceptanceAuthority.FontDescriptor(
                         0,
                         cn.hbads.renderweave.asset.api.AssetAcceptanceAuthority.FontFlavor
@@ -397,6 +415,7 @@ class RenderDocumentContractTest {
                 SCHEMA,
                 new TypedObject(SCHEMA, Map.of("name",
                         Optional.of(new TypedValue.Text("alpha")))),
+                Map.of(),
                 Map.of());
     }
 }

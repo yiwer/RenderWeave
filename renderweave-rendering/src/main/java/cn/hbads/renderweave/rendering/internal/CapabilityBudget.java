@@ -1,0 +1,335 @@
+package cn.hbads.renderweave.rendering.internal;
+
+import cn.hbads.renderweave.rendering.api.RenderingProblem;
+
+import java.nio.charset.StandardCharsets;
+import java.util.Objects;
+
+/**
+ * Frozen Capability capacity policy parsed from the same effective budget vector bound into the
+ * evaluation fingerprint. The module owns numeric admission and request-local reservations so
+ * callers never coordinate counters or duplicate limit ordering.
+ */
+final class CapabilityBudget {
+
+    private static final RenderingPipelineCapacityGuard CAPACITY_GUARD =
+            new RenderingPipelineCapacityGuard();
+
+    private final Limits limits;
+
+    private CapabilityBudget(Limits limits) {
+        this.limits = limits;
+    }
+
+    static CapabilityBudget frozen() {
+        return new CapabilityBudget(new Limits(
+                CAPACITY_GUARD.maximumInclusive(RenderingPipelineCapacityGuard.Limit
+                        .CAPABILITY_RUNTIME_STATIC_CAPABILITY_SOURCES),
+                CAPACITY_GUARD.maximumInclusive(RenderingPipelineCapacityGuard.Limit
+                        .CAPABILITY_RUNTIME_TOTAL_DEMANDS),
+                CAPACITY_GUARD.maximumInclusive(RenderingPipelineCapacityGuard.Limit
+                        .CAPABILITY_RUNTIME_CLOCK_DEMANDS),
+                CAPACITY_GUARD.maximumInclusive(RenderingPipelineCapacityGuard.Limit
+                        .CAPABILITY_RUNTIME_RANDOM_DEMANDS),
+                CAPACITY_GUARD.maximumInclusive(RenderingPipelineCapacityGuard.Limit
+                        .CAPABILITY_RUNTIME_POSITION_CANONICAL_BYTES_PER_DEMAND),
+                CAPACITY_GUARD.maximumInclusive(RenderingPipelineCapacityGuard.Limit
+                        .CAPABILITY_RUNTIME_POSITION_CANONICAL_BYTES_TOTAL),
+                CAPACITY_GUARD.maximumInclusive(RenderingPipelineCapacityGuard.Limit
+                        .CAPABILITY_RUNTIME_CAPABILITY_STATE_RECORD_BYTES),
+                CAPACITY_GUARD.maximumInclusive(RenderingPipelineCapacityGuard.Limit
+                        .CAPABILITY_RUNTIME_RESULT_DIGEST_STREAMING_BYTES)));
+    }
+
+    static CapabilityBudget fromEffectiveVector(String effectiveBudgetVector) {
+        Objects.requireNonNull(effectiveBudgetVector, "effectiveBudgetVector");
+        var bytes = effectiveBudgetVector.getBytes(StandardCharsets.UTF_8);
+        var parsed = RenderJsonParser.parse(bytes, new RenderJsonParser.JsonBudget(
+                "effectiveBudgetVector", 4 * 1024 * 1024L, 32,
+                1_024, 10_000, 100_000, 1_048_576, 256));
+        if (!(parsed instanceof RenderJsonParser.Parsed document)
+                || !(document.value() instanceof RenderJson.ObjectValue root)) {
+            throw invalidVector();
+        }
+        var groups = objectMember(root, "groups");
+        var capabilityRuntime = objectMember(groups, "capabilityRuntime");
+        var limits = objectMember(capabilityRuntime, "limits");
+        exactCatalogLimit(
+                limits,
+                "randomRejectionAttempts",
+                RenderingPipelineCapacityGuard.Limit
+                        .CAPABILITY_RUNTIME_RANDOM_REJECTION_ATTEMPTS);
+        exactCatalogLimit(
+                limits,
+                "initializationAttempts",
+                RenderingPipelineCapacityGuard.Limit
+                        .CAPABILITY_RUNTIME_INITIALIZATION_ATTEMPTS);
+        return new CapabilityBudget(new Limits(
+                limit(limits, "staticCapabilitySources",
+                        CAPACITY_GUARD.maximumInclusive(RenderingPipelineCapacityGuard.Limit
+                                .CAPABILITY_RUNTIME_STATIC_CAPABILITY_SOURCES)),
+                limit(limits, "totalDemands",
+                        CAPACITY_GUARD.maximumInclusive(RenderingPipelineCapacityGuard.Limit
+                                .CAPABILITY_RUNTIME_TOTAL_DEMANDS)),
+                limit(limits, "clockDemands",
+                        CAPACITY_GUARD.maximumInclusive(RenderingPipelineCapacityGuard.Limit
+                                .CAPABILITY_RUNTIME_CLOCK_DEMANDS)),
+                limit(limits, "randomDemands",
+                        CAPACITY_GUARD.maximumInclusive(RenderingPipelineCapacityGuard.Limit
+                                .CAPABILITY_RUNTIME_RANDOM_DEMANDS)),
+                limit(limits, "positionCanonicalBytesPerDemand",
+                        CAPACITY_GUARD.maximumInclusive(RenderingPipelineCapacityGuard.Limit
+                                .CAPABILITY_RUNTIME_POSITION_CANONICAL_BYTES_PER_DEMAND)),
+                limit(limits, "positionCanonicalBytesTotal",
+                        CAPACITY_GUARD.maximumInclusive(RenderingPipelineCapacityGuard.Limit
+                                .CAPABILITY_RUNTIME_POSITION_CANONICAL_BYTES_TOTAL)),
+                limit(limits, "capabilityStateRecordBytes",
+                        CAPACITY_GUARD.maximumInclusive(RenderingPipelineCapacityGuard.Limit
+                                .CAPABILITY_RUNTIME_CAPABILITY_STATE_RECORD_BYTES)),
+                limit(limits, "resultDigestStreamingBytes",
+                        CAPACITY_GUARD.maximumInclusive(RenderingPipelineCapacityGuard.Limit
+                                .CAPABILITY_RUNTIME_RESULT_DIGEST_STREAMING_BYTES))));
+    }
+
+    RenderingProblem admitStaticSources(long sourceCount) {
+        return CAPACITY_GUARD.admit(
+                        RenderingPipelineCapacityGuard.Limit
+                                .CAPABILITY_RUNTIME_STATIC_CAPABILITY_SOURCES,
+                        sourceCount,
+                        limits.staticSources())
+                .orElse(null);
+    }
+
+    LimitExceeded admitStateRecord(long recordBytes) {
+        var problem = CAPACITY_GUARD.admit(
+                        RenderingPipelineCapacityGuard.Limit
+                                .CAPABILITY_RUNTIME_CAPABILITY_STATE_RECORD_BYTES,
+                        recordBytes,
+                        limits.capabilityStateRecordBytes())
+                .orElse(null);
+        if (problem != null) {
+            return new LimitExceeded(problem.limitId().orElseThrow().value());
+        }
+        return null;
+    }
+
+    Tracker newTracker() {
+        return new Tracker(limits);
+    }
+
+    InitializationAttempts newInitializationAttempts() {
+        return new InitializationAttempts();
+    }
+
+    static LimitExceeded randomRejectionExhausted() {
+        var limit = RenderingPipelineCapacityGuard.Limit
+                .CAPABILITY_RUNTIME_RANDOM_REJECTION_ATTEMPTS;
+        var nextAttempt = Math.addExact(CAPACITY_GUARD.exactValue(limit), 1L);
+        var problem = CAPACITY_GUARD.admitRuntimeMaximum(limit, nextAttempt)
+                .orElseThrow();
+        return new LimitExceeded(problem.limitId().orElseThrow().value());
+    }
+
+    private static RenderJson.ObjectValue objectMember(
+            RenderJson.ObjectValue parent, String member) {
+        if (parent.members().get(member) instanceof RenderJson.ObjectValue object) {
+            return object;
+        }
+        throw invalidVector();
+    }
+
+    private static long limit(RenderJson.ObjectValue limits, String member, long frozenMaximum) {
+        var value = canonicalNonNegativeLimit(limits, member);
+        if (value > frozenMaximum) {
+            throw invalidVector();
+        }
+        return value;
+    }
+
+    private static long canonicalNonNegativeLimit(
+            RenderJson.ObjectValue limits,
+            String member
+    ) {
+        if (!(limits.members().get(member) instanceof RenderJson.NumberValue number)) {
+            throw invalidVector();
+        }
+        final long value;
+        try {
+            value = Long.parseLong(number.rawToken());
+        } catch (NumberFormatException invalid) {
+            throw invalidVector();
+        }
+        if (value < 0) {
+            throw invalidVector();
+        }
+        if (!Long.toString(value).equals(number.rawToken())) {
+            throw invalidVector();
+        }
+        return value;
+    }
+
+    private static void exactCatalogLimit(
+            RenderJson.ObjectValue limits,
+            String member,
+            RenderingPipelineCapacityGuard.Limit limit
+    ) {
+        var value = canonicalNonNegativeLimit(limits, member);
+        if (CAPACITY_GUARD.admit(limit, value).isPresent()) {
+            throw invalidVector();
+        }
+    }
+
+    private static IllegalArgumentException invalidVector() {
+        return new IllegalArgumentException("effective capability budget vector is invalid");
+    }
+
+    record LimitExceeded(String limitId) {
+        LimitExceeded {
+            Objects.requireNonNull(limitId, "limitId");
+        }
+    }
+
+    static final class Tracker {
+        private final Limits limits;
+        private long totalDemands;
+        private long clockDemands;
+        private long randomDemands;
+        private long positionBytes;
+        private long resultDigestBytes;
+
+        private Tracker(Limits limits) {
+            this.limits = limits;
+        }
+
+        synchronized LimitExceeded reserveDemand(String capability, long canonicalPositionBytes) {
+            Objects.requireNonNull(capability, "capability");
+            var nextTotalDemands = totalDemands == Long.MAX_VALUE
+                    ? Long.MAX_VALUE
+                    : totalDemands + 1L;
+            var totalProblem = CAPACITY_GUARD.admit(
+                            RenderingPipelineCapacityGuard.Limit
+                                    .CAPABILITY_RUNTIME_TOTAL_DEMANDS,
+                            nextTotalDemands,
+                            limits.totalDemands())
+                    .orElse(null);
+            if (totalProblem != null) {
+                return new LimitExceeded(totalProblem.limitId().orElseThrow().value());
+            }
+            if ("CLOCK".equals(capability)) {
+                var nextClockDemands = clockDemands == Long.MAX_VALUE
+                        ? Long.MAX_VALUE
+                        : clockDemands + 1L;
+                var clockProblem = CAPACITY_GUARD.admit(
+                                RenderingPipelineCapacityGuard.Limit
+                                        .CAPABILITY_RUNTIME_CLOCK_DEMANDS,
+                                nextClockDemands,
+                                limits.clockDemands())
+                        .orElse(null);
+                if (clockProblem != null) {
+                    return new LimitExceeded(
+                            clockProblem.limitId().orElseThrow().value());
+                }
+            }
+            if ("RANDOM".equals(capability)) {
+                var nextRandomDemands = randomDemands == Long.MAX_VALUE
+                        ? Long.MAX_VALUE
+                        : randomDemands + 1L;
+                var randomProblem = CAPACITY_GUARD.admit(
+                                RenderingPipelineCapacityGuard.Limit
+                                        .CAPABILITY_RUNTIME_RANDOM_DEMANDS,
+                                nextRandomDemands,
+                                limits.randomDemands())
+                        .orElse(null);
+                if (randomProblem != null) {
+                    return new LimitExceeded(
+                            randomProblem.limitId().orElseThrow().value());
+                }
+            }
+            var positionPerDemandProblem = CAPACITY_GUARD.admit(
+                            RenderingPipelineCapacityGuard.Limit
+                                    .CAPABILITY_RUNTIME_POSITION_CANONICAL_BYTES_PER_DEMAND,
+                            canonicalPositionBytes,
+                            limits.positionBytesPerDemand())
+                    .orElse(null);
+            if (positionPerDemandProblem != null) {
+                return new LimitExceeded(
+                        positionPerDemandProblem.limitId().orElseThrow().value());
+            }
+            var nextPositionBytes = positionBytes > Long.MAX_VALUE - canonicalPositionBytes
+                    ? Long.MAX_VALUE
+                    : positionBytes + canonicalPositionBytes;
+            var positionTotalProblem = CAPACITY_GUARD.admit(
+                            RenderingPipelineCapacityGuard.Limit
+                                    .CAPABILITY_RUNTIME_POSITION_CANONICAL_BYTES_TOTAL,
+                            nextPositionBytes,
+                            limits.positionBytesTotal())
+                    .orElse(null);
+            if (positionTotalProblem != null) {
+                return new LimitExceeded(
+                        positionTotalProblem.limitId().orElseThrow().value());
+            }
+            totalDemands++;
+            if ("CLOCK".equals(capability)) {
+                clockDemands++;
+            } else if ("RANDOM".equals(capability)) {
+                randomDemands++;
+            } else {
+                throw new IllegalArgumentException("unknown capability");
+            }
+            positionBytes = nextPositionBytes;
+            return null;
+        }
+
+        synchronized LimitExceeded reserveResultDigestBytes(long framedBytes) {
+            if (framedBytes < 0) {
+                throw new IllegalArgumentException("capacity increment must not be negative");
+            }
+            var nextResultDigestBytes = resultDigestBytes > Long.MAX_VALUE - framedBytes
+                    ? Long.MAX_VALUE
+                    : resultDigestBytes + framedBytes;
+            var problem = CAPACITY_GUARD.admit(
+                            RenderingPipelineCapacityGuard.Limit
+                                    .CAPABILITY_RUNTIME_RESULT_DIGEST_STREAMING_BYTES,
+                            nextResultDigestBytes,
+                            limits.resultDigestStreamingBytes())
+                    .orElse(null);
+            if (problem != null) {
+                return new LimitExceeded(problem.limitId().orElseThrow().value());
+            }
+            resultDigestBytes = nextResultDigestBytes;
+            return null;
+        }
+    }
+
+    static final class InitializationAttempts {
+        private long attempts;
+
+        synchronized LimitExceeded reserve() {
+            var nextAttempts = attempts == Long.MAX_VALUE
+                    ? Long.MAX_VALUE
+                    : attempts + 1L;
+            var problem = CAPACITY_GUARD.admitRuntimeMaximum(
+                            RenderingPipelineCapacityGuard.Limit
+                                    .CAPABILITY_RUNTIME_INITIALIZATION_ATTEMPTS,
+                            nextAttempts)
+                    .orElse(null);
+            if (problem != null) {
+                return new LimitExceeded(problem.limitId().orElseThrow().value());
+            }
+            attempts = nextAttempts;
+            return null;
+        }
+    }
+
+    private record Limits(
+            long staticSources,
+            long totalDemands,
+            long clockDemands,
+            long randomDemands,
+            long positionBytesPerDemand,
+            long positionBytesTotal,
+            long capabilityStateRecordBytes,
+            long resultDigestStreamingBytes
+    ) {
+    }
+}

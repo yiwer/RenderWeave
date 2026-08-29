@@ -1,6 +1,10 @@
 package cn.hbads.renderweave.rendering.internal;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.TreeMap;
 
 /**
@@ -17,31 +21,151 @@ final class CanonicalJson {
     private CanonicalJson() {
     }
 
+    @FunctionalInterface
+    interface Utf8Sink {
+        void writeUtf8(String canonicalText);
+
+        default void beginContainer() {
+        }
+
+        default void endContainer() {
+        }
+    }
+
+    @FunctionalInterface
+    interface CanonicalValue {
+        void writeTo(Utf8Sink sink);
+    }
+
     /** members 的 value 必须已是合法 JSON 编码；键按 UTF-8 字节序输出。 */
     static String object(TreeMap<String, String> members) {
-        var sorted = new TreeMap<>(UTF8_ORDER);
-        sorted.putAll(members);
-        var builder = new StringBuilder("{");
-        boolean first = true;
-        for (var entry : sorted.entrySet()) {
-            if (!first) {
-                builder.append(',');
-            }
-            first = false;
-            builder.append(string(entry.getKey())).append(':').append(entry.getValue());
+        var values = new TreeMap<String, CanonicalValue>();
+        for (var entry : members.entrySet()) {
+            values.put(entry.getKey(), encodedValue(entry.getValue()));
         }
-        return builder.append('}').toString();
+        return encode(objectValue(values));
     }
 
     static String array(java.util.List<String> items) {
-        var builder = new StringBuilder("[");
-        for (int index = 0; index < items.size(); index++) {
-            if (index > 0) {
-                builder.append(',');
-            }
-            builder.append(items.get(index));
+        var values = new ArrayList<CanonicalValue>(items.size());
+        for (var item : items) {
+            values.add(encodedValue(item));
         }
-        return builder.append(']').toString();
+        return encode(arrayValue(values));
+    }
+
+    static CanonicalValue objectValue(Map<String, CanonicalValue> members) {
+        Objects.requireNonNull(members, "members");
+        var sorted = new TreeMap<String, CanonicalValue>(UTF8_ORDER);
+        sorted.putAll(members);
+        var entries = sorted.entrySet().stream()
+                .map(entry -> Map.entry(entry.getKey(), entry.getValue()))
+                .toList();
+        return sink -> {
+            sink.beginContainer();
+            sink.writeUtf8("{");
+            for (int index = 0; index < entries.size(); index++) {
+                if (index > 0) {
+                    sink.writeUtf8(",");
+                }
+                var entry = entries.get(index);
+                writeString(sink, entry.getKey());
+                sink.writeUtf8(":");
+                entry.getValue().writeTo(sink);
+            }
+            sink.writeUtf8("}");
+            sink.endContainer();
+        };
+    }
+
+    static CanonicalValue arrayValue(List<CanonicalValue> items) {
+        var values = List.copyOf(items);
+        return sink -> {
+            sink.beginContainer();
+            sink.writeUtf8("[");
+            for (int index = 0; index < values.size(); index++) {
+                if (index > 0) {
+                    sink.writeUtf8(",");
+                }
+                values.get(index).writeTo(sink);
+            }
+            sink.writeUtf8("]");
+            sink.endContainer();
+        };
+    }
+
+    static CanonicalValue stringValue(String value) {
+        Objects.requireNonNull(value, "value");
+        return sink -> writeString(sink, value);
+    }
+
+    static CanonicalValue decimalValue(BigDecimal value) {
+        Objects.requireNonNull(value, "value");
+        return sink -> sink.writeUtf8(decimal(value));
+    }
+
+    static CanonicalValue boolValue(boolean value) {
+        return sink -> sink.writeUtf8(bool(value));
+    }
+
+    static String encode(CanonicalValue value) {
+        var builder = new StringBuilder();
+        value.writeTo(builder::append);
+        return builder.toString();
+    }
+
+    static long canonicalUtf8Length(CanonicalValue value) {
+        Objects.requireNonNull(value, "value");
+        var total = new long[1];
+        value.writeTo(text -> total[0] = Math.addExact(total[0], utf8Length(text)));
+        return total[0];
+    }
+
+    static int utf8Length(String value) {
+        var length = 0;
+        for (int index = 0; index < value.length(); index++) {
+            var current = value.charAt(index);
+            if (current <= 0x7F) {
+                length++;
+            } else if (current <= 0x7FF) {
+                length += 2;
+            } else if (Character.isHighSurrogate(current)
+                    && index + 1 < value.length()
+                    && Character.isLowSurrogate(value.charAt(index + 1))) {
+                length += 4;
+                index++;
+            } else if (Character.isSurrogate(current)) {
+                // StandardCharsets.UTF_8 replaces an unpaired surrogate with one ASCII byte.
+                length++;
+            } else {
+                length += 3;
+            }
+        }
+        return length;
+    }
+
+    private static CanonicalValue encodedValue(String encoded) {
+        Objects.requireNonNull(encoded, "encoded");
+        return sink -> sink.writeUtf8(encoded);
+    }
+
+    private static void writeString(Utf8Sink sink, String value) {
+        sink.writeUtf8("\"");
+        var chunk = new StringBuilder(4_096);
+        int index = 0;
+        while (index < value.length()) {
+            int codePoint = value.codePointAt(index);
+            appendEscaped(chunk, codePoint);
+            if (chunk.length() >= 4_096) {
+                sink.writeUtf8(chunk.toString());
+                chunk.setLength(0);
+            }
+            index += Character.charCount(codePoint);
+        }
+        if (!chunk.isEmpty()) {
+            sink.writeUtf8(chunk.toString());
+        }
+        sink.writeUtf8("\"");
     }
 
     static String string(String value) {
@@ -54,25 +178,29 @@ final class CanonicalJson {
         int index = 0;
         while (index < value.length()) {
             int codePoint = value.codePointAt(index);
-            switch (codePoint) {
-                case '"' -> builder.append("\\\"");
-                case '\\' -> builder.append("\\\\");
-                case '\b' -> builder.append("\\b");
-                case '\f' -> builder.append("\\f");
-                case '\n' -> builder.append("\\n");
-                case '\r' -> builder.append("\\r");
-                case '\t' -> builder.append("\\t");
-                default -> {
-                    if (codePoint < 0x20) {
-                        builder.append(String.format("\\u%04x", codePoint));
-                    } else {
-                        builder.appendCodePoint(codePoint);
-                    }
-                }
-            }
+            appendEscaped(builder, codePoint);
             index += Character.charCount(codePoint);
         }
         return builder.toString();
+    }
+
+    private static void appendEscaped(StringBuilder builder, int codePoint) {
+        switch (codePoint) {
+            case '"' -> builder.append("\\\"");
+            case '\\' -> builder.append("\\\\");
+            case '\b' -> builder.append("\\b");
+            case '\f' -> builder.append("\\f");
+            case '\n' -> builder.append("\\n");
+            case '\r' -> builder.append("\\r");
+            case '\t' -> builder.append("\\t");
+            default -> {
+                if (codePoint < 0x20) {
+                    builder.append(String.format("\\u%04x", codePoint));
+                } else {
+                    builder.appendCodePoint(codePoint);
+                }
+            }
+        }
     }
 
     /** canonical decimal：plain 记法、无指数、无尾零、{@code -0} 归一为 {@code 0}。 */

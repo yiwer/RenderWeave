@@ -1,8 +1,12 @@
 package cn.hbads.renderweave.rendering.internal;
 
+import cn.hbads.renderweave.rendering.api.EvaluationStage;
+import cn.hbads.renderweave.rendering.api.RenderingProblem.ProblemCode;
 import cn.hbads.renderweave.schema.definition.StaticSchemaRef;
 import cn.hbads.renderweave.schema.identity.SchemaKey;
 import cn.hbads.renderweave.schema.identity.VersionTag;
+import cn.hbads.renderweave.template.api.DesignSemanticAuthority.ArrayNode;
+import cn.hbads.renderweave.template.api.DesignSemanticAuthority.Bool;
 import cn.hbads.renderweave.template.api.DesignSemanticAuthority.DesignNodeValue;
 import cn.hbads.renderweave.template.api.DesignSemanticAuthority.NumberToken;
 import cn.hbads.renderweave.template.api.DesignSemanticAuthority.ObjectNode;
@@ -15,6 +19,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -24,6 +29,13 @@ class SealerTest {
 
     private static final StaticSchemaRef SCHEMA = new StaticSchemaRef(
             SchemaKey.systemProvided("system-empty"), VersionTag.of("v1"));
+    private static final String MINIMAL_RENDER_DOCUMENT =
+            "{\"canvas\":{\"backgroundColor\":\"#00000000\",\"bleed\":{\"bottomPt\":0,"
+                    + "\"leftPt\":0,\"rightPt\":0,\"topPt\":0},\"children\":[],"
+                    + "\"heightPt\":841.889764,\"kind\":\"canvas\","
+                    + "\"occurrenceId\":\"rwocc_0000000000000000\",\"widthPt\":595.275591},"
+                    + "\"dslVersion\":\"renderweave-render/1.0\","
+                    + "\"layoutProfile\":\"renderweave-layout/1.0\",\"resources\":[]}";
 
     @Test
     void sealProducesEnvelopeWithOccurrenceIdsAndPtQuantization() {
@@ -49,7 +61,8 @@ class SealerTest {
 
         var sealOutcome = Sealer.seal(closure(), admitted(), tree, "sha256:" + "c".repeat(64));
         if (sealOutcome instanceof Sealer.SealRejected rejected) {
-            throw new AssertionError("seal rejected: " + rejected.limitId());
+            throw new AssertionError("seal rejected: "
+                    + rejected.problem().limitId().orElseThrow().value());
         }
         var sealed = (Sealer.Sealed) sealOutcome;
 
@@ -160,6 +173,60 @@ class SealerTest {
     }
 
     @Test
+    void deadlineReachedWhileComputingResultDigestDiscardsCanonicalDocument() {
+        var monotonicNanos = new long[]{0L};
+        var stageControl = EvaluationStageControl.start(
+                () -> monotonicNanos[0], 15_000L);
+        var resource = entry("rwres_" + "a".repeat(64), "asset-a");
+        var iterationPasses = new int[]{0};
+        List<Materializer.ResourceEntry> resources =
+                new java.util.AbstractList<>() {
+                    @Override
+                    public Materializer.ResourceEntry get(int index) {
+                        if (index != 0) {
+                            throw new IndexOutOfBoundsException(index);
+                        }
+                        return resource;
+                    }
+
+                    @Override
+                    public int size() {
+                        return 1;
+                    }
+
+                    @Override
+                    public java.util.Iterator<Materializer.ResourceEntry> iterator() {
+                        var pass = ++iterationPasses[0];
+                        var delegate = List.of(resource).iterator();
+                        return new java.util.Iterator<>() {
+                            @Override
+                            public boolean hasNext() {
+                                return delegate.hasNext();
+                            }
+
+                            @Override
+                            public Materializer.ResourceEntry next() {
+                                var next = delegate.next();
+                                if (pass == 2) {
+                                    monotonicNanos[0] = 15_000_000_000L;
+                                }
+                                return next;
+                            }
+                        };
+                    }
+                };
+        var baseTree = minimalTree();
+        var tree = new Materializer.MaterializedTree(
+                baseTree.root(), resources, baseTree.sidecar());
+
+        var outcome = Sealer.seal(
+                closure(), admitted(), tree, "sha256:" + "c".repeat(64), stageControl);
+
+        assertInstanceOf(Sealer.SealDeadlineExceeded.class, outcome);
+        assertEquals(2, iterationPasses[0]);
+    }
+
+    @Test
     void selectionDigestIsOrderSensitive() {
         var entryA = entry("rwres_" + "a".repeat(64), "asset-a");
         var entryB = entry("rwres_" + "b".repeat(64), "asset-b");
@@ -167,6 +234,296 @@ class SealerTest {
         var digestBa = Sealer.assetSelectionDigest(List.of(entryB, entryA));
         assertNotEquals(digestAb, digestBa);
         assertTrue(digestAb.startsWith("sha256:"));
+    }
+
+    @Test
+    void canonicalWriterCommitsTheFrozenDocumentAtTheInclusiveByteBudget() {
+        var expected = MINIMAL_RENDER_DOCUMENT.getBytes(StandardCharsets.UTF_8);
+        assertEquals(305, expected.length);
+        var capacity = new RenderingPipelineCapacityGuard().newRequestTracker();
+        assertTrue(capacity.reserve(
+                RenderingPipelineCapacityGuard.Limit.RENDER_DOCUMENT_CANONICAL_BYTES,
+                67_108_864L - expected.length).isEmpty());
+
+        var outcome = Sealer.seal(
+                closure(), admitted(), minimalTree(), "sha256:" + "c".repeat(64), capacity);
+
+        var sealed = assertInstanceOf(Sealer.Sealed.class, outcome);
+        assertArrayEquals(expected, sealed.evaluation().renderDocumentCanonicalUtf8());
+    }
+
+    @Test
+    void canonicalWriterRejectsAboveTheByteBudgetWithoutASealedDocument() {
+        var expectedBytes = MINIMAL_RENDER_DOCUMENT.getBytes(StandardCharsets.UTF_8).length;
+        var capacity = new RenderingPipelineCapacityGuard().newRequestTracker();
+        assertTrue(capacity.reserve(
+                RenderingPipelineCapacityGuard.Limit.RENDER_DOCUMENT_CANONICAL_BYTES,
+                67_108_864L - expectedBytes + 1).isEmpty());
+
+        var outcome = Sealer.seal(
+                closure(), admitted(), minimalTree(), "sha256:" + "c".repeat(64), capacity);
+
+        var rejected = assertInstanceOf(Sealer.SealRejected.class, outcome);
+        assertEquals(EvaluationStage.DOCUMENT_SEAL, rejected.problem().stage());
+        assertEquals(ProblemCode.RENDER_DOCUMENT_LIMIT_EXCEEDED, rejected.problem().code());
+        assertEquals("renderDocument.canonicalBytes",
+                rejected.problem().limitId().orElseThrow().value());
+    }
+
+    @Test
+    void sealMaterializesCanonicalRequestSidecarWithoutLeakingItIntoRenderDocument() {
+        var sealed = assertInstanceOf(Sealer.Sealed.class, Sealer.seal(
+                closure(), admitted(), oneImageResourceTree(),
+                "sha256:" + "c".repeat(64)));
+
+        var sidecar = new String(
+                sealed.evaluation().diagnosticSidecarCanonicalUtf8(), StandardCharsets.UTF_8);
+        var document = new String(
+                sealed.evaluation().renderDocumentCanonicalUtf8(), StandardCharsets.UTF_8);
+
+        assertTrue(sidecar.contains("\"sidecarVersion\":"
+                + "\"renderweave-diagnostic-sidecar/1.0\""));
+        assertTrue(sidecar.contains("rwocc_0000000000000000"));
+        assertTrue(sidecar.contains("rwocc_0000000000000001"));
+        assertTrue(sidecar.contains("canvas-background"));
+        assertTrue(sidecar.contains("source-node"));
+        assertTrue(sidecar.contains("\"consumerPropertyRef\":"
+                + "{\"rootPropertyId\":\"imageRef\",\"selectors\":[]}"));
+        assertTrue(!document.contains("sidecarVersion"));
+        assertTrue(!document.contains("renderweave-occurrence-path/1.0"));
+        assertTrue(!document.contains("source-node"));
+    }
+
+    @Test
+    void canonicalSidecarWriterAdmitsAtAndRejectsAboveTheInclusiveByteBudget() {
+        var baseline = assertInstanceOf(Sealer.Sealed.class, Sealer.seal(
+                closure(), admitted(), oneChildTree(), "sha256:" + "c".repeat(64)));
+        var expected = baseline.evaluation().diagnosticSidecarCanonicalUtf8();
+
+        var atCapacity = new RenderingPipelineCapacityGuard().newRequestTracker();
+        assertTrue(atCapacity.reserve(
+                RenderingPipelineCapacityGuard.Limit.DIAGNOSTICS_SIDECAR_BYTES,
+                8_388_608L - expected.length).isEmpty());
+        var at = assertInstanceOf(Sealer.Sealed.class, Sealer.seal(
+                closure(), admitted(), oneChildTree(), "sha256:" + "c".repeat(64),
+                atCapacity));
+        assertArrayEquals(expected, at.evaluation().diagnosticSidecarCanonicalUtf8());
+
+        var aboveCapacity = new RenderingPipelineCapacityGuard().newRequestTracker();
+        assertTrue(aboveCapacity.reserve(
+                RenderingPipelineCapacityGuard.Limit.DIAGNOSTICS_SIDECAR_BYTES,
+                8_388_608L - expected.length + 1).isEmpty());
+        var rejected = assertInstanceOf(Sealer.SealRejected.class, Sealer.seal(
+                closure(), admitted(), oneChildTree(), "sha256:" + "c".repeat(64),
+                aboveCapacity));
+        assertEquals(EvaluationStage.MATERIALIZATION, rejected.problem().stage());
+        assertEquals(ProblemCode.RENDER_DIAGNOSTIC_LIMIT_EXCEEDED,
+                rejected.problem().code());
+        assertEquals("diagnostics.sidecarBytes",
+                rejected.problem().limitId().orElseThrow().value());
+    }
+
+    @Test
+    void staticNodeCounterAdmitsTheRootAtAndRejectsItAboveTheInclusiveBudget() {
+        var atCapacity = new RenderingPipelineCapacityGuard().newRequestTracker();
+        assertTrue(atCapacity.reserve(
+                RenderingPipelineCapacityGuard.Limit.RENDER_DOCUMENT_STATIC_NODES,
+                19_999).isEmpty());
+        assertInstanceOf(Sealer.Sealed.class, Sealer.seal(
+                closure(), admitted(), minimalTree(), "sha256:" + "c".repeat(64),
+                atCapacity));
+
+        var aboveCapacity = new RenderingPipelineCapacityGuard().newRequestTracker();
+        assertTrue(aboveCapacity.reserve(
+                RenderingPipelineCapacityGuard.Limit.RENDER_DOCUMENT_STATIC_NODES,
+                20_000).isEmpty());
+        var rejected = assertInstanceOf(Sealer.SealRejected.class, Sealer.seal(
+                closure(), admitted(), minimalTree(), "sha256:" + "c".repeat(64),
+                aboveCapacity));
+        assertStaticNodeLimit(rejected);
+    }
+
+    @Test
+    void compositionViewportSourceCanvasConsumesItsOwnStaticNodeUnit() {
+        var atCapacity = new RenderingPipelineCapacityGuard().newRequestTracker();
+        assertTrue(atCapacity.reserve(
+                RenderingPipelineCapacityGuard.Limit.RENDER_DOCUMENT_STATIC_NODES,
+                19_997).isEmpty());
+        assertInstanceOf(Sealer.Sealed.class, Sealer.seal(
+                closure(), admitted(), viewportTree(), "sha256:" + "c".repeat(64),
+                atCapacity));
+
+        var aboveCapacity = new RenderingPipelineCapacityGuard().newRequestTracker();
+        assertTrue(aboveCapacity.reserve(
+                RenderingPipelineCapacityGuard.Limit.RENDER_DOCUMENT_STATIC_NODES,
+                19_998).isEmpty());
+        var rejected = assertInstanceOf(Sealer.SealRejected.class, Sealer.seal(
+                closure(), admitted(), viewportTree(), "sha256:" + "c".repeat(64),
+                aboveCapacity));
+        assertStaticNodeLimit(rejected);
+    }
+
+    @Test
+    void childEdgeCounterLeavesTheRootAndEmptyArrayUncharged() {
+        var emptyAtCapacity = new RenderingPipelineCapacityGuard().newRequestTracker();
+        assertTrue(emptyAtCapacity.reserve(
+                RenderingPipelineCapacityGuard.Limit.RENDER_DOCUMENT_CHILD_EDGES,
+                19_999).isEmpty());
+        assertTrue(emptyAtCapacity.reserve(
+                RenderingPipelineCapacityGuard.Limit.RENDER_DOCUMENT_STATIC_NODES,
+                19_999).isEmpty());
+        assertInstanceOf(Sealer.Sealed.class, Sealer.seal(
+                closure(), admitted(), minimalTree(), "sha256:" + "c".repeat(64),
+                emptyAtCapacity));
+
+        var atCapacity = new RenderingPipelineCapacityGuard().newRequestTracker();
+        assertTrue(atCapacity.reserve(
+                RenderingPipelineCapacityGuard.Limit.RENDER_DOCUMENT_CHILD_EDGES,
+                19_998).isEmpty());
+        assertTrue(atCapacity.reserve(
+                RenderingPipelineCapacityGuard.Limit.RENDER_DOCUMENT_STATIC_NODES,
+                19_998).isEmpty());
+        assertInstanceOf(Sealer.Sealed.class, Sealer.seal(
+                closure(), admitted(), oneChildTree(), "sha256:" + "c".repeat(64),
+                atCapacity));
+
+        var aboveCapacity = new RenderingPipelineCapacityGuard().newRequestTracker();
+        assertTrue(aboveCapacity.reserve(
+                RenderingPipelineCapacityGuard.Limit.RENDER_DOCUMENT_CHILD_EDGES,
+                19_999).isEmpty());
+        assertTrue(aboveCapacity.reserve(
+                RenderingPipelineCapacityGuard.Limit.RENDER_DOCUMENT_STATIC_NODES,
+                19_999).isEmpty());
+        var rejected = assertInstanceOf(Sealer.SealRejected.class, Sealer.seal(
+                closure(), admitted(), oneChildTree(), "sha256:" + "c".repeat(64),
+                aboveCapacity));
+        assertChildEdgeLimit(rejected);
+    }
+
+    @Test
+    void compositionViewportSourceCanvasConsumesItsOwnChildEdgeUnit() {
+        var atCapacity = new RenderingPipelineCapacityGuard().newRequestTracker();
+        assertTrue(atCapacity.reserve(
+                RenderingPipelineCapacityGuard.Limit.RENDER_DOCUMENT_CHILD_EDGES,
+                19_997).isEmpty());
+        assertTrue(atCapacity.reserve(
+                RenderingPipelineCapacityGuard.Limit.RENDER_DOCUMENT_STATIC_NODES,
+                19_997).isEmpty());
+        assertInstanceOf(Sealer.Sealed.class, Sealer.seal(
+                closure(), admitted(), viewportTree(), "sha256:" + "c".repeat(64),
+                atCapacity));
+
+        var aboveCapacity = new RenderingPipelineCapacityGuard().newRequestTracker();
+        assertTrue(aboveCapacity.reserve(
+                RenderingPipelineCapacityGuard.Limit.RENDER_DOCUMENT_CHILD_EDGES,
+                19_998).isEmpty());
+        assertTrue(aboveCapacity.reserve(
+                RenderingPipelineCapacityGuard.Limit.RENDER_DOCUMENT_STATIC_NODES,
+                19_998).isEmpty());
+        var rejected = assertInstanceOf(Sealer.SealRejected.class, Sealer.seal(
+                closure(), admitted(), viewportTree(), "sha256:" + "c".repeat(64),
+                aboveCapacity));
+        assertChildEdgeLimit(rejected);
+    }
+
+    @Test
+    void finalTextRunsUseTheRequestTotalFrozenBoundary() {
+        var emptyAtCapacity = new RenderingPipelineCapacityGuard().newRequestTracker();
+        assertTrue(emptyAtCapacity.reserve(
+                RenderingPipelineCapacityGuard.Limit.RENDER_DOCUMENT_RUNS,
+                10_000).isEmpty());
+        assertInstanceOf(Sealer.Sealed.class, Sealer.seal(
+                closure(), admitted(), minimalTree(), "sha256:" + "c".repeat(64),
+                emptyAtCapacity));
+
+        var atCapacity = new RenderingPipelineCapacityGuard().newRequestTracker();
+        assertTrue(atCapacity.reserve(
+                RenderingPipelineCapacityGuard.Limit.RENDER_DOCUMENT_RUNS,
+                9_998).isEmpty());
+        var sealed = assertInstanceOf(Sealer.Sealed.class, Sealer.seal(
+                closure(), admitted(), twoTextRunsTree(), "sha256:" + "c".repeat(64),
+                atCapacity));
+        var document = new String(
+                sealed.evaluation().renderDocumentCanonicalUtf8(), StandardCharsets.UTF_8);
+        assertTrue(document.contains("\"visible\":false"));
+        assertTrue(document.contains("\"opacity\":0"));
+
+        var aboveCapacity = new RenderingPipelineCapacityGuard().newRequestTracker();
+        assertTrue(aboveCapacity.reserve(
+                RenderingPipelineCapacityGuard.Limit.RENDER_DOCUMENT_RUNS,
+                9_999).isEmpty());
+        var rejected = assertInstanceOf(Sealer.SealRejected.class, Sealer.seal(
+                closure(), admitted(), twoTextRunsTree(), "sha256:" + "c".repeat(64),
+                aboveCapacity));
+        assertRunLimit(rejected);
+    }
+
+    @Test
+    void finalTextScalarsUseTheRequestTotalFrozenBoundary() {
+        var emptyAtCapacity = new RenderingPipelineCapacityGuard().newRequestTracker();
+        assertTrue(emptyAtCapacity.reserve(
+                RenderingPipelineCapacityGuard.Limit.RENDER_DOCUMENT_TEXT_SCALARS,
+                1_000_000).isEmpty());
+        assertInstanceOf(Sealer.Sealed.class, Sealer.seal(
+                closure(), admitted(), minimalTree(), "sha256:" + "c".repeat(64),
+                emptyAtCapacity));
+
+        var atCapacity = new RenderingPipelineCapacityGuard().newRequestTracker();
+        assertTrue(atCapacity.reserve(
+                RenderingPipelineCapacityGuard.Limit.RENDER_DOCUMENT_TEXT_SCALARS,
+                999_996).isEmpty());
+        var sealed = assertInstanceOf(Sealer.Sealed.class, Sealer.seal(
+                closure(), admitted(), twoTextRunsTree(), "sha256:" + "c".repeat(64),
+                atCapacity));
+        var document = new String(
+                sealed.evaluation().renderDocumentCanonicalUtf8(), StandardCharsets.UTF_8);
+        assertTrue(document.contains("\uD83D\uDE00"));
+        assertTrue(document.contains("e\u0301\\n"));
+
+        var aboveCapacity = new RenderingPipelineCapacityGuard().newRequestTracker();
+        assertTrue(aboveCapacity.reserve(
+                RenderingPipelineCapacityGuard.Limit.RENDER_DOCUMENT_TEXT_SCALARS,
+                999_997).isEmpty());
+        var rejected = assertInstanceOf(Sealer.SealRejected.class, Sealer.seal(
+                closure(), admitted(), twoTextRunsTree(), "sha256:" + "c".repeat(64),
+                aboveCapacity));
+        assertTextScalarLimit(rejected);
+    }
+
+    @Test
+    void finalVectorEntriesUseTheRequestTotalFrozenBoundary() {
+        var emptyAtCapacity = new RenderingPipelineCapacityGuard().newRequestTracker();
+        assertTrue(emptyAtCapacity.reserve(
+                RenderingPipelineCapacityGuard.Limit.RENDER_DOCUMENT_VECTOR_ENTRIES,
+                100_000).isEmpty());
+        assertInstanceOf(Sealer.Sealed.class, Sealer.seal(
+                closure(), admitted(), minimalTree(), "sha256:" + "c".repeat(64),
+                emptyAtCapacity));
+
+        var atCapacity = new RenderingPipelineCapacityGuard().newRequestTracker();
+        assertTrue(atCapacity.reserve(
+                RenderingPipelineCapacityGuard.Limit.RENDER_DOCUMENT_VECTOR_ENTRIES,
+                99_993).isEmpty());
+        var sealed = assertInstanceOf(Sealer.Sealed.class, Sealer.seal(
+                closure(), admitted(), mixedVectorEntriesTree(), "sha256:" + "c".repeat(64),
+                atCapacity));
+        var document = new String(
+                sealed.evaluation().renderDocumentCanonicalUtf8(), StandardCharsets.UTF_8);
+        assertTrue(document.contains("\"kind\":\"line\""));
+        assertTrue(document.contains("\"kind\":\"polygon\""));
+        assertTrue(document.contains("\"kind\":\"polyline\""));
+        assertTrue(document.contains("\"kind\":\"path\""));
+        assertTrue(document.contains("\"visible\":false"));
+        assertTrue(document.contains("\"opacity\":0"));
+
+        var aboveCapacity = new RenderingPipelineCapacityGuard().newRequestTracker();
+        assertTrue(aboveCapacity.reserve(
+                RenderingPipelineCapacityGuard.Limit.RENDER_DOCUMENT_VECTOR_ENTRIES,
+                99_994).isEmpty());
+        var rejected = assertInstanceOf(Sealer.SealRejected.class, Sealer.seal(
+                closure(), admitted(), mixedVectorEntriesTree(), "sha256:" + "c".repeat(64),
+                aboveCapacity));
+        assertVectorEntryLimit(rejected);
     }
 
     // ------------------------------------------------------------------
@@ -192,6 +549,284 @@ class SealerTest {
                         cn.hbads.renderweave.asset.api.AssetAcceptanceAuthority.Orientation.IDENTITY,
                         10, 10, 1,
                         cn.hbads.renderweave.asset.api.AssetAcceptanceAuthority.ColorEncoding.SRGB_8BIT));
+    }
+
+    private static Materializer.MaterializedTree minimalTree() {
+        var canvas = new Materializer.MaterializedNode(
+                "canvas",
+                new ObjectNode(Map.of(
+                        "kind", new Text("canvas"),
+                        "widthMm", new NumberToken("210"),
+                        "heightMm", new NumberToken("297"))),
+                List.of(),
+                "");
+        return new Materializer.MaterializedTree(canvas, List.of(), List.of());
+    }
+
+    private static Materializer.MaterializedTree oneChildTree() {
+        var child = new Materializer.MaterializedNode(
+                "rect",
+                new ObjectNode(Map.of(
+                        "kind", new Text("rect"),
+                        "placement", absoluteFixedPlacement("10", "10"),
+                        "fill", new ObjectNode(Map.of(
+                                "color", new Text("#FF000000"))))),
+                List.of(),
+                "/rect");
+        var root = new Materializer.MaterializedNode(
+                "canvas",
+                new ObjectNode(Map.of(
+                        "kind", new Text("canvas"),
+                        "widthMm", new NumberToken("210"),
+                        "heightMm", new NumberToken("297"))),
+                List.of(child),
+                "");
+        return new Materializer.MaterializedTree(root, List.of(), List.of());
+    }
+
+    private static Materializer.MaterializedTree oneImageResourceTree() {
+        var resourceId = "rwres_" + "a".repeat(64);
+        var image = new Materializer.MaterializedNode(
+                "image",
+                new ObjectNode(Map.of(
+                        "kind", new Text("image"),
+                        "placement", absoluteFixedPlacement("10", "10"),
+                        "imageRef", new ObjectNode(Map.of(
+                                "resourceId", new Text(resourceId))))),
+                List.of(),
+                "/path");
+        var root = new Materializer.MaterializedNode(
+                "canvas",
+                new ObjectNode(Map.of(
+                        "kind", new Text("canvas"),
+                        "widthMm", new NumberToken("210"),
+                        "heightMm", new NumberToken("297"))),
+                List.of(image),
+                "");
+        return new Materializer.MaterializedTree(
+                root, List.of(entry(resourceId, "asset-a")), List.of());
+    }
+
+    private static Materializer.MaterializedTree viewportTree() {
+        var sourceCanvas = new Materializer.MaterializedNode(
+                "canvas",
+                new ObjectNode(Map.of(
+                        "kind", new Text("canvas"),
+                        "widthMm", new NumberToken("100"),
+                        "heightMm", new NumberToken("50"))),
+                List.of(),
+                "/use");
+        var viewport = new Materializer.MaterializedNode(
+                "compositionViewport",
+                new ObjectNode(Map.of(
+                        "kind", new Text("compositionViewport"),
+                        "placement", absoluteFixedPlacement("100", "50"))),
+                List.of(sourceCanvas),
+                "/use");
+        var root = new Materializer.MaterializedNode(
+                "canvas",
+                new ObjectNode(Map.of(
+                        "kind", new Text("canvas"),
+                        "widthMm", new NumberToken("210"),
+                        "heightMm", new NumberToken("297"))),
+                List.of(viewport),
+                "");
+        return new Materializer.MaterializedTree(root, List.of(), List.of());
+    }
+
+    private static Materializer.MaterializedTree twoTextRunsTree() {
+        var firstResourceId = "rwres_" + "a".repeat(64);
+        var secondResourceId = "rwres_" + "b".repeat(64);
+        var first = textNode("\uD83D\uDE00", firstResourceId, "/text-1", false, "1");
+        var second = textNode("e\u0301\n", secondResourceId, "/text-2", true, "0");
+        var root = new Materializer.MaterializedNode(
+                "canvas",
+                new ObjectNode(Map.of(
+                        "kind", new Text("canvas"),
+                        "widthMm", new NumberToken("210"),
+                        "heightMm", new NumberToken("297"))),
+                List.of(first, second),
+                "");
+        return new Materializer.MaterializedTree(
+                root,
+                List.of(
+                        fontEntry(firstResourceId, "asset-font-1", "/text-1"),
+                        fontEntry(secondResourceId, "asset-font-2", "/text-2")),
+                List.of());
+    }
+
+    private static Materializer.MaterializedTree mixedVectorEntriesTree() {
+        var line = new Materializer.MaterializedNode(
+                "line",
+                new ObjectNode(Map.of(
+                        "kind", new Text("line"),
+                        "placement", absoluteFixedPlacement("20", "20"),
+                        "start", point("0", "0"),
+                        "end", point("10", "10"),
+                        "stroke", strokeMm())),
+                List.of(),
+                "/line");
+        var polygon = new Materializer.MaterializedNode(
+                "polygon",
+                new ObjectNode(Map.of(
+                        "kind", new Text("polygon"),
+                        "placement", absoluteFixedPlacement("20", "20"),
+                        "visible", new Bool(false),
+                        "points", new ArrayNode(List.of(
+                                point("0", "0"),
+                                point("10", "0"),
+                                point("0", "10"))),
+                        "fill", new ObjectNode(Map.of(
+                                "color", new Text("#FF0000FF"))))),
+                List.of(),
+                "/polygon");
+        var polyline = new Materializer.MaterializedNode(
+                "polyline",
+                new ObjectNode(Map.of(
+                        "kind", new Text("polyline"),
+                        "placement", absoluteFixedPlacement("20", "20"),
+                        "opacity", new NumberToken("0"),
+                        "points", new ArrayNode(List.of(
+                                point("0", "0"),
+                                point("10", "10"))),
+                        "stroke", strokeMm())),
+                List.of(),
+                "/polyline");
+        var path = new Materializer.MaterializedNode(
+                "path",
+                new ObjectNode(Map.of(
+                        "kind", new Text("path"),
+                        "placement", absoluteFixedPlacement("20", "20"),
+                        "commands", new ArrayNode(List.of(
+                                pathCommand("MOVE_TO", "0", "0"),
+                                pathCommand("LINE_TO", "10", "10"))),
+                        "stroke", strokeMm())),
+                List.of(),
+                "/path");
+        var root = new Materializer.MaterializedNode(
+                "canvas",
+                new ObjectNode(Map.of(
+                        "kind", new Text("canvas"),
+                        "widthMm", new NumberToken("210"),
+                        "heightMm", new NumberToken("297"))),
+                List.of(line, polygon, polyline, path),
+                "");
+        return new Materializer.MaterializedTree(root, List.of(), List.of());
+    }
+
+    private static ObjectNode point(String xMm, String yMm) {
+        return new ObjectNode(Map.of(
+                "xMm", new NumberToken(xMm),
+                "yMm", new NumberToken(yMm)));
+    }
+
+    private static ObjectNode pathCommand(String type, String xMm, String yMm) {
+        return new ObjectNode(Map.of(
+                "type", new Text(type),
+                "xMm", new NumberToken(xMm),
+                "yMm", new NumberToken(yMm)));
+    }
+
+    private static ObjectNode strokeMm() {
+        return new ObjectNode(Map.of(
+                "color", new Text("#000000FF"),
+                "widthMm", new NumberToken("1"),
+                "cap", new Text("BUTT"),
+                "join", new Text("MITER")));
+    }
+
+    private static Materializer.MaterializedNode textNode(
+            String text,
+            String resourceId,
+            String occurrencePath,
+            boolean visible,
+            String opacity
+    ) {
+        var run = new ObjectNode(Map.of(
+                "text", new Text(text),
+                "fontRef", new ObjectNode(Map.of(
+                        "resourceId", new Text(resourceId))),
+                "fontSizePt", new NumberToken("12"),
+                "color", new Text("#000000FF"),
+                "decoration", new Text("NONE"),
+                "letterSpacingPt", new NumberToken("0")));
+        return new Materializer.MaterializedNode(
+                "text",
+                new ObjectNode(Map.of(
+                        "kind", new Text("text"),
+                        "placement", absoluteFixedPlacement("20", "10"),
+                        "visible", new Bool(visible),
+                        "opacity", new NumberToken(opacity),
+                        "runs", new ArrayNode(List.of(run)))),
+                List.of(),
+                occurrencePath);
+    }
+
+    private static Materializer.ResourceEntry fontEntry(
+            String resourceId,
+            String assetId,
+            String occurrencePath
+    ) {
+        return new Materializer.ResourceEntry(
+                resourceId,
+                "FONT",
+                "https://assets.internal/fetch/" + resourceId,
+                2_000L,
+                "sha256:" + "b".repeat(64),
+                "font/ttf",
+                1_234,
+                "renderweave-asset-acceptance/1.0",
+                assetId,
+                "content-version-1",
+                OccurrencePath.testing(occurrencePath, "text"),
+                ConsumerPropertyRef.of("runs", List.of(
+                        new ConsumerPropertyRef.IndexSelector(0),
+                        new ConsumerPropertyRef.MemberSelector("fontRef"))),
+                new cn.hbads.renderweave.asset.api.AssetAcceptanceAuthority.FontDescriptor(
+                        0,
+                        cn.hbads.renderweave.asset.api.AssetAcceptanceAuthority.FontFlavor
+                                .TRUETYPE_GLYF,
+                        1_000));
+    }
+
+    private static void assertStaticNodeLimit(Sealer.SealRejected rejected) {
+        assertEquals(EvaluationStage.DOCUMENT_SEAL, rejected.problem().stage());
+        assertEquals(ProblemCode.RENDER_DOCUMENT_LIMIT_EXCEEDED,
+                rejected.problem().code());
+        assertEquals("renderDocument.staticNodes",
+                rejected.problem().limitId().orElseThrow().value());
+    }
+
+    private static void assertChildEdgeLimit(Sealer.SealRejected rejected) {
+        assertEquals(EvaluationStage.DOCUMENT_SEAL, rejected.problem().stage());
+        assertEquals(ProblemCode.RENDER_DOCUMENT_LIMIT_EXCEEDED,
+                rejected.problem().code());
+        assertEquals("renderDocument.childEdges",
+                rejected.problem().limitId().orElseThrow().value());
+    }
+
+    private static void assertRunLimit(Sealer.SealRejected rejected) {
+        assertEquals(EvaluationStage.DOCUMENT_SEAL, rejected.problem().stage());
+        assertEquals(ProblemCode.RENDER_DOCUMENT_LIMIT_EXCEEDED,
+                rejected.problem().code());
+        assertEquals("renderDocument.runs",
+                rejected.problem().limitId().orElseThrow().value());
+    }
+
+    private static void assertTextScalarLimit(Sealer.SealRejected rejected) {
+        assertEquals(EvaluationStage.DOCUMENT_SEAL, rejected.problem().stage());
+        assertEquals(ProblemCode.RENDER_DOCUMENT_LIMIT_EXCEEDED,
+                rejected.problem().code());
+        assertEquals("renderDocument.textScalars",
+                rejected.problem().limitId().orElseThrow().value());
+    }
+
+    private static void assertVectorEntryLimit(Sealer.SealRejected rejected) {
+        assertEquals(EvaluationStage.DOCUMENT_SEAL, rejected.problem().stage());
+        assertEquals(ProblemCode.RENDER_DOCUMENT_LIMIT_EXCEEDED,
+                rejected.problem().code());
+        assertEquals("renderDocument.vectorEntries",
+                rejected.problem().limitId().orElseThrow().value());
     }
 
     private static ClosureSnapshot closure() {
@@ -229,6 +864,7 @@ class SealerTest {
                 SCHEMA,
                 new TypedObject(SCHEMA, Map.of("name",
                         java.util.Optional.of(new TypedValue.Text("alpha")))),
+                Map.of(),
                 Map.of());
     }
 }

@@ -1,5 +1,8 @@
 package cn.hbads.renderweave.app.rendering;
 
+import cn.hbads.renderweave.asset.api.AssetApplication;
+import cn.hbads.renderweave.asset.spi.AssetOwnerScopeAuthority;
+import cn.hbads.renderweave.rendering.api.Evaluator.ExternalAssetReadAuthorization;
 import cn.hbads.renderweave.rendering.api.Evaluator.OwnerScope;
 import cn.hbads.renderweave.rendering.api.RenderingApplication.RenderInvocationRef;
 import cn.hbads.renderweave.rendering.api.RenderingApplication.RenderPurpose;
@@ -13,6 +16,10 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.HexFormat;
 
 /** Dev/test single-owner Host adapter for the closed Template capability catalog. */
 final class ConfiguredSingleOwnerRenderingAuthority implements RenderingAuthority {
@@ -29,6 +36,7 @@ final class ConfiguredSingleOwnerRenderingAuthority implements RenderingAuthorit
 
     private final OwnerScope ownerScope;
     private final TemplatePersistence templates;
+    private final AssetOwnerScopeAuthority assetOwnerScopes;
     private final Set<String> capabilities;
     private final Map<String, IssuedGrant> issuedRechecks = Collections.synchronizedMap(
             new LinkedHashMap<>(128, 0.75f, true) {
@@ -41,10 +49,12 @@ final class ConfiguredSingleOwnerRenderingAuthority implements RenderingAuthorit
     ConfiguredSingleOwnerRenderingAuthority(
             String ownerScope,
             Set<String> capabilities,
-            TemplatePersistence templates
+            TemplatePersistence templates,
+            AssetOwnerScopeAuthority assetOwnerScopes
     ) {
         this.ownerScope = new OwnerScope(ownerScope);
         this.templates = Objects.requireNonNull(templates, "templates");
+        this.assetOwnerScopes = Objects.requireNonNull(assetOwnerScopes, "assetOwnerScopes");
         Objects.requireNonNull(capabilities, "capabilities");
         if (!KNOWN.containsAll(capabilities)) {
             throw new IllegalArgumentException("unknown Template single-owner capability");
@@ -71,12 +81,61 @@ final class ConfiguredSingleOwnerRenderingAuthority implements RenderingAuthorit
         if (!permitted(purpose)) {
             return capabilities.contains(READ) ? new Forbidden() : new Hidden();
         }
+        var externalAssetReadAuthorization = externalAssetReadAuthorization(invocation);
         var identity = new RecheckIdentity(UUID.randomUUID().toString());
         issuedRechecks.put(identity.value(), new IssuedGrant(rootTemplateId, purpose));
         return new Authorized(
                 ownerScope,
+                authorizationContextDigest(
+                        invocation,
+                        purpose,
+                        externalAssetReadAuthorization),
+                externalAssetReadAuthorization,
                 identity,
                 capabilities.contains(READ) ? Disclosure.READABLE : Disclosure.OPAQUE);
+    }
+
+    private ExternalAssetReadAuthorization externalAssetReadAuthorization(
+            RenderInvocationRef invocation
+    ) {
+        var decision = assetOwnerScopes.authorizeCatalog(
+                AssetApplication.InvocationRef.serverCreated(invocation.value()));
+        if (decision instanceof AssetOwnerScopeAuthority.CatalogGranted granted) {
+            return ownerScope.value().equals(granted.ownerScope().value())
+                    ? ExternalAssetReadAuthorization.GRANTED
+                    : ExternalAssetReadAuthorization.DENIED;
+        }
+        if (decision instanceof AssetOwnerScopeAuthority.CatalogForbidden) {
+            return ExternalAssetReadAuthorization.DENIED;
+        }
+        return ExternalAssetReadAuthorization.UNAVAILABLE;
+    }
+
+    private String authorizationContextDigest(
+            RenderInvocationRef invocation,
+            RenderPurpose purpose,
+            ExternalAssetReadAuthorization externalAssetReadAuthorization
+    ) {
+        try {
+            var digest = MessageDigest.getInstance("SHA-256");
+            digest.update("renderweave-authorization-context/1\0".getBytes(StandardCharsets.UTF_8));
+            digest.update(invocation.value().getBytes(StandardCharsets.UTF_8));
+            digest.update((byte) 0);
+            digest.update(ownerScope.value().getBytes(StandardCharsets.UTF_8));
+            digest.update((byte) 0);
+            digest.update(purpose.name().getBytes(StandardCharsets.UTF_8));
+            digest.update((byte) 0);
+            digest.update("external-asset-read".getBytes(StandardCharsets.UTF_8));
+            digest.update((byte) 0);
+            digest.update(externalAssetReadAuthorization.name().getBytes(StandardCharsets.UTF_8));
+            for (var capability : capabilities.stream().sorted().toList()) {
+                digest.update((byte) 0);
+                digest.update(capability.getBytes(StandardCharsets.UTF_8));
+            }
+            return "sha256:" + HexFormat.of().formatHex(digest.digest());
+        } catch (NoSuchAlgorithmException impossible) {
+            throw new IllegalStateException("SHA-256 unavailable", impossible);
+        }
     }
 
     @Override

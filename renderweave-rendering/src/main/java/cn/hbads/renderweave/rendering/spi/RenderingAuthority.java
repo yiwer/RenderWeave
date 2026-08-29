@@ -1,6 +1,7 @@
 package cn.hbads.renderweave.rendering.spi;
 
 import cn.hbads.renderweave.rendering.api.Evaluator.OwnerScope;
+import cn.hbads.renderweave.rendering.api.Evaluator.ExternalAssetReadAuthorization;
 import cn.hbads.renderweave.rendering.api.RenderingApplication.RenderInvocationRef;
 import cn.hbads.renderweave.rendering.api.RenderingApplication.RenderPurpose;
 import cn.hbads.renderweave.template.api.TemplateApplication.TemplateId;
@@ -23,11 +24,20 @@ public interface RenderingAuthority {
 
     record Authorized(
             OwnerScope ownerScope,
+            String authorizationContextDigest,
+            ExternalAssetReadAuthorization externalAssetReadAuthorization,
             RecheckIdentity recheckIdentity,
             Disclosure disclosure
     ) implements AuthorizationDecision {
         public Authorized {
             Objects.requireNonNull(ownerScope, "ownerScope");
+            Objects.requireNonNull(authorizationContextDigest, "authorizationContextDigest");
+            if (!authorizationContextDigest.matches("sha256:[0-9a-f]{64}")) {
+                throw new IllegalArgumentException("authorizationContextDigest must be sha256");
+            }
+            Objects.requireNonNull(
+                    externalAssetReadAuthorization,
+                    "externalAssetReadAuthorization");
             Objects.requireNonNull(recheckIdentity, "recheckIdentity");
             Objects.requireNonNull(disclosure, "disclosure");
         }

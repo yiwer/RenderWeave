@@ -3,6 +3,8 @@ package cn.hbads.renderweave.app.rendering;
 import cn.hbads.renderweave.rendering.spi.CapabilityStateStore;
 import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.simple.JdbcClient;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import javax.crypto.Cipher;
 import javax.crypto.Mac;
@@ -25,15 +27,33 @@ public final class PostgresCapabilityStateStore implements CapabilityStateStore 
 
     private final JdbcClient jdbc;
     private final SecretKey key;
+    private final TransactionTemplate transactions;
     private final SecureRandom identityEntropy = new SecureRandom();
 
-    public PostgresCapabilityStateStore(JdbcClient jdbc, SecretKey key) {
+    public PostgresCapabilityStateStore(
+            JdbcClient jdbc,
+            SecretKey key,
+            PlatformTransactionManager transactionManager
+    ) {
         this.jdbc = jdbc;
         this.key = key;
+        this.transactions = new TransactionTemplate(transactionManager);
     }
 
     @Override
     public SaveOutcome save(SaveRequest request) {
+        try {
+            return transactions.execute(status -> saveLinearized(request));
+        } catch (DataAccessException | StateSecurityFailure unavailable) {
+            return new SaveOutcome.SaveUnavailable();
+        }
+    }
+
+    private SaveOutcome saveLinearized(SaveRequest request) {
+        jdbc.sql("select pg_advisory_xact_lock(hashtextextended(:requestId, 125))")
+                .param("requestId", request.renderRequestId().value())
+                .query((rs, rowNumber) -> Boolean.TRUE)
+                .single();
         try {
             var existing = jdbc.sql("""
                             select capability_state_id, evaluation_fingerprint, expires_at
@@ -48,10 +68,10 @@ public final class PostgresCapabilityStateStore implements CapabilityStateStore 
                             rs.getLong("expires_at")))
                     .stream()
                     .findFirst();
-            var nowSecond = System.currentTimeMillis() / 1000L;
+            var nowMillis = System.currentTimeMillis();
             if (existing.isPresent()) {
                 var record = existing.get();
-                if (record.expiresAt() <= nowSecond) {
+                if (record.expiresAt() <= nowMillis) {
                     jdbc.sql("""
                             delete from rendering_capability_state
                             where capability_state_id = :id
@@ -76,25 +96,27 @@ public final class PostgresCapabilityStateStore implements CapabilityStateStore 
                     .param("renderRequestId", request.renderRequestId().value())
                     .param("fingerprint", request.evaluationFingerprint())
                     .param("cipher", cipher)
-                    .param("issuedAt", request.issuedAtEpochSecond())
-                    .param("expiresAt", request.expiresAtEpochSecond())
+                    .param("issuedAt", request.issuedAtEpochMilli())
+                    .param("expiresAt", request.expiresAtEpochMilli())
                     .update();
             return new SaveOutcome.Stored(new CapabilityStateId(id));
-        } catch (DataAccessException | GeneralSecurity unavailable) {
-            return new SaveOutcome.SaveUnavailable();
+        } catch (GeneralSecurity unavailable) {
+            throw new StateSecurityFailure(unavailable);
         }
     }
 
     @Override
-    public LoadOutcome load(CapabilityStateId id, String evaluationFingerprint) {
+    public LoadOutcome load(cn.hbads.renderweave.rendering.api.Evaluator.RenderRequestId renderRequestId,
+                            String evaluationFingerprint) {
         try {
             var found = jdbc.sql("""
-                            select evaluation_fingerprint, state_cipher, expires_at
+                            select capability_state_id, evaluation_fingerprint, state_cipher, expires_at
                             from rendering_capability_state
-                            where capability_state_id = :id
+                            where render_request_id = :renderRequestId
                             """)
-                    .param("id", id.value())
+                    .param("renderRequestId", renderRequestId.value())
                     .query((rs, rowNum) -> new StoredCipher(
+                            rs.getString("capability_state_id"),
                             rs.getString("evaluation_fingerprint"),
                             rs.getBytes("state_cipher"),
                             rs.getLong("expires_at")))
@@ -104,14 +126,14 @@ public final class PostgresCapabilityStateStore implements CapabilityStateStore 
                 return new LoadOutcome.Missing();
             }
             var record = found.get();
-            var nowSecond = System.currentTimeMillis() / 1000L;
-            if (record.expiresAt() <= nowSecond) {
+            var nowMillis = System.currentTimeMillis();
+            if (record.expiresAt() <= nowMillis) {
                 return new LoadOutcome.Missing();
             }
             if (!record.fingerprint().equals(evaluationFingerprint)) {
                 return new LoadOutcome.LoadFingerprintConflict();
             }
-            var state = decrypt(id.value(), evaluationFingerprint, record.cipher());
+            var state = decrypt(record.id(), evaluationFingerprint, record.cipher());
             return new LoadOutcome.Loaded(state, record.expiresAt());
         } catch (DataAccessException unavailable) {
             return new LoadOutcome.LoadUnavailable();
@@ -122,12 +144,12 @@ public final class PostgresCapabilityStateStore implements CapabilityStateStore 
 
     /** 固定 TTL 过期清扫：只删过期行，不续期、不读取明文。 */
     public int sweepExpired() {
-        var nowSecond = System.currentTimeMillis() / 1000L;
+        var nowMillis = System.currentTimeMillis();
         return jdbc.sql("""
                         delete from rendering_capability_state
                         where expires_at <= :now
                         """)
-                .param("now", nowSecond)
+                .param("now", nowMillis)
                 .update();
     }
 
@@ -182,11 +204,17 @@ public final class PostgresCapabilityStateStore implements CapabilityStateStore 
     private record ExistingRecord(String id, String fingerprint, long expiresAt) {
     }
 
-    private record StoredCipher(String fingerprint, byte[] cipher, long expiresAt) {
+    private record StoredCipher(String id, String fingerprint, byte[] cipher, long expiresAt) {
     }
 
     private static final class GeneralSecurity extends Exception {
         GeneralSecurity(Throwable cause) {
+            super(cause);
+        }
+    }
+
+    private static final class StateSecurityFailure extends RuntimeException {
+        StateSecurityFailure(Throwable cause) {
             super(cause);
         }
     }

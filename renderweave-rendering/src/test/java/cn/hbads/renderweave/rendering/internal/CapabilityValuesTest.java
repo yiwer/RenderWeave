@@ -16,6 +16,7 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class CapabilityValuesTest {
@@ -98,13 +99,139 @@ class CapabilityValuesTest {
         var values = CapabilityValues.forState(
                 new CapabilityValues.CapabilityState(0, FIXED_NONCE));
         var provider = values.provider();
-        provider.supply("CLOCK", "UTC_DATE", new byte[] { 1 });
+        var frame = CapabilityCallPosition.root(
+                        "00000000-0000-4000-8000-0000000000a1", 1)
+                .invocationFrame();
+        provider.supply("CLOCK", "UTC_DATE", frame.canonicalBytes(
+                "00000000-0000-4000-8000-0000000000d1",
+                "date", "CLOCK", "UTC_DATE"));
         var afterOne = values.capabilityResultDigest();
-        provider.supply("CLOCK", "UTC_TIME", new byte[] { 2 });
+        provider.supply("CLOCK", "UTC_TIME", frame.canonicalBytes(
+                "00000000-0000-4000-8000-0000000000d1",
+                "time", "CLOCK", "UTC_TIME"));
         var afterTwo = values.capabilityResultDigest();
         assertNotEquals(afterOne, afterTwo);
         assertTrue(afterTwo.startsWith("sha256:"));
         assertEquals(2, values.demands().size());
+    }
+
+    @Test
+    void totalDemandTrackerAcceptsTheExactFrozenBoundaryThenFailsFirst() {
+        var tracker = CapabilityBudget.frozen().newTracker();
+        for (int index = 0; index < 4_096; index++) {
+            assertNull(tracker.reserveDemand("CLOCK", 0));
+        }
+        for (int index = 0; index < 4_096; index++) {
+            assertNull(tracker.reserveDemand("RANDOM", 0));
+        }
+
+        var exceeded = tracker.reserveDemand("CLOCK", 0);
+
+        assertEquals("capabilityRuntime.totalDemands", exceeded.limitId());
+    }
+
+    @Test
+    void clockDemandTrackerRejectsAtomicallyAtTheExactFrozenBoundary() {
+        var tracker = CapabilityBudget.frozen().newTracker();
+        for (int index = 0; index < 4_096; index++) {
+            assertNull(tracker.reserveDemand("CLOCK", 0));
+        }
+
+        var clockExceeded = tracker.reserveDemand("CLOCK", 0);
+
+        assertEquals("capabilityRuntime.clockDemands", clockExceeded.limitId());
+        for (int index = 0; index < 4_096; index++) {
+            assertNull(tracker.reserveDemand("RANDOM", 0));
+        }
+        assertEquals("capabilityRuntime.totalDemands",
+                tracker.reserveDemand("RANDOM", 0).limitId());
+    }
+
+    @Test
+    void randomDemandTrackerRejectsAtomicallyAtTheExactFrozenBoundary() {
+        var tracker = CapabilityBudget.frozen().newTracker();
+        for (int index = 0; index < 4_096; index++) {
+            assertNull(tracker.reserveDemand("RANDOM", 0));
+        }
+
+        var randomExceeded = tracker.reserveDemand("RANDOM", 0);
+
+        assertEquals("capabilityRuntime.randomDemands", randomExceeded.limitId());
+        for (int index = 0; index < 4_096; index++) {
+            assertNull(tracker.reserveDemand("CLOCK", 0));
+        }
+        assertEquals("capabilityRuntime.totalDemands",
+                tracker.reserveDemand("CLOCK", 0).limitId());
+    }
+
+    @Test
+    void positionBytesPerDemandRejectsWithoutPartiallyCommittingAnyCounter() {
+        var tracker = CapabilityBudget.frozen().newTracker();
+
+        var positionExceeded = tracker.reserveDemand("CLOCK", 2_049);
+
+        assertEquals("capabilityRuntime.positionCanonicalBytesPerDemand",
+                positionExceeded.limitId());
+        for (int index = 0; index < 4_096; index++) {
+            assertNull(tracker.reserveDemand("CLOCK", 2_048));
+        }
+        for (int index = 0; index < 4_096; index++) {
+            assertNull(tracker.reserveDemand("RANDOM", 2_048));
+        }
+        assertEquals("capabilityRuntime.totalDemands",
+                tracker.reserveDemand("RANDOM", 0).limitId());
+    }
+
+    @Test
+    void positionBytesTotalRejectsWithoutPartiallyCommittingAnyCounter() {
+        var tracker = CapabilityBudget.fromEffectiveVector(
+                tightenedPositionTotalBudgetVector()).newTracker();
+        assertNull(tracker.reserveDemand("CLOCK", 1));
+        assertNull(tracker.reserveDemand("RANDOM", 2));
+
+        var positionExceeded = tracker.reserveDemand("CLOCK", 1);
+
+        assertEquals("capabilityRuntime.positionCanonicalBytesTotal",
+                positionExceeded.limitId());
+        assertNull(tracker.reserveDemand("CLOCK", 0));
+        assertNull(tracker.reserveDemand("RANDOM", 0));
+        assertEquals("capabilityRuntime.totalDemands",
+                tracker.reserveDemand("RANDOM", 0).limitId());
+    }
+
+    @Test
+    void resultDigestBytesRejectWithoutPartiallyCommittingTheCounter() {
+        var tracker = CapabilityBudget.fromEffectiveVector(
+                tightenedResultDigestBudgetVector()).newTracker();
+        assertThrows(IllegalArgumentException.class,
+                () -> tracker.reserveResultDigestBytes(-1));
+        assertNull(tracker.reserveResultDigestBytes(1));
+
+        var resultDigestExceeded = tracker.reserveResultDigestBytes(3);
+
+        assertEquals("capabilityRuntime.resultDigestStreamingBytes",
+                resultDigestExceeded.limitId());
+        assertNull(tracker.reserveResultDigestBytes(2));
+        assertNull(tracker.reserveResultDigestBytes(0));
+        assertEquals("capabilityRuntime.resultDigestStreamingBytes",
+                tracker.reserveResultDigestBytes(1).limitId());
+    }
+
+    @Test
+    void resultDigestEmbedsCanonicalCallPositionObject() {
+        var values = CapabilityValues.forState(
+                new CapabilityValues.CapabilityState(0, FIXED_NONCE));
+        var position = CapabilityCallPosition.root(
+                        "00000000-0000-4000-8000-0000000000a1", 7)
+                .invocationFrame()
+                .canonicalBytes(
+                        "00000000-0000-4000-8000-0000000000d1",
+                        "today", "CLOCK", "UTC_DATE");
+
+        values.provider().supply("CLOCK", "UTC_DATE", position);
+
+        assertEquals("sha256:8b0960a385085e2a4d03cada5347867ea1193eec09e0128ff0c149501179d30a",
+                values.capabilityResultDigest());
     }
 
     @Test
@@ -133,5 +260,33 @@ class CapabilityValuesTest {
         leaked[0] = 99;
         assertEquals((byte) 1, state.randomNonce()[0]);
         assertNull(null);
+    }
+
+    private static String tightenedPositionTotalBudgetVector() {
+        return "{\"groups\":{\"capabilityRuntime\":{\"limits\":{"
+                + "\"staticCapabilitySources\":4096,"
+                + "\"totalDemands\":4,"
+                + "\"clockDemands\":2,"
+                + "\"randomDemands\":2,"
+                + "\"positionCanonicalBytesPerDemand\":2048,"
+                + "\"positionCanonicalBytesTotal\":3,"
+                + "\"capabilityStateRecordBytes\":1048576,"
+                + "\"resultDigestStreamingBytes\":16777216,"
+                + "\"initializationAttempts\":3,"
+                + "\"randomRejectionAttempts\":128}}}}";
+    }
+
+    private static String tightenedResultDigestBudgetVector() {
+        return "{\"groups\":{\"capabilityRuntime\":{\"limits\":{"
+                + "\"staticCapabilitySources\":4096,"
+                + "\"totalDemands\":8192,"
+                + "\"clockDemands\":4096,"
+                + "\"randomDemands\":4096,"
+                + "\"positionCanonicalBytesPerDemand\":2048,"
+                + "\"positionCanonicalBytesTotal\":16777216,"
+                + "\"capabilityStateRecordBytes\":1048576,"
+                + "\"resultDigestStreamingBytes\":3,"
+                + "\"initializationAttempts\":3,"
+                + "\"randomRejectionAttempts\":128}}}}";
     }
 }

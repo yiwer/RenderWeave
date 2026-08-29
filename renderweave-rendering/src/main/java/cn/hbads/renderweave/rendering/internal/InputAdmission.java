@@ -43,7 +43,8 @@ final class InputAdmission {
     private static final int MAX_REPORTED_PROBLEMS = 16;
 
     sealed interface AdmissionResult
-            permits AdmissionAdmitted, AdmissionRejected, AdmissionUnavailable {
+            permits AdmissionAdmitted, AdmissionRejected, AdmissionUnavailable,
+            AdmissionDeadlineExceeded {
     }
 
     record AdmissionAdmitted(AdmittedRenderInput input) implements AdmissionResult {
@@ -62,6 +63,9 @@ final class InputAdmission {
     record AdmissionUnavailable() implements AdmissionResult {
     }
 
+    record AdmissionDeadlineExceeded() implements AdmissionResult {
+    }
+
     /** 已准入文档与权威验证之间的不变量违约：对外折叠 RENDER_INTERNAL_ERROR。 */
     private static final class InternalFault extends RuntimeException {
     }
@@ -75,32 +79,69 @@ final class InputAdmission {
             DesignInputExpressionCapacityAuthority capacityAuthority,
             ValidationTargetResolver resolver
     ) {
+        return admit(
+                envelopeBody,
+                rootSnapshot,
+                capacityAuthority,
+                resolver,
+                EvaluationStageControl.unbounded());
+    }
+
+    static AdmissionResult admit(
+            byte[] envelopeBody,
+            TemplateSnapshot rootSnapshot,
+            DesignInputExpressionCapacityAuthority capacityAuthority,
+            ValidationTargetResolver resolver,
+            EvaluationStageControl stageControl
+    ) {
         Objects.requireNonNull(envelopeBody, "envelopeBody");
         Objects.requireNonNull(rootSnapshot, "rootSnapshot");
         Objects.requireNonNull(capacityAuthority, "capacityAuthority");
         Objects.requireNonNull(resolver, "resolver");
+        Objects.requireNonNull(stageControl, "stageControl");
+        try {
+            return admitControlled(
+                    envelopeBody, rootSnapshot, capacityAuthority, resolver, stageControl);
+        } catch (EvaluationStageControl.DeadlineExceeded ignored) {
+            return new AdmissionDeadlineExceeded();
+        }
+    }
+
+    private static AdmissionResult admitControlled(
+            byte[] envelopeBody,
+            TemplateSnapshot rootSnapshot,
+            DesignInputExpressionCapacityAuthority capacityAuthority,
+            ValidationTargetResolver resolver,
+            EvaluationStageControl stageControl
+    ) {
+        stageControl.checkpoint();
 
         var envelopeResult = RenderInputEnvelope.parse(envelopeBody, capacityAuthority);
         if (envelopeResult instanceof RenderInputEnvelope.EnvelopeRejected rejected) {
             return new AdmissionRejected(rejected.problems());
         }
+        stageControl.checkpoint();
         var envelope = ((RenderInputEnvelope.EnvelopeAdmitted) envelopeResult).envelope();
 
         var customsResult = CustomDefinitionView.extract(rootSnapshot.canonicalDesignDslUtf8());
         if (customsResult instanceof CustomDefinitionView.ExtractionFailed) {
             return internalError();
         }
+        stageControl.checkpoint();
         var customs = ((CustomDefinitionView.Extracted) customsResult).byDefinitionId();
 
         ResolvedValidationTarget target;
+        stageControl.checkpoint();
         try {
             target = resolver.resolve(new ValidationTarget.StaticTarget(rootSnapshot.staticSchema()));
         } catch (RuntimeException unavailable) {
             return new AdmissionUnavailable();
         }
+        stageControl.checkpoint();
 
         var batchBytes = spliceBatchRequest(rootSnapshot.staticSchema(), envelope.rootDocumentBytes());
         StrictJsonValue rootDocument;
+        stageControl.checkpoint();
         try {
             var parsedBatch = new ValidationBatchRequestParser().parse(batchBytes);
             var validator = new RootDocumentValidator();
@@ -108,6 +149,7 @@ final class InputAdmission {
             if (!result.valid()) {
                 var problems = new ArrayList<RenderingProblem>();
                 for (var problem : result.problems()) {
+                    stageControl.checkpoint();
                     if (problems.size() == MAX_REPORTED_PROBLEMS) {
                         break;
                     }
@@ -127,20 +169,25 @@ final class InputAdmission {
                     Optional.empty()
             )));
         }
+        stageControl.checkpoint();
 
         try {
             if (!(rootDocument instanceof StrictJsonValue.ObjectValue documentObject)) {
                 throw new InternalFault();
             }
-            var typedRoot = buildTypedObject(documentObject, target.rootSchema(), target);
+            var typedRoot = buildTypedObject(
+                    documentObject, target.rootSchema(), target, stageControl);
 
             var winners = new LinkedHashMap<String, IndexedAssignment>();
             for (int index = 0; index < envelope.assignments().size(); index++) {
+                stageControl.checkpoint();
                 var assignment = envelope.assignments().get(index);
                 winners.put(assignment.definitionId(), new IndexedAssignment(index, assignment.value()));
             }
             var effectiveCustoms = new LinkedHashMap<String, DesignValue>();
+            var externalCustomOverrides = new LinkedHashMap<String, DesignValue>();
             for (var definition : customs.values()) {
+                stageControl.checkpoint();
                 var winner = winners.get(definition.definitionId());
                 if (definition.exposure() != CustomDefinitionView.Exposure.PUBLIC || winner == null) {
                     effectiveCustoms.put(definition.definitionId(), definition.defaultValue());
@@ -153,10 +200,15 @@ final class InputAdmission {
                     return new AdmissionRejected(List.of(problemAt(
                             "/customValues/" + winner.index() + "/value")));
                 }
+                stageControl.checkpoint();
                 effectiveCustoms.put(definition.definitionId(), success.value());
+                externalCustomOverrides.put(definition.definitionId(), success.value());
             }
             return new AdmissionAdmitted(new AdmittedRenderInput(
-                    rootSnapshot.staticSchema(), typedRoot, effectiveCustoms));
+                    rootSnapshot.staticSchema(),
+                    typedRoot,
+                    effectiveCustoms,
+                    externalCustomOverrides));
         } catch (InternalFault fault) {
             return internalError();
         }
@@ -168,13 +220,16 @@ final class InputAdmission {
     private static TypedObject buildTypedObject(
             StrictJsonValue.ObjectValue document,
             ResolvedSchema schema,
-            ResolvedValidationTarget target
+            ResolvedValidationTarget target,
+            EvaluationStageControl stageControl
     ) {
+        stageControl.checkpoint();
         if (!(schema.identity() instanceof ResolvedSchemaIdentity.StaticIdentity staticIdentity)) {
             throw new InternalFault();
         }
         var fields = new LinkedHashMap<String, Optional<TypedValue>>();
         for (var field : schema.definition().fields()) {
+            stageControl.checkpoint();
             var member = document.members().get(field.fieldKey().value());
             if (member == null) {
                 if (field.required()) {
@@ -185,7 +240,8 @@ final class InputAdmission {
             }
             fields.put(
                     field.fieldKey().value(),
-                    Optional.of(buildTypedValue(member, field.value(), target))
+                    Optional.of(buildTypedValue(
+                            member, field.value(), target, stageControl))
             );
         }
         return new TypedObject(staticIdentity.reference(), fields);
@@ -194,8 +250,10 @@ final class InputAdmission {
     private static TypedValue buildTypedValue(
             StrictJsonValue value,
             ValueDescriptor descriptor,
-            ResolvedValidationTarget target
+            ResolvedValidationTarget target,
+            EvaluationStageControl stageControl
     ) {
+        stageControl.checkpoint();
         if (descriptor instanceof TextValue) {
             if (value instanceof StrictJsonValue.StringValue string) {
                 return new TypedValue.Text(string.value());
@@ -233,7 +291,7 @@ final class InputAdmission {
             var resolved = target.resolve(reference.ref());
             return new TypedValue.Nested(
                     staticReference(resolved),
-                    buildTypedObject(nested, resolved, target)
+                    buildTypedObject(nested, resolved, target, stageControl)
             );
         }
         if (descriptor instanceof ArrayValue array) {
@@ -242,7 +300,9 @@ final class InputAdmission {
             }
             var typedItems = new ArrayList<TypedValue>(items.items().size());
             for (var item : items.items()) {
-                typedItems.add(buildTypedValue(item, array.items(), target));
+                stageControl.checkpoint();
+                typedItems.add(buildTypedValue(
+                        item, array.items(), target, stageControl));
             }
             return new TypedValue.Array(typedItems);
         }

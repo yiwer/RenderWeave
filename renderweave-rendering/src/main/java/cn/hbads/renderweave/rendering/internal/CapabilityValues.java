@@ -7,7 +7,6 @@ import cn.hbads.renderweave.rendering.internal.ExpressionEvaluator.RuntimeFailur
 import cn.hbads.renderweave.rendering.internal.ExpressionEvaluator.RuntimeFailureKind;
 
 import java.math.BigDecimal;
-import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.time.Clock;
@@ -15,11 +14,7 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Base64;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 
 /**
@@ -31,13 +26,8 @@ import java.util.Objects;
  */
 final class CapabilityValues {
 
-    static final String RANDOM_DOMAIN = "renderweave-capability-random-uniform-decimal/1\0";
     static final String RESULTS_DOMAIN = "renderweave-capability-results/1\0";
     static final String FINGERPRINT_DOMAIN = "renderweave-evaluation-fingerprint/1";
-    static final int MAX_REJECTION_ATTEMPTS = 128;
-
-    private static final BigInteger M = BigInteger.TEN.pow(18);
-    private static final BigInteger LIMIT = BigInteger.TWO.pow(256).divide(M).multiply(M);
     private static final DateTimeFormatter DATE_FORMAT =
             DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(ZoneOffset.UTC);
     private static final DateTimeFormatter TIME_FORMAT =
@@ -60,17 +50,30 @@ final class CapabilityValues {
 
     private final CapabilityState state;
     private final cn.hbads.renderweave.rendering.spi.RenderingCapabilityRuntime.Runtime externalRuntime;
+    private final CapabilityBudget.Tracker budget;
+    private final EvaluationStageControl stageControl;
     private final List<DemandEntry> demands = new ArrayList<>();
+    private final List<byte[]> framedEntries = new ArrayList<>();
 
-    private CapabilityValues(CapabilityState state) {
+    private CapabilityValues(
+            CapabilityState state,
+            CapabilityBudget.Tracker budget,
+            EvaluationStageControl stageControl
+    ) {
         this.state = state;
         this.externalRuntime = null;
+        this.budget = Objects.requireNonNull(budget, "budget");
+        this.stageControl = Objects.requireNonNull(stageControl, "stageControl");
     }
 
     private CapabilityValues(
-            cn.hbads.renderweave.rendering.spi.RenderingCapabilityRuntime.Runtime externalRuntime) {
+            cn.hbads.renderweave.rendering.spi.RenderingCapabilityRuntime.Runtime externalRuntime,
+            CapabilityBudget.Tracker budget,
+            EvaluationStageControl stageControl) {
         this.state = null;
         this.externalRuntime = externalRuntime;
+        this.budget = Objects.requireNonNull(budget, "budget");
+        this.stageControl = Objects.requireNonNull(stageControl, "stageControl");
     }
 
     static CapabilityState establish(Clock clock, SecureRandom entropy) {
@@ -81,16 +84,35 @@ final class CapabilityValues {
     }
 
     static CapabilityValues forState(CapabilityState state) {
-        return new CapabilityValues(state);
+        return new CapabilityValues(
+                state,
+                CapabilityBudget.frozen().newTracker(),
+                EvaluationStageControl.unbounded());
     }
 
     /** 包装外部 spi runtime：demand 记账与 result digest 留在 Rendering 内部。 */
     static CapabilityValues wrapping(
-            cn.hbads.renderweave.rendering.spi.RenderingCapabilityRuntime.Runtime runtime) {
-        return new CapabilityValues(runtime);
+            cn.hbads.renderweave.rendering.spi.RenderingCapabilityRuntime.Runtime runtime,
+            CapabilityBudget.Tracker budget) {
+        return wrapping(runtime, budget, EvaluationStageControl.unbounded());
+    }
+
+    static CapabilityValues wrapping(
+            cn.hbads.renderweave.rendering.spi.RenderingCapabilityRuntime.Runtime runtime,
+            CapabilityBudget.Tracker budget,
+            EvaluationStageControl stageControl) {
+        return new CapabilityValues(runtime, budget, stageControl);
     }
 
     record DemandEntry(String capability, String operation, byte[] callPosition, DesignValue result) {
+        DemandEntry {
+            callPosition = callPosition.clone();
+        }
+
+        @Override
+        public byte[] callPosition() {
+            return callPosition.clone();
+        }
     }
 
     DefinitionEngine.CapabilityProvider provider() {
@@ -98,12 +120,25 @@ final class CapabilityValues {
     }
 
     private EvalOutcome supply(String capability, String operation, byte[] callPosition) {
+        stageControl.checkpoint();
+        if (!("CLOCK".equals(capability) || "RANDOM".equals(capability))) {
+            return new EvalError(new RuntimeFailure(RuntimeFailureKind.TYPE_FAULT, null));
+        }
+        var capacity = budget.reserveDemand(capability, callPosition.length);
+        if (capacity != null) {
+            return capabilityBudgetExceeded(capacity.limitId());
+        }
         if (externalRuntime != null) {
             var outcome = externalRuntime.supply(capability, operation, callPosition);
             if (outcome
                     instanceof cn.hbads.renderweave.rendering.spi.RenderingCapabilityRuntime.ProviderUnavailable) {
                 return new EvalError(new RuntimeFailure(RuntimeFailureKind.TYPE_FAULT, null));
             }
+            if (outcome instanceof cn.hbads.renderweave.rendering.spi.RenderingCapabilityRuntime
+                    .RandomRejectionExhausted) {
+                return capabilityResultInvalid();
+            }
+            stageControl.checkpoint();
             var value = ((cn.hbads.renderweave.rendering.spi.RenderingCapabilityRuntime.Supplied) outcome).value();
             return record(toDesignValue(value), capability, operation, callPosition);
         }
@@ -115,10 +150,9 @@ final class CapabilityValues {
             case "RANDOM/UNIFORM_DECIMAL_0_1" -> {
                 var derived = uniformDecimal(state.randomNonce(), callPosition);
                 if (derived == null) {
-                    yield new EvalError(new RuntimeFailure(
-                            RuntimeFailureKind.DECIMAL_LIMIT_EXCEEDED,
-                            "capabilityRuntime.randomRejectionAttempts"));
+                    yield capabilityResultInvalid();
                 }
+                stageControl.checkpoint();
                 yield record(new DesignValue.Decimal(derived), capability, operation, callPosition);
             }
             default -> new EvalError(new RuntimeFailure(RuntimeFailureKind.TYPE_FAULT, null));
@@ -144,8 +178,29 @@ final class CapabilityValues {
 
     private EvalOutcome record(DesignValue result, String capability, String operation,
                                byte[] callPosition) {
-        demands.add(new DemandEntry(capability, operation, callPosition.clone(), result));
+        stageControl.checkpoint();
+        var demand = new DemandEntry(capability, operation, callPosition, result);
+        var entry = canonicalEntry(demand).getBytes(StandardCharsets.UTF_8);
+        var capacity = budget.reserveResultDigestBytes(8L + entry.length);
+        if (capacity != null) {
+            return capabilityBudgetExceeded(capacity.limitId());
+        }
+        stageControl.checkpoint();
+        demands.add(demand);
+        framedEntries.add(entry);
         return new EvalValue(result);
+    }
+
+    private static EvalError capabilityBudgetExceeded(String limitId) {
+        return new EvalError(new RuntimeFailure(
+                RuntimeFailureKind.CAPABILITY_BUDGET_EXCEEDED, limitId));
+    }
+
+    private static EvalError capabilityResultInvalid() {
+        var exhausted = CapabilityBudget.randomRejectionExhausted();
+        return new EvalError(new RuntimeFailure(
+                RuntimeFailureKind.CAPABILITY_RESULT_INVALID,
+                exhausted.limitId()));
     }
 
     static String utcDate(long epochSecond) {
@@ -168,16 +223,17 @@ final class CapabilityValues {
      * outputType, result} 以 canonical JSON 编码并前置 uint64be(entryBytes.length) 分帧，
      * domain-separated SHA-256。
      *
-     * <p>T21 边界：callPosition 使用 positionVersion + 请求内 demand 位置字节的简化
-     * canonical object；完整 OccurrencePath 语义（ROOT/TEMPLATE_USE/REPEAT 段）随后续
-     * 求值硬化票物化，届时向量一同升级。
+     * callPosition 已是 {@code renderweave-capability-call-position/1.0} canonical object
+     * bytes，作为 object 原样嵌入 entry，不转为 string/Base64。
      */
     String capabilityResultDigest() {
+        stageControl.checkpoint();
         var framed = new java.io.ByteArrayOutputStream();
-        for (var demand : demands) {
-            var entry = canonicalEntry(demand).getBytes(StandardCharsets.UTF_8);
+        for (var entry : framedEntries) {
+            stageControl.checkpoint();
             framed.writeBytes(lengthFrame(entry.length));
             framed.writeBytes(entry);
+            stageControl.checkpoint();
         }
         return RenderingDigests.digestWithDomain(RESULTS_DOMAIN, framed.toByteArray());
     }
@@ -198,21 +254,13 @@ final class CapabilityValues {
 
     private static String canonicalEntry(DemandEntry demand) {
         var members = new java.util.TreeMap<String, String>();
-        members.put("capabilityContractId", CanonicalJson.string(contractId(demand.capability())));
+        members.put("capabilityContractId", CanonicalJson.string(
+                CapabilityCallPosition.contractId(demand.capability())));
         members.put("operation", CanonicalJson.string(demand.operation()));
-        members.put("callPosition", CanonicalJson.string(
-                Base64.getEncoder().encodeToString(demand.callPosition())));
+        members.put("callPosition", new String(demand.callPosition(), StandardCharsets.UTF_8));
         members.put("outputType", CanonicalJson.string(outputType(demand.result())));
         members.put("result", resultCanonical(demand.result()));
         return CanonicalJson.object(members);
-    }
-
-    private static String contractId(String capability) {
-        return switch (capability) {
-            case "CLOCK" -> "renderweave-capability-clock/1.0";
-            case "RANDOM" -> "renderweave-capability-random/1.0";
-            default -> throw new IllegalStateException("unknown capability " + capability);
-        };
     }
 
     private static String outputType(DesignValue value) {

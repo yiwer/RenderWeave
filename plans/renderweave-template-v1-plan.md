@@ -1,12 +1,240 @@
 # RenderWeave Template v1 Implementation Plan
 
-- 当前 frontier（2026-08-27）：TV1-T01–T135 均已 `resolved`。TV1-T136 已完成 decimal 七轴产品实现、不可变 v7
-  target 与 component/template/fast 验证，达到 wired 55/65、remaining geometry 10；其 `server/full/resolution fast`
-  因当前产品 smoke runtime 延后，状态保持 `implementation_complete / final_gate_pending` 并已释放 claim。人工 smoke
-  新发现正式 Editor 无法创建任何节点，故独立纠偏 TV1-T126a 成为当前 single-writer；其首个 Rect 纵切现已实现并通过
-  Node 24 Web 与实际 5173 自动化 smoke，等待用户 smoke 与延后的 `fast`。两个 class required executor manifests、
-  独立产品 replay 与 195 条 formal issuance 继续 pending。
-- 状态：`in_progress`；TV1-T126a=`implementation_complete/user_smoke_and_fast_pending`；TV1-T136=`implementation_complete/final_gate_pending`；TV1-T135=`automated_verified`；TV1-T134=`automated_verified`；TV1-T133=`automated_verified`；TV1-T132=`automated_verified`；TV1-T131=`automated_verified`；TV1-T130=`automated_verified`；TV1-T129=`automated_verified`；TV1-T128=`automated_verified`；TV1-T127=`automated_verified`；TV1-T01/T02/T03/T04/T05/T06/T07/T08/T09/T10/T10b/T11/T12a/T12b/T13/T14/T14b/T15/T16/T17/T18/T19/T20/T22=`automated_verified`
+## 2026-08-29 main integration
+
+- 本次合并保留两条已验证历史。main-line 的 TV1-T123–T136 保持原编号；并行
+  `feature/template-v1` 的历史记录以 TV1-F123–F194 作为合并后别名，issue 文件名与历史 commit message
+  为可追溯性不改写。新的统一 ticket 从 TV1-T195 继续，避免再次复用编号。
+- TV1-F186–F194 的历史 resolution 中关于 Rendering-local guard/parser 的实现措辞已被本次语义合并取代：
+  Design/Input/Expression 阈值与 parser 仍由 Template-owned authority 唯一拥有；Rendering 通过真实
+  `DesignDslAuthority` 重准入与 immutable semantic AST 做 closure-stage 防御回放，不保留第二套阈值或 parser。
+- 合并期间不 claim 新 frontier；完成 merge commit、恢复 main 原有 tracked stash 后重新计算 DAG。TV1-T126a、
+  TV1-T136 与 TV1-F123–F194 的历史状态均保留，不能仅凭合并动作升级人工或发布生命周期。
+
+## F194. TV1-F194 执行卡（feature-lineage alias）
+
+- 状态：`resolved / automated_verified`；single writer: Codex；blocked by T21/T126/T193（均 resolved）。
+- authority：Ticket 19 `RW-T19-S7-054` 与 DESIGN_INPUT_EXPRESSION cap-046；
+  `expression.astNodesTotal` MAX_INCLUSIVE `65536`，observed `65535/65536/65537`，
+  EXPRESSION_PARSE_AND_STATIC_ANALYSIS / public TEMPLATE_CLOSURE /
+  EXPRESSION_LIMIT_EXCEEDED / ZERO_WRITE_AND_DOWNSTREAM。
+- seam：深化 Rendering.internal 单一 `DesignInputExpressionCapacityGuard`，新增 per-DesignDSL
+  `AstNodeBudget`；parser 逐节点先 cap-045、再 cap-046，仅两者成功后提交累计值。新增 internal parser overload，
+  closure 每 frozen snapshot 新建共享预算，standalone/defensive parse 使用新预算；不新增 public API/SPI。
+- TDD：先取得 missing enum/budget compile RED，再取得 unused 65537-node total 的 Evaluator behavioral RED；
+  使用每 Expression 不超过 4096 的平衡 decimal AST，覆盖 exact-at、above、零 downstream 与跨 snapshot 重置。
+- 边界：不实现 cap-047+ graph/list/decimal axes、formal records 或完整 execution-class target；不实现
+  app/Profile/provider/真实数据，不 push/tag/PR；J0 pending、J1 未批准。
+- resolution：guard compile RED 与 65537 valid-unused nodes 错误 `SealedDocument` behavioral RED 均已记录；
+  integration 后 65537 以 exact TEMPLATE_CLOSURE / EXPRESSION_LIMIT_EXCEEDED /
+  `expression.astNodesTotal` 且零 downstream 拒绝，16×4096 exact-at 与 root/child 各自 65536 均 seal。
+  Focused 148/148、受影响 reactor 555/555；`render`
+  `.sdlc/evidence/20260829-170856-render/metadata.json` 与 `fast`
+  `.sdlc/evidence/20260829-170947-fast/metadata.json` 均 passed/A1。T194-specific A2/A3 与 formal records
+  均无；无 public/app/OpenAPI/Web/Flyway/Profile/provider/API Key/真实数据/费用/push/tag/PR 变化。
+
+## F193. TV1-F193 执行卡（feature-lineage alias）
+
+- 状态：`resolved / automated_verified`；single writer: Codex；blocked by T21/T126/T192（均 resolved）。
+- authority：Ticket 19 `RW-T19-S7-053` 与 DESIGN_INPUT_EXPRESSION cap-045；
+  `expression.astNodesPerExpression` MAX_INCLUSIVE `4096`，observed `4095/4096/4097`，
+  EXPRESSION_PARSE_AND_STATIC_ANALYSIS / public TEMPLATE_CLOSURE /
+  EXPRESSION_LIMIT_EXCEEDED / ZERO_WRITE_AND_DOWNSTREAM。
+- seam：深化 Rendering.internal 单一 `DesignInputExpressionCapacityGuard`；`ExpressionParser` 删除重复
+  `MAX_AST_NODES`/手写比较/limitId，并通过 guard 逐节点 admission，将 overflow 投影为已有
+  `ParseLimitExceeded`。closure-wide admission 已解析所有 unused Expression，不新增 public API/SPI。
+- TDD：先取得 missing guard enum compile RED，再冻结 parser 与公共 Evaluator 的错误 taxonomy RED；使用
+  平衡且语义有效的 decimal AST 覆盖 4095/4096/4097、exact-at 与零 downstream。
+- 边界：不实现 cap-046+ AST total/graph/list/decimal axes、formal records 或完整 execution-class target；
+  不实现 app/Profile/provider/真实数据，不 push/tag/PR；claim=A0、J0 pending、J1 未批准。
+- Resolution：cap-045 已合流到现有 internal guard；parser 删除重复 `MAX_AST_NODES`、手写比较、limitId 与
+  AST-specific rejection kind，逐节点经 guard admission，容量失败立即停止并返回 `ParseLimitExceeded`。TDD
+  得到 missing-enum compile RED、4097-node parser `ParseRejected` RED 与公共 Evaluator
+  `RENDER_INTERNAL_ERROR` RED；合流后均保留 exact TEMPLATE_CLOSURE / EXPRESSION_LIMIT_EXCEEDED /
+  `expression.astNodesPerExpression`。平衡 4095/4096/4097 AST、exact-at seal 与 above 零 downstream 均覆盖。
+  focused 143/143、受影响 reactor 550/550（Rendering 339/339）；`render`
+  `.sdlc/evidence/20260829-170140-render/metadata.json` 与 `fast`
+  `.sdlc/evidence/20260829-170228-fast/metadata.json` 均 passed/A1。cap-046+ deferred；T193-specific A2/A3
+  无，J0 pending、J1 未批准；无 public/app/Profile/provider/push/tag/PR 变化。
+
+## F192. TV1-F192 执行卡（feature-lineage alias）
+
+- 状态：`resolved / automated_verified`；single writer: Codex；blocked by T21/T126/T191（均 resolved）。
+- authority：Ticket 19 `RW-T19-S7-052` 与 DESIGN_INPUT_EXPRESSION cap-044；
+  `expression.mappingCasesTotal` MAX_INCLUSIVE `8192`，observed `8191/8192/8193`，
+  EXPRESSION_PARSE_AND_STATIC_ANALYSIS / public TEMPLATE_CLOSURE /
+  EXPRESSION_LIMIT_EXCEEDED / ZERO_WRITE_AND_DOWNSTREAM。
+- seam：深化 Rendering.internal 单一 `DesignInputExpressionCapacityGuard`，新增 per-DesignDSL
+  Mapping-case budget；closure-wide `ExpressionCapacityAdmission` 对每个 MappingDefinition 先执行 cap-043、
+  再执行 cap-044，并仅在两者成功后提交累计值。每 frozen snapshot 新建预算，不新增 public API/SPI。
+- TDD：先取得 missing enum/budget compile RED，再取得 unused 8193-case total 的 Evaluator behavioral RED；
+  覆盖 8191/8192/8193 identity、exact-at、above static admission、零 downstream 与跨 snapshot 重置。
+- 边界：不实现 cap-045+ AST/graph/list/decimal axes、formal records 或完整 execution-class target；不实现
+  app/Profile/provider/真实数据，不 push/tag/PR；claim=A0、J0 pending、J1 未批准。
+- Resolution：现有 internal guard 已承载 cap-044 与 per-DesignDSL `MappingCaseBudget`；逐 Mapping 先检查
+  cap-043，再以 `BigInteger` projected total 原子检查 cap-044，成功后才提交累计值。closure admission 为每
+  snapshot 新建预算。TDD 得到 missing-enum/missing-budget compile RED，且 unused 8193-case fixture 原错误到达
+  `SealedDocument`；合流后以 exact TEMPLATE_CLOSURE / EXPRESSION_LIMIT_EXCEEDED /
+  `expression.mappingCasesTotal` 且零 downstream 拒绝。32×256 exact-at 与 root/child 各 exact-at 均成功 seal。
+  focused 140/140、受影响 reactor 547/547（Rendering 336/336）；`render`
+  `.sdlc/evidence/20260829-165304-render/metadata.json` 与 `fast`
+  `.sdlc/evidence/20260829-165352-fast/metadata.json` 均 passed/A1。cap-045+ deferred；T192-specific A2/A3
+  无，J0 pending、J1 未批准；无 public/app/Profile/provider/push/tag/PR 变化。
+
+## F191. TV1-F191 执行卡（feature-lineage alias）
+
+- 状态：`resolved / automated_verified`；single writer: Codex；blocked by T21/T126/T190（均 resolved）。
+- authority：Ticket 19 `RW-T19-S7-051` 与 DESIGN_INPUT_EXPRESSION cap-043；
+  `expression.mappingCasesPerDefinition` MAX_INCLUSIVE `256`，observed `255/256/257`，
+  EXPRESSION_PARSE_AND_STATIC_ANALYSIS / public TEMPLATE_CLOSURE /
+  EXPRESSION_LIMIT_EXCEEDED / ZERO_WRITE_AND_DOWNSTREAM。
+- seam：深化 Rendering.internal 单一 `DesignInputExpressionCapacityGuard`；closure-wide
+  `ExpressionCapacityAdmission` 对每 snapshot 的每个 MappingDefinition 在 InputAdmission/惰性求值前检查
+  admitted `cases`。测试 seam 为既有 guard tracer 与公共 `Evaluator.evaluate`，不新增 public API/SPI。
+- TDD：先取得 missing enum compile RED，再取得 unused 257-case Mapping 的 Evaluator behavioral RED；覆盖
+  255/256/257 identity、exact-at success、above static admission 与零 downstream。
+- 边界：不实现 cap-044 cases total、后续 AST/graph/list/decimal axes、formal records 或完整 execution-class
+  target；不实现 app/Profile/provider/真实数据，不 push/tag/PR；claim=A0、J0 pending、J1 未批准。
+- Resolution：现有 internal guard 已承载 cap-043；closure admission 在 InputAdmission/惰性求值前检查每个
+  frozen snapshot 中每个 MappingDefinition 的完整 authored `cases`。TDD 得到 missing-enum compile RED，且
+  unused 257-case Mapping 原错误到达 `SealedDocument`；合流后以 exact TEMPLATE_CLOSURE /
+  EXPRESSION_LIMIT_EXCEEDED / `expression.mappingCasesPerDefinition` 拒绝，validation target resolution、
+  capability establish/restore 与 state load/save 均为 0，unused exact-at 256-case 则成功 seal。focused
+  135/135、受影响 reactor 542/542（Rendering 331/331）；`render`
+  `.sdlc/evidence/20260829-164442-render/metadata.json` 与 `fast`
+  `.sdlc/evidence/20260829-164530-fast/metadata.json` 均 passed/A1。cap-044+ deferred；T191-specific A2/A3
+  无，J0 pending、J1 未批准；无 public/app/Profile/provider/push/tag/PR 变化。
+
+## F190. TV1-F190 执行卡（feature-lineage alias）
+
+- 状态：`resolved / automated_verified`；single writer: Codex；blocked by T21/T126/T189（均 resolved）。
+- authority：Ticket 19 `RW-T19-S7-050` 与 DESIGN_INPUT_EXPRESSION cap-042；
+  `expression.inputsTotal` MAX_INCLUSIVE `4096`，observed `4095/4096/4097`，
+  EXPRESSION_PARSE_AND_STATIC_ANALYSIS / public TEMPLATE_CLOSURE /
+  EXPRESSION_LIMIT_EXCEEDED / ZERO_WRITE_AND_DOWNSTREAM。
+- seam：深化 Rendering.internal 单一 `DesignInputExpressionCapacityGuard`；closure-wide
+  `ExpressionCapacityAdmission` 按 frozen snapshot/DesignDSL 新建累计预算，对每个 ExpressionDefinition
+  先执行 cap-041 单项、再执行 cap-042 总量，且均在读取/解析 source 前预留。测试 seam 为既有 guard tracer
+  与公共 `Evaluator.evaluate`，不新增 public API/SPI。
+- TDD：先取得 missing total-budget compile RED，再取得 4097 inputs 的 Evaluator behavioral RED；覆盖
+  4095/4096/4097、exact-at、above 对 invalid source 的 precedence、零 downstream 与跨 snapshot 重置。
+- 边界：不实现 cap-043+、formal records 或完整 execution-class target；不实现 app/Profile/provider/真实数据，
+  不 push/tag/PR；claim=A0、J0 pending、J1 未批准。
+- Resolution：现有 internal guard 已承载 cap-042 与 per-DesignDSL `InputBudget`；每项先 cap-041，再以
+  `BigInteger` projected total 原子检查 cap-042，成功后才提交累计值。closure admission 为每 snapshot 新建预算，
+  并在读取/解析 source 前预留。4097-input invalid-source fixture 以 exact closure problem 且零 downstream 拒绝；
+  单 DSL 4096 与 root/child 各 4096 均成功 seal。focused 132/132、受影响 reactor 539/539（Rendering
+  328/328）；`render` `.sdlc/evidence/20260829-163521-render/metadata.json` 与 `fast`
+  `.sdlc/evidence/20260829-163610-fast/metadata.json` 均 passed/A1。T190-specific A2/A3 无，J0 pending、
+  J1 未批准；无 public/app/Profile/provider/push/tag/PR 变化。
+
+## F189. TV1-F189 执行卡（feature-lineage alias）
+
+- 状态：`resolved / automated_verified`；single writer: Codex；blocked by T21/T126/T188（均 resolved）。
+- authority：Ticket 19 `RW-T19-S7-049` 与 DESIGN_INPUT_EXPRESSION cap-041；
+  `expression.inputsPerExpression` MAX_INCLUSIVE `32`，observed `31/32/33`，
+  EXPRESSION_PARSE_AND_STATIC_ANALYSIS / public TEMPLATE_CLOSURE /
+  EXPRESSION_LIMIT_EXCEEDED / ZERO_WRITE_AND_DOWNSTREAM。
+- seam：深化 Rendering.internal 单一 `DesignInputExpressionCapacityGuard`；closure-wide
+  `ExpressionCapacityAdmission` 对每 frozen snapshot 的每个 ExpressionDefinition 在 source parse/AST 前检查
+  admitted `inputs` 数组。测试 seam 为 guard tracer 与公共 `Evaluator.evaluate`，不新增 public API/SPI。
+- TDD：先取得 missing enum compile RED，再取得 33 inputs 的 Evaluator behavioral RED；覆盖 31/32/33、
+  exact-at 全 alias 使用、above 对 invalid/unused source 的 precedence 与零 downstream，随后 focused
+  Rendering、受影响 reactor、render/fast。
+- 边界：不实现 cap-042 inputs total、后续 AST/graph/case/list/decimal axes、formal records 或完整 execution-class
+  target；不实现 app/Profile/provider/真实数据，不 push/tag/PR；claim=A0、J0 pending、J1 未批准。
+- Resolution：现有 internal guard 已承载 cap-041；closure admission 对每个 ExpressionDefinition 在读取/解析
+  source 前检查 admitted `inputs`。33 个唯一且词法全使用的 alias 配合相邻表达式非法语法时，capacity 先于
+  parser/AST 返回 exact closure problem，且 input resolution、capability runtime/state 均为 0；32 个唯一且
+  全使用的 literal inputs 经真实 closure 路径成功 seal。focused 127/127、受影响 reactor 534/534（Rendering
+  323/323）；`render` `.sdlc/evidence/20260829-162134-render/metadata.json` 与 `fast`
+  `.sdlc/evidence/20260829-162224-fast/metadata.json` 均 passed/A1。T189-specific A2/A3 无，J0 pending、
+  J1 未批准；无 public/app/Profile/provider/push/tag/PR 变化。
+
+## F188. TV1-F188 执行卡（feature-lineage alias）
+
+- 状态：`resolved / automated_verified`；single writer: Codex；blocked by T21/T126/T187（均 resolved）。
+- authority：Ticket 19 `RW-T19-S7-048` 与 design-input-expression cap-040；
+  `expression.sourceUtf8BytesTotal` MAX_INCLUSIVE `1048576`，observed `1048575/1048576/1048577`，
+  EXPRESSION_PARSE_AND_STATIC_ANALYSIS / public TEMPLATE_CLOSURE /
+  EXPRESSION_LIMIT_EXCEEDED / ZERO_WRITE_AND_DOWNSTREAM；计数按每份 DesignDSL 重置。
+- seam：深化 Rendering.internal 单一 `DesignInputExpressionCapacityGuard`，由其拥有 per-DesignDSL SourceBudget；
+  closure admission 每 snapshot 创建一次并让真实 parser 在 AST 前消费，standalone parser 保持 fresh budget。
+  不新增 public API/SPI 或重复 guard。
+- TDD：先取得 missing total-limit/SourceBudget compile RED 与 Evaluator behavioral RED，再覆盖 guard
+  1048575/1048576/1048577、真实累计、root/child 各 exact-at、unused overflow 与零 downstream；随后 focused
+  Rendering、受影响 reactor、render/fast。
+- 边界：fixture tracer 不冒充 complete execution-class target、formal records 或 A2/A3；不实现 app/Profile/
+  provider/真实数据，不 push/tag/PR；claim 时 A0、J0 pending、J1 未批准。
+- Resolution：现有 internal guard 已承载 cap-040 与 per-DesignDSL `SourceBudget`；先检查单项、再以
+  `BigInteger` 精确累计总量，closure admission 每 frozen snapshot 重置并在 parser decode/AST 前消费。
+  root/child 各 `1048576` 的真实 TemplateUse closure 成功，单 DSL `1048577` 在 TEMPLATE_CLOSURE 以 exact
+  problem 且零 input/capability/state work 拒绝。focused 124/124、受影响 reactor 531/531（Rendering
+  320/320）；`render` `.sdlc/evidence/20260829-160741-render/metadata.json` 与 `fast`
+  `.sdlc/evidence/20260829-160857-fast/metadata.json` 均 passed/A1。T188-specific A2/A3 无，J0 pending、
+  J1 未批准；无 public/app/Profile/provider/push/tag/PR 变化。
+
+## F187. TV1-F187 执行卡（feature-lineage alias）
+
+- 状态：`resolved / automated_verified`；single writer: Codex；blocked by T21/T126/T186（均 resolved）。
+- authority：Ticket 19 `RW-T19-S7-047` 与 design-input-expression cap-039；
+  `expression.sourceUtf8BytesPerExpression` MAX_INCLUSIVE `65536`，observed `65535/65536/65537`，
+  EXPRESSION_PARSE_AND_STATIC_ANALYSIS / public TEMPLATE_CLOSURE /
+  EXPRESSION_LIMIT_EXCEEDED / ZERO_WRITE_AND_DOWNSTREAM。
+- seam：深化 Rendering.internal 单一 `DesignInputExpressionCapacityGuard`；`ExpressionParser` 在 decode/AST 与
+  lazy execution 前消费同一 authority 并返回 distinct capacity outcome；closure-wide admission 与
+  DefinitionEngine defensive late path 保留 exact problem，不新增 public API/SPI 或重复 guard。
+- TDD：先取得 missing-enum/typed-outcome compile RED 与 unused oversized Expression behavioral RED，再覆盖
+  guard/parser 65535/65536/65537、ordinary syntax 与 zero downstream/demand；随后 focused Rendering、受影响
+  reactor、render/fast。
+- 边界：fixture tracer 不冒充 complete execution-class target、formal records 或 A2/A3；不实现 app/Profile/
+  provider/真实数据，不 push/tag/PR；claim 时 A0、J0 pending、J1 未批准。
+- Resolution：现有 internal guard 已承载 cap-039，parser 在 decode/AST 前返回 distinct typed capacity outcome；
+  closure-wide admission 覆盖全部 snapshot/unused Expression，DefinitionEngine defensive path 保留 exact
+  identity 且 RANDOM provider demand=0。focused 120/120，受影响 reactor 527/527；`render`
+  `.sdlc/evidence/20260829-155413-render/metadata.json` 与 `fast`
+  `.sdlc/evidence/20260829-155510-fast/metadata.json` 均 passed/A1。T187-specific A2/A3 无，J0 pending、
+  J1 未批准；无 public/app/Profile/provider/push/tag/PR 变化。
+
+## F186. TV1-F186 执行卡（feature-lineage alias）
+
+- 状态：`resolved / automated_verified`；single writer: Codex；blocked by T21/T126/T185（均 resolved）。
+- authority：Ticket 19 `RW-T19-S7-064` 与 design-input-expression cap-055；
+  `expression.explicitRoundingScaleMax` MAX_INCLUSIVE `64`，observed `63/64/65`，
+  EXPRESSION_PARSE_AND_STATIC_ANALYSIS / public TEMPLATE_CLOSURE /
+  EXPRESSION_LIMIT_EXCEEDED / ZERO_WRITE_AND_DOWNSTREAM。
+- seam：Rendering.internal 单一 `DesignInputExpressionCapacityGuard`；`ExpressionAnalyzer` 对 divide/round/
+  formatDecimal 的全部显式 scale 参数返回独立 capacity outcome，不新增 public API/SPI 或重复 guard。
+- TDD：先取得 missing-guard/typed-outcome RED，再覆盖 guard 63/64/65 与真实 parser→analyzer 产品路径；随后
+  focused Rendering、受影响 reactor、render/fast。
+- 边界：fixture tracer 不冒充完整 Evaluator 或 A2/A3；不实现 records/executor/app/Profile/provider/真实数据，
+  不 push/tag/PR；claim 时 A0、J0 pending、J1 未批准。
+- Resolution：单一 internal guard 已承载 cap-055；Expression analyzer 对 divide/round/formatDecimal 返回 distinct
+  capacity outcome，closure-wide admission 在 Input/Capability/Asset/materialization 前检查全部 snapshot 与 unused
+  Expression。Evaluator tracer 证明 input resolution、capability establish/restore、state load/save 均为 0。
+  focused 33/33，受影响 reactor 524/524；`render` `.sdlc/evidence/20260829-154121-render/metadata.json`
+  与 `fast` `.sdlc/evidence/20260829-154217-fast/metadata.json` 均 passed/A1。T186-specific A2/A3 无，
+  J0 pending、J1 未批准；无 public/app/Profile/provider/push/tag/PR 变化。
+
+## F185. TV1-F185 执行卡（feature-lineage alias）
+
+- 状态：`resolved / automated_verified`；single writer: Codex；blocked by T13/T21/T128/T154/T166/T184（均 resolved）。
+- authority：ADR-0044、`RW-T19-S7-104` 与 cap-024；`diagnostics.sidecarBytes` MAX_INCLUSIVE `8388608`，
+  `8388607/8388608/8388609`，REQUEST_SIDECAR / public MATERIALIZATION /
+  RENDER_DIAGNOSTIC_LIMIT_EXCEEDED / ZERO_DOCUMENT_OUTPUT。
+- seam：Rendering.internal 单一 OccurrencePath + canonical DiagnosticSidecar authority；Sealer 分配 opaque ordinal 时
+  绑定 path，resource locator 同聚合封存，逐 canonical UTF-8 chunk 在保留前经 request tracker reserve。公共
+  `Evaluator` Interface、RenderDocument/digest 与 app 均不携带 raw sidecar。
+- TDD：guard missing-enum compile RED → canonical writer/product exact-at/above behavioral RED → 最小 GREEN；覆盖
+  sibling/Repeat/TemplateUse/sourceCanvas/resource locator，随后 focused Rendering、受影响 reactor、render/fast。
+- 边界：不实现 LayoutTrace/公开投影/records/executor/Profile/provider/真实数据，不 push/tag/PR；claim 时 A0、J0。
+- Resolution：exact OccurrencePath 已覆盖 sibling/Repeat/TemplateUse/sourceCanvas，closed ConsumerPropertyRef 与 opaque
+  occurrence/resource locator 已封装为 request-local canonical sidecar；cap-024 exact-at/above 产品语义已接入 Sealer，
+  raw bytes 不进入 RenderDocument/digest/public outcome。受影响 reactor 519/519；`render`
+  `.sdlc/evidence/20260829-152404-render/` 与 `fast` `.sdlc/evidence/20260829-152454-fast/` 均 passed/A1。
+  T185-specific A2/A3 无，J0 pending、J1 未批准；无 API/OpenAPI/Web/Flyway/app/Profile/provider/push/tag/PR 变化。
+
+- 状态：`in_progress`；TV1-T01/T02/T03/T04/T05/T06/T07/T08/T09/T10/T10b/T11/T12a/T12b/T13/T14/T14b/T15/T16/T17/T18/T19/T20/T22=`automated_verified`
   （T09 另含人工 J1），TV1-T21=`automated_verified`（首个 Rendering 纵切——renderweave-rendering
   首个 artifact、TemplateClosureAuthority/Evaluator stage 1–8/seal、CapabilityState 加密落盘、
   RenderNodeContract 向量语料 Java primary、端到端 assembly 证明）；TV1-T13 已完成 AssetResolver、加密
@@ -2475,7 +2703,40 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
 - 状态为 `resolved / automated_verified`。Profile `NOT_REGISTERED`、certification `NOT_CERTIFIED`、process raster
   `ABSENT`、daemon success output path `UNWIRED`、native stack `BUILD_NOT_AUTHORIZED`；T108 success kernel、public
   Rendering API/E6/正式 `/templates` route 仍 `CLOSED`，最终产品页面与真实功能尚未交付，未推进 J1/A3/READY。
+## F123. TV1-F123 执行卡（feature-lineage alias）
 
+- 决策：T122 以 verified commit `777f8b6f` 收口且 worktree clean 后，Renderer 产品 frontier 仍受 native/Profile
+  前置阻塞；standards audit 复核确认 Template STALE consumer 仍直接读取 Asset-owned audit table，构成可独立修复的
+  unblocked quality frontier，因此由 Codex `/root` single-writer claim。
+- Interface/seam：新增 Asset-owned `AssetAuditEventSource.readAfter` closed SPI 与 Postgres Asset adapter；Template
+  consumer 只消费 mutation facts，自己的 cursor、projection lookup、STALE transaction 和 readiness recheck 不变。
+- 禁止影响：reservation/delete 线性化、migration/OpenAPI/generated SDK/Web/Renderer/Profile/product route、
+  provider/API Key/真实数据/费用、J1/A3/READY 与 push/tag/PR。
+- TDD/gates：Asset adapter + Template consumer + architecture 先 RED，focused GREEN 后依次 `fast → server → full →
+  resolution fast`，最高 `automated_verified`。
+- 收口：Asset focused 8/8、Asset module 92/92、app focused 26/26；`fast`
+  `.sdlc/evidence/20260828-114535-fast/`、`server` `.sdlc/evidence/20260828-115650-server/`（363 tests）与
+  17-step `full` `.sdlc/evidence/20260828-123150-full/`（17/17）均 passed/A1。第一次 full 的单一 deployment
+  chunk reload 波动已由 `.sdlc/evidence/20260828-123048-e2e/` 和第二次完整 full 排除。状态为
+  `resolved / automated_verified`、J0；reservation/delete 线性化保持独立，未推进 J1/A3/READY。
+
+## F124. TV1-F124 执行卡（feature-lineage alias）
+
+- 决策：T123 以 verified commit `d1250906` 收口且 worktree clean 后，产品 route 仍被 Profile/native completion
+  阻塞；standards audit 的剩余 hard violation 是 Template persistence 在自身事务内直接读取并锁定 Asset-owned
+  `asset_aggregate`。冻结 Ticket 05 又明确要求 reservation 线性化但不共享表/事务，因此登记为当前 frontier。
+- Interface/seam：app assembly 的 `PostgresAssetReferenceReservations` 在调用方既有 PostgreSQL transaction 内，
+  对 domain-separated canonical assetId 获取 transaction-scoped advisory lock；Template 为有序 shared，Asset
+  confirmed delete 为 exclusive。proof、aggregate 与 token 仍分别由 owning adapter 处理。
+- 禁止影响：产品语义、migration/OpenAPI/Web/Renderer/Profile/native build/product route、restore/resolve/audit、
+  provider/API Key/真实数据/费用、J1/A3/READY 与 push/tag/PR。
+- TDD/gates：architecture + Testcontainers reservation concurrency 先 RED，focused GREEN 后依次
+  `fast → server → full → resolution fast`，最高 `automated_verified`、J0。
+- 收口：focused 25/25；`fast` `.sdlc/evidence/20260828-125749-fast/`、最终 `server`
+  `.sdlc/evidence/20260828-130911-server/`（365 tests）与 17-step `full`
+  `.sdlc/evidence/20260828-131919-full/`（17/17）均 passed/A1。首次 architecture RED 与首次 server isolated
+  configuration RED 均保留证据；resolution `fast` `.sdlc/evidence/20260828-133630-fast/` 3/3 passed。状态为
+  `resolved / automated_verified`、J0，未推进 J1/A3/READY。
 ## 111. TV1-T111 执行卡
 
 - 决策：T110 以 verified commit `4cbc3b68` 收口且 worktree clean 后，复核 Ticket 10 §6、Ticket 16 §8 与
@@ -5114,3 +5375,926 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
   浏览器 fixture 未写真实数据。Web 容器直接挂载绿色 `web/dist`，无需重启；`fast` 会重新打包 API 容器当前挂载 JAR，
   故延后到用户 smoke 结束后，本票不提前报 `automated_verified`。内置 Browser 控制层因 runtime kernel asset 路径错误
   未连接，实际 5173 由仓库 Playwright 复验，不冒充 visible/J1 验收。
+## Imported feature-lineage execution records F125–F153
+
+## F125. TV1-F125 执行卡（feature-lineage alias）
+
+- 状态：`resolved / automated_verified`；single writer: Codex；blocked by T21/T122（均 resolved）。
+- 纵切：`RenderingAuthority` 授权摘要 → `EvaluationCommand` → Evaluator 完整 fingerprint →
+  `CapabilityStateStore` save/replay/conflict → opaque capability runtime establish/restore。
+- 验证：Evaluator public seam RED/GREEN、Rendering/app focused、fast、顺序 server、full；最高状态
+  `automated_verified`，A3/J1/READY 不推进，不 push/tag/PR。
+
+### TV1-T125 resolution evidence
+
+- 授权权威摘要 → complete fingerprint → encrypted linearized state → opaque runtime restore
+  纵切已完成；同 request/同 fingerprint 不重采样，异 fingerprint 与 unavailable fail closed。
+- A1：`asset` `.sdlc/evidence/20260828-140900-asset/`、`web`
+  `.sdlc/evidence/20260828-140922-web/`、`fast` `.sdlc/evidence/20260828-141009-fast/`、
+  `server` `.sdlc/evidence/20260828-135801-server/`、`full`
+  `.sdlc/evidence/20260828-141041-full/` 17/17 steps passed（983.407 秒）；状态回填后
+  resolution `fast` `.sdlc/evidence/20260828-144008-fast/` 亦通过。
+- A2 未签发 ticket-specific independent implementation replay；A3 未外部强制；J0。
+  provider attempts/API Key reads/real data/Profile registration/push/tag/PR = 0。
+
+## F126. TV1-F126 执行卡（feature-lineage alias）
+
+- 状态：`resolved` / `automated_verified`；single writer: Codex；blocked by T21/T125（均 resolved）。
+- 决策：冻结 issue 15 要求 Template dependency 错误保留具体领域 code，ADR-0042 已给出
+  `TEMPLATE_NOT_FOUND/DELETED/DEPENDENCY_ERROR/AUTHORITY_UNAVAILABLE` 稳定语汇；当前
+  Evaluator 映射与此冲突，且不依赖 native/Profile/外部授权，因此登记为当前 frontier。
+- seam：仅经 `Evaluator.evaluate` 观察 closed stage/code；scripted closure authority 只是 outbound
+  system-boundary fake，不测试私有方法或内部调用次数。
+- 验证：focused Rendering、fast、server、full、resolution fast；最高
+  `automated_verified`，A3/J1/READY 不推进，不 push/tag/PR。
+
+### TV1-T126 resolution evidence
+
+- 四个 closure outcome 已经 Evaluator 公共 seam 精确映射，integrity/current-drift 回归保持；
+  focused Evaluator 14/14、Rendering 127/127 通过。
+- A1：`render` `.sdlc/evidence/20260828-145104-render/`、`fast`
+  `.sdlc/evidence/20260828-145202-fast/`、顺序 `server`
+  `.sdlc/evidence/20260828-161736-server/`。当前两次 full 的非浏览器步骤均通过；浏览器受本机
+  TCP `ERR_NO_BUFFER_SPACE` 资源耗尽影响。因本票零 Web 变更，按 RULE-VAL-001 复用 T125
+  绿色 `full` `.sdlc/evidence/20260828-141041-full/`（17/17）。
+- 状态回填后的 resolution `fast` `.sdlc/evidence/20260828-171548-fast/` 通过。
+- A2 未签发 ticket-specific independent replay；A3 未外部强制；J0；provider attempts/API Key
+  reads/real data/Profile registration/push/tag/PR = 0。状态回填后的 resolution `fast`
+  `.sdlc/evidence/20260828-175621-fast/` 通过。
+
+## F127. TV1-F127 执行卡（feature-lineage alias）
+
+- 状态：`resolved / automated_verified`；single writer: Codex；blocked by T114/T126（均 resolved）。
+- 决策：T114 已把 OpenAPI `info.version` bump 到 0.16.0，却遗漏 runtime status、同一 OpenAPI
+  closed schema 与 generated SDK；该漂移直接破坏客户端合同身份，且无需新产品语义/外部授权，登记为
+  当前 unblocked frontier。DAG 复核同时把已 resolved 的 T67 计划行从陈旧 `active / claimed` 回填。
+- seam：只经 `GET /api/v1/system/status` canary 观察运行时，OpenAPI schema + 既有 SDK generator
+  观察静态合同；不新增 route/operation/payload shape/migration/Profile。
+- TDD/验证：canary 先 RED 后 GREEN，SDK generation/Web focused，再 `web`/`fast`/顺序 `server`/
+  Goal `full`/resolution `fast`；最高 `automated_verified`，不推进 A3/J1/READY，不 push/tag/PR。
+
+### TV1-T127 resolution evidence
+
+- `EnvironmentCanaryTest` 在生产改动前按 `0.16.0` 期望取得真实 RED（实际仍为 `0.15.0`），
+  修正 runtime 后同一 focused test 1/1 GREEN；OpenAPI schema 经既有 generator 再生 SDK，diff
+  仅包含预期 contract literal。
+- `web` `.sdlc/evidence/20260828-172316-web/`、`fast`
+  `.sdlc/evidence/20260828-172402-fast/`、顺序 `server`
+  `.sdlc/evidence/20260828-172426-server/`、`asset`
+  `.sdlc/evidence/20260828-173629-asset/` 均通过。
+- Goal `full` `.sdlc/evidence/20260828-173705-full/` 前 14/15 steps 通过，其中 runtime canary
+  返回 `contractVersion: 0.16.0`；prototype-e2e 因本机 TCP `ERR_NO_BUFFER_SPACE` 得到
+  22 passed / 1 skipped / 1 failed。该唯一失败 Schema Studio case 随后以 1 worker 精确重放
+  1/1 通过：`.sdlc/evidence/20260828-175513-t127-browser-replay/`。原 `full` metadata 保持 failed
+  truth，不伪报；14 个绿色 steps 与精确恢复重放共同构成 ticket A1。
+- A2 未签发 ticket-specific independent replay；A3 未外部强制；J0；provider attempts/API Key
+  reads/real data/Profile registration/push/tag/PR = 0。
+
+## F128. TV1-F128 执行卡（feature-lineage alias）
+
+- 状态：`resolved / automated_verified`；single writer: Codex；blocked by T21/T125/T127（均 resolved）。
+- 决策：T21 resolution 与 map 均明确把完整 CapabilityCallPosition/OccurrencePath 留给后续硬化；当前
+  `DefinitionEngine` 仍用 capability source wire + unordered frameKey，无法表达 root revision、useId、
+  declaration loop、definitionId/alias/contract，且 result digest 把 position 错投影为 Base64 string。
+  该缺口完全在 Rendering internal，可在不注册 Profile/route 或请求外部授权的前提下成为当前 frontier。
+- seam：建立单一 deep `CapabilityCallPosition` module，封装 immutable runtime path、declaration-frame
+  截断、canonical bytes 与 memo identity；Materializer 只导航 path，DefinitionEngine 只请求 position，
+  既有 SPI 继续消费 opaque bytes。
+- 完成信号：ROOT/TEMPLATE_USE/REPEAT exact bytes、invocation/loop memo 与 child isolation 经 focused
+  public/internal seam RED→GREEN；`render`/`fast`/顺序 `server`/Goal `full`/resolution `fast` 通过，
+  verified 独立 commit，Profile/A3/J1/READY/provider/push/tag/PR 均不推进。
+
+### TV1-T128 resolution evidence
+
+- focused TDD 先因缺少 `CapabilityCallPosition` module 得到编译 RED；实现后 exact canonical/path tests 3、
+  capability values/digest tests 10、Materializer declaration-frame tests 14，共 27/27 GREEN。
+- 单一 Rendering-internal deep module 封装 ROOT/TEMPLATE_USE/REPEAT runtime path、declaration-frame 截断、
+  canonical bytes 与 memo identity；Materializer 只导航 immutable path，DefinitionEngine 不再接受
+  caller-crafted frame key。invocation definition 跨下游 loop memoize，loop definition 按声明 loop 的原
+  inputIndex 分帧，不同 TemplateUse occurrence 隔离。
+- `capabilityResultDigest` 直接嵌入 canonical position object；冻结 digest 为
+  `sha256:8b0960a385085e2a4d03cada5347867ea1193eec09e0128ff0c149501179d30a`。既有 app/SPI
+  `byte[]` seam 未扩散内部路径表示。
+- 分级 A1：`render` `.sdlc/evidence/20260828-181110-render/`、affected `fast`
+  `.sdlc/evidence/20260828-181203-fast/`、顺序 `server`
+  `.sdlc/evidence/20260828-181232-server/`、17-step Goal `full`
+  `.sdlc/evidence/20260828-182907-full/` 全部 passed；full 17/17 steps 均 exit 0。
+- `server` App 366/0/0/15；`full` 覆盖 Rendering 134 tests、Node 24 Web 28 files/217 tests、runtime
+  canary、Playwright 23 passed + 1 controlled skip、Draft/browser journeys 与 inference replay E2E 1/1。
+  R0/R1/P0 provider attempts=0，P0 API Key reads/reservations/cost=0。
+- A2 未签发 ticket-specific independent replay；A3 未外部强制；J0。Profile/A3/J1/READY、paid/live
+  provider、真实数据、push/tag/PR 均未推进。
+- 状态回填后的 resolution `fast` `.sdlc/evidence/20260828-185451-fast/` 3 steps 均 exit 0。
+
+## F129. TV1-F129 执行卡（feature-lineage alias）
+
+- 状态：`resolved / automated_verified`；single writer: Codex；blocked by T21/T125/T128（均 resolved）。
+- 决策：T128 verified commit 后复算冻结 Ticket 14 §2/§7 与 T125 实现，确认当前 declaration discovery 仍以
+  canonical bytes substring 完成，且 `RenderingCapabilityRuntime.establish()` 无 required set，导致只声明
+  CLOCK 也采样 nonce、只声明 RANDOM 也读取 Clock；同时 authored/PUBLIC override Asset 预准入仍位于
+  `Materializer` 内，晚于 state 建立。两项共同违反同一 stage 5→6 边界，且不依赖外部授权，是当前安全 frontier。
+- seam：Rendering internal `CapabilityDeclarations` 从 Template-owned semantic value 形成 exact、稳定排序的
+  contract set；既有 runtime seam 接收该 closed set并只建立/恢复所需组件。app Adapter 继续独占时间/熵与
+  opaque sealed-state wire；Asset admission 提升为 Evaluator 显式 stage 5，Materializer 不再触发该外部预检。
+- TDD：先从 `Evaluator.evaluate` 与 runtime Adapter Interface 得到真实 RED，再逐个完成 no-capability、
+  Asset-failure-before-state、CLOCK-only、RANDOM-only、both、child closure、fault/mismatch/legacy restore；不以内部 call-order 测试替代
+  sealed outcome。
+- 完成信号：focused Rendering/app、`render`、`fast`、顺序 `server` 通过；根据受影响输入决定复用 T128 full
+  或重跑 full；verified 独立 commit。demand/position/digest budget、正式 Ticket 19 records、Profile/A3/J1/
+  READY/provider/push/tag/PR 均不推进。
+- 实施：`CapabilityDeclarations` 从完整 closure 的 Template semantic values 形成 exact contract set/source count；
+  `AssetAdmission` 按 authored 后 external override 顺序完成 exact kind stage 5 并向 Materializer 颁发 opaque token；
+  runtime/store 以 closed required set 选择性建立 CLOCK/RANDOM，v2 sealed state 兼容 legacy both v1，无声明时零 state work。
+- 验证：focused Rendering 143/143、app 17/17；A1 `render` `.sdlc/evidence/20260828-192928-render/`、
+  `asset` `.sdlc/evidence/20260828-193022-asset/`、`fast` `.sdlc/evidence/20260828-193042-fast/`、`web`
+  `.sdlc/evidence/20260828-193111-web/`、顺序 `server` `.sdlc/evidence/20260828-193158-server/`、最终 Goal
+  `full` `.sdlc/evidence/20260828-204250-full/` 均 passed；full 17/17 steps exit 0，runtime PostgreSQL ready /
+  contract 0.16.0，Playwright 23 passed + 1 controlled skip，最终 inference replay 1/1。
+- 门控可靠性：Windows 默认 7 Playwright workers 在 Vite HMR 下稳定触发 `ERR_NO_BUFFER_SPACE`；按诊断把
+  prototype audit 固定为单 worker，独立证据 `.sdlc/evidence/20260828-201544-prototype-audit/` 全绿，最终 full
+  A/B/C 变体 console/page errors=0；失败 metadata 保留，未修改系统网络或用户进程。
+- 证据等级：A1 为 focused 与分级 gate；A2 仅为 full 内未变静态/Renderer/R0/R1/P0 轴的独立重放，本票
+  selective-state Java 行为无 ticket-specific issued replay；A3 未外部强制，J0 pending、J1 未批准。
+  provider attempts/API Key reads/reservations/cost/真实数据/Profile/READY/push/tag/PR 均为 0。
+- 状态回填后的 resolution `fast` `.sdlc/evidence/20260828-210925-fast/` 3/3 steps 均 exit 0。
+- 残余：external PUBLIC override caller `asset.read` 尚未由当前 Asset seam 表达；capability demand/position/digest
+  容量、初始化重试预算与 Ticket 19 正式 records 另票推进。不新增 migration/OpenAPI 版本。
+
+## F130. TV1-F130 执行卡（feature-lineage alias）
+
+- 状态：`resolved / automated_verified`；single writer: Codex；blocked by T21/T125/T129（均 resolved）。
+- 决策：T129 verified commit 后复算冻结 Ticket 13 §3，确认 stage 5 已识别 root PUBLIC external winners，
+  但当前命令与 Asset seam 均未携带 caller `asset.read` 事实，因而任何调用者都可提交同 scope external
+  AssetRef。这是无外部授权依赖且可独立修复的当前安全 frontier。
+- seam：app `RenderingAuthority` 通过 Asset-owned `AssetOwnerScopeAuthority` 一次性取得同 scope read
+  决策，向 `EvaluationCommand` 传播 closed GRANTED/DENIED/UNAVAILABLE 值；`AssetAdmission` 仅对 external
+  winners 消费它，`AssetResolutionPort` 继续保持 trusted internal resolver，不承担 actor ACL。
+- TDD：先从 `RenderingApplication.render` 与 `Evaluator.evaluate` 公共 seam 取得真实 RED；覆盖授权事实
+  传播、denied/unavailable fail-closed、IMAGE/FONT/list winner、authored-only bypass、scope mismatch，以及
+  capability state 下游零副作用。
+- 完成信号：focused Rendering/app、`render`、`asset`、`fast`、`web`、顺序 `server`、app-wiring `full`
+  全绿并独立提交；不新增 route/OpenAPI/migration/Profile，不运行 provider，不读取 API Key，不发送真实
+  数据，不 push/tag/PR。capability 容量与 Ticket 19 records 继续另票。
+- 收口：server-created GRANTED/DENIED/UNAVAILABLE 从 app authority 传播到 Evaluation；Asset-owned catalog
+  capability 只在初始 admission 检查一次并绑定 authorization-context digest。stage 5 保持 authored 先行，
+  external DENIED 不探测对象且统一 `ASSET_NOT_FOUND`，UNAVAILABLE fail-closed，GRANTED 才执行 exact
+  scope/existence/ACTIVE/kind 预准入；无 external winner 与 authored/default/child 均不依赖 caller `asset.read`。
+- focused 公共 seam 40/40、app authority/config 14/14、Rendering 148/148、Template 81/81、Asset 92/92；A1
+  `render` `20260828-212630-render`、`asset` `20260828-212719-asset`、`fast` `20260828-212741-fast`、`web`
+  `20260828-212812-web`、`server` `20260828-212857-server` 与最终 17-step `full`
+  `20260828-220847-full` 均 passed。首次 full `20260828-214438-full` 的既有 Vite chunk recovery 5 秒竞态经
+  targeted 3/3 与无代码变更的最终 full 复跑收口，失败 metadata 保留。
+- full 最终为 17/17、App 372 tests/0 failures/0 errors/15 skipped、Node 24 Web 28 files/217 tests、Playwright
+  23 passed + 1 controlled skip，runtime canary PostgreSQL ready / contract 0.16.0；provider attempts/API Key
+  reads/reservations/cost=0。A2 仅为未变轴独立重放、无 ticket-specific issued replay；A3 无，J0、J1 未批准。
+  未新增 migration/OpenAPI/Profile，未发送真实数据，未 push/tag/PR。
+- 状态回填后的 resolution `fast` `20260828-223446-fast` 为 3/3 steps passed。
+
+## F131. TV1-F131 执行卡（feature-lineage alias）
+
+- 状态：`resolved / automated_verified`；single writer: Codex；blocked by T21/T125/T128/T129/T130（均 resolved）。
+- 决策：T130 verified commit `192f72ee` 后 worktree clean，复算冻结 Ticket 14 §6、Ticket 19 capability
+  matrix 与 T129 residual，确认当前 `CapabilityValues` 只追加 demand entry，未执行 static source、total/kind、
+  position canonical bytes 与 result-digest streaming bytes 七个上限；Materializer 还会把 capability runtime
+  failure 抹平成 `EVALUATION_FAILED`。该缺口不依赖 native Renderer、Profile、外部授权或产品语义变化，
+  因此登记为当前 single-writer frontier。
+- seam：公开测试只经过 `Evaluator.evaluate`；Rendering internal 一个深容量 module 解析已进入 fingerprint 的
+  effective capability budget 子向量，并封装 closure static admission 与 request-local 原子预留。
+  Materializer/DefinitionEngine 不暴露上限或计数器，只传播 closed capability failure。
+- TDD：static admission 与首次 dynamic demand 分别取得真实 RED 后 GREEN；低预算 exact count 成功/over-limit、
+  per-position/position-total/result-streaming over-limit、provider 调用边界、first-fail、memo/lazy 均从公开
+  `Evaluator.evaluate` 证明。初始化重试、state-record bytes、Random rejection fault schedule 与正式 Ticket 19
+  records 留给后续独立票。
+- 实现：`CapabilityBudget` fail-closed 解析并验证已绑定 fingerprint 的 exact capability 子向量；request-local
+  tracker 在 provider 前原子预留 total/kind/position，在向 Expression 返回结果前预留 uint64-framed canonical
+  result entry。四类 Materializer consumer 统一保留 capability budget taxonomy 与 exact limitId。
+- 验证：focused `EvaluatorContractTest` 32/32、Rendering module 157/157、生产 Spring assembly 9/9；A1 `render`
+  `.sdlc/evidence/20260828-231330-render/`、`fast` `.sdlc/evidence/20260828-231420-fast/`、顺序 `server`
+  `.sdlc/evidence/20260828-231456-server/` metadata 均 `passed`。本票不改 API/Web/migration/Profile，`full` 会
+  重复已完成的全 reactor clean server，故不追加；最高 `automated_verified`，A3/J1/READY 不推进。
+- provider attempts/API Key reads/reservations/cost/真实数据/push/tag/PR 均为 0；A2 仅为未变 Renderer 轴独立
+  replay、无 T131-specific issued replay，A3 无，J0/J1 未批准。
+- 状态回填后的 resolution `fast` `.sdlc/evidence/20260828-233332-fast/` metadata 为 `passed`。
+
+## F132. TV1-F132 执行卡（feature-lineage alias）
+
+- 状态：`resolved / automated_verified`；single writer: Codex；blocked by T21/T125/T129/T131（均 resolved）。
+- 决策：T131 verified commit `dafb87ab` 后 worktree clean，DAG 无其他 claimed writer；T131 明确留下的首个
+  frozen capacity axis 是 `capabilityStateRecordBytes=1,048,576`，且 existing runtime 已提供 opaque store-ready
+  `Established.sealedState` bytes，因此无需改变 SPI、state wire 或数据库即可形成真实 pre-commit 纵切。
+- seam：只经公开 `Evaluator.evaluate` 观察结果；现有 `CapabilityBudget` 深模块解析 fingerprint-bound limit 并
+  接受 opaque record byte length。Evaluator 在 establish 后、SaveRequest/store save 前调用一次 admission；
+  exact limit inclusive，above-limit 返回 `CAPABILITY_BUDGET_EXCEEDED`、stage `CAPABILITY_STATE` 与 exact limitId。
+- TDD：先以 3-byte record / limit 2 建立真实 RED，证明超限前 saveCalls=0；再实现最小 GREEN 并补 3-byte
+  exact-at-limit success。replay 不建立新 record、不重复 charge；无 capability 仍零 state work。
+- 禁止影响：SPI/PostgreSQL/encryption/state wire/fingerprint/expiry/retry、Random rejection、正式 Ticket 19
+  records、route/OpenAPI/Web/migration/Profile/provider/真实数据/push/tag/PR。
+- 验证：focused Rendering、app assembly、`render`、`fast`、顺序 `server`，按影响面决定 `full`；最高
+  `automated_verified`，A3/J1/READY 不推进。
+
+### TV1-T132 resolution evidence
+
+- `CapabilityBudget` 在同一个 fingerprint-bound effective vector parser 中纳入冻结
+  `capabilityStateRecordBytes=1,048,576`，并在 runtime establish 后、state-store commit 前 admission opaque
+  `sealedState` 长度；exact-at-limit 成功，above-limit 返回 `CAPABILITY_STATE` /
+  `CAPABILITY_BUDGET_EXCEEDED` / exact limitId，且 saveCalls=0。SPI、DB/encryption、state wire、fingerprint、
+  expiry、restore replay 均未改变。
+- TDD 经公开 `Evaluator.evaluate` 先取得真实 RED（expected Rejected / actual SealedDocument），后同一 tracer
+  GREEN；最终 focused Evaluator 34/34、Rendering 159/159、生产 Spring assembly 7/7。
+- A1：`render` `.sdlc/evidence/20260828-234144-render/`、`fast`
+  `.sdlc/evidence/20260828-234233-fast/`、顺序 clean `server`
+  `.sdlc/evidence/20260828-234303-server/` 均 passed；server 8-module reactor BUILD SUCCESS，App
+  372/0/0/15。T132 无 API/Web/migration/Profile 改动，故不重复跑 `full`。
+- A2 仅为未变 Renderer 轴独立 replay、无 T132-specific issued replay；A3 无，J0 pending、J1 未批准。
+  provider attempts/API Key reads/reservations/cost/真实数据/Profile registration/push/tag/PR 均为 0。
+- 状态回填后的 resolution `fast` `.sdlc/evidence/20260828-235941-fast/` 3/3 steps 均 passed。
+
+## F133. TV1-F133 执行卡（feature-lineage alias）
+
+- 状态：`resolved / automated_verified`；single writer: Codex；blocked by T21/T125/T129/T131/T132（均 resolved）。
+- 决策：T132 verified commit `3a2ef888` 后 worktree clean，DAG 无其他 claimed writer；冻结 capability matrix 的
+  首个 unblocked residual 是 `initializationAttempts=3`。正式 Ticket 19 records 仍被 executor/target 发行前置
+  阻塞，Random rejection 独立性更强，故先完成初始化线性化重试。
+- seam：只经公开 `Evaluator.evaluate` 观察 outcome；现有 `CapabilityBudget` 深模块拥有 frozen maximum、
+  deployment tightening 与 exact limitId。`RenderingCapabilityRuntime`/`CapabilityStateStore` 仍是既有外部 adapter
+  seam，不扩张 SPI。
+- 语义：首次 load 在采样前；precommit establish failure 可在总 deadline 内有界重试；save unknown 必须先 load，
+  `Loaded` restore、`Missing` 才重采样、conflict/unavailable fail closed。issuedAt/expiresAt 首轮固定且重试不续期；
+  record capacity/conflict/restore invalid 均 terminal。
+- TDD：依次做 transient establish 第三次成功、deployment limit 耗尽、unknown-save committed 不重采样、
+  unknown-save missing 才重试的公开 seam RED→GREEN；focused Rendering 与 app assembly 后跑 `render`/`fast`/顺序
+  `server`。
+- 禁止影响：Random rejection/fault schedule、正式 Ticket 19 records、route/OpenAPI/Web/migration/Profile、
+  provider/API Key/真实数据/push/tag/PR；最高 `automated_verified`，A3/J1/READY 不推进。
+- 实现：`CapabilityBudget` fail-closed 解析 fingerprint-bound `initializationAttempts`，冻结最大 `3` 并由请求级
+  authority 在每次 establish 前预约；Evaluator 在同一 deadline 内重试 precommit transient failure，所有 unknown
+  save 先 query，只有明确 `Missing` 才重采样。issuedAt/expiresAt 跨重试固定，load/establish/save/restore 边界均
+  fail closed 检查 deadline。
+- TDD：公开 `Evaluator.evaluate` seam 的 transient third-attempt、unknown committed/missing 与 deadline race tracer
+  均先真实 RED 再 GREEN；deployment limit 耗尽固定 exact stage/code/limitId、两次 establish 与 zero save。最终
+  focused 43/43、Rendering 168/168、生产 assembly/architecture 12/12。
+- A1：`render` `.sdlc/evidence/20260829-001925-render/`、`fast`
+  `.sdlc/evidence/20260829-002016-fast/`、顺序 clean `server`
+  `.sdlc/evidence/20260829-002049-server/` metadata 均 `passed`；server 8-module reactor BUILD SUCCESS，App 372 tests /
+  0 failures / 0 errors / 15 skipped。无 API/Web/migration/Profile 变化，未重复发布级 `full`。
+- A2 仅未变 Renderer 轴独立 replay，无 T133-specific issued record；A3 无，J0 pending、J1 未批准。provider
+  attempts/API Key reads/reservations/cost/真实数据/Profile registration/push/tag/PR 均为 0。Random rejection 与正式
+  Ticket 19 records 留在后续 frontier。
+- 状态回填后的 resolution `fast` `.sdlc/evidence/20260829-003825-fast/` metadata 仍为 `passed`，3/3 steps 全绿。
+
+## F134. TV1-F134 执行卡（feature-lineage alias）
+
+- 状态：`resolved / automated_verified`；single writer: Codex；blocked by T21/T125/T128/T129/T131/T133（均
+  resolved）。
+- 决策：T133 verified commit `b7f4ef38` 后 worktree clean 且无其他 claimed writer；冻结 capability matrix 中首个
+  unblocked residual 是 `randomRejectionAttempts=128`。正式 Ticket 19 records/fault executor 尚受发行前置阻塞，
+  故本票只完成生产 HMAC guard 与公共终态。
+- seam：产品行为只经公开 `Evaluator.evaluate` 观察；`CapabilityBudget` 拥有 exact profile invariant，只有
+  canonical integer `128` 合法。nonce/counter/digest 不跨受信 runtime seam；state requirements/wire 不变，budget
+  identity 已由 evaluation fingerprint 线性化。
+- 语义：counter 从 0 起，固定只运行 `0…127`；每次下一 attempt 前受限。全部拒绝由 closed runtime outcome 映射为
+  stage MATERIALIZATION、code CAPABILITY_RESULT_INVALID、exact limitId，随后 demand/Asset/lowering/Engine 均停止。
+  provider unavailable、demand budget 与 expression decimal failure 保持独立终态。
+- TDD：公开 seam 先做 exhaustion exact terminal + first-fail RED→GREEN，再补 effective profile 127/129 均
+  fail-closed、128 正常与既有 known vector 不漂移。focused Rendering、app adapter/architecture 后跑
+  render/fast/顺序 server。
+- 禁止影响：正式 Case/Oracle、fault-schedule executor、route/OpenAPI/Web/migration/Profile、provider/API Key/真实数据/
+  push/tag/PR；最高 `automated_verified`，A3/J1/READY 不推进。
+
+### TV1-T134 resolution evidence
+
+- 权威校正：机器 capacity coverage 明确本轴 comparator 为 `EXACT`；发现中途“deployment 可收紧至 127”的解释不符
+  后立即撤回。`CapabilityBudget` 只接受 canonical `128`，`127/129` 与缺失/非 canonical profile 均 fail closed；
+  evaluation fingerprint、state wire 与初始化 retry 不变。
+- 实现：`CapabilityDerivation` 保持唯一固定 128 次 HMAC authority；app runtime 新增 closed
+  `RandomRejectionExhausted` outcome，Rendering 精确映射为 MATERIALIZATION /
+  CAPABILITY_RESULT_INVALID / `capabilityRuntime.randomRejectionAttempts`。首个 exhaustion 停止后续 demand 与
+  document/Engine work，provider unavailable、capacity 与 decimal taxonomy 不漂移。
+- TDD：公开 seam 先取得 outcome symbol 缺失的 compile RED，再取得 `127` 被错误接受的 behavioral RED；GREEN 后
+  exhaustion tracer 证明两 alias 只 supply 1 次且 zero document。最终 Evaluator 45/45、Rendering 170/170、生产
+  app assembly/architecture 12/12。
+- A1：`render` `.sdlc/evidence/20260829-005811-render/`、`fast`
+  `.sdlc/evidence/20260829-005906-fast/`、顺序 `server`
+  `.sdlc/evidence/20260829-005936-server/` metadata 均 `passed`；server BUILD SUCCESS，App 372/0/0/15。无
+  API/OpenAPI/Web/migration/Profile 变更，故不重复发布级 `full`。
+- A2 仅为 `render` 内未变 Renderer 轴独立 replay，无 T134-specific issued record；A3 无，J0 pending、J1 未批准。
+  正式 Ticket 19 records/fault executor 仍阻塞；provider/API Key/真实数据/Profile/push/tag/PR 均为 0。
+- 状态回填后的 resolution `fast` `.sdlc/evidence/20260829-011629-fast/` metadata 为 `passed`，3/3 steps
+  全绿。
+
+## F135. TV1-F135 执行卡（feature-lineage alias）
+
+- 状态：`resolved / automated_verified`；single writer: Codex；blocked by T21/T125/T129/T131/T133/T134（均
+  resolved）。
+- 决策：T134 verified commit `ed8f1523` 后 worktree clean 且无其他 active claim；机器 authority 将
+  `capabilityRuntime.initializationAttempts` 定义为 comparator `EXACT`、value `3`。T133 把 `1/2` 当作 deployment
+  tightening 的解释违反 Ticket 14 的 exact Profile/不可协商纪律，故登记独立 corrective ticket，不改写历史提交。
+- seam：唯一产品行为测试 seam 仍为公开 `Evaluator.evaluate`；既有 runtime/store 是 system-boundary adapter。
+  `CapabilityBudget` 集中拥有 exact profile admission，Evaluator 不持有散落配置值或新 public seam。
+- 语义：effective profile 只接受 canonical `3`，`2/4` 均 fail closed；连续 transient establish failure 允许三次
+  attempt，第四次前返回 CAPABILITY_STATE/CAPABILITY_STATE_UNAVAILABLE/exact limitId，零 save/document/Engine。
+  T133 的 load-before-sample、unknown-commit query、固定 expiry/deadline/fingerprint 语义不变。
+- TDD：先让 profile `2` 的错误接受产生真实 RED，再最小改为 exact parser；更新 exhaustion tracer 为三次 establish，
+  保留第三次成功与 unknown-commit 回归。focused Rendering/app 后运行 render/fast/顺序 server。
+- 禁止影响：正式 Ticket 19 records/fault executor、SPI/DB/state wire、route/OpenAPI/Web/migration/Profile、provider/
+  API Key/真实数据/push/tag/PR；最高 `automated_verified`，A3/J1/READY 不推进。
+
+### TV1-T135 resolution evidence
+
+- 实现：`CapabilityBudget` 将 `initializationAttempts` 从通用 maximum parser 切换到既有 exact-profile authority，
+  只接受 canonical `3`；`2/4` 均 fail closed。Evaluator 重试状态机未改，持续 transient failure 三次后在第四次前
+  返回 CAPABILITY_STATE/CAPABILITY_STATE_UNAVAILABLE/exact limitId，零 save/document/Engine；第三次成功保留。
+- TDD：公开 seam 先取得 value `2` 被接受的真实 behavioral RED（46 tests 中 1 failure），最小一行生产改动后
+  Evaluator 46/46、Rendering 171/171、生产 app assembly/architecture 12/12；`git diff --check` 通过。
+- A1：`render` `.sdlc/evidence/20260829-012706-render/`、`fast`
+  `.sdlc/evidence/20260829-012758-fast/`、顺序 clean `server`
+  `.sdlc/evidence/20260829-012836-server/` metadata 均 `passed`；server 8-module reactor BUILD SUCCESS，App
+  372/0/0/15。无 API/OpenAPI/Web/migration/Profile 变化，未重复 `full`。
+- A2 仅未变 Renderer 独立 replay，无 T135-specific issued record；A3 无，J0 pending、J1 未批准。provider/API Key/
+  费用/真实数据/Profile registration/push/tag/PR 均为 0。
+- 状态回填后的 resolution `fast` `.sdlc/evidence/20260829-014454-fast/` metadata 仍为 `passed`，3/3 steps
+  全绿。
+
+## F136. TV1-F136 执行卡（feature-lineage alias）
+
+- 状态：`resolved / automated_verified`；single writer: Codex；blocked by T21/T135（均 resolved）。
+- 决策：T135 verified commit `62b5ce9c` 后 worktree clean 且无其他 active claim；机器 authority 将
+  `closureAndExpansion.closureCanonicalDesignBytes` 固定为 MAX_INCLUSIVE `33,554,432`，reservation point 是
+  加入下一份 unique snapshot canonical byte length 前，超限终态为 TEMPLATE_CLOSURE_FREEZE /
+  TEMPLATE_CLOSURE_LIMIT_EXCEEDED / ZERO_EVALUATION_DOCUMENT_OUTPUT。现有 closure authority 尚未累计该轴。
+- seam：Template-owned `TemplateClosureAuthority.freezeClosure` 是 ADR-0044 已冻结的公开 closure seam；
+  Rendering 的唯一产品 seam 仍为 `Evaluator.evaluate`。实现只深化既有 authority，并在既有 mapper 形成完整
+  `closureAndExpansion.*` limitId；不新增接口或容量档位。
+- 语义：每 complete freeze attempt 从零计数，每个 unique snapshot 仅计 exact canonical bytes 一次；diamond reuse
+  不重复计数，at-limit 成功，next byte 失败，overflow fail closed。失败发生在 input/capability/materialization/Engine
+  前，零 partial result。
+- TDD：公开 authority seam 固定 `33,554,431/32/33` below/at/above，公开 Evaluator seam 固定 exact
+  stage/code/full limitId；先取得真实 RED，再做最小 GREEN。focused 后跑 template/render/fast/顺序 server。
+- 禁止影响：正式 Ticket 19 records/executor、其他容量轴、route/OpenAPI/Web/migration/Profile、provider/API Key/
+  真实数据/push/tag/PR；最高 `automated_verified`，A3/J1/READY 不推进。
+- 实现：closure authority 为每个 complete freeze attempt 建立 overflow-safe request-local byte budget；unique snapshot
+  在写入 closure map 前预留 exact canonical bytes，at-limit success、next byte fail，diamond target 只计一次；
+  Evaluator 把 Template suffix 统一映射为 `closureAndExpansion.*` full limitId。
+- TDD：Template focused 18 tests 中 above-limit 错误 freeze 成功形成 RED；Evaluator 47 tests 中 suffix limitId 形成
+  第二个 RED。最小 GREEN 后 Template focused 20/20、Evaluator 47/47；受影响 reactor Schema 20、Validation 13、
+  Template 84、Asset 92、Rendering 172 tests 均零失败，`git diff --check` 通过。
+- A1：`template` `.sdlc/evidence/20260829-015926-template/`、`render`
+  `.sdlc/evidence/20260829-015956-render/`、`fast` `.sdlc/evidence/20260829-020045-fast/`、顺序 `server`
+  `.sdlc/evidence/20260829-020118-server/` metadata 均 `passed`；server 8-module reactor BUILD SUCCESS，App 372 tests /
+  0 failures / 0 errors / 15 controlled skips。无 API/OpenAPI/Web/migration/Profile 变化，未跑发布级 `full`。
+- 无 T136-specific issued record，故不声明 ticket-specific A2；A3 无，J0 pending、J1 未批准。provider attempts/
+  API Key reads/reservations/cost/真实数据/Profile registration/push/tag/PR 均为 0。
+- 状态回填后的 resolution `fast` `.sdlc/evidence/20260829-021815-fast/` metadata 仍为 `passed`，3/3 steps
+  全绿。
+
+## F137. TV1-F137 执行卡（feature-lineage alias）
+
+- 状态：`resolved / automated_verified`；single writer: Codex；blocked by T21/T136（均 resolved）。
+- 决策：T136 verified commit `e6f88e48` 后 worktree clean 且无其他 active claim。机器 capacity coverage 将
+  `closureAndExpansion.actualTemplateInvocations` 固定为 MAX_INCLUSIVE `256`、contract stage
+  `SERIAL_MATERIALIZATION`、public stage `MATERIALIZATION`、code `EVALUATION_BUDGET_EXCEEDED`，reservation point
+  是创建下一 invocation/frame 前，zero boundary 为 `ZERO_DOCUMENT_OUTPUT`。
+- 计数语义：root invocation/frame 计一份；每个 surviving TemplateUse 在 selector 非 SKIP、fills 成功后、child
+  frame 创建前计一份。render:false/false/empty/SKIP 不消费；shared snapshot 的实际 occurrence 不共享计数。
+- seam：沿用 ADR-0044 公开 `Evaluator.evaluate`。root+254/255/256 child 隔离 observed `255/256/257`；再以
+  Repeat 中大量 SKIP + 一个实际 child 固定 SKIP 零计费。不新增 API/SPI/config/probe。
+- TDD：先取得 above-limit 错误成功 RED，最小加入 root reservation 并纠正 code；再取得 SKIP 被错误计费 RED，
+  后移 child reservation。focused 后跑 Rendering、render/fast/顺序 server。
+- 禁止影响：正式 Ticket 19 records/executor、其余动态容量轴、route/OpenAPI/Web/migration/Profile、provider/
+  API Key/真实数据/push/tag/PR；最高 `automated_verified`，当前 A1、J0。
+- 实现：root frame 与 surviving child frame 共用 request-local exact reservation；child reservation 在 selector 非
+  SKIP、fills 成功后、`InvocationScope` 前执行。同步纠正 canonical
+  `contextSelector.contextAbsentPolicy` 的 nested 读取，SKIP 不创建 frame、不计费。第 257 次 exact
+  MATERIALIZATION / EVALUATION_BUDGET_EXCEEDED / full limitId fail closed。
+- TDD：48-test above-limit 错误 seal 形成首个真实 RED，root/code 最小修复后 48/48；SKIP tracer 先暴露 policy
+  读取错误，纠正后精确形成 invocation-budget RED，后移 reservation 后 49/49；补 below/at 后 Evaluator
+  51/51。受影响 reactor Schema 20、Validation 13、Template 84、Asset 92、Rendering 176 均零失败，
+  `git diff --check` 通过。
+- A1：`render` `.sdlc/evidence/20260829-023216-render/`、`fast`
+  `.sdlc/evidence/20260829-023305-fast/`、顺序 `server`
+  `.sdlc/evidence/20260829-023333-server/` metadata 均 `passed`；server 8-module reactor BUILD SUCCESS，App
+  372/0/0/15。无 API/OpenAPI/Web/migration/Profile 变化，未跑发布级 `full`。
+- 无 T137-specific issued record，故不声明 ticket-specific A2；A3 无，J0 pending、J1 未批准。provider/API Key/
+  费用/真实数据/Profile registration/push/tag/PR 均为 0。
+- 状态回填后的 resolution `fast` `.sdlc/evidence/20260829-025035-fast/` metadata 仍为 `passed`，3/3 steps
+  全绿。
+
+## F138. TV1-F138 执行卡（feature-lineage alias）
+
+- 状态：`resolved / automated_verified`；single writer: Codex；blocked by T21/T137（均 resolved）。
+- 决策：T137 verified commit `c9a1061c` 后 worktree clean 且无其他 active claim。机器 authority 将
+  `closureAndExpansion.invocationDepth` 固定为 MAX_INCLUSIVE `16`，observed `15/16/17`，contract stage
+  `SERIAL_MATERIALIZATION`、public stage `MATERIALIZATION`、code `EVALUATION_BUDGET_EXCEEDED`，reservation point
+  是创建下一 invocation/frame 前，zero boundary 为 `ZERO_DOCUMENT_OUTPUT`；requirement
+  `RW-T19-S7-074`，candidate oracles `ORC::CAPACITY::000184..000186`。
+- 计数语义：root frame depth `1`；每个 surviving TemplateUse child frame 沿当前 invocation path `+1`；Repeat
+  frame保留当前 depth，siblings 不累计，render:false/结构剪枝/SKIP 不创建 child frame。
+- seam/TDD：沿用 ADR-0044 公开 `Evaluator.evaluate`。scripted closure 系统边界直接返回 17 层 frozen chain，
+  隔离动态 guard，避免 stage 2 独立 closureDepth 抢先；先取得错误 seal RED，再加入 path-local guard并补 15/16
+  success。T137 的宽 sibling 与 SKIP 回归继续防止全局累计误实现。
+- 禁止影响：正式 Ticket 19 records/executor、其他容量轴、route/OpenAPI/Web/migration/Profile、provider/API Key/
+  真实数据/push/tag/PR；最高 `automated_verified`，A1/J0 待验证。
+- 实现：`InvocationScope` 持有 immutable path-local depth；root `1`、TemplateUse child `+1`、Repeat copy 保留。
+  `reserveTemplateInvocation(depth)` 在总 invocation 计数前检查 MAX_INCLUSIVE `16`，depth 17 exact
+  MATERIALIZATION / EVALUATION_BUDGET_EXCEEDED / full limitId fail closed。
+- TDD：生产未改时，depth 17 在公开 Evaluator seam 错误返回 `SealedDocument`，形成真实 RED；最小实现后 GREEN，
+  补 depth 15/16 success，focused Evaluator 54/54。T137 的 255 sibling 与 SKIP 回归全绿；受影响 reactor Schema
+  20、Validation 13、Template 84、Asset 92、Rendering 179 均零失败，`git diff --check` 通过。
+- A1：`render` `.sdlc/evidence/20260829-025933-render/`、`fast`
+  `.sdlc/evidence/20260829-030020-fast/`、顺序 `server`
+  `.sdlc/evidence/20260829-030048-server/` metadata 均 `passed`；server 8-module BUILD SUCCESS，App
+  372/0/0/15。无 API/OpenAPI/Web/migration/Profile 变化，未跑发布级 `full`。
+- candidate oracles `ORC::CAPACITY::000184..000186` 非正式 issued product executor 记录，不声明 ticket-specific
+  A2；A3 无，J0 pending、J1 未批准。provider/API Key/费用/真实数据/Profile registration/push/tag/PR 均为 0。
+- 状态回填后的 resolution `fast` `.sdlc/evidence/20260829-031714-fast/` metadata 仍为 `passed`。
+
+## F139. TV1-F139 执行卡（feature-lineage alias）
+
+- 状态：`resolved / automated_verified`；single writer: Codex；blocked by T21/T137/T138（均 resolved）。
+- 决策：机器 authority 将 `closureAndExpansion.compositionViewports` 固定为 MAX_INCLUSIVE `256`、contract stage
+  `SERIAL_MATERIALIZATION`、public stage `MATERIALIZATION`、code `EVALUATION_BUDGET_EXCEEDED`、zero boundary
+  `ZERO_DOCUMENT_OUTPUT`，requirement 为 `RW-T19-S7-075`。
+- 被支配关系：root-counted `actualTemplateInvocations=256` 会在完整 Evaluation 中先于第 256 个 child viewport
+  拒绝。冻结夹具因此指定 `RENDERING_PIPELINE_CAPACITY_GUARD` 隔离 entrypoint，并明确不运行 Evaluator/Sealer；
+  本票不伪造跨轴非法 payload，也不改上游 limit。
+- seam：新增 package-internal、无 I/O 的 `renderweave-rendering-pipeline-capacity-guard/1.0` 深模块；隔离 fixture 与
+  `Materializer` authoritative counter 调用同一窄 Interface。T137/T138 已有判断机械迁入，避免重复 guard；不新增
+  产品 API/SPI/config/test override/正式 executor。
+- TDD：先让 `255/256/257` contract tracer 因 seam 缺失 RED，再最小实现；随后接入 viewport reservation，复跑
+  现有 255-viewports、SKIP、invocation total/depth 产品回归。验证 focused Rendering、`render`、`fast`；无 app
+  wiring/API/Web/migration/Profile 变化，本内部容量票不重复 full，server 留到周期性批次。
+- 禁止影响：正式 Ticket 19 records/product target、其他容量轴、route/OpenAPI/Web/Profile、provider/API Key/
+  真实数据/push/tag/PR；最高 `automated_verified`，当前 A0、J0。
+
+### TV1-T139 resolution evidence
+
+- 实现：package-internal `RenderingPipelineCapacityGuard` 是冻结 contract 的唯一 catalog；compositionViewports
+  MAX_INCLUSIVE `256`，`255/256` admitted，`257` 返回 exact MATERIALIZATION /
+  EVALUATION_BUDGET_EXCEEDED / full limitId。`Materializer` 在 viewport node reservation 前累计并调用该 seam；
+  T137/T138 的 actual-invocation/depth 内联判断同步机械迁入，避免 duplicate guard。
+- TDD：生产 seam 缺失时新 tracer 以 4 个 javac symbol error RED；最小 GREEN 后 boundary 1/1。guard + Evaluator +
+  architecture 61/61；受影响 reactor Schema 20、Validation 13、Template 84、Asset 92、Rendering 180 全绿，
+  `git diff --check` 通过。
+- A1 `render` `.sdlc/evidence/20260829-032705-render/`（2/2）与 `fast`
+  `.sdlc/evidence/20260829-032818-fast/`（3/3）metadata 均 `passed`。无 app wiring/API/Web/migration/Profile 变化，
+  按快速迭代约定未重复 server/full。
+- candidate fixture 尚无正式 product target/executor replay，故无 T139-specific A2；A3 无，J0 pending、J1 未批准。
+  provider attempts/API Key reads/真实数据/Profile registration/push/tag/PR 均为 0。
+- 状态回填后的 resolution `fast` `.sdlc/evidence/20260829-032929-fast/` metadata 为 `passed`，3/3 steps
+  全绿。
+
+## F140. TV1-F140 执行卡（feature-lineage alias）
+
+- 状态：`resolved / automated_verified`；single writer: Codex；blocked by T21/T139（均 resolved）。
+- authority：`closureAndExpansion.repeatCollectionItemsPerOccurrence` 为 MAX_INCLUSIVE `1000`，observed
+  `999/1000/1001`，contract stage SERIAL_MATERIALIZATION、public stage MATERIALIZATION、code
+  EVALUATION_BUDGET_EXCEEDED、zero boundary ZERO_DOCUMENT_OUTPUT；requirements 包含 `RW-T19-S7-076`。
+- 语义：每个 actual Repeat occurrence 独立 admission 一次完整 collection length，不跨 sibling/nested occurrence
+  累计；EMPTY→0。检查位于 items resolve/type/absentPolicy 后、首个 Loop frame/item occurrence/materialized node/
+  descendant demand 前；不截断、分页、跳项或 partial output。
+- seam：扩展 T139 package-internal 唯一 `RenderingPipelineCapacityGuard` catalog；公开产品行为只经
+  `Evaluator.evaluate` 观察。旧 10,000-item 单 Repeat node-limit 测试改为 9×1,000 + 995 sibling Repeat，保持原
+  目标且不依赖违反新 guard 的 payload。
+- TDD：先让 1001-item Evaluator tracer 错误 seal 形成 behavioral RED，再最小接线，补 999/1000 success 与 guard/
+  zero/sibling 回归。验证 focused、受影响 reactor、render/fast；无 app wiring/API/Web/migration/Profile 变化，
+  不重复 full，server 留到周期性批次。
+- 禁止影响：其余 Repeat/materialization 容量轴、正式 Ticket 19 records/product executor、provider/API Key/
+  真实数据/Profile registration/push/tag/PR；最高 `automated_verified`，当前 A1、J0。
+
+### TV1-T140 resolution evidence
+
+- 实现：唯一 package-internal `RenderingPipelineCapacityGuard` 增加
+  `REPEAT_COLLECTION_ITEMS_PER_OCCURRENCE=1000`；`Materializer.expandRepeat` 在 items resolve/type/ABSENT policy
+  后、item layout 与首个 Loop frame/materialized node 前检查当前 occurrence 的完整 collection length。EMPTY→0
+  继续立即剪枝；guard 无跨 sibling/nested 状态。
+- TDD：生产未改时，1001-item 公开 Evaluator tracer 预期 `Rejected`、实际 `SealedDocument`，形成 behavioral RED；
+  最小接线后 999/1000 success，1001 exact MATERIALIZATION / EVALUATION_BUDGET_EXCEEDED / full limitId，且首个
+  loop-domain capability demand 为 0。guard 覆盖 0/999/1000/1001。
+- 原 10,000-item 单 Repeat node-limit 测试改为 9×1000 + 995 sibling Repeat；每个 occurrence 独立合法，仍命中
+  materializedStaticNodes 20,001，证明本轴不跨 sibling 累计并保持旧测试目标。focused Evaluator/Materializer/guard
+  73/73；受影响 reactor Schema 20、Validation 13、Template 84、Asset 92、Rendering 184 全绿；
+  `git diff --check` 通过。
+- A1 `render` `.sdlc/evidence/20260829-033642-render/`（2/2）与 `fast`
+  `.sdlc/evidence/20260829-033733-fast/`（3/3）metadata 均 `passed`。无 app wiring/API/Web/migration/Profile 变化，
+  按快速迭代约定未重复 server/full。
+- 无正式 Ticket 19 product target/executor，故无 T140-specific A2；A3 无，J0 pending、J1 未批准。provider
+  attempts/API Key reads/真实数据/Profile registration/push/tag/PR 均为 0。
+- 状态回填后的 resolution `fast` `.sdlc/evidence/20260829-033936-fast/` metadata 为 `passed`，3/3 steps 全绿。
+
+## F141. TV1-F141 执行卡（feature-lineage alias）
+
+- 状态：`resolved / automated_verified`；single writer: Codex；blocked by T21/T140（均 resolved）。
+- authority：`closureAndExpansion.repeatNestingDepth` 为 MAX_INCLUSIVE `8`，observed `7/8/9`，contract stage
+  SERIAL_MATERIALIZATION、public stage MATERIALIZATION、code EVALUATION_BUDGET_EXCEEDED、zero boundary
+  ZERO_DOCUMENT_OUTPUT；requirements 包含 `RW-T19-S7-077`。
+- 语义：root active Repeat depth 为 0，每个实际进入的 Repeat occurrence 沿当前 expansion path +1；items/sibling/
+  returned branch 不累计，render:false、false Conditional 与 zero outer Repeat 未进入的 descendant 不计。child
+  Template invocation 隔离 lexical Loop frames，但保留物理 occurrence path 上活跃的 Repeat depth。
+- seam：扩展唯一 package-internal `RenderingPipelineCapacityGuard`；`InvocationScope` 携带不可变 depth，
+  `withLoopFrame` +1，TemplateUse child scope 原样继承。depth 9 在该层 items/frame/node/generated/descendant work
+  前 exact fail closed；不新增产品 API/SPI/config/test override。
+- TDD：先让合法 depth 9 nested Repeat 在公开 Evaluator seam 错误 seal 形成 behavioral RED，再最小接线；补
+  7/8 success、sibling path-local、pruned branch 与 isolated guard 回归。验证 focused、受影响 reactor、render/fast；
+  无 app wiring/API/Web/migration/Profile 变化，不重复 full，server 留到周期性容量批次。
+- 禁止影响：loopFramesTotal 等后续容量轴、正式 Ticket 19 records/product executor、provider/API Key/真实数据/
+  Profile registration/push/tag/PR；最高 `automated_verified`，当前 A1、J0。
+
+### TV1-T141 resolution evidence
+
+- 实现：唯一 package-internal `RenderingPipelineCapacityGuard` 增加 `REPEAT_NESTING_DEPTH=8`；root scope depth 0，
+  Repeat entry 检查 current+1，`withLoopFrame` 携带新 depth，父 scope 不变。TemplateUse child 清空 lexical Loop
+  frames 但继承 active physical depth，不能用 invocation boundary 绕过限制。
+- TDD：生产未改时，合法 depth 9 nested Repeat 预期 `Rejected`、实际 `SealedDocument`，形成 behavioral RED；
+  最小接线后 7/8 success，9 exact MATERIALIZATION / EVALUATION_BUDGET_EXCEEDED / full limitId，且第九层
+  items/frame/node/descendant work 前终止。
+- 两个 sibling depth-8 tree 成功，第九层 render:false 成功剪枝；九层 Repeat→TemplateUse chain 在第九层拒绝；
+  isolated guard 7/8/9 全绿。focused Evaluator/guard 66/66；受影响 reactor Schema 20、Validation 13、Template 84、
+  Asset 92、Rendering 191 全绿；`git diff --check` 通过。
+- A1 `render` `.sdlc/evidence/20260829-034848-render/`（2/2）与 `fast`
+  `.sdlc/evidence/20260829-034940-fast/`（3/3）metadata 均 `passed`。无 app wiring/API/Web/migration/Profile 变化，
+  按快速迭代约定未重复 server/full。
+- frozen candidate fixture 尚无正式 product target/executor replay，故无 T141-specific A2；A3 无，J0 pending、
+  J1 未批准。provider attempts/API Key reads/真实数据/Profile registration/push/tag/PR 均为 0。
+- 状态回填后的 resolution `fast` `.sdlc/evidence/20260829-035052-fast/` metadata 为 `passed`，3/3 steps 全绿。
+
+## F142. TV1-F142 执行卡（feature-lineage alias）
+
+- 状态：`resolved / automated_verified`；single writer: Codex；blocked by T21/T141（均 resolved）。
+- authority：`closureAndExpansion.loopFramesTotal` 为 MAX_INCLUSIVE `10000`，observed `9999/10000/10001`，
+  contract stage SERIAL_MATERIALIZATION、public stage MATERIALIZATION、code EVALUATION_BUDGET_EXCEEDED、zero
+  boundary ZERO_DOCUMENT_OUTPUT；primary requirement `RW-T19-S7-078`。
+- 语义：每个 actual Repeat item 在 frame construction、generated node、descendant pruning/demand 前消费一个
+  request-global单位；即使 item 最终零 surviving children 也计数。zero collection 为 0；sibling/nested Repeat 与
+  TemplateUse child invocation 累计；第 10001 个必须零 partial document first-fail。
+- seam：扩展唯一 package-internal `RenderingPipelineCapacityGuard`；`Materializer` request-local counter 通过
+  `reserveLoopFrame()` 先于 `withLoopFrame`。平铺 fixture 用每 occurrence ≤1000 的多个 Repeat；above final item
+  capability supply 必须为 0；1000×10 nested fixture 证明不按 occurrence 或 depth 重置。
+- TDD：先让 10001-frame public tracer 错误 seal 形成 behavioral RED，再最小接线；补 9999/10000 success、nested
+  overflow 与 isolated guard 9999/10000/10001。`RW-T19-S7-079` 的 logical-operation half 留给后续 exact axis，
+  本票不提前宣称完成。
+- 验证 focused、受影响 reactor、render/fast；无 app wiring/API/Web/migration/Profile 变化，不重复 full，server
+  留到周期性容量批次。禁止影响后续容量轴、正式 Ticket 19 records/product executor、provider/API Key/真实数据/
+  Profile registration/push/tag/PR；最高 `automated_verified`，当前 A1、J0。
+- behavioral RED 已证明生产缺口：10001-frame tracer 预期 `Rejected`、实际 `SealedDocument`。唯一 guard 增加
+  `LOOP_FRAMES_TOTAL=10000`，`Materializer.reserveLoopFrame()` 在 frame/node/descendant work 前做 request-global
+  reservation；9999/10000 seal，第 10001 个 exact MATERIALIZATION / EVALUATION_BUDGET_EXCEEDED /
+  `closureAndExpansion.loopFramesTotal`，final loop-domain Random supply 为 0。
+- zero-prefix + 10000 actual frames 成功；1000×10 nested fixture exact overflow 且无 partial document；isolated guard
+  重放 9999/10000/10001。focused 72/72；受影响 reactor Schema 20、Validation 13、Template 84、Asset 92、
+  Rendering 197 全绿；`git diff --check` 通过。
+- A1 `render` `.sdlc/evidence/20260829-035916-render/`（2/2）与 `fast`
+  `.sdlc/evidence/20260829-040003-fast/`（3/3）metadata 均 `passed`。无 T142-specific A2/A3，J0 pending、J1
+  未批准；`RW-T19-S7-079` logical-operation half 仍留给后续 exact axis。未重复 server/full，provider attempts/API
+  Key reads/真实数据/Profile registration/push/tag/PR 均为 0。
+- 状态回填后的 resolution `fast` `.sdlc/evidence/20260829-040209-fast/` metadata 为 `passed`，3/3 steps 全绿。
+
+## F143. TV1-F143 执行卡（feature-lineage alias）
+
+- 状态：`resolved / automated_verified`；single writer: Codex；blocked by T21/T142（均 resolved）。
+- authority：`closureAndExpansion.renderOccurrences` 为 MAX_INCLUSIVE `25000`，observed `24999/25000/25001`，
+  contract stage SERIAL_MATERIALIZATION、public stage MATERIALIZATION、code EVALUATION_BUDGET_EXCEEDED、zero
+  boundary ZERO_DOCUMENT_OUTPUT；primary requirement `RW-T19-S7-082`。
+- 现状缺口：T23 已让最终真实/合成 static occurrence 经 `reserveMaterializedNode()` 预留，但该轴仍由
+  `MAX_RENDER_OCCURRENCES` 与手写比较重复拥有，并错误返回 RENDER_DOCUMENT_LIMIT_EXCEEDED。删除该 ad-hoc
+  authority，扩展唯一 package-internal `RenderingPipelineCapacityGuard`，生产 counter 只经 catalog 投影。
+- dominance：同一路径 `materializedStaticNodes=20000` 更低，产品 Evaluation 必须先按其独立轴失败。cap-012
+  target 明确 exact production guard required 且 evaluator/sealer 不执行；因此用真实 guard 隔离重放 24999/
+  25000/25001，不通过 test override、反射或跳过较低预算制造伪 full-pipeline case。
+- TDD：先加 isolated guard exact case 形成缺失 enum RED，再最小接线；focused guard/Materializer、受影响 reactor、
+  render/fast。无 app wiring/API/Web/migration/Profile 变化，不重复 full，server 留到周期性容量批次。
+- 禁止影响：materialized/generated/logical/document 等后续轴、正式 Ticket 19 records/product executor、provider/
+  API Key/真实数据/Profile registration/push/tag/PR；最高 `automated_verified`，当前 A1、J0。
+- TDD RED：cap-012 exact test 首次编译在三个调用点明确失败于生产 enum 缺少 `RENDER_OCCURRENCES`。最小接线后
+  唯一 guard 以 24999/25000 admit、25001 exact MATERIALIZATION / EVALUATION_BUDGET_EXCEEDED / full limitId；
+  focused guard/Materializer 19/19。
+- `MAX_RENDER_OCCURRENCES` 与手写 wrong-code 分支已删除；生产 `occurrences` counter 经唯一 guard 投影，更低的
+  materializedStaticNodes first-fail 不变。受影响 reactor Schema 20、Validation 13、Template 84、Asset 92、
+  Rendering 198 全绿；`git diff --check` 通过。
+- A1 `render` `.sdlc/evidence/20260829-041009-render/`（2/2）与 `fast`
+  `.sdlc/evidence/20260829-041059-fast/`（3/3）metadata 均 `passed`。cap-012 candidate 无 product executor 且
+  明确不执行 Evaluator/Sealer，故无 T143-specific A2/A3；J0 pending、J1 未批准。未重复 server/full，provider
+  attempts/API Key reads/真实数据/Profile registration/push/tag/PR 均为 0。
+- 状态回填后的 resolution `fast` `.sdlc/evidence/20260829-041737-fast/` metadata 为 `passed`，3/3 steps 全绿。
+
+## F144. TV1-F144 执行卡（feature-lineage alias）
+
+- 状态：`resolved / automated_verified`；single writer: Codex；blocked by T21/T143（均 resolved）。
+- authority：`closureAndExpansion.materializedStaticNodes` 为 MAX_INCLUSIVE `20000`，observed
+  `19999/20000/20001`，contract stage SERIAL_MATERIALIZATION、public stage MATERIALIZATION、code
+  EVALUATION_BUDGET_EXCEEDED、zero boundary ZERO_DOCUMENT_OUTPUT；primary requirement `RW-T19-S7-083`。
+- 现状缺口：最终真实/合成 static Node 已经经 `reserveMaterializedNode()` 计数，但
+  `MAX_MATERIALIZED_NODES` 与手写比较重复拥有上限并错误返回 RENDER_DOCUMENT_LIMIT_EXCEEDED。必须迁入唯一
+  Rendering guard，并与同值但 DOCUMENT_SEAL-owned 的 `renderDocument.staticNodes` 保持 stage/code 分离。
+- exact product boundary：10 个合法 Repeat、9994 total items 产生 19999 Nodes；追加普通 Rect 为 20000；9995
+  items 产生 20001。per occurrence ≤1000、Loop frames <10000、Render occurrences <25000、literal-list total
+  <16384，保证 materializedStaticNodes first-fail。
+- TDD：先把现有 20001-node test expected code 改为 EVALUATION_BUDGET_EXCEEDED，捕获 actual wrong-code RED；再
+  最小接线并补 19999/20000 success tree count 与 isolated guard exact。focused Materializer/guard、受影响 reactor、
+  render/fast；无 app wiring/API/Web/migration/Profile 变化，不重复 full，server 留到周期性容量批次。
+- 禁止影响：generated/logical/RenderDocument 等后续轴、正式 Ticket 19 records/product executor、provider/API
+  Key/真实数据/Profile registration/push/tag/PR；最高 `automated_verified`，claim 时 A0、J0。
+- TDD behavioral RED：只校正既有 20001-node production test 的 expected code 后，MaterializerTest 14 tests 恰好
+  1 个失败，actual 为旧 RENDER_DOCUMENT_LIMIT_EXCEEDED、expected 为 EVALUATION_BUDGET_EXCEEDED。
+- 唯一 guard 已增加 MATERIALIZED_STATIC_NODES=20000；重复 `MAX_MATERIALIZED_NODES` 与手写 wrong-code 分支已
+  删除。真实 Materializer seam 的 19999/20000 tree count 成功，20001 返回 exact MATERIALIZATION /
+  EVALUATION_BUDGET_EXCEEDED / full limitId；isolated guard 同步覆盖三点。focused Materializer/guard 22/22。
+- 受影响 reactor Schema 20、Validation 13、Template 84、Asset 92、Rendering 201 全绿；`git diff --check` 通过。
+  A1 `render` `.sdlc/evidence/20260829-042440-render/`（2/2）与 `fast`
+  `.sdlc/evidence/20260829-042528-fast/`（3/3）metadata 均 `passed`。
+- cap-013 candidate 无正式 product target/executor 且明确不执行 Evaluator/Sealer，故无 T144-specific A2/A3；
+  J0 pending、J1 未批准。未重复 server/full，provider attempts/API Key reads/真实数据/Profile registration/
+  push/tag/PR 均为 0。
+- 状态回填后的 resolution `fast` `.sdlc/evidence/20260829-042717-fast/` metadata 为 `passed`，3/3 steps 全绿。
+
+## F145. TV1-F145 执行卡（feature-lineage alias）
+
+- 状态：`resolved / automated_verified`；single writer: Codex；blocked by T21/T144（均 resolved）。
+- authority：`closureAndExpansion.generatedTrackAndCellEntries` 为 MAX_INCLUSIVE `100000`，observed
+  `99999/100000/100001`，contract stage SERIAL_MATERIALIZATION、public stage MATERIALIZATION、code
+  EVALUATION_BUDGET_EXCEEDED、zero boundary ZERO_DOCUMENT_OUTPUT；primary requirement `RW-T19-S7-084`。
+- 计数：每条 Repeat GRID lowering-generated AUTO row/column track 与每个 surviving child/item 的 GRID placement
+  cell 各计 1；cell 不按 row/column wire leaf 双计。itemLayout/instanceLayout 独立累计；STACK、authored Grid、
+  pruned item、zero-survivor Repeat 与 RenderDocument-owned tracks 不计。
+- correctness prerequisite：使用 `effectiveColumns=min(authoredColumns,survivingCount)`、末行无 placeholder、
+  surviving packing ordinal 紧凑；当前 raw columns、inputIndex placement 与零-survivor synthetic container drift 必须
+  在同一 Materializer seam 校正，不能让错误 lowering 成为 capacity counter authority。
+- seam：扩展唯一 Rendering guard；request-local counter 在每个非空 generated GRID allocation 前批量原子预留
+  `rows + effectiveColumns + survivingCount`。cap-014 target 明确不执行 Evaluator/Sealer，故 exact boundary 在同一
+  production guard 隔离重放，Materializer tests 验证真实小规模 delta/累计/剪枝，不冒充 full-pipeline A2。
+- TDD：先加 missing enum exact guard RED 与 raw-columns/zero-survivor/compact-cell behavioral RED，再最小重构；
+  focused Materializer/guard、受影响 reactor、render/fast。无 app wiring/API/Web/migration/Profile 变化，不重复
+  server/full。
+- 禁止影响：logical operations、RenderDocument-owned 容量、正式 Ticket 19 records/product executor、provider/
+  API Key/真实数据/Profile registration/push/tag/PR；最高 `automated_verified`，当前 A1、J0。
+
+### TV1-T145 resolution evidence
+
+- missing-enum focused compile RED 精确失败于 3 个 production enum 引用；补入 enum 后，Materializer 18 tests
+  精确 2 RED：raw columns 为 99 而冻结 effective columns 应为 2，all-pruned Repeat 生成 1 个 container 而应为 0。
+- 唯一 guard 的 overflow-safe request tracker 与 Materializer 的单一 `PackingShape` 已共同绑定实际生成与容量预留；
+  surviving cells 使用 compact ordinal，原 inputIndex 只保留在 loop frame/path，pruned/zero-survivor 不收费。
+- focused Materializer 18 + guard 7 = 25/25；受影响 reactor Schema 20、Validation 13、Template 84、Asset 92、
+  Rendering 204 全绿，`git diff --check` 通过。A1 `render`
+  `.sdlc/evidence/20260829-045143-render/`（2/2）与 `fast`
+  `.sdlc/evidence/20260829-045238-fast/`（3/3）metadata 均 `passed`。
+- cap-014 不执行 Evaluator/Sealer 且无正式 product executor，故无 T145-specific A2/A3；J0 pending、J1 未批准。
+  无 app wiring/API/Web/migration/Profile 变化，未重复 server/full；provider attempts/API Key reads/真实数据/
+  Profile registration/push/tag/PR 均为 0。
+- 状态回填后的 resolution `fast` `.sdlc/evidence/20260829-045433-fast/` metadata 为 `passed`，3/3 steps 全绿。
+
+## F146. TV1-F146 执行卡（feature-lineage alias）
+
+- 状态：`resolved / automated_verified`；single writer: Codex；blocked by T21/T142/T145（均 resolved）。
+- authority：`RW-T19-S7-079` 明文要求每个 Repeat item 在 pruning 前预留 frame 与 operation；cap-015 的
+  `closureAndExpansion.logicalOperations` 为 MAX_INCLUSIVE `1000000`，observed `999999/1000000/1000001`，
+  SERIAL_MATERIALIZATION / public MATERIALIZATION / EVALUATION_BUDGET_EXCEEDED / ZERO_DOCUMENT_OUTPUT。
+- scope：每个 actual Repeat collection item 固定消费 1 logical unit，含最终被剪枝 item；空 collection 为 0，
+  sibling/nested/TemplateUse child request-global 累计。reservation 必须早于 frame allocation、Definition/capability
+  demand 与 child expansion。
+- honesty：冻结 authority 未定义 Expression AST/Mapping/ValueSource/Binding 等其余 logical-unit taxonomy。本票只完成
+  mandatory Repeat-item unit 与唯一 guard 基础，不宣称完整 `RW-T19-S7-085..088` 或 cap-015 product executor；其余
+  semantic units 与 retry/memo position 语义继续后续独立票。
+- seam/TDD：沿用 package-internal production guard + Materializer outcome；missing enum exact guard 先 RED，随后用
+  同一 precharged request tracker 让最终会剪枝的 item 在 pruning/frame 前 exact RED，再最小接线。focused
+  Materializer/guard、受影响 reactor、render/fast；无 app wiring/API/Web/migration/Profile 变化，不重复 server/full。
+- 禁止影响：外部 Interface/config/route、正式 Ticket 19 records/product executor、provider/API Key/真实数据/费用/
+  Profile registration/push/tag/PR；最高 `automated_verified`，当前 A1、J0。
+
+### TV1-T146 resolution evidence
+
+- missing-enum guard test 首先产生编译 RED：6 个引用均找不到 `LOGICAL_OPERATIONS`。补 enum 后，新 Materializer
+  tracker seam 先产生 1 个 missing-overload compile RED；只接入 tracker、尚未 reservation 时，Materializer 19 tests
+  精确 1 个 behavioral RED，actual `Materialized` 而 expected `MaterializationFailed`。
+- 唯一 guard 现含 `LOGICAL_OPERATIONS=1000000`；production 默认创建 request-local tracker，package-internal seam
+  复用同一实现。每个 actual Repeat item 在 Loop frame、pruning、Definition/capability demand 与 child expansion 前
+  原子预留 1；空 collection 为 0。预留 999999 后的 two-item 回归只观察到 index 0 capability position，index 1 在
+  demand 前 exact capacity fail。
+- focused Materializer 21 + guard 8 = 29/29；受影响 reactor Schema 20、Validation 13、Template 84、Asset 92、
+  Rendering 208 全绿，`git diff --check` 通过。A1 `render`
+  `.sdlc/evidence/20260829-050504-render/`（2/2）与 `fast`
+  `.sdlc/evidence/20260829-050552-fast/`（3/3）metadata 均 `passed`。
+- cap-015 不执行 Evaluator/Sealer 且无正式 product executor，故无 T146-specific A2/A3；完整 logical-unit taxonomy、
+  retry/memo position 与 `RW-T19-S7-085..088` 仍开放。J0 pending、J1 未批准；未重复 server/full，provider attempts/
+  API Key reads/真实数据/Profile registration/push/tag/PR 均为 0。
+- 状态回填后的 resolution `fast` `.sdlc/evidence/20260829-050800-fast/` metadata 为 `passed`，3/3 steps 全绿。
+
+## F147. TV1-F147 执行卡（feature-lineage alias）
+
+- 状态：`resolved / automated_verified`；single writer: Codex；blocked by T21/T146（均 resolved）。
+- authority：`RW-T19-S7-089` / cap-016 固定 `renderDocument.canonicalBytes` 为 MAX_INCLUSIVE `67108864`，
+  observed `67108863/67108864/67108865`，DOCUMENT_SEAL_COUNTING / public DOCUMENT_SEAL /
+  RENDER_DOCUMENT_LIMIT_EXCEEDED / ZERO_DOCUMENT_OUTPUT；reservation point 为 atomic canonical-byte/digest commit
+  与任何 Engine Command 前。
+- 缺口：Sealer 当前在完整 canonical String 与 UTF-8 byte[] 已分配后才执行手写 64 MiB 比较，既非 capped writer，
+  又与 production guard 重复拥有 limit。必须让唯一 guard 携带 limit-specific stage/code，并在每段 UTF-8 写入前
+  reserve，完整成功后才返回 bytes/digest。
+- seam：保持 `Sealer.seal` 小 interface；内部 canonical value → chunked UTF-8 accumulator。默认 production seal
+  创建 document request tracker，package-internal overload 允许测试预充；不增加外部 Interface/config/route。
+- TDD：先做 guard missing enum/stage-code RED；再用冻结 305-byte minimal RenderDocument 预充 `limit-305` 与
+  `limit-304`，捕获 missing overload 及 post-hoc writer behavioral RED，最后最小替换 writer。focused guard/Sealer/
+  RenderDocument/Evaluator、受影响 reactor、render/fast；无 app wiring，不重复 server/full。
+- honesty：cap-016 target 不执行 Sealer，exact 三点只在同一 production guard 隔离重放；产品 seam 证明 at/above
+  commit 边界，但不冒充正式 records/A2。jsonDepth/staticNodes/childEdges/runs/textScalars/vectorEntries 与 diagnostics
+  继续后续独立票。provider/API Key/真实数据/Profile registration/push/tag/PR 均不推进；当前 A1、J0。
+
+### TV1-T147 resolution evidence
+
+- guard test 首先产生 3 个 missing-enum compile RED；唯一 catalog 加入 limit-specific code/stage 后 cap-016 三点
+  GREEN。Sealer test 再产生 2 个 missing-overload compile RED；只接 tracker seam 时 6 tests 精确 1 个 behavioral
+  RED，above actual `Sealed`、expected `SealRejected`。
+- canonical object/array/scalar 现直接进入 64 KiB chunked writer；每段先无分配计算 exact UTF-8 bytes，再经同一
+  request tracker reserve 后编码/保留。string escape 也分块，完整 writer 成功后才 commit bytes 与 digest；旧完整
+  document String、post-allocation byte[] check、手写 limit 与 Evaluator problem 重建均已删除。
+- frozen 305-byte minimal document 以 precharged tracker 证明 exact-at byte-identical commit 与 above zero-document
+  rejection。focused Evaluator 68 + RenderDocument 4 + guard 9 + Sealer 6 = 87/87；受影响 reactor Schema 20、
+  Validation 13、Template 84、Asset 92、Rendering 211 全绿，`git diff --check` 通过。
+- A1 `render` `.sdlc/evidence/20260829-052149-render/`（2/2）与 `fast`
+  `.sdlc/evidence/20260829-052240-fast/`（3/3）metadata 均 `passed`；render gate 的既有 RenderDocument independent
+  replay 83/83 仍 byte-identical。cap-016 不执行 Sealer 且无正式 product executor，故无 T147-specific A2/A3；
+  J0 pending、J1 未批准。未重复 server/full，provider attempts/API Key reads/真实数据/Profile registration/
+  push/tag/PR 均为 0。
+- 状态回填后的 resolution `fast` `.sdlc/evidence/20260829-052401-fast/` metadata 为 `passed`，3/3 steps 全绿。
+
+## F148. TV1-F148 执行卡（feature-lineage alias）
+
+- 状态：`resolved / automated_verified`；single writer: Codex；blocked by T21/T147（均 resolved）。
+- authority：`RW-T19-S7-090` / cap-017 固定 `renderDocument.jsonDepth` 为 MAX_INCLUSIVE `128`，observed
+  `127/128/129`，DOCUMENT_SEAL_COUNTING / public DOCUMENT_SEAL / RENDER_DOCUMENT_LIMIT_EXCEEDED /
+  ZERO_DOCUMENT_OUTPUT；reservation point 为 atomic canonical-byte/digest commit 与任何 Engine Command 前。
+- seam：strict JSON container root depth `1`，object/array entry `+1`，scalar/string 内容不计。由 T147 的
+  `CanonicalValue → RenderDocumentCanonicalWriter` 流程发送结构事件，writer 在 opening bytes 前经同一 request
+  tracker 观察 maximum；不新增 parser、post-hoc scan、外部 Interface/config/route。
+- TDD：guard 先 missing-enum compile RED；writer 再以 nested canonical object/array 的 `127/128/129` 捕获
+  behavioral RED，随后最小加入 maximum observation。focused guard/writer/Sealer/RenderDocument/Evaluator、受影响
+  reactor、render/fast；无 app wiring，不重复 server/full。
+- honesty：cap-017 target 不执行 Evaluator/Sealer，isolated guard 只证明同一 production catalog；writer seam 才证明
+  实际 structural counting 与 zero committed output，但不冒充正式 records/A2。staticNodes/childEdges/runs/
+  textScalars/vectorEntries 与 diagnostics 继续后续独立票。provider/API Key/真实数据/Profile registration/
+  push/tag/PR 均不推进；当前 A0、J0。
+
+### TV1-T148 resolution evidence
+
+- 正确引用参数的 guard test 先产生 3 个 missing-enum compile RED；此前一次 PowerShell 参数引用错误未进入编译，
+  不计证据。唯一 catalog 加入 jsonDepth 后 cap-017 三点 GREEN。writer test 再精确产生 1 个 behavioral RED：129 层
+  expected `CapacityExceeded`、actual committed bytes；127/128 已成功。
+- `CanonicalJson` object/array 现发送 container begin/end，普通 encoder 默认 no-op；production writer 在 opening bytes 前
+  以 request-local maximum 经同一 guard 判定。mixed object/array 127/128 成功、129 exact reject；string 内 `{[` 不计，
+  129 sibling containers 也不累计。
+- focused Evaluator 68 + writer 3 + RenderDocument 4 + guard 10 + Sealer 6 = 91/91；受影响 reactor Schema 20、
+  Validation 13、Template 84、Asset 92、Rendering 215 全绿，`git diff --check` 通过。
+- A1 `render` `.sdlc/evidence/20260829-053313-render/`（2/2）与 `fast`
+  `.sdlc/evidence/20260829-053400-fast/`（3/3）metadata 均 `passed`；既有 RenderDocument independent replay 83/83
+  仍 byte-identical。cap-017 不执行 Evaluator/Sealer，故无 T148-specific A2/A3；J0 pending、J1 未批准。未重复
+  server/full，provider attempts/API Key reads/真实数据/Profile registration/push/tag/PR 均为 0。
+- 状态回填后的 resolution `fast` `.sdlc/evidence/20260829-053518-fast/` metadata 为 `passed`，3/3 steps 全绿。
+
+## F149. TV1-F149 执行卡（feature-lineage alias）
+
+- 状态：`resolved / automated_verified`；single writer: Codex；blocked by T21/T148（均 resolved）。
+- authority：`RW-T19-S7-091` / cap-018 固定 `renderDocument.staticNodes` 为 MAX_INCLUSIVE `20000`，observed
+  `19999/20000/20001`，DOCUMENT_SEAL_COUNTING / public DOCUMENT_SEAL / RENDER_DOCUMENT_LIMIT_EXCEEDED /
+  ZERO_DOCUMENT_OUTPUT；reservation point 为 atomic canonical-byte/digest commit 与任何 Engine Command 前。
+- domain：root Canvas、surviving authored/synthetic Node 与 compositionViewport sourceCanvas 各 `1`，与 occurrenceId
+  allocation 一一对应；pruned `0`，visible/opacity/empty Node 仍 `1`。在 `nextOccurrenceId` 前经同一 request tracker
+  reserve，失败不产生 id/document/digest。
+- isolation：不得复用同值的 T144 `closureAndExpansion.materializedStaticNodes`；后者属于 MATERIALIZATION /
+  EVALUATION_BUDGET_EXCEEDED，本轴属于 DOCUMENT_SEAL / RENDER_DOCUMENT_LIMIT_EXCEEDED。
+- TDD：guard missing-enum compile RED 后最小 catalog GREEN；Sealer 预留 prefix 的 minimal root at/above behavioral RED，
+  并覆盖 sourceCanvas unit。focused guard/Sealer/RenderDocument/Evaluator、受影响 reactor、render/fast；无 app wiring，
+  不重复 server/full。
+- honesty：cap-018 target 不执行 Evaluator/Sealer，isolated guard 不冒充正式 records/A2；product Sealer seam 只证明
+  final-node reservation。childEdges/runs/textScalars/vectorEntries 与 diagnostics 继续后续独立票。provider/API Key/
+  真实数据/Profile registration/push/tag/PR 均不推进；J0 pending、J1 未批准。
+- TDD：guard 先精确产生 3 个 missing-enum compile RED，catalog 接线后 11/11 GREEN；Sealer 8 tests 随后精确
+  2 个 behavioral RED（超限 root/sourceCanvas 仍 Sealed），production reservation 接线后 8/8 GREEN。
+- exact product boundary：minimal root 在 prefix 19999 后成功、20000 后 exact reject，证明 envelope/bleed/resources
+  JSON object 不计 Node；compositionViewport tree 的 root + viewport + sourceCanvas 精确消费 3 units，在 prefix
+  19997 后成功、19998 后于 sourceCanvas exact reject。
+- focused Evaluator 68 + writer 3 + RenderDocument 4 + guard 11 + Sealer 8 = 94/94；受影响 reactor Schema 20、
+  Validation 13、Template 84、Asset 92、Rendering 218 全绿，`git diff --check` 通过。
+- A1 `render` `.sdlc/evidence/20260829-054138-render/`（2/2）与 `fast`
+  `.sdlc/evidence/20260829-054226-fast/`（3/3）metadata 均 `passed`，既有 RenderDocument independent replay
+  83/83 仍 byte-identical。cap-018 不执行 Evaluator/Sealer，故无 T149-specific A2/A3；未重复 server/full，
+  provider attempts/API Key reads/真实数据/Profile registration/push/tag/PR 均为 0。
+- 状态回填后的 resolution `fast` `.sdlc/evidence/20260829-054443-fast/` metadata 为 `passed`，3/3 steps 全绿。
+
+## F150. TV1-F150 执行卡（feature-lineage alias）
+
+- 状态：`resolved / automated_verified`；single writer: Codex；blocked by T21/T149（均 resolved）。
+- authority：`RW-T19-S7-092` / cap-019 固定 `renderDocument.childEdges` 为 MAX_INCLUSIVE `19999`，observed
+  `19998/19999/20000`，DOCUMENT_SEAL_COUNTING / public DOCUMENT_SEAL / RENDER_DOCUMENT_LIMIT_EXCEEDED /
+  ZERO_DOCUMENT_OUTPUT；reservation point 为 atomic canonical-byte/digest commit 与任何 Engine Command 前。
+- domain：root `0`；每个 surviving `children[]` item-parent link 计 `1`；compositionViewport→sourceCanvas 专用 link
+  也计 `1`，sourceCanvas children 再逐项计数；pruned/empty 均为 `0`。
+- seam：普通 edge 在 `sealChildren → sealNode` 前预留，sourceCanvas edge 在 source occurrenceId/object 前预留；
+  20,000th edge 因而先于第 20,001 个 static Node 失败。与 T149 staticNodes 使用同一 guard、独立 limit/counter，
+  不以后验 `nodes - 1` 或 JSON array item 近似。
+- TDD：guard missing-enum compile RED；Sealer prefix + empty/one-child 与 viewport/sourceCanvas exact behavioral RED，
+  随后最小接线。focused guard/Sealer/RenderDocument/Evaluator、受影响 reactor、render/fast；无 app wiring，不重复
+  server/full。
+- honesty：cap-019 target 不执行 Evaluator/Sealer，isolated guard 不冒充正式 records/A2；Runs/textScalars/
+  vectorEntries 与 diagnostics 继续后续票。provider/API Key/真实数据/Profile registration/push/tag/PR 均不推进；
+  J0 pending、J1 未批准。
+- TDD：guard test 精确产生 3 个 missing-enum compile RED，catalog 接线后 12/12 GREEN；Sealer 10 tests 随后
+  精确 2 个 behavioral RED（one-child/sourceCanvas above 均 Sealed），production reservation 后 10/10 GREEN。
+- exact product boundary：empty root 在 child/static 双 prefix 19999 仍成功；one-child 双 prefix 19998 同时到达
+  19999 edges/20000 Nodes、双 prefix 19999 exact child-edge reject；root→viewport→sourceCanvas 在双 prefix 19997
+  同时到达两轴上限、双 prefix 19998 于 source edge exact reject。
+- allocation order：普通 edge 在 `sealNode` 前、source edge 在 source occurrenceId/object 前 reserve；
+  `sealChildren` 不按未准入 size 预分配 backing storage，20,000th edge 先于 child 与第 20,001 个 static Node 失败。
+- focused Evaluator 68 + writer 3 + RenderDocument 4 + guard 12 + Sealer 10 = 97/97；受影响 reactor Schema 20、
+  Validation 13、Template 84、Asset 92、Rendering 221 全绿，`git diff --check` 通过。
+- A1 `render` `.sdlc/evidence/20260829-055908-render/`（2/2）与 `fast`
+  `.sdlc/evidence/20260829-055957-fast/`（3/3）metadata 均 `passed`，既有 RenderDocument independent replay
+  83/83 仍 byte-identical。cap-019 不执行 Evaluator/Sealer，故无 T150-specific A2/A3；未重复 server/full，
+  provider attempts/API Key reads/真实数据/Profile registration/push/tag/PR 均为 0。
+- 状态回填后的 resolution `fast` `.sdlc/evidence/20260829-060138-fast/` metadata 为 `passed`，3/3 steps 全绿。
+
+## F151. TV1-F151 执行卡（feature-lineage alias）
+
+- 状态：`resolved / automated_verified`；single writer: Codex；blocked by T21/T150（均 resolved）。
+- authority：`RW-T19-S7-093` / cap-020 固定 `renderDocument.runs` 为 MAX_INCLUSIVE `10000`，observed
+  `9999/10000/10001`，DOCUMENT_SEAL_COUNTING / public DOCUMENT_SEAL / RENDER_DOCUMENT_LIMIT_EXCEEDED /
+  ZERO_DOCUMENT_OUTPUT；reservation point 为 atomic canonical-byte/digest commit 与任何 Engine Command 前。
+- domain：每个 final surviving Text occurrence 的每个 `runs[]` item 计 `1`；实际 occurrence 重复计数；pruned Text、
+  非 Text 与 empty array 为 `0`，`visible:false/opacity:0` 仍计。
+- seam：在 `sealNode` 已取得 final expanded Text、但尚未创建对应 canonical Run object/list growth 前，按 Run index
+  逐项原子 reserve；与 authored Runs、textScalars、staticNodes/childEdges 和 FONT Asset occurrence 使用独立 counter。
+- 验证范围：guard missing-enum compile RED；Sealer empty Canvas + two one-Run Text occurrence 以 prefix `9998/9999`
+  exact at/above behavioral RED，随后最小接线。focused guard/Sealer/RenderDocument/Evaluator、受影响 reactor、
+  render/fast；无 app wiring，不重复 server/full。
+- honesty：cap-020 target 不执行 Evaluator/Sealer，isolated guard 不冒充正式 records/A2；textScalars/vectorEntries、
+  diagnostics 与 Engine 继续后续票。provider/API Key/真实数据/Profile registration/push/tag/PR 均不推进；
+  J0 pending、J1 未批准。
+- TDD：guard/Sealer tests 精确产生 6 个 missing-enum compile RED，catalog 接线后 guard 13/13 GREEN 且 Sealer
+  只剩 1 个 above-boundary behavioral RED；真正 `sealNode` Text lowering 按 Run index reserve 后 Sealer 11/11 GREEN。
+- exact product boundary：empty Canvas 在 prefix 10000 后仍成功；`visible:false` 与 `opacity:0` 两个 one-Run Text
+  occurrence 在 prefix 9998 后 exact 到达 10000，prefix 9999 后于第二个 Run exact reject。canonical Run object/list
+  growth 均晚于对应 reservation。
+- focused Evaluator 68 + writer 3 + RenderDocument 4 + guard 13 + Sealer 11 = 99/99；受影响 reactor Schema 20、
+  Validation 13、Template 84、Asset 92、Rendering 223 全绿，`git diff --check` 通过。
+- A1 `render` `.sdlc/evidence/20260829-060958-render/`（2/2）与 `fast`
+  `.sdlc/evidence/20260829-061045-fast/`（3/3）metadata 均 `passed`，既有 RenderDocument independent replay
+  83/83 仍 byte-identical。cap-020 不执行 Evaluator/Sealer，故无 T151-specific A2/A3；未重复 server/full，
+  provider attempts/API Key reads/真实数据/Profile registration/push/tag/PR 均为 0。
+- 状态回填后的 resolution `fast` `.sdlc/evidence/20260829-061156-fast/` metadata 为 `passed`，3/3 steps 全绿。
+
+## F152. TV1-F152 执行卡（feature-lineage alias）
+
+- 状态：`resolved / automated_verified`；single writer: Codex；blocked by T21/T151（均 resolved）。
+- authority：`RW-T19-S7-094` / cap-021 固定 `renderDocument.textScalars` 为 MAX_INCLUSIVE `1000000`，observed
+  `999999/1000000/1000001`，DOCUMENT_SEAL_COUNTING / public DOCUMENT_SEAL /
+  RENDER_DOCUMENT_LIMIT_EXCEEDED / ZERO_DOCUMENT_OUTPUT；reservation point 为 atomic canonical-byte/digest commit
+  与任何 Engine Command 前。
+- domain：仅 final surviving `text.runs[*].text`；surrogate pair 计一个 scalar，组合序列逐 scalar、LF 计一个、空 Run
+  计零，不 normalization。pruned 为零；`visible:false/opacity:0` 仍计。QR/Barcode 内容不属于本轴。
+- seam：T151 Run unit reserve 成功后、canonical Run object/string growth 前，按 occurrence/Run index 原子预留完整
+  scalar count；与 authored Run text、RenderDocument Runs、Nodes/edges、Engine grapheme/glyph 使用独立 counter。
+- 验证范围：guard missing-enum compile RED；Sealer empty Canvas + 两个 mixed-Unicode one-Run Text 以 prefix
+  `999996/999997` exact at/above behavioral RED，随后最小接线。focused guard/Sealer/RenderDocument/Evaluator、
+  受影响 reactor、render/fast；无 app wiring，不重复 server/full。
+- honesty：cap-021 target 不执行 Evaluator/Sealer，isolated guard 不冒充正式 records/A2；vectorEntries、diagnostics
+  与 Engine 继续后续票。provider/API Key/真实数据/Profile registration/push/tag/PR 均不推进；J0 pending、J1 未批准。
+- TDD：guard/Sealer tests 精确产生 6 个 missing-enum compile RED，catalog 接线后 guard 14/14 GREEN 且 Sealer
+  只剩 1 个 above-boundary behavioral RED；真正 Text Run lowering 在 Run reservation 后预留 scalar，Sealer
+  12/12 GREEN。
+- exact product boundary：empty Canvas 在 prefix 1000000 后仍成功；一个非 BMP scalar + `e`/combining acute/LF
+  三个 scalars 在 prefix 999996 后 exact 到达上限，prefix 999997 后于第二个 Run exact reject；同时证明 UTF-16、
+  normalization、LF、hidden/opacity-zero 语义。
+- focused Evaluator 68 + writer 3 + RenderDocument 4 + guard 14 + Sealer 12 = 101/101；受影响 reactor Schema 20、
+  Validation 13、Template 84、Asset 92、Rendering 225 全绿，`git diff --check` 通过。
+- A1 `render` `.sdlc/evidence/20260829-062042-render/`（2/2）与 `fast`
+  `.sdlc/evidence/20260829-062129-fast/`（3/3）metadata 均 `passed`，既有 RenderDocument independent replay
+  83/83 仍 byte-identical。cap-021 不执行 Evaluator/Sealer，故无 T152-specific A2/A3；未重复 server/full，
+  provider attempts/API Key reads/真实数据/Profile registration/push/tag/PR 均为 0。
+- 状态回填后的 resolution `fast` `.sdlc/evidence/20260829-062243-fast/` metadata 为 `passed`，3/3 steps 全绿。
+
+## F153. TV1-F153 执行卡（feature-lineage alias）
+
+- 状态：`resolved / automated_verified`；single writer: Codex；blocked by T21/T152（均 resolved）。
+- authority：`RW-T19-S7-095` / cap-022 固定 `renderDocument.vectorEntries` 为 MAX_INCLUSIVE `100000`，observed
+  `99999/100000/100001`，DOCUMENT_SEAL_COUNTING / public DOCUMENT_SEAL /
+  RENDER_DOCUMENT_LIMIT_EXCEEDED / ZERO_DOCUMENT_OUTPUT；reservation point 为 atomic canonical-byte/digest commit
+  与任何 Engine Command 前。
+- domain：final `polygon.points[]`、`polyline.points[]`、`path.commands[]` item 各计一并共享 request-total counter；
+  Line start/end 与其他数组/object 不计。actual occurrence 重计，pruned 为零，hidden/opacity-zero 仍计。
+- seam：按 final tree preorder 与 array index，在 canonical Point/Command object/output-list growth 前逐项 reserve；与
+  authored per-node/DSL vector budgets、Nodes/edges/Runs/textScalars、Engine paint items 使用独立 counter。
+- 验证范围：guard missing-enum compile RED；Sealer empty Canvas + 3-point Polygon/2-point Polyline/2-command Path 以
+  prefix `99993/99994` exact at/above behavioral RED，随后最小接线。focused guard/Sealer/RenderDocument/Evaluator、
+  受影响 reactor、render/fast；无 app wiring，不重复 server/full。
+- honesty：cap-022 target 不执行 Evaluator/Sealer，isolated guard 不冒充正式 records/A2；diagnostics 与 Engine
+  继续后续票。provider/API Key/真实数据/Profile registration/push/tag/PR 均不推进；J0 pending、J1 未批准。
+- TDD：guard/Sealer tests 精确产生 6 个 missing-enum compile RED，catalog 接线后 guard 15/15 GREEN 且 Sealer
+  只剩 1 个 above-boundary behavioral RED；真正 vector lowering 按 Point/Command array index reserve 后 Sealer
+  13/13 GREEN。
+- exact product boundary：empty Canvas prefix 100000 仍成功；Line start/end 零收费，3-point hidden Polygon、
+  2-point opacity-zero Polyline 与 2-command Path 共享 7 units。prefix 99993 exact at，prefix 99994 在最后一个
+  Path Command reject。
+- focused Evaluator 68 + writer 3 + RenderDocument 4 + guard 15 + Sealer 13 = 103/103；受影响 reactor Schema 20、
+  Validation 13、Template 84、Asset 92、Rendering 227 全绿，`git diff --check` 通过。
+- A1 `render` `.sdlc/evidence/20260829-062902-render/`（2/2）与 `fast`
+  `.sdlc/evidence/20260829-062950-fast/`（3/3）metadata 均 `passed`，既有 RenderDocument independent replay
+  83/83 仍 byte-identical。cap-022 不执行 Evaluator/Sealer，故无 T153-specific A2/A3；未重复 server/full，
+  provider attempts/API Key reads/真实数据/Profile registration/push/tag/PR 均为 0。
+- 状态回填后的 resolution `fast` `.sdlc/evidence/20260829-063054-fast/` metadata 为 `passed`，3/3 steps 全绿。

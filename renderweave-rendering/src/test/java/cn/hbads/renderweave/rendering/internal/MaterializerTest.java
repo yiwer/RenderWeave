@@ -1,6 +1,9 @@
 package cn.hbads.renderweave.rendering.internal;
 
 import cn.hbads.renderweave.asset.api.AssetAcceptanceAuthority.AssetKind;
+import cn.hbads.renderweave.asset.api.AssetAcceptanceAuthority.FontDescriptor;
+import cn.hbads.renderweave.asset.api.AssetAcceptanceAuthority.FontFlavor;
+import cn.hbads.renderweave.asset.api.AssetAcceptanceAuthority.TechnicalDescriptor;
 import cn.hbads.renderweave.asset.api.AssetApplication.AssetId;
 import cn.hbads.renderweave.asset.api.AssetApplication.OwnerScope;
 import cn.hbads.renderweave.rendering.api.EvaluationStage;
@@ -14,6 +17,7 @@ import cn.hbads.renderweave.schema.identity.SchemaKey;
 import cn.hbads.renderweave.schema.identity.VersionTag;
 import cn.hbads.renderweave.template.api.DesignDslAuthority;
 import cn.hbads.renderweave.template.api.DesignInputExpressionCapacityAuthority;
+import cn.hbads.renderweave.template.api.DesignSemanticAuthority;
 import cn.hbads.renderweave.template.internal.TemplateModule;
 import cn.hbads.renderweave.template.api.TemplateClosureAuthority.ClosureSnapshot;
 import cn.hbads.renderweave.template.api.TemplateClosureAuthority.TemplateSnapshot;
@@ -27,6 +31,7 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class MaterializerTest {
@@ -53,6 +58,34 @@ class MaterializerTest {
         var root = tree.root();
         assertEquals("canvas", root.kind());
         assertEquals(1, root.children().size());
+        assertEquals(2, tree.sidecar().size());
+    }
+
+    @Test
+    void diagnosticSidecarItemBudgetIsRequestTotalAndFailsInsteadOfTruncating() {
+        var exactCapacity = new RenderingPipelineCapacityGuard().newRequestTracker();
+        assertTrue(exactCapacity.reserve(
+                RenderingPipelineCapacityGuard.Limit.DIAGNOSTICS_SIDECAR_ITEMS,
+                24_999).isEmpty());
+
+        var exact = materialize(
+                canvasWith(""), Map.of(), null, absentCapability(), exactCapacity);
+        var tree = assertInstanceOf(Materializer.Materialized.class, exact).tree();
+        assertEquals(1, tree.sidecar().size());
+
+        var exceededCapacity = new RenderingPipelineCapacityGuard().newRequestTracker();
+        assertTrue(exceededCapacity.reserve(
+                RenderingPipelineCapacityGuard.Limit.DIAGNOSTICS_SIDECAR_ITEMS,
+                25_000).isEmpty());
+
+        var exceeded = materialize(
+                canvasWith(""), Map.of(), null, absentCapability(), exceededCapacity);
+        var failed = assertInstanceOf(Materializer.MaterializationFailed.class, exceeded);
+        assertEquals(EvaluationStage.MATERIALIZATION, failed.stage());
+        assertEquals(RenderingProblem.ProblemCode.RENDER_DIAGNOSTIC_LIMIT_EXCEEDED,
+                failed.problem().code());
+        assertEquals("diagnostics.sidecarItems",
+                failed.problem().limitId().orElseThrow().value());
     }
 
     @Test
@@ -92,60 +125,273 @@ class MaterializerTest {
         assertEquals("2", numberMember(instances.members(), "gapMm"));
         assertEquals("ABSOLUTE", placementType(instances));
         assertEquals(3, instances.children().size());
+        assertEquals(countNodes(tree.root()), tree.sidecar().size());
 
         var secondItem = instances.children().get(1);
         assertEquals("stack", secondItem.kind());
         assertEquals("ROW", textMember(secondItem.members(), "direction"));
         assertEquals("1", numberMember(secondItem.members(), "gapMm"));
         assertEquals("STACK", placementType(secondItem));
-        assertTrue(secondItem.occurrencePath().contains("[1]"));
+        assertTrue(secondItem.occurrencePath().canonicalJson().contains("\"inputIndex\":1"));
+        assertTrue(secondItem.occurrencePath().canonicalJson().contains("repeat-item"));
         assertEquals("STACK", placementType(secondItem.children().get(0)));
     }
 
     @Test
-    void repeatGeneratedContainersCountTowardStaticNodeLimit() {
-        var document = repeatDocument(4_000, 4_000, 2_000);
+    void repeatGridUsesEffectiveColumnsAndCompactsSurvivingCells() {
+        var tree = materializeOk(booleanGridRepeat("[true,false,true]"), Map.of(), null);
+
+        assertEquals(1, tree.root().children().size());
+        var instances = tree.root().children().get(0);
+        assertEquals("grid", instances.kind());
+        assertEquals(1, arrayMemberSize(instances.members(), "rows"));
+        assertEquals(2, arrayMemberSize(instances.members(), "columns"));
+        assertEquals(2, instances.children().size());
+        assertTrue(instances.children().get(0).occurrencePath().canonicalJson()
+                .contains("\"inputIndex\":0"));
+        assertTrue(instances.children().get(1).occurrencePath().canonicalJson()
+                .contains("\"inputIndex\":2"));
+        assertGridCell(instances.children().get(0), 0, 0);
+        assertGridCell(instances.children().get(1), 0, 1);
+
+        for (var item : instances.children()) {
+            assertEquals("grid", item.kind());
+            assertEquals(1, arrayMemberSize(item.members(), "rows"));
+            assertEquals(1, arrayMemberSize(item.members(), "columns"));
+            assertEquals(1, item.children().size());
+            assertGridCell(item.children().get(0), 0, 0);
+        }
+        assertEquals(11, countGeneratedGridEntries(instances));
+    }
+
+    @Test
+    void allPrunedRepeatGeneratesNoContainerTrackOrCell() {
+        var tree = materializeOk(booleanGridRepeat("[false,false]"), Map.of(), null);
+
+        assertEquals(0, tree.root().children().size());
+    }
+
+    @Test
+    void repeatItemReservesLogicalOperationBeforePruning() {
+        var capacity = new RenderingPipelineCapacityGuard().newRequestTracker();
+        assertTrue(capacity.reserve(
+                RenderingPipelineCapacityGuard.Limit.LOGICAL_OPERATIONS,
+                1_000_000).isEmpty());
+
+        var outcome = materialize(
+                booleanGridRepeat("[false,false]"),
+                Map.of(),
+                null,
+                absentCapability(),
+                capacity);
+
+        var failed = assertInstanceOf(Materializer.MaterializationFailed.class, outcome);
+        assertEquals(EvaluationStage.MATERIALIZATION, failed.stage());
+        assertEquals(RenderingProblem.ProblemCode.EVALUATION_BUDGET_EXCEEDED,
+                failed.problem().code());
+        assertEquals("closureAndExpansion.logicalOperations",
+                failed.problem().limitId().orElseThrow().value());
+    }
+
+    @Test
+    void emptyRepeatConsumesNoLogicalOperation() {
+        var capacity = new RenderingPipelineCapacityGuard().newRequestTracker();
+        assertTrue(capacity.reserve(
+                RenderingPipelineCapacityGuard.Limit.LOGICAL_OPERATIONS,
+                1_000_000).isEmpty());
+
+        var outcome = materialize(
+                booleanGridRepeat("[]"),
+                Map.of(),
+                null,
+                absentCapability(),
+                capacity);
+
+        assertInstanceOf(Materializer.Materialized.class, outcome);
+    }
+
+    @Test
+    void logicalOperationBudgetStopsBeforeTheNextItemDemand() {
+        var capacity = new RenderingPipelineCapacityGuard().newRequestTracker();
+        assertTrue(capacity.reserve(
+                RenderingPipelineCapacityGuard.Limit.LOGICAL_OPERATIONS,
+                999_999).isEmpty());
+        var capability = new CapturingCapability();
+        var document = capabilityDocument(
+                "{\"kind\":\"loop\",\"loopId\":\"" + LOOP_ID + "\"}",
+                repeatWithBoundRect("[\"first\",\"second\"]"));
+
+        var outcome = materialize(
+                document, Map.of(), null, capability, capacity);
+
+        var failed = assertInstanceOf(Materializer.MaterializationFailed.class, outcome);
+        assertEquals(EvaluationStage.MATERIALIZATION, failed.stage());
+        assertEquals(RenderingProblem.ProblemCode.EVALUATION_BUDGET_EXCEEDED,
+                failed.problem().code());
+        assertEquals("closureAndExpansion.logicalOperations",
+                failed.problem().limitId().orElseThrow().value());
+        assertEquals(1, capability.positions.size());
+        assertEquals(loopPosition(0), capability.position(0));
+    }
+
+    private static String booleanGridRepeat(String items) {
+        var loopId = capacityUuid(2, 900);
+        var definitionId = capacityUuid(5, 900);
+        var falseResult = "{\"kind\":\"literal\",\"valueType\":\"boolean\","
+                + "\"value\":false}";
+        var caseWire = "[false,false]".equals(items)
+                ? "{\"operator\":\"IS_PRESENT\",\"then\":" + falseResult + "}"
+                : "{\"operator\":\"EQ\","
+                + "\"operand\":{\"valueType\":\"decimal\",\"value\":1},"
+                + "\"then\":" + falseResult + "}";
+        var definition = "{\"definitionId\":\"" + definitionId + "\",\"kind\":\"mapping\","
+                + "\"displayName\":\"Survival\",\"domain\":{\"kind\":\"loop\","
+                + "\"loopId\":\"" + loopId + "\"},\"output\":\"boolean\","
+                + "\"input\":{\"kind\":\"loopIndex\",\"loopId\":\"" + loopId + "\"},"
+                + "\"cases\":[" + caseWire + "],\"otherwise\":{\"kind\":\"literal\","
+                + "\"valueType\":\"boolean\",\"value\":true}}";
+        var conditional = "{\"nodeId\":\"" + capacityUuid(3, 900) + "\","
+                + "\"kind\":\"conditional\",\"bindings\":[],"
+                + "\"condition\":{\"kind\":\"definition\",\"definitionId\":\""
+                + definitionId + "\"},"
+                + "\"absentPolicy\":\"ERROR\","
+                + "\"placement\":{\"type\":\"PACK\",\"widthMode\":\"HUG_CONTENT\","
+                + "\"heightMode\":\"HUG_CONTENT\"},"
+                + "\"children\":[" + rect(capacityUuid(4, 900)) + "]}";
+        var repeat = "{\"nodeId\":\"" + capacityUuid(1, 900) + "\","
+                + "\"kind\":\"repeat\",\"bindings\":[],\"placement\":" + absolute() + ","
+                + "\"loopId\":\"" + loopId + "\",\"absentPolicy\":\"ERROR\","
+                + "\"items\":{\"kind\":\"literal\","
+                + "\"valueType\":{\"type\":\"list\",\"items\":\"boolean\"},"
+                + "\"value\":" + items + "},"
+                + "\"itemLayout\":{\"kind\":\"GRID\",\"columns\":99},"
+                + "\"instanceLayout\":{\"kind\":\"GRID\",\"columns\":99},"
+                + "\"children\":[" + conditional + "]}";
+        return "{\"dslVersion\":\"renderweave-design/1.0\","
+                + "\"expressionProfile\":\"renderweave-expression/1.0\","
+                + "\"displayName\":\"R\",\"definitions\":[" + definition + "],"
+                + "\"designRoot\":{\"nodeId\":\"00000000-0000-4000-8000-000000000001\","
+                + "\"kind\":\"canvas\",\"widthMm\":210,\"heightMm\":297,"
+                + "\"bindings\":[],\"children\":[" + repeat + "]}}";
+    }
+
+    private static void assertGridCell(
+            Materializer.MaterializedNode node, int expectedRow, int expectedColumn) {
+        var placement = assertInstanceOf(
+                cn.hbads.renderweave.template.api.DesignSemanticAuthority.ObjectNode.class,
+                node.members().members().get("placement"));
+        assertEquals(Integer.toString(expectedRow), numberMember(placement, "row"));
+        assertEquals(Integer.toString(expectedColumn), numberMember(placement, "column"));
+    }
+
+    private static int arrayMemberSize(
+            cn.hbads.renderweave.template.api.DesignSemanticAuthority.ObjectNode object,
+            String member) {
+        return assertInstanceOf(
+                cn.hbads.renderweave.template.api.DesignSemanticAuthority.ArrayNode.class,
+                object.members().get(member)).items().size();
+    }
+
+    private static int countGeneratedGridEntries(Materializer.MaterializedNode node) {
+        var count = 0;
+        if ("grid".equals(node.kind())) {
+            count += arrayMemberSize(node.members(), "rows");
+            count += arrayMemberSize(node.members(), "columns");
+            count += node.children().size();
+        }
+        for (var child : node.children()) {
+            count += countGeneratedGridEntries(child);
+        }
+        return count;
+    }
+
+    @Test
+    void materializedStaticNodesBelowLimitAreAccepted() {
+        var tree = materializeOk(
+                repeatDocument(materializedNodeBoundaryItemLists(994)), Map.of(), null);
+
+        assertEquals(19_999, countNodes(tree.root()));
+    }
+
+    @Test
+    void materializedStaticNodesAtLimitAreAccepted() {
+        var tree = materializeOk(
+                repeatDocument(
+                        materializedNodeBoundaryItemLists(994),
+                        rect(capacityUuid(4, 1))),
+                Map.of(), null);
+
+        assertEquals(20_000, countNodes(tree.root()));
+    }
+
+    @Test
+    void repeatGeneratedContainersAboveStaticNodeLimitAreRejected() {
+        var document = repeatDocument(materializedNodeBoundaryItemLists(995));
 
         var outcome = materialize(document, Map.of(), null);
 
         var failed = assertInstanceOf(Materializer.MaterializationFailed.class, outcome);
-        assertEquals(RenderingProblem.ProblemCode.RENDER_DOCUMENT_LIMIT_EXCEEDED,
+        assertEquals(EvaluationStage.MATERIALIZATION, failed.stage());
+        assertEquals(RenderingProblem.ProblemCode.EVALUATION_BUDGET_EXCEEDED,
                 failed.problem().code());
         assertEquals("closureAndExpansion.materializedStaticNodes",
                 failed.problem().limitId().orElseThrow().value());
     }
 
-    private static String repeatDocument(int firstCount, int secondCount, int thirdCount) {
-        var firstItems = repeatedTextItems(firstCount);
-        var secondItems = repeatedTextItems(secondCount);
-        var thirdItems = repeatedTextItems(thirdCount);
+    private static List<String> materializedNodeBoundaryItemLists(int finalItemCount) {
+        var atCollectionLimit = String.join(",",
+                java.util.Collections.nCopies(1_000, "\"x\""));
+        var finalCollection = String.join(",",
+                java.util.Collections.nCopies(finalItemCount, "\"x\""));
+        var itemLists = new ArrayList<String>();
+        itemLists.addAll(java.util.Collections.nCopies(9, atCollectionLimit));
+        itemLists.add(finalCollection);
+        return List.copyOf(itemLists);
+    }
+
+    private static String repeatDocument(List<String> itemLists) {
+        return repeatDocument(itemLists, null);
+    }
+
+    private static String repeatDocument(List<String> itemLists, String trailingNode) {
+        var repeats = new ArrayList<String>(itemLists.size());
+        for (var index = 0; index < itemLists.size(); index++) {
+            repeats.add(repeatNode(index, itemLists.get(index)));
+        }
+        if (trailingNode != null) {
+            repeats.add(trailingNode);
+        }
         return "{\"dslVersion\":\"renderweave-design/1.0\","
                 + "\"expressionProfile\":\"renderweave-expression/1.0\","
                 + "\"displayName\":\"R\",\"definitions\":[],"
                 + "\"designRoot\":{\"nodeId\":\"00000000-0000-4000-8000-000000000001\","
                 + "\"kind\":\"canvas\",\"widthMm\":210,\"heightMm\":297,\"bindings\":[],"
-                + "\"children\":["
-                + repeatNode(firstItems, "21", "b1", "31") + ","
-                + repeatNode(secondItems, "22", "b2", "32") + ","
-                + repeatNode(thirdItems, "23", "b3", "33")
-                + "]}}";
+                + "\"children\":[" + String.join(",", repeats) + "]}}";
     }
 
-    private static String repeatedTextItems(int count) {
-        return String.join(",", java.util.Collections.nCopies(count, "\"x\""));
+    private static int countNodes(Materializer.MaterializedNode node) {
+        var count = 1;
+        for (var child : node.children()) {
+            count += countNodes(child);
+        }
+        return count;
     }
 
-    private static String repeatNode(String items, String nodeSuffix, String loopSuffix, String childSuffix) {
-        return "{\"nodeId\":\"00000000-0000-4000-8000-0000000000" + nodeSuffix + "\","
+    private static String repeatNode(int index, String items) {
+        return "{\"nodeId\":\"" + capacityUuid(1, index) + "\","
                 + "\"kind\":\"repeat\",\"bindings\":[],\"placement\":" + absolute() + ","
-                + "\"loopId\":\"00000000-0000-4000-8000-0000000000" + loopSuffix + "\","
+                + "\"loopId\":\"" + capacityUuid(2, index) + "\","
                 + "\"absentPolicy\":\"ERROR\",\"items\":{\"kind\":\"literal\","
                 + "\"valueType\":{\"type\":\"list\",\"items\":\"text\"},"
                 + "\"value\":[" + items + "]},"
                 + "\"itemLayout\":{\"kind\":\"STACK\",\"direction\":\"ROW\",\"gapMm\":1},"
                 + "\"instanceLayout\":{\"kind\":\"STACK\",\"direction\":\"ROW\",\"gapMm\":2},"
-                + "\"children\":[" + packRect("00000000-0000-4000-8000-0000000000" + childSuffix)
-                + "]}";
+                + "\"children\":[" + packRect(capacityUuid(3, index)) + "]}";
+    }
+
+    private static String capacityUuid(int namespace, int ordinal) {
+        return String.format(java.util.Locale.ROOT,
+                "%d0000000-0000-4000-8000-%012x", namespace, ordinal);
     }
 
     private static String packRect(String nodeId) {
@@ -156,11 +402,12 @@ class MaterializerTest {
 
     @Test
     void templateUseExpandsCompositionViewport() {
+        var useId = "00000000-0000-4000-8000-0000000000b2";
         var childDocument = canvasWith(rect("00000000-0000-4000-8000-000000000041"));
         var rootDocument = canvasWith(
                 "{\"nodeId\":\"00000000-0000-4000-8000-000000000051\","
                         + "\"kind\":\"templateUse\",\"bindings\":[],"
-                        + "\"useId\":\"00000000-0000-4000-8000-0000000000b2\","
+                        + "\"useId\":\"" + useId + "\","
                         + "\"templateRef\":{\"templateId\":\"" + CHILD_ID + "\"},"
                         + "\"contextSelector\":{\"kind\":\"empty\"},\"fills\":[],"
                         + "\"visible\":false,\"opacity\":0.25,"
@@ -175,22 +422,26 @@ class MaterializerTest {
                 1,
                 List.of(childSnapshot, rootSnapshot),
                 List.of());
-        var outcome = Materializer.materialize(
+        var outcome = admitThenMaterialize(
                 closure,
                 TemplateModule.designSemanticAuthority(),
                 DESIGNS,
                 TemplateModule.designInputExpressionCapacityAuthority(),
                 null,
                 absentCapability(),
-                admitted(Map.of()),
-                new RenderRequestId("00000000-0000-4000-8000-000000000001"),
-                new AssetResolutionPort.RendererAudience("test-audience"),
-                1_000L);
+                admitted(Map.of()));
         var materialized = assertInstanceOf(Materializer.Materialized.class, outcome);
         var viewport = materialized.tree().root().children().get(0);
         assertEquals("compositionViewport", viewport.kind());
         assertEquals(1, viewport.children().size());
         assertEquals("canvas", viewport.children().get(0).kind());
+        var viewportPath = viewport.occurrencePath().canonicalJson();
+        var sourceCanvasPath = viewport.children().get(0).occurrencePath().canonicalJson();
+        assertTrue(viewportPath.contains("\"kind\":\"TEMPLATE_USE\""));
+        assertTrue(viewportPath.contains("\"useId\":\"" + useId + "\""));
+        assertTrue(viewportPath.contains("template-use-viewport"));
+        assertTrue(sourceCanvasPath.contains("\"kind\":\"TEMPLATE_USE\""));
+        assertTrue(sourceCanvasPath.contains("canvas-background"));
         assertEquals(false, assertInstanceOf(
                 cn.hbads.renderweave.template.api.DesignSemanticAuthority.Bool.class,
                 viewport.members().members().get("visible")).value());
@@ -203,6 +454,64 @@ class MaterializerTest {
         assertEquals("15", assertInstanceOf(
                 cn.hbads.renderweave.template.api.DesignSemanticAuthority.NumberToken.class,
                 transform.members().get("rotationDeg")).rawToken());
+    }
+
+    @Test
+    void invocationCapabilityMemoIgnoresDownstreamRepeatConsumer() {
+        var capability = new CapturingCapability();
+        var document = capabilityDocument(
+                "\"invocation\"",
+                repeatWithBoundRect("[\"a\",\"b\"]"));
+
+        var outcome = materialize(document, Map.of(), null, capability);
+
+        assertInstanceOf(Materializer.Materialized.class, outcome);
+        assertEquals(1, capability.positions.size());
+        assertEquals(rootPosition(), capability.position(0));
+    }
+
+    @Test
+    void loopCapabilityUsesOriginalInputIndexPerDeclarationFrame() {
+        var capability = new CapturingCapability();
+        var document = capabilityDocument(
+                "{\"kind\":\"loop\",\"loopId\":\"" + LOOP_ID + "\"}",
+                repeatWithBoundRect("[\"duplicate\",\"duplicate\"]"));
+
+        var outcome = materialize(document, Map.of(), null, capability);
+
+        assertInstanceOf(Materializer.Materialized.class, outcome);
+        assertEquals(2, capability.positions.size());
+        assertEquals(loopPosition(0), capability.position(0));
+        assertEquals(loopPosition(1), capability.position(1));
+    }
+
+    @Test
+    void childInvocationCapabilityIsIsolatedByUseId() {
+        var capability = new CapturingCapability();
+        var childDocument = capabilityDocument(
+                "\"invocation\"",
+                boundRect("00000000-0000-4000-8000-000000000091", absolute()));
+        var rootDocument = canvasWith(
+                templateUse(USE_ONE) + "," + templateUse(USE_TWO));
+        var rootSnapshot = snapshot(ROOT_ID, canonical(rootDocument));
+        var childSnapshot = snapshot(CHILD_ID, canonical(childDocument));
+        var closure = new ClosureSnapshot(
+                new cn.hbads.renderweave.template.api.TemplateClosureAuthority.OwnerScope("owner-a"),
+                new cn.hbads.renderweave.template.api.TemplateApplication.TemplateId(ROOT_ID),
+                1,
+                List.of(childSnapshot, rootSnapshot),
+                List.of());
+
+        var outcome = admitThenMaterialize(
+                closure,
+                null,
+                capability,
+                admitted(Map.of()));
+
+        assertInstanceOf(Materializer.Materialized.class, outcome);
+        assertEquals(2, capability.positions.size());
+        assertEquals(usePosition(USE_ONE), capability.position(0));
+        assertEquals(usePosition(USE_TWO), capability.position(1));
     }
 
     // ------------------------------------------------------------------
@@ -270,6 +579,528 @@ class MaterializerTest {
     }
 
     @Test
+    void siblingAssetOccurrencesUseDistinctFullPathsAndResourceIds() {
+        var firstNodeId = "00000000-0000-4000-8000-000000000061";
+        var secondNodeId = "00000000-0000-4000-8000-000000000062";
+        var document = canvasWith(
+                imageNode(firstNodeId) + "," + imageNode(secondNodeId));
+
+        var tree = materializeOk(document, Map.of(), new ScriptedAssetPort(true));
+
+        assertEquals(2, tree.resources().size());
+        var first = tree.resources().get(0);
+        var second = tree.resources().get(1);
+        assertNotEquals(first.resourceId(), second.resourceId());
+        assertTrue(first.occurrencePath().toString().contains(firstNodeId));
+        assertTrue(second.occurrencePath().toString().contains(secondNodeId));
+        assertTrue(first.occurrencePath().toString().contains("source-node"));
+        assertEquals("{\"rootPropertyId\":\"imageRef\",\"selectors\":[]}",
+                first.consumerPropertyRef().canonicalJson());
+    }
+
+    @Test
+    void actualResolveOccurrenceBudgetStopsBeforeTheNextResolverOperation() {
+        var document = canvasWith(
+                imageNode("00000000-0000-4000-8000-000000000061") + ","
+                        + imageNode("00000000-0000-4000-8000-000000000062"));
+        var exactCapacity = new RenderingPipelineCapacityGuard().newRequestTracker();
+        assertTrue(exactCapacity.reserve(
+                RenderingPipelineCapacityGuard.Limit
+                        .ASSETS_AND_FETCH_ACTUAL_RESOLVE_OCCURRENCES,
+                2_046).isEmpty());
+        var exactPort = new ScriptedAssetPort(true);
+
+        var exact = materialize(
+                document, Map.of(), exactPort, absentCapability(), exactCapacity);
+
+        var exactTree = assertInstanceOf(Materializer.Materialized.class, exact).tree();
+        assertEquals(2, exactPort.resolves);
+        assertEquals(2, exactTree.resources().size());
+
+        var exceededCapacity = new RenderingPipelineCapacityGuard().newRequestTracker();
+        assertTrue(exceededCapacity.reserve(
+                RenderingPipelineCapacityGuard.Limit
+                        .ASSETS_AND_FETCH_ACTUAL_RESOLVE_OCCURRENCES,
+                2_047).isEmpty());
+        var exceededPort = new ScriptedAssetPort(true);
+
+        var exceeded = materialize(
+                document, Map.of(), exceededPort, absentCapability(), exceededCapacity);
+
+        var failed = assertInstanceOf(Materializer.MaterializationFailed.class, exceeded);
+        assertEquals(EvaluationStage.ASSET_RESOLUTION, failed.stage());
+        assertEquals(RenderingProblem.ProblemCode.RESOURCE_BUDGET_EXCEEDED,
+                failed.problem().code());
+        assertEquals("assetsAndFetch.actualResolveOccurrences",
+                failed.problem().limitId().orElseThrow().value());
+        assertEquals(1, exceededPort.resolves);
+    }
+
+    @Test
+    void renderResourceEntryBudgetStopsAfterResolveAndBeforeAppend() {
+        var document = canvasWith(
+                imageNode("00000000-0000-4000-8000-000000000061") + ","
+                        + imageNode("00000000-0000-4000-8000-000000000062"));
+        var exactCapacity = new RenderingPipelineCapacityGuard().newRequestTracker();
+        assertTrue(exactCapacity.reserve(
+                RenderingPipelineCapacityGuard.Limit
+                        .ASSETS_AND_FETCH_RENDER_RESOURCE_ENTRIES,
+                2_046).isEmpty());
+        var exactPort = new ScriptedAssetPort(true);
+
+        var exact = materialize(
+                document, Map.of(), exactPort, absentCapability(), exactCapacity);
+
+        var exactTree = assertInstanceOf(Materializer.Materialized.class, exact).tree();
+        assertEquals(2, exactPort.resolves);
+        assertEquals(2, exactTree.resources().size());
+
+        var exceededCapacity = new RenderingPipelineCapacityGuard().newRequestTracker();
+        assertTrue(exceededCapacity.reserve(
+                RenderingPipelineCapacityGuard.Limit
+                        .ASSETS_AND_FETCH_RENDER_RESOURCE_ENTRIES,
+                2_047).isEmpty());
+        var exceededPort = new ScriptedAssetPort(true);
+
+        var exceeded = materialize(
+                document, Map.of(), exceededPort, absentCapability(), exceededCapacity);
+
+        var failed = assertInstanceOf(Materializer.MaterializationFailed.class, exceeded);
+        assertEquals(EvaluationStage.ASSET_RESOLUTION, failed.stage());
+        assertEquals(RenderingProblem.ProblemCode.RESOURCE_BUDGET_EXCEEDED,
+                failed.problem().code());
+        assertEquals("assetsAndFetch.renderResourceEntries",
+                failed.problem().limitId().orElseThrow().value());
+        assertEquals(2, exceededPort.resolves);
+    }
+
+    @Test
+    void uniqueExactContentBudgetDeduplicatesContentIdentityBeforeResourceAppend() {
+        var document = canvasWith(
+                imageNode("00000000-0000-4000-8000-000000000061") + ","
+                        + imageNode("00000000-0000-4000-8000-000000000062"));
+        var exactCapacity = new RenderingPipelineCapacityGuard().newRequestTracker();
+        assertTrue(exactCapacity.reserve(
+                RenderingPipelineCapacityGuard.Limit
+                        .ASSETS_AND_FETCH_UNIQUE_EXACT_CONTENTS,
+                127).isEmpty());
+        var exactPort = new SequencedContentPort(List.of(
+                new ResolvedContent("content-version-1", "sha256:" + "b".repeat(64), 1234),
+                new ResolvedContent("content-version-2", "sha256:" + "b".repeat(64), 1234)));
+
+        var exact = materialize(
+                document, Map.of(), exactPort, absentCapability(), exactCapacity);
+
+        var exactTree = assertInstanceOf(Materializer.Materialized.class, exact).tree();
+        assertEquals(2, exactPort.resolves);
+        assertEquals(2, exactTree.resources().size());
+        assertEquals("content-version-1", exactTree.resources().get(0).contentVersion());
+        assertEquals("content-version-2", exactTree.resources().get(1).contentVersion());
+
+        var exceededCapacity = new RenderingPipelineCapacityGuard().newRequestTracker();
+        assertTrue(exceededCapacity.reserve(
+                RenderingPipelineCapacityGuard.Limit
+                        .ASSETS_AND_FETCH_UNIQUE_EXACT_CONTENTS,
+                127).isEmpty());
+        var exceededPort = new SequencedContentPort(List.of(
+                new ResolvedContent("content-version-1", "sha256:" + "b".repeat(64), 1234),
+                new ResolvedContent("content-version-2", "sha256:" + "c".repeat(64), 1234)));
+
+        var exceeded = materialize(
+                document, Map.of(), exceededPort, absentCapability(), exceededCapacity);
+
+        var failed = assertInstanceOf(Materializer.MaterializationFailed.class, exceeded);
+        assertEquals(EvaluationStage.ASSET_ADMISSION, failed.stage());
+        assertEquals(RenderingProblem.ProblemCode.ASSET_BUDGET_EXCEEDED,
+                failed.problem().code());
+        assertEquals("assetsAndFetch.uniqueExactContents",
+                failed.problem().limitId().orElseThrow().value());
+        assertEquals(2, exceededPort.resolves);
+        assertTrue(exceededCapacity.reserve(
+                RenderingPipelineCapacityGuard.Limit
+                        .ASSETS_AND_FETCH_RENDER_RESOURCE_ENTRIES,
+                2_047).isEmpty());
+    }
+
+    @Test
+    void occurrenceDeclaredRawByteBudgetCountsDuplicateExactContentBeforeResourceAppend() {
+        var document = canvasWith(
+                imageNode("00000000-0000-4000-8000-000000000063") + ","
+                        + imageNode("00000000-0000-4000-8000-000000000064"));
+        var exactCapacity = new RenderingPipelineCapacityGuard().newRequestTracker();
+        assertTrue(exactCapacity.reserve(
+                RenderingPipelineCapacityGuard.Limit
+                        .ASSETS_AND_FETCH_OCCURRENCE_DECLARED_RAW_BYTES,
+                2_147_483_646L).isEmpty());
+        var exactPort = new SequencedContentPort(List.of(
+                new ResolvedContent("content-version-1", "sha256:" + "d".repeat(64), 1),
+                new ResolvedContent("content-version-1", "sha256:" + "d".repeat(64), 1)));
+
+        var exact = materialize(
+                document, Map.of(), exactPort, absentCapability(), exactCapacity);
+
+        var exactTree = assertInstanceOf(Materializer.Materialized.class, exact).tree();
+        assertEquals(2, exactPort.resolves);
+        assertEquals(2, exactTree.resources().size());
+
+        var exceededCapacity = new RenderingPipelineCapacityGuard().newRequestTracker();
+        assertTrue(exceededCapacity.reserve(
+                RenderingPipelineCapacityGuard.Limit
+                        .ASSETS_AND_FETCH_OCCURRENCE_DECLARED_RAW_BYTES,
+                2_147_483_647L).isEmpty());
+        var exceededPort = new SequencedContentPort(List.of(
+                new ResolvedContent("content-version-1", "sha256:" + "d".repeat(64), 1),
+                new ResolvedContent("content-version-1", "sha256:" + "d".repeat(64), 1)));
+
+        var exceeded = materialize(
+                document, Map.of(), exceededPort, absentCapability(), exceededCapacity);
+
+        var failed = assertInstanceOf(Materializer.MaterializationFailed.class, exceeded);
+        assertEquals(EvaluationStage.ASSET_ADMISSION, failed.stage());
+        assertEquals(RenderingProblem.ProblemCode.ASSET_BUDGET_EXCEEDED,
+                failed.problem().code());
+        assertEquals("assetsAndFetch.occurrenceDeclaredRawBytes",
+                failed.problem().limitId().orElseThrow().value());
+        assertEquals(2, exceededPort.resolves);
+        assertTrue(exceededCapacity.reserve(
+                RenderingPipelineCapacityGuard.Limit
+                        .ASSETS_AND_FETCH_RENDER_RESOURCE_ENTRIES,
+                2_047).isEmpty());
+    }
+
+    @Test
+    void uniqueRawByteBudgetDeduplicatesExactContentBeforeResourceAppend() {
+        var document = canvasWith(
+                imageNode("00000000-0000-4000-8000-000000000065") + ","
+                        + imageNode("00000000-0000-4000-8000-000000000066"));
+        var exactCapacity = new RenderingPipelineCapacityGuard().newRequestTracker();
+        assertTrue(exactCapacity.reserve(
+                RenderingPipelineCapacityGuard.Limit.ASSETS_AND_FETCH_UNIQUE_RAW_BYTES,
+                268_435_455L).isEmpty());
+        var exactPort = new SequencedContentPort(List.of(
+                new ResolvedContent("content-version-1", "sha256:" + "e".repeat(64), 1),
+                new ResolvedContent("content-version-2", "sha256:" + "e".repeat(64), 1)));
+
+        var exact = materialize(
+                document, Map.of(), exactPort, absentCapability(), exactCapacity);
+
+        var exactTree = assertInstanceOf(Materializer.Materialized.class, exact).tree();
+        assertEquals(2, exactPort.resolves);
+        assertEquals(2, exactTree.resources().size());
+
+        var exceededCapacity = new RenderingPipelineCapacityGuard().newRequestTracker();
+        assertTrue(exceededCapacity.reserve(
+                RenderingPipelineCapacityGuard.Limit.ASSETS_AND_FETCH_UNIQUE_RAW_BYTES,
+                268_435_455L).isEmpty());
+        var exceededPort = new SequencedContentPort(List.of(
+                new ResolvedContent("content-version-1", "sha256:" + "e".repeat(64), 1),
+                new ResolvedContent("content-version-2", "sha256:" + "f".repeat(64), 1)));
+
+        var exceeded = materialize(
+                document, Map.of(), exceededPort, absentCapability(), exceededCapacity);
+
+        var failed = assertInstanceOf(Materializer.MaterializationFailed.class, exceeded);
+        assertEquals(EvaluationStage.ASSET_ADMISSION, failed.stage());
+        assertEquals(RenderingProblem.ProblemCode.ASSET_BUDGET_EXCEEDED,
+                failed.problem().code());
+        assertEquals("assetsAndFetch.uniqueRawBytes",
+                failed.problem().limitId().orElseThrow().value());
+        assertEquals(2, exceededPort.resolves);
+        assertTrue(exceededCapacity.reserve(
+                RenderingPipelineCapacityGuard.Limit
+                        .ASSETS_AND_FETCH_RENDER_RESOURCE_ENTRIES,
+                2_047).isEmpty());
+    }
+
+    @Test
+    void occurrenceImagePixelBudgetCountsLogicalPixelsBeforeExactContentAdmission() {
+        var document = canvasWith(
+                imageNode("00000000-0000-4000-8000-000000000067") + ","
+                        + imageNode("00000000-0000-4000-8000-000000000068"));
+        var exactCapacity = new RenderingPipelineCapacityGuard().newRequestTracker();
+        assertTrue(exactCapacity.reserve(
+                RenderingPipelineCapacityGuard.Limit
+                        .ASSETS_AND_FETCH_OCCURRENCE_IMAGE_PIXELS,
+                999_999_998L).isEmpty());
+        var exactPort = new SequencedContentPort(List.of(
+                new ResolvedContent("content-version-1", "sha256:" + "1".repeat(64), 1, 1, 1),
+                new ResolvedContent("content-version-2", "sha256:" + "1".repeat(64), 1, 1, 1)));
+
+        var exact = materialize(
+                document, Map.of(), exactPort, absentCapability(), exactCapacity);
+
+        var exactTree = assertInstanceOf(Materializer.Materialized.class, exact).tree();
+        assertEquals(2, exactPort.resolves);
+        assertEquals(2, exactTree.resources().size());
+
+        var exceededCapacity = new RenderingPipelineCapacityGuard().newRequestTracker();
+        assertTrue(exceededCapacity.reserve(
+                RenderingPipelineCapacityGuard.Limit
+                        .ASSETS_AND_FETCH_OCCURRENCE_IMAGE_PIXELS,
+                999_999_999L).isEmpty());
+        var exceededPort = new SequencedContentPort(List.of(
+                new ResolvedContent("content-version-1", "sha256:" + "1".repeat(64), 1, 1, 1),
+                new ResolvedContent("content-version-2", "sha256:" + "2".repeat(64), 1, 1, 1)));
+
+        var exceeded = materialize(
+                document, Map.of(), exceededPort, absentCapability(), exceededCapacity);
+
+        var failed = assertInstanceOf(Materializer.MaterializationFailed.class, exceeded);
+        assertEquals(EvaluationStage.ASSET_ADMISSION, failed.stage());
+        assertEquals(RenderingProblem.ProblemCode.ASSET_BUDGET_EXCEEDED,
+                failed.problem().code());
+        assertEquals("assetsAndFetch.occurrenceImagePixels",
+                failed.problem().limitId().orElseThrow().value());
+        assertEquals(2, exceededPort.resolves);
+        assertTrue(exceededCapacity.reserve(
+                RenderingPipelineCapacityGuard.Limit
+                        .ASSETS_AND_FETCH_UNIQUE_EXACT_CONTENTS,
+                127).isEmpty());
+        assertTrue(exceededCapacity.reserve(
+                RenderingPipelineCapacityGuard.Limit.ASSETS_AND_FETCH_UNIQUE_RAW_BYTES,
+                268_435_455L).isEmpty());
+        assertTrue(exceededCapacity.reserve(
+                RenderingPipelineCapacityGuard.Limit
+                        .ASSETS_AND_FETCH_RENDER_RESOURCE_ENTRIES,
+                2_047).isEmpty());
+    }
+
+    @Test
+    void uniqueImagePixelBudgetDeduplicatesExactContentBeforeResourceAppend() {
+        var document = canvasWith(
+                imageNode("00000000-0000-4000-8000-000000000069") + ","
+                        + imageNode("00000000-0000-4000-8000-000000000070"));
+        var exactCapacity = new RenderingPipelineCapacityGuard().newRequestTracker();
+        assertTrue(exactCapacity.reserve(
+                RenderingPipelineCapacityGuard.Limit
+                        .ASSETS_AND_FETCH_UNIQUE_IMAGE_PIXELS,
+                124_999_999L).isEmpty());
+        var exactPort = new SequencedContentPort(List.of(
+                new ResolvedContent("content-version-1", "sha256:" + "3".repeat(64), 1, 1, 1),
+                new ResolvedContent("content-version-2", "sha256:" + "3".repeat(64), 1, 1, 1)));
+
+        var exact = materialize(
+                document, Map.of(), exactPort, absentCapability(), exactCapacity);
+
+        var exactTree = assertInstanceOf(Materializer.Materialized.class, exact).tree();
+        assertEquals(2, exactPort.resolves);
+        assertEquals(2, exactTree.resources().size());
+
+        var exceededCapacity = new RenderingPipelineCapacityGuard().newRequestTracker();
+        assertTrue(exceededCapacity.reserve(
+                RenderingPipelineCapacityGuard.Limit
+                        .ASSETS_AND_FETCH_UNIQUE_IMAGE_PIXELS,
+                124_999_999L).isEmpty());
+        var exceededPort = new SequencedContentPort(List.of(
+                new ResolvedContent("content-version-1", "sha256:" + "3".repeat(64), 1, 1, 1),
+                new ResolvedContent("content-version-2", "sha256:" + "4".repeat(64), 1, 1, 1)));
+
+        var exceeded = materialize(
+                document, Map.of(), exceededPort, absentCapability(), exceededCapacity);
+
+        var failed = assertInstanceOf(Materializer.MaterializationFailed.class, exceeded);
+        assertEquals(EvaluationStage.ASSET_ADMISSION, failed.stage());
+        assertEquals(RenderingProblem.ProblemCode.ASSET_BUDGET_EXCEEDED,
+                failed.problem().code());
+        assertEquals("assetsAndFetch.uniqueImagePixels",
+                failed.problem().limitId().orElseThrow().value());
+        assertEquals(2, exceededPort.resolves);
+        assertTrue(exceededCapacity.reserve(
+                RenderingPipelineCapacityGuard.Limit
+                        .ASSETS_AND_FETCH_UNIQUE_EXACT_CONTENTS,
+                127).isPresent());
+        assertTrue(exceededCapacity.reserve(
+                RenderingPipelineCapacityGuard.Limit.ASSETS_AND_FETCH_UNIQUE_RAW_BYTES,
+                268_435_455L).isPresent());
+        assertTrue(exceededCapacity.reserve(
+                RenderingPipelineCapacityGuard.Limit
+                        .ASSETS_AND_FETCH_RENDER_RESOURCE_ENTRIES,
+                2_047).isEmpty());
+    }
+
+    @Test
+    void occurrenceFontByteBudgetCountsDuplicateExactContentBeforeAdmission() {
+        var document = canvasWith(
+                textNode("00000000-0000-4000-8000-000000000073") + ","
+                        + textNode("00000000-0000-4000-8000-000000000074"));
+        var exactCapacity = new RenderingPipelineCapacityGuard().newRequestTracker();
+        assertTrue(exactCapacity.reserve(
+                RenderingPipelineCapacityGuard.Limit
+                        .ASSETS_AND_FETCH_OCCURRENCE_FONT_BYTES,
+                536_870_910L).isEmpty());
+        var exactPort = new SequencedContentPort(List.of(
+                ResolvedContent.font("content-version-1", "sha256:" + "5".repeat(64), 1),
+                ResolvedContent.font("content-version-2", "sha256:" + "5".repeat(64), 1)));
+
+        var exact = materialize(
+                document, Map.of(), exactPort, absentCapability(), exactCapacity);
+
+        var exactTree = assertInstanceOf(Materializer.Materialized.class, exact).tree();
+        assertEquals(2, exactPort.resolves);
+        assertEquals(2, exactTree.resources().size());
+        assertEquals("FONT", exactTree.resources().get(0).kind());
+        assertEquals("FONT", exactTree.resources().get(1).kind());
+        assertEquals(
+                "{\"rootPropertyId\":\"runs\",\"selectors\":["
+                        + "{\"index\":0,\"kind\":\"INDEX\"},"
+                        + "{\"kind\":\"MEMBER\",\"memberId\":\"fontRef\"}]}",
+                exactTree.resources().get(0).consumerPropertyRef().canonicalJson());
+
+        var exceededCapacity = new RenderingPipelineCapacityGuard().newRequestTracker();
+        assertTrue(exceededCapacity.reserve(
+                RenderingPipelineCapacityGuard.Limit
+                        .ASSETS_AND_FETCH_OCCURRENCE_FONT_BYTES,
+                536_870_911L).isEmpty());
+        var exceededPort = new SequencedContentPort(List.of(
+                ResolvedContent.font("content-version-1", "sha256:" + "5".repeat(64), 1),
+                ResolvedContent.font("content-version-2", "sha256:" + "6".repeat(64), 1)));
+
+        var exceeded = materialize(
+                document, Map.of(), exceededPort, absentCapability(), exceededCapacity);
+
+        var failed = assertInstanceOf(Materializer.MaterializationFailed.class, exceeded);
+        assertEquals(EvaluationStage.ASSET_ADMISSION, failed.stage());
+        assertEquals(RenderingProblem.ProblemCode.ASSET_BUDGET_EXCEEDED,
+                failed.problem().code());
+        assertEquals("assetsAndFetch.occurrenceFontBytes",
+                failed.problem().limitId().orElseThrow().value());
+        assertEquals(2, exceededPort.resolves);
+        assertTrue(exceededCapacity.reserve(
+                RenderingPipelineCapacityGuard.Limit
+                        .ASSETS_AND_FETCH_UNIQUE_EXACT_CONTENTS,
+                127).isEmpty());
+        assertTrue(exceededCapacity.reserve(
+                RenderingPipelineCapacityGuard.Limit.ASSETS_AND_FETCH_UNIQUE_RAW_BYTES,
+                268_435_455L).isEmpty());
+        assertTrue(exceededCapacity.reserve(
+                RenderingPipelineCapacityGuard.Limit
+                        .ASSETS_AND_FETCH_RENDER_RESOURCE_ENTRIES,
+                2_047).isEmpty());
+    }
+
+    @Test
+    void uniqueFontByteBudgetDeduplicatesExactContentBeforeResourceAppend() {
+        var document = canvasWith(
+                textNode("00000000-0000-4000-8000-000000000075") + ","
+                        + textNode("00000000-0000-4000-8000-000000000076"));
+        var exactCapacity = new RenderingPipelineCapacityGuard().newRequestTracker();
+        assertTrue(exactCapacity.reserve(
+                RenderingPipelineCapacityGuard.Limit
+                        .ASSETS_AND_FETCH_UNIQUE_FONT_BYTES,
+                67_108_863L).isEmpty());
+        var exactPort = new SequencedContentPort(List.of(
+                ResolvedContent.font("content-version-1", "sha256:" + "7".repeat(64), 1),
+                ResolvedContent.font("content-version-2", "sha256:" + "7".repeat(64), 1)));
+
+        var exact = materialize(
+                document, Map.of(), exactPort, absentCapability(), exactCapacity);
+
+        var exactTree = assertInstanceOf(Materializer.Materialized.class, exact).tree();
+        assertEquals(2, exactPort.resolves);
+        assertEquals(2, exactTree.resources().size());
+        assertEquals("FONT", exactTree.resources().get(0).kind());
+        assertEquals("FONT", exactTree.resources().get(1).kind());
+
+        var exceededCapacity = new RenderingPipelineCapacityGuard().newRequestTracker();
+        assertTrue(exceededCapacity.reserve(
+                RenderingPipelineCapacityGuard.Limit
+                        .ASSETS_AND_FETCH_UNIQUE_FONT_BYTES,
+                67_108_863L).isEmpty());
+        var exceededPort = new SequencedContentPort(List.of(
+                ResolvedContent.font("content-version-1", "sha256:" + "7".repeat(64), 1),
+                ResolvedContent.font("content-version-2", "sha256:" + "8".repeat(64), 1)));
+
+        var exceeded = materialize(
+                document, Map.of(), exceededPort, absentCapability(), exceededCapacity);
+
+        var failed = assertInstanceOf(Materializer.MaterializationFailed.class, exceeded);
+        assertEquals(EvaluationStage.ASSET_ADMISSION, failed.stage());
+        assertEquals(RenderingProblem.ProblemCode.ASSET_BUDGET_EXCEEDED,
+                failed.problem().code());
+        assertEquals("assetsAndFetch.uniqueFontBytes",
+                failed.problem().limitId().orElseThrow().value());
+        assertEquals(2, exceededPort.resolves);
+        assertTrue(exceededCapacity.reserve(
+                RenderingPipelineCapacityGuard.Limit
+                        .ASSETS_AND_FETCH_UNIQUE_EXACT_CONTENTS,
+                127).isPresent());
+        assertTrue(exceededCapacity.reserve(
+                RenderingPipelineCapacityGuard.Limit.ASSETS_AND_FETCH_UNIQUE_RAW_BYTES,
+                268_435_455L).isPresent());
+        assertTrue(exceededCapacity.reserve(
+                RenderingPipelineCapacityGuard.Limit
+                        .ASSETS_AND_FETCH_RENDER_RESOURCE_ENTRIES,
+                2_047).isEmpty());
+    }
+
+    @Test
+    void resourceManifestByteBudgetCountsExactCanonicalArrayBeforeAppend() {
+        var limit = RenderingPipelineCapacityGuard.Limit
+                .ASSETS_AND_FETCH_MANIFEST_BYTES;
+        var emptyExactCapacity = new RenderingPipelineCapacityGuard().newRequestTracker();
+        assertTrue(emptyExactCapacity.reserve(limit, 4_194_302L).isEmpty());
+
+        var emptyExact = materialize(
+                canvasWith(""), Map.of(), null, absentCapability(), emptyExactCapacity);
+
+        assertInstanceOf(Materializer.Materialized.class, emptyExact);
+        assertTrue(emptyExactCapacity.reserve(limit, 1).isPresent());
+
+        var emptyExceededCapacity = new RenderingPipelineCapacityGuard().newRequestTracker();
+        assertTrue(emptyExceededCapacity.reserve(limit, 4_194_303L).isEmpty());
+
+        var emptyExceeded = materialize(
+                canvasWith(""), Map.of(), null, absentCapability(), emptyExceededCapacity);
+
+        assertManifestByteLimit(emptyExceeded);
+
+        var document = canvasWith(
+                textNode("00000000-0000-4000-8000-000000000077") + ","
+                        + textNode("00000000-0000-4000-8000-000000000078"));
+        // Exact closed FONT entries are 505 bytes each; [] plus comma totals 1,013 bytes.
+        var exactCapacity = new RenderingPipelineCapacityGuard().newRequestTracker();
+        assertTrue(exactCapacity.reserve(limit, 4_193_291L).isEmpty());
+        var exactPort = new SequencedContentPort(List.of(
+                ResolvedContent.font("content-version-1", "sha256:" + "9".repeat(64), 1),
+                ResolvedContent.font("content-version-2", "sha256:" + "9".repeat(64), 1)));
+
+        var exact = materialize(
+                document, Map.of(), exactPort, absentCapability(), exactCapacity);
+
+        var exactTree = assertInstanceOf(Materializer.Materialized.class, exact).tree();
+        assertEquals(2, exactPort.resolves);
+        assertEquals(2, exactTree.resources().size());
+        assertTrue(exactCapacity.reserve(limit, 1).isPresent());
+
+        var exceededCapacity = new RenderingPipelineCapacityGuard().newRequestTracker();
+        assertTrue(exceededCapacity.reserve(limit, 4_193_292L).isEmpty());
+        var exceededPort = new SequencedContentPort(List.of(
+                ResolvedContent.font("content-version-1", "sha256:" + "9".repeat(64), 1),
+                ResolvedContent.font("content-version-2", "sha256:" + "9".repeat(64), 1)));
+
+        var exceeded = materialize(
+                document, Map.of(), exceededPort, absentCapability(), exceededCapacity);
+
+        assertManifestByteLimit(exceeded);
+        assertEquals(2, exceededPort.resolves);
+        assertTrue(exceededCapacity.reserve(
+                RenderingPipelineCapacityGuard.Limit
+                        .ASSETS_AND_FETCH_RENDER_RESOURCE_ENTRIES,
+                2_047).isEmpty());
+    }
+
+    private static void assertManifestByteLimit(
+            Materializer.MaterializationOutcome outcome
+    ) {
+        var failed = assertInstanceOf(Materializer.MaterializationFailed.class, outcome);
+        assertEquals(EvaluationStage.ASSET_ADMISSION, failed.stage());
+        assertEquals(RenderingProblem.ProblemCode.ASSET_BUDGET_EXCEEDED,
+                failed.problem().code());
+        assertEquals("assetsAndFetch.manifestBytes",
+                failed.problem().limitId().orElseThrow().value());
+    }
+
+    @Test
     void missingAssetPortFailsClosedAtAssetAdmission() {
         var document = canvasWith(imageNode());
         var outcome = materialize(document, Map.of(), null);
@@ -333,12 +1164,103 @@ class MaterializerTest {
     }
 
     private static String imageNode() {
-        return "{\"nodeId\":\"00000000-0000-4000-8000-000000000061\",\"kind\":\"image\","
+        return imageNode("00000000-0000-4000-8000-000000000061");
+    }
+
+    private static String imageNode(String nodeId) {
+        return "{\"nodeId\":\"" + nodeId + "\",\"kind\":\"image\","
                 + "\"bindings\":[],\"placement\":" + absolute() + ","
                 + "\"imageRef\":{\"assetId\":\"" + ASSET_ID + "\"}}";
     }
 
+    private static String textNode(String nodeId) {
+        return "{\"nodeId\":\"" + nodeId + "\",\"kind\":\"text\","
+                + "\"bindings\":[],\"placement\":" + absolute() + ","
+                + "\"horizontalAlign\":\"LEFT\",\"runs\":[{\"text\":\"Hi\","
+                + "\"fontRef\":{\"assetId\":\"" + ASSET_ID + "\"},"
+                + "\"fontSizePt\":12,\"color\":\"#FF000000\",\"decoration\":\"NONE\","
+                + "\"letterSpacingPt\":0}]}";
+    }
+
     private static final String DEFINITION_ID = "00000000-0000-4000-8000-0000000000d1";
+    private static final String LOOP_ID = "00000000-0000-4000-8000-0000000000b1";
+    private static final String USE_ONE = "00000000-0000-4000-8000-0000000000e1";
+    private static final String USE_TWO = "00000000-0000-4000-8000-0000000000e2";
+
+    private static String capabilityDocument(String domain, String children) {
+        return "{\"dslVersion\":\"renderweave-design/1.0\","
+                + "\"expressionProfile\":\"renderweave-expression/1.0\","
+                + "\"displayName\":\"Capability\",\"definitions\":["
+                + "{\"definitionId\":\"" + DEFINITION_ID + "\",\"kind\":\"expression\","
+                + "\"displayName\":\"Draw\",\"domain\":" + domain + ","
+                + "\"output\":\"decimal\",\"inputs\":[{\"alias\":\"draw\","
+                + "\"source\":{\"kind\":\"capability\",\"capability\":\"RANDOM\","
+                + "\"operation\":\"UNIFORM_DECIMAL_0_1\"}}],\"source\":\"input.draw\"}],"
+                + "\"designRoot\":{\"nodeId\":\"00000000-0000-4000-8000-000000000001\","
+                + "\"kind\":\"canvas\",\"widthMm\":210,\"heightMm\":297,"
+                + "\"bindings\":[],\"children\":[" + children + "]}}";
+    }
+
+    private static String repeatWithBoundRect(String items) {
+        return "{\"nodeId\":\"00000000-0000-4000-8000-000000000092\","
+                + "\"kind\":\"repeat\",\"bindings\":[],\"placement\":" + absolute() + ","
+                + "\"loopId\":\"" + LOOP_ID + "\",\"absentPolicy\":\"ERROR\","
+                + "\"items\":{\"kind\":\"literal\","
+                + "\"valueType\":{\"type\":\"list\",\"items\":\"text\"},"
+                + "\"value\":" + items + "},"
+                + "\"itemLayout\":{\"kind\":\"STACK\",\"direction\":\"ROW\"},"
+                + "\"instanceLayout\":{\"kind\":\"STACK\",\"direction\":\"ROW\"},"
+                + "\"children\":[" + boundRect(
+                        "00000000-0000-4000-8000-000000000093", packFixed()) + "]}";
+    }
+
+    private static String boundRect(String nodeId, String placement) {
+        return "{\"nodeId\":\"" + nodeId + "\",\"kind\":\"rect\","
+                + "\"bindings\":[{\"bindingId\":\"00000000-0000-4000-8000-0000000000f1\","
+                + "\"targetPropertyRef\":{\"rootPropertyId\":\"placement\","
+                + "\"selectors\":[{\"kind\":\"member\",\"name\":\"widthMm\"}]},"
+                + "\"source\":{\"kind\":\"definition\",\"definitionId\":\""
+                + DEFINITION_ID + "\"}}],\"placement\":" + placement + ","
+                + "\"fill\":{\"color\":\"#FF000000\"}}";
+    }
+
+    private static String packFixed() {
+        return "{\"type\":\"PACK\",\"widthMode\":\"FIXED\",\"widthMm\":10,"
+                + "\"heightMode\":\"FIXED\",\"heightMm\":10}";
+    }
+
+    private static String templateUse(String useId) {
+        return "{\"nodeId\":\"" + useId + "\",\"kind\":\"templateUse\","
+                + "\"bindings\":[],\"useId\":\"" + useId + "\","
+                + "\"templateRef\":{\"templateId\":\"" + CHILD_ID + "\"},"
+                + "\"contextSelector\":{\"kind\":\"empty\"},\"fills\":[],"
+                + "\"placement\":" + absolute() + "}";
+    }
+
+    private static String rootPosition() {
+        return position("[{\"kind\":\"ROOT\",\"revision\":1,\"templateId\":\""
+                + ROOT_ID + "\"}]");
+    }
+
+    private static String loopPosition(int inputIndex) {
+        return position("[{\"kind\":\"ROOT\",\"revision\":1,\"templateId\":\""
+                + ROOT_ID + "\"},{\"inputIndex\":" + inputIndex
+                + ",\"kind\":\"REPEAT\",\"loopId\":\"" + LOOP_ID + "\"}]");
+    }
+
+    private static String usePosition(String useId) {
+        return position("[{\"kind\":\"ROOT\",\"revision\":1,\"templateId\":\""
+                + ROOT_ID + "\"},{\"kind\":\"TEMPLATE_USE\",\"revision\":1,"
+                + "\"templateId\":\"" + CHILD_ID + "\",\"useId\":\"" + useId + "\"}]");
+    }
+
+    private static String position(String path) {
+        return "{\"capabilityContractId\":\"renderweave-capability-random/1.0\","
+                + "\"definitionId\":\"" + DEFINITION_ID + "\","
+                + "\"inputAlias\":\"draw\",\"operation\":\"UNIFORM_DECIMAL_0_1\","
+                + "\"path\":" + path + ","
+                + "\"positionVersion\":\"renderweave-capability-call-position/1.0\"}";
+    }
 
     /** binding source 只允许 context/loopIndex/definition（literal 应写成静态值）。 */
     private static String textDocumentWithDefinitionBinding(String valueType, String defaultJson) {
@@ -441,13 +1363,15 @@ class MaterializerTest {
     }
 
     private static AdmittedRenderInput admitted(Map<String, DesignValue> customs) {
-        return new AdmittedRenderInput(SCHEMA, new TypedObject(SCHEMA, Map.of()), customs);
+        return new AdmittedRenderInput(
+                SCHEMA, new TypedObject(SCHEMA, Map.of()), customs, Map.of());
     }
 
     private static Materializer.MaterializedTree materializeOk(
             String document, Map<String, DesignValue> customs, AssetResolutionPort port) {
         var outcome = materialize(document, customs, port);
-        return ((Materializer.Materialized) outcome).tree();
+        return assertInstanceOf(
+                Materializer.Materialized.class, outcome, () -> "outcome=" + outcome).tree();
     }
 
     private static Materializer.MaterializationOutcome materialize(
@@ -456,6 +1380,8 @@ class MaterializerTest {
                 document,
                 customs,
                 port,
+                absentCapability(),
+                null,
                 TemplateModule.designInputExpressionCapacityAuthority());
     }
 
@@ -465,6 +1391,49 @@ class MaterializerTest {
             AssetResolutionPort port,
             DesignInputExpressionCapacityAuthority capacityAuthority
     ) {
+        return materialize(
+                document, customs, port, absentCapability(), null, capacityAuthority);
+    }
+
+    private static Materializer.MaterializationOutcome materialize(
+            String document,
+            Map<String, DesignValue> customs,
+            AssetResolutionPort port,
+            DefinitionEngine.CapabilityProvider capability
+    ) {
+        return materialize(
+                document,
+                customs,
+                port,
+                capability,
+                null,
+                TemplateModule.designInputExpressionCapacityAuthority());
+    }
+
+    private static Materializer.MaterializationOutcome materialize(
+            String document,
+            Map<String, DesignValue> customs,
+            AssetResolutionPort port,
+            DefinitionEngine.CapabilityProvider capability,
+            RenderingPipelineCapacityGuard.RequestTracker requestCapacity
+    ) {
+        return materialize(
+                document,
+                customs,
+                port,
+                capability,
+                requestCapacity,
+                TemplateModule.designInputExpressionCapacityAuthority());
+    }
+
+    private static Materializer.MaterializationOutcome materialize(
+            String document,
+            Map<String, DesignValue> customs,
+            AssetResolutionPort port,
+            DefinitionEngine.CapabilityProvider capability,
+            RenderingPipelineCapacityGuard.RequestTracker requestCapacity,
+            DesignInputExpressionCapacityAuthority capacityAuthority
+    ) {
         var snapshot = snapshot(ROOT_ID, canonical(document));
         var closure = new ClosureSnapshot(
                 new cn.hbads.renderweave.template.api.TemplateClosureAuthority.OwnerScope("owner-a"),
@@ -472,17 +1441,101 @@ class MaterializerTest {
                 1,
                 List.of(snapshot),
                 List.of());
-        return Materializer.materialize(
+        return admitThenMaterialize(
                 closure,
                 TemplateModule.designSemanticAuthority(),
                 DESIGNS,
                 capacityAuthority,
                 port,
-                absentCapability(),
+                capability,
                 admitted(customs),
+                requestCapacity);
+    }
+
+    private static Materializer.MaterializationOutcome admitThenMaterialize(
+            ClosureSnapshot closure,
+            AssetResolutionPort port,
+            DefinitionEngine.CapabilityProvider capability,
+            AdmittedRenderInput input
+    ) {
+        return admitThenMaterialize(
+                closure,
+                TemplateModule.designSemanticAuthority(),
+                DESIGNS,
+                TemplateModule.designInputExpressionCapacityAuthority(),
+                port,
+                capability,
+                input,
+                null);
+    }
+
+    private static Materializer.MaterializationOutcome admitThenMaterialize(
+            ClosureSnapshot closure,
+            DesignSemanticAuthority semanticAuthority,
+            DesignDslAuthority designAuthority,
+            DesignInputExpressionCapacityAuthority capacityAuthority,
+            AssetResolutionPort port,
+            DefinitionEngine.CapabilityProvider capability,
+            AdmittedRenderInput input
+    ) {
+        return admitThenMaterialize(
+                closure,
+                semanticAuthority,
+                designAuthority,
+                capacityAuthority,
+                port,
+                capability,
+                input,
+                null);
+    }
+
+    private static Materializer.MaterializationOutcome admitThenMaterialize(
+            ClosureSnapshot closure,
+            DesignSemanticAuthority semanticAuthority,
+            DesignDslAuthority designAuthority,
+            DesignInputExpressionCapacityAuthority capacityAuthority,
+            AssetResolutionPort port,
+            DefinitionEngine.CapabilityProvider capability,
+            AdmittedRenderInput input,
+            RenderingPipelineCapacityGuard.RequestTracker requestCapacity
+    ) {
+        var admission = AssetAdmission.admit(
+                closure,
+                semanticAuthority,
+                port,
+                input,
+                cn.hbads.renderweave.rendering.api.Evaluator
+                        .ExternalAssetReadAuthorization.GRANTED);
+        if (admission instanceof AssetAdmission.Rejected rejected) {
+            return new Materializer.MaterializationFailed(rejected.stage(), rejected.problem());
+        }
+        if (requestCapacity == null) {
+            return Materializer.materialize(
+                    (AssetAdmission.Admitted) admission,
+                    closure,
+                    semanticAuthority,
+                    designAuthority,
+                    capacityAuthority,
+                    port,
+                    capability,
+                    input,
+                    new RenderRequestId("00000000-0000-4000-8000-000000000001"),
+                    new AssetResolutionPort.RendererAudience("test-audience"),
+                    1_000L);
+        }
+        return Materializer.materialize(
+                (AssetAdmission.Admitted) admission,
+                closure,
+                semanticAuthority,
+                designAuthority,
+                capacityAuthority,
+                port,
+                capability,
+                input,
                 new RenderRequestId("00000000-0000-4000-8000-000000000001"),
                 new AssetResolutionPort.RendererAudience("test-audience"),
-                1_000L);
+                1_000L,
+                requestCapacity);
     }
 
     private static final class RecordingCapacityAuthority
@@ -522,6 +1575,91 @@ class MaterializerTest {
         return (capability, operation, callPosition) -> new ExpressionEvaluator.EvalError(
                 new ExpressionEvaluator.RuntimeFailure(
                         ExpressionEvaluator.RuntimeFailureKind.TYPE_FAULT, null));
+    }
+
+    static final class CapturingCapability implements DefinitionEngine.CapabilityProvider {
+        private final List<byte[]> positions = new ArrayList<>();
+
+        @Override
+        public EvalOutcome supply(String capability, String operation, byte[] callPosition) {
+            positions.add(callPosition.clone());
+            return new EvalValue(new DesignValue.Decimal(new java.math.BigDecimal("5")));
+        }
+
+        String position(int index) {
+            return new String(positions.get(index), StandardCharsets.UTF_8);
+        }
+    }
+
+    private record ResolvedContent(
+            String contentVersion,
+            String sha256,
+            long byteLength,
+            int logicalWidthPx,
+            int logicalHeightPx,
+            AssetKind kind
+    ) {
+        private ResolvedContent(String contentVersion, String sha256, long byteLength) {
+            this(contentVersion, sha256, byteLength, 10, 10, AssetKind.IMAGE);
+        }
+
+        private ResolvedContent(
+                String contentVersion,
+                String sha256,
+                long byteLength,
+                int logicalWidthPx,
+                int logicalHeightPx
+        ) {
+            this(contentVersion, sha256, byteLength,
+                    logicalWidthPx, logicalHeightPx, AssetKind.IMAGE);
+        }
+
+        private static ResolvedContent font(
+                String contentVersion,
+                String sha256,
+                long byteLength
+        ) {
+            return new ResolvedContent(
+                    contentVersion, sha256, byteLength, 0, 0, AssetKind.FONT);
+        }
+    }
+
+    static final class SequencedContentPort implements AssetResolutionPort {
+        private final List<ResolvedContent> contents;
+        int resolves;
+
+        SequencedContentPort(List<ResolvedContent> contents) {
+            this.contents = List.copyOf(contents);
+        }
+
+        @Override
+        public PrecheckOutcome precheckAdmission(
+                OwnerScope ownerScope, AssetId assetId, AssetKind expectedKind) {
+            return new PrecheckOutcome.PrecheckPassed();
+        }
+
+        @Override
+        public ResolveOutcome resolve(ResolveRequest request) {
+            var content = contents.get(resolves++);
+            assertEquals(content.kind(), request.expectedKind());
+            TechnicalDescriptor descriptor = switch (content.kind()) {
+                case IMAGE -> new cn.hbads.renderweave.asset.api.AssetAcceptanceAuthority.ImageDescriptor(
+                        content.logicalWidthPx(), content.logicalHeightPx(),
+                        cn.hbads.renderweave.asset.api.AssetAcceptanceAuthority.Orientation.IDENTITY,
+                        content.logicalWidthPx(), content.logicalHeightPx(), 1,
+                        cn.hbads.renderweave.asset.api.AssetAcceptanceAuthority.ColorEncoding.SRGB_8BIT);
+                case FONT -> new FontDescriptor(0, FontFlavor.TRUETYPE_GLYF, 1_000);
+            };
+            return new ResolveOutcome.Resolved(new ResolvedAssetFact(
+                    content.contentVersion(),
+                    content.sha256(),
+                    content.kind() == AssetKind.IMAGE ? "image/png" : "font/ttf",
+                    content.byteLength(),
+                    "renderweave-asset-acceptance/1.0",
+                    descriptor,
+                    "https://assets.internal/fetch/" + request.resourceId().value(),
+                    2_000L));
+        }
     }
 
     static final class ScriptedAssetPort implements AssetResolutionPort {

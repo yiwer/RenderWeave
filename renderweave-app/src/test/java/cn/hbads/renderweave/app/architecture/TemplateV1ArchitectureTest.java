@@ -269,6 +269,26 @@ class TemplateV1ArchitectureTest {
     }
 
     @Test
+    void templateAdaptersCannotReadAssetOwnedTables() throws Exception {
+        var root = repositoryRoot();
+        var sources = readProductionSources(root, List.of(APP));
+        var templateAdapters = sources.stream()
+                .filter(source -> source.packageName().startsWith(
+                        "cn.hbads.renderweave.app.template"))
+                .toList();
+
+        assertFalse(templateAdapters.isEmpty(), "Template app adapters must be inspected");
+        for (var source : templateAdapters) {
+            for (var assetOwnedTable : List.of("asset_audit_event", "asset_aggregate")) {
+                assertFalse(
+                        source.content().contains(assetOwnedTable),
+                        () -> source + " must not read Asset-owned table " + assetOwnedTable
+                );
+            }
+        }
+    }
+
+    @Test
     void guardsRejectSyntheticCycleSplitPackageAndNativeAdapter() {
         var cyclic = Map.of(
                 "renderweave-asset", Set.of("renderweave-template"),

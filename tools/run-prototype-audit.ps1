@@ -99,7 +99,7 @@ try {
     Push-Location $webRoot
     try {
         $env:NPM_CONFIG_USERCONFIG = Join-Path $webRoot '.npmrc'
-        & $npmCommand run test:e2e
+        & $npmCommand run test:e2e -- --workers=1
         if ($LASTEXITCODE -ne 0) {
             throw "Playwright E2E failed with exit code $LASTEXITCODE."
         }
