@@ -93,7 +93,7 @@ try {
         "-Drenderweave.renderingPipeline.command=$commandArtifact",
         'test'
     )
-    & mvn.exe @mavenArguments
+    & mvn @mavenArguments
     if ($LASTEXITCODE -ne 0) {
         throw "Rendering Pipeline Java executor failed with exit code $LASTEXITCODE."
     }
@@ -106,7 +106,7 @@ try {
     $env:RENDERWEAVE_RENDERING_PIPELINE_COMMAND = $commandArtifact
     $env:RENDERWEAVE_RENDERING_PIPELINE_RUST_REPORT = $rustReport
     $env:RENDERWEAVE_RENDERING_PIPELINE_IMAGE = $imageArtifact
-    & cargo.exe test `
+    & cargo test `
         '--manifest-path' 'renderer/Cargo.toml' `
         '-p' 'renderweave-renderer-daemon' `
         '--test' 'rendering_pipeline_execution_class' `
