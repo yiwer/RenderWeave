@@ -1,5 +1,26 @@
 # NOTES.md
 
+# 2026-08-29 Template-v1 T205 Design/Input/Expression execution-class preissuance（resolved / automated_verified）
+- T204 已以实现 `12a3f7e6`、治理 `fb44e827` 收口并释放 claim；现按 single-writer claim T205。冻结 ordinal 3
+  要求 exact target、`java-semantic-authority` 与 `typescript-independent-authoring-replayer` 两角色、195+195
+  assigned corpus digest、observation adapter 与 independent replay。
+- 本票只物化 class preissuance closure：绑定 immutable component v17（65/65 product proof）、候选语料、执行入口
+  与 gate/materializer/verifier 的 exact Git blobs；fresh Java/TypeScript 后由 Python stdlib 独立重建闭包。
+- formal registry 保持 58/58 且本 class 0/0；成功只可报告 `preissuanceReady=true`，同时保持
+  `recordIssuanceAllowed=false`、`executionClassExecutable=false`。claim 时 A0、J0 pending、J1 未批准；无产品
+  语义/app wiring/Profile/Renderer/provider/API Key/真实数据/生产/push/tag/PR，用户 dirty work/stash 不动。
+- implementation `3d2652cc` + hardening `bc027d4b`；target commit `7d004bdc`。exact target SHA-256
+  `0629760e9ec6232709ffe20943733232996a379d17303a12dd1596e8118e765c`（5823 bytes），Java/TypeScript
+  manifests SHA-256 `3b582c15...a645259` / `da4e806f...ca68e`；assigned corpus digest `d50b78e0...a4776`，
+  materializer 3/3 byte-identical。
+- class `.sdlc/evidence/20260829-214510-template-t205-design-input-expression-class/`：Java 195/195（A1）、
+  TypeScript 195/195 + 2692 checks（A2）、Python closure 2/2 roles + 195/195（A2）；post-target report
+  SHA-256 `9655593c...eb383` byte-identical。formal 58/58、本 class 0/0，preissuance true、issuance/executable
+  false。`template` `20260829-214555`、`fast` `20260829-214627` passed/A1，Template Java/Python 211/211。
+- claim 已释放；A3 absent、J0 pending、J1 未批准。无 app wiring，未重复 server/full；无 formal append/
+  中央 lifecycle/Profile/Renderer/provider/真实数据/生产/push/tag/PR，用户 dirty work/stash 未改。下一 frontier
+  为 195+195 formal issuance 与中央 lifecycle 更新，尚未登记或 claim。
+
 # 2026-08-29 Template-v1 T204 rotation degrees maximum capacity（resolved / automated_verified）
 - T203 已以实现 `c235ca09`、治理 `cc381b28` 收口并释放 claim；DAG 无其他 active claim。现按 single-writer
   claim cap-065 `geometry.rotationDegreesMax=360`，关联 `RW-T19-S7-113` 与 `RW-T19-S9-017/019`，目标

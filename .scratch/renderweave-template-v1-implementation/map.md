@@ -925,6 +925,14 @@ Label: wayfinder:map
 
 ## Current frontier
 
+- [T205 — 物化 Design/Input/Expression execution-class preissuance](issues/205-design-input-expression-execution-class-preissuance.md)
+  — **resolved / automated_verified / unclaimed**；implementation `bc027d4b` 与 target `7d004bdc` 已冻结
+  exact target + `java-semantic-authority` / `typescript-independent-authoring-replayer` manifests。target SHA-256
+  `0629760e...e765c`，assigned corpus digest `d50b78e0...a4776`，materializer 3/3 byte-identical；fresh Java/
+  TypeScript 195/195 + 195/195、2692 checks，Python closure 2/2 roles + 195/195。formal 仍 58/58、本 class
+  0/0，`preissuanceReady=true`、`recordIssuanceAllowed=false`、`executionClassExecutable=false`；`template`/
+  `fast` passed/A1，A3 absent、J0 pending、J1 未批准。claim 已释放；下一 frontier 为独立 195+195 formal
+  issuance 与中央 lifecycle 更新，尚未登记或 claim。
 - [T204 — 接线 rotation degrees maximum 产品容量](issues/204-wire-rotation-degrees-maximum-capacity.md)
   — **resolved / automated_verified / unclaimed**；实现 `12a3f7e6` 已把 cap-065
   `geometry.rotationDegreesMax=360` 接入公共 admission seam，同一 once-parsed canonical `rotationDeg` 按

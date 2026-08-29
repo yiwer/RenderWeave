@@ -6610,3 +6610,30 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
   `.sdlc/evidence/20260829-212731-fast/` passed/A1，Template Java/Python 211/211。A3 absent、J0 pending、J1 未批准；
   无 app wiring，未重复 server/full。claim 已释放；下一 frontier 为 exact Design/Input/Expression execution-class
   target、required executor manifests 与 independent preissuance replay，尚未登记或 claim。
+
+## 205. TV1-T205 执行卡
+
+- 状态：`resolved / automated_verified / unclaimed`；Blocked by T204（resolved）。
+- authority：冻结 `conformance-execution-classes-v1.json` 与 bootstrap ordinal 3 要求 exact Java + TypeScript
+  product target、`java-semantic-authority`、`typescript-independent-authoring-replayer`、assigned active corpus
+  digest、observation adapter 与 independent replay 后才可进入 record issuance。
+- seam/scope：从 exact implementation revision 物化 class target 和两个 executor manifests；绑定 immutable
+  component target v17、65/65 product proof、candidate Case/Oracle sources 与 195+195 assigned subset、正式
+  registry 58/58 零本 class records、执行入口、gate/materializer/verifier 的 Git blobs。Python stdlib verifier
+  独立重建闭包，不导入 Java/TypeScript semantic helper。
+- test-first/gates：先取得 missing target/manifests fail-closed RED；提交实现脚本后从该 revision 物化 immutable
+  target/manifests并要求 byte-identical replay；运行 fresh component Java/TypeScript、class preissuance、`template`
+  与 `fast`。无 app wiring/product-semantic delta，不默认重复 server/full。
+- boundary：本票不 append 195 formal records、不更新中央 executable lifecycle、不注册/认证 Profile、不调用
+  Renderer/provider/API Key/真实数据/生产/J1/A3/READY；`recordIssuanceAllowed=false`、
+  `executionClassExecutable=false`。不改用户 dirty work/stash，不 push/tag/PR；claim 时 A0、J0 pending。
+- 实现/证据：implementation `3d2652cc` + hardening `bc027d4b`；target commit `7d004bdc`。exact target
+  SHA-256 `0629760e9ec6232709ffe20943733232996a379d17303a12dd1596e8118e765c`（5823 bytes），Java/
+  TypeScript manifests SHA-256 分别为 `3b582c15...a645259` / `da4e806f...ca68e`，assigned corpus digest
+  `d50b78e0...a4776`，materializer 3/3 byte-identical。class evidence
+  `.sdlc/evidence/20260829-214510-template-t205-design-input-expression-class/`：Java 195/195（A1）、
+  TypeScript 195/195 + 2692 checks（A2）、Python closure 2/2 roles + 195/195（A2），post-target report
+  byte-identical；formal 58/58、本 class 0/0，preissuance true、issuance/executable false。`template`
+  `20260829-214555` 与 `fast` `20260829-214627` passed/A1，Template Java/Python 211/211。A3 absent、J0
+  pending、J1 未批准；无 app wiring，未重复 server/full。claim 已释放，下一 frontier 为 195+195 formal
+  issuance/中央 lifecycle，尚未登记或 claim。
