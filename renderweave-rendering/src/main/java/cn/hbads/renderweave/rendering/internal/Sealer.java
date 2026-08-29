@@ -45,6 +45,7 @@ final class Sealer {
 
     record SealedEvaluation(
             byte[] renderDocumentCanonicalUtf8,
+            byte[] diagnosticSidecarCanonicalUtf8,
             String renderDocumentDigest,
             String evaluationResultDigest
     ) {
@@ -66,7 +67,8 @@ final class Sealer {
     }
 
     private long occurrenceCounter;
-    private final List<String> occurrenceIdsInPreorder = new ArrayList<>();
+    private final List<DiagnosticSidecar.BoundOccurrence> occurrencesInPreorder =
+            new ArrayList<>();
     private final RenderNodeContractCatalog nodeContracts = RenderNodeContractCatalog.instance();
     private final RenderingPipelineCapacityGuard.RequestTracker requestCapacity;
     private final EvaluationStageControl stageControl;
@@ -140,6 +142,12 @@ final class Sealer {
             sealer.stageControl.checkpoint();
             var resourcesJson = sealer.sealResources(tree.resources());
             sealer.stageControl.checkpoint();
+            var sidecarCanonical = DiagnosticSidecar.seal(
+                    sealer.occurrencesInPreorder,
+                    tree.resources(),
+                    sealer.requestCapacity,
+                    sealer.stageControl);
+            sealer.stageControl.checkpoint();
             var envelope = new TreeMap<String, CanonicalJson.CanonicalValue>();
             envelope.put("canvas", canvasJson);
             envelope.put("dslVersion", CanonicalJson.stringValue(RENDER_DSL_VERSION));
@@ -153,7 +161,10 @@ final class Sealer {
             var resultDigest = sealer.evaluationResultDigest(
                     closure, admittedInput, tree, capabilityResultDigest);
             sealer.stageControl.checkpoint();
-            return new Sealed(new SealedEvaluation(canonical, documentDigest, resultDigest));
+            return new Sealed(new SealedEvaluation(
+                    canonical, sidecarCanonical, documentDigest, resultDigest));
+        } catch (DiagnosticSidecar.CapacityExceeded capacity) {
+            return new SealRejected(capacity.problem());
         } catch (RenderDocumentCanonicalWriter.CapacityExceeded capacity) {
             return new SealRejected(capacity.problem());
         } catch (SealCapacityExceeded capacity) {
@@ -228,11 +239,11 @@ final class Sealer {
             entry.put("assetId", CanonicalJson.string(resource.assetId()));
             entry.put("byteLength", CanonicalJson.decimal(
                     BigDecimal.valueOf(resource.byteLength())));
-            entry.put("consumerPropertyRef", CanonicalJson.string(resource.consumerPropertyRef()));
+            entry.put("consumerPropertyRef", resource.consumerPropertyRef().canonicalJson());
             entry.put("contentVersion", CanonicalJson.string(resource.contentVersion()));
             entry.put("kind", CanonicalJson.string(resource.kind().toLowerCase()));
             entry.put("mediaType", CanonicalJson.string(resource.mediaType()));
-            entry.put("occurrencePath", CanonicalJson.string(resource.occurrencePath()));
+            entry.put("occurrencePath", resource.occurrencePath().canonicalJson());
             entry.put("resourceId", CanonicalJson.string(resource.resourceId()));
             entry.put("sha256", CanonicalJson.string(resource.sha256()));
             entry.put("technicalDescriptor",
@@ -257,7 +268,7 @@ final class Sealer {
         }
         var expanded = nodeContracts.expandNodeDefaults("canvas", node.members());
         var members = new TreeMap<String, CanonicalJson.CanonicalValue>();
-        members.put("occurrenceId", CanonicalJson.stringValue(nextOccurrenceId()));
+        members.put("occurrenceId", CanonicalJson.stringValue(nextOccurrenceId(node)));
         members.put("kind", CanonicalJson.stringValue("canvas"));
         for (var entry : expanded.members().entrySet()) {
             stageControl.checkpoint();
@@ -294,7 +305,7 @@ final class Sealer {
         var expanded = expandNode(node, expandedParent);
         var members = new TreeMap<String, CanonicalJson.CanonicalValue>();
         members.put("kind", CanonicalJson.stringValue(node.kind()));
-        members.put("occurrenceId", CanonicalJson.stringValue(nextOccurrenceId()));
+        members.put("occurrenceId", CanonicalJson.stringValue(nextOccurrenceId(node)));
         for (var entry : expanded.members().entrySet()) {
             stageControl.checkpoint();
             if (AUTHORING_ONLY_MEMBERS.contains(entry.getKey())
@@ -326,7 +337,7 @@ final class Sealer {
         var expanded = expandNode(node, expandedParent);
         var members = new TreeMap<String, CanonicalJson.CanonicalValue>();
         members.put("kind", CanonicalJson.stringValue("compositionViewport"));
-        members.put("occurrenceId", CanonicalJson.stringValue(nextOccurrenceId()));
+        members.put("occurrenceId", CanonicalJson.stringValue(nextOccurrenceId(node)));
         for (var entry : expanded.members().entrySet()) {
             stageControl.checkpoint();
             if (AUTHORING_ONLY_MEMBERS.contains(entry.getKey())
@@ -340,7 +351,7 @@ final class Sealer {
             var source = node.children().get(0);
             var expandedSource = nodeContracts.expandNodeDefaults("canvas", source.members());
             var sourceMembers = new TreeMap<String, CanonicalJson.CanonicalValue>();
-            sourceMembers.put("occurrenceId", CanonicalJson.stringValue(nextOccurrenceId()));
+            sourceMembers.put("occurrenceId", CanonicalJson.stringValue(nextOccurrenceId(source)));
             for (var entry : expandedSource.members().entrySet()) {
                 stageControl.checkpoint();
                 if (AUTHORING_ONLY_MEMBERS.contains(entry.getKey())
@@ -529,7 +540,7 @@ final class Sealer {
         }
     }
 
-    private String nextOccurrenceId() {
+    private String nextOccurrenceId(Materializer.MaterializedNode node) {
         stageControl.checkpoint();
         if (occurrenceCounter < 0) {
             throw new IllegalStateException("RenderDocument occurrence ordinal overflow");
@@ -542,7 +553,8 @@ final class Sealer {
         }
         var id = "rwocc_" + String.format("%016x", occurrenceCounter);
         occurrenceCounter++;
-        occurrenceIdsInPreorder.add(id);
+        occurrencesInPreorder.add(new DiagnosticSidecar.BoundOccurrence(
+                id, node.occurrencePath(), node.sourceNodeId()));
         return id;
     }
 

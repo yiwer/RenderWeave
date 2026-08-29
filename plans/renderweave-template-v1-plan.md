@@ -1,5 +1,23 @@
 # RenderWeave Template v1 Implementation Plan
 
+## 185. TV1-T185 执行卡
+
+- 状态：`resolved / automated_verified`；single writer: Codex；blocked by T13/T21/T128/T154/T166/T184（均 resolved）。
+- authority：ADR-0044、`RW-T19-S7-104` 与 cap-024；`diagnostics.sidecarBytes` MAX_INCLUSIVE `8388608`，
+  `8388607/8388608/8388609`，REQUEST_SIDECAR / public MATERIALIZATION /
+  RENDER_DIAGNOSTIC_LIMIT_EXCEEDED / ZERO_DOCUMENT_OUTPUT。
+- seam：Rendering.internal 单一 OccurrencePath + canonical DiagnosticSidecar authority；Sealer 分配 opaque ordinal 时
+  绑定 path，resource locator 同聚合封存，逐 canonical UTF-8 chunk 在保留前经 request tracker reserve。公共
+  `Evaluator` Interface、RenderDocument/digest 与 app 均不携带 raw sidecar。
+- TDD：guard missing-enum compile RED → canonical writer/product exact-at/above behavioral RED → 最小 GREEN；覆盖
+  sibling/Repeat/TemplateUse/sourceCanvas/resource locator，随后 focused Rendering、受影响 reactor、render/fast。
+- 边界：不实现 LayoutTrace/公开投影/records/executor/Profile/provider/真实数据，不 push/tag/PR；claim 时 A0、J0。
+- Resolution：exact OccurrencePath 已覆盖 sibling/Repeat/TemplateUse/sourceCanvas，closed ConsumerPropertyRef 与 opaque
+  occurrence/resource locator 已封装为 request-local canonical sidecar；cap-024 exact-at/above 产品语义已接入 Sealer，
+  raw bytes 不进入 RenderDocument/digest/public outcome。受影响 reactor 519/519；`render`
+  `.sdlc/evidence/20260829-152404-render/` 与 `fast` `.sdlc/evidence/20260829-152454-fast/` 均 passed/A1。
+  T185-specific A2/A3 无，J0 pending、J1 未批准；无 API/OpenAPI/Web/Flyway/app/Profile/provider/push/tag/PR 变化。
+
 - 状态：`in_progress`；TV1-T01/T02/T03/T04/T05/T06/T07/T08/T09/T10/T10b/T11/T12a/T12b/T13/T14/T14b/T15/T16/T17/T18/T19/T20/T22=`automated_verified`
   （T09 另含人工 J1），TV1-T21=`automated_verified`（首个 Rendering 纵切——renderweave-rendering
   首个 artifact、TemplateClosureAuthority/Evaluator stage 1–8/seal、CapabilityState 加密落盘、

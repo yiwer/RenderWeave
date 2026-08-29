@@ -79,6 +79,10 @@ final class CapabilityCallPosition {
             throw new IllegalArgumentException("loop declaration is not active in this invocation");
         }
 
+        List<String> canonicalSegments() {
+            return segments.stream().map(PathSegment::canonical).toList();
+        }
+
         private List<PathSegment> appending(PathSegment segment) {
             var next = new ArrayList<PathSegment>(segments.size() + 1);
             next.addAll(segments);

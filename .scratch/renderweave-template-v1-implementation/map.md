@@ -1129,6 +1129,12 @@ Label: wayfinder:map
   EXACT `1` 已进入同一唯一 guard；稳定排序后的真实 Grid loop 按值消费每条 constraint，并在 span/deficit work
   前调用 guard。focused layout `8/8`、workspace all-target `97/97`、fmt/clippy、render 2/2 与 fast 3/3 全绿。
   T184-specific A2/A3 无、J0 pending、J1 未批准；无 API/OpenAPI/Web/Flyway/Profile/provider/push/tag/PR 变化。
+- [T185 — canonical diagnostic sidecar 与字节预算](issues/185-diagnostic-sidecar-canonical-bytes.md)
+  — **resolved / automated_verified**；blocked by T13/T21/T128/T154/T166/T184（均 resolved）。ADR-0044 exact
+  OccurrencePath、opaque occurrence/resource locator 与 request-local canonical sidecar 已物化；cap-024
+  `diagnostics.sidecarBytes=8388608` exact-at/above 已由唯一 production guard 原子执行。closed ConsumerPropertyRef
+  同步收口，受影响 reactor 519/519；
+  `render` 与 `fast` passed/A1。T185-specific A2/A3 无、J0 pending、J1 未批准；无 public/app/Profile/provider 变化。
 
 - 改写或重解释现有 Schema/Inference v1 已提交历史，或在 dirty main 上直接实施 Template。
 - Workspace、组织/成员/分享/协作、跨 ownerScope 复制、通用 connector、任意 SQL/HTTP/文件/脚本、插件节点或运行时代码注册。

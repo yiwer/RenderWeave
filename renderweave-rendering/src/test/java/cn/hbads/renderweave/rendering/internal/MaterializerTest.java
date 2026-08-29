@@ -29,6 +29,7 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class MaterializerTest {
@@ -122,13 +123,15 @@ class MaterializerTest {
         assertEquals("2", numberMember(instances.members(), "gapMm"));
         assertEquals("ABSOLUTE", placementType(instances));
         assertEquals(3, instances.children().size());
+        assertEquals(countNodes(tree.root()), tree.sidecar().size());
 
         var secondItem = instances.children().get(1);
         assertEquals("stack", secondItem.kind());
         assertEquals("ROW", textMember(secondItem.members(), "direction"));
         assertEquals("1", numberMember(secondItem.members(), "gapMm"));
         assertEquals("STACK", placementType(secondItem));
-        assertTrue(secondItem.occurrencePath().contains("[1]"));
+        assertTrue(secondItem.occurrencePath().canonicalJson().contains("\"inputIndex\":1"));
+        assertTrue(secondItem.occurrencePath().canonicalJson().contains("repeat-item"));
         assertEquals("STACK", placementType(secondItem.children().get(0)));
     }
 
@@ -142,8 +145,10 @@ class MaterializerTest {
         assertEquals(1, arrayMemberSize(instances.members(), "rows"));
         assertEquals(2, arrayMemberSize(instances.members(), "columns"));
         assertEquals(2, instances.children().size());
-        assertTrue(instances.children().get(0).occurrencePath().contains("[0]"));
-        assertTrue(instances.children().get(1).occurrencePath().contains("[2]"));
+        assertTrue(instances.children().get(0).occurrencePath().canonicalJson()
+                .contains("\"inputIndex\":0"));
+        assertTrue(instances.children().get(1).occurrencePath().canonicalJson()
+                .contains("\"inputIndex\":2"));
         assertGridCell(instances.children().get(0), 0, 0);
         assertGridCell(instances.children().get(1), 0, 1);
 
@@ -395,11 +400,12 @@ class MaterializerTest {
 
     @Test
     void templateUseExpandsCompositionViewport() {
+        var useId = "00000000-0000-4000-8000-0000000000b2";
         var childDocument = canvasWith(rect("00000000-0000-4000-8000-000000000041"));
         var rootDocument = canvasWith(
                 "{\"nodeId\":\"00000000-0000-4000-8000-000000000051\","
                         + "\"kind\":\"templateUse\",\"bindings\":[],"
-                        + "\"useId\":\"00000000-0000-4000-8000-0000000000b2\","
+                        + "\"useId\":\"" + useId + "\","
                         + "\"templateRef\":{\"templateId\":\"" + CHILD_ID + "\"},"
                         + "\"contextSelector\":{\"kind\":\"empty\"},\"fills\":[],"
                         + "\"visible\":false,\"opacity\":0.25,"
@@ -424,6 +430,13 @@ class MaterializerTest {
         assertEquals("compositionViewport", viewport.kind());
         assertEquals(1, viewport.children().size());
         assertEquals("canvas", viewport.children().get(0).kind());
+        var viewportPath = viewport.occurrencePath().canonicalJson();
+        var sourceCanvasPath = viewport.children().get(0).occurrencePath().canonicalJson();
+        assertTrue(viewportPath.contains("\"kind\":\"TEMPLATE_USE\""));
+        assertTrue(viewportPath.contains("\"useId\":\"" + useId + "\""));
+        assertTrue(viewportPath.contains("template-use-viewport"));
+        assertTrue(sourceCanvasPath.contains("\"kind\":\"TEMPLATE_USE\""));
+        assertTrue(sourceCanvasPath.contains("canvas-background"));
         assertEquals(false, assertInstanceOf(
                 cn.hbads.renderweave.template.api.DesignSemanticAuthority.Bool.class,
                 viewport.members().members().get("visible")).value());
@@ -539,6 +552,26 @@ class MaterializerTest {
         assertEquals(1, tree.resources().size());
         assertEquals("IMAGE", tree.resources().get(0).kind());
         assertTrue(scripted.resolves >= 1);
+    }
+
+    @Test
+    void siblingAssetOccurrencesUseDistinctFullPathsAndResourceIds() {
+        var firstNodeId = "00000000-0000-4000-8000-000000000061";
+        var secondNodeId = "00000000-0000-4000-8000-000000000062";
+        var document = canvasWith(
+                imageNode(firstNodeId) + "," + imageNode(secondNodeId));
+
+        var tree = materializeOk(document, Map.of(), new ScriptedAssetPort(true));
+
+        assertEquals(2, tree.resources().size());
+        var first = tree.resources().get(0);
+        var second = tree.resources().get(1);
+        assertNotEquals(first.resourceId(), second.resourceId());
+        assertTrue(first.occurrencePath().toString().contains(firstNodeId));
+        assertTrue(second.occurrencePath().toString().contains(secondNodeId));
+        assertTrue(first.occurrencePath().toString().contains("source-node"));
+        assertEquals("{\"rootPropertyId\":\"imageRef\",\"selectors\":[]}",
+                first.consumerPropertyRef().canonicalJson());
     }
 
     @Test
@@ -883,6 +916,11 @@ class MaterializerTest {
         assertEquals(2, exactTree.resources().size());
         assertEquals("FONT", exactTree.resources().get(0).kind());
         assertEquals("FONT", exactTree.resources().get(1).kind());
+        assertEquals(
+                "{\"rootPropertyId\":\"runs\",\"selectors\":["
+                        + "{\"index\":0,\"kind\":\"INDEX\"},"
+                        + "{\"kind\":\"MEMBER\",\"memberId\":\"fontRef\"}]}",
+                exactTree.resources().get(0).consumerPropertyRef().canonicalJson());
 
         var exceededCapacity = new RenderingPipelineCapacityGuard().newRequestTracker();
         assertTrue(exceededCapacity.reserve(

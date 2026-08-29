@@ -1,5 +1,18 @@
 # NOTES.md
 
+# 2026-08-29 Template-v1 T185 canonical diagnostic sidecar 与字节预算（resolved / automated_verified）
+
+- Rendering.internal exact OccurrencePath 已覆盖 sibling、Repeat item、TemplateUse viewport/sourceCanvas 与普通 source
+  node；closed ConsumerPropertyRef 精确保留 root/index/member，final static node 与 sidecar entry 一一对应，resourceId
+  由 canonical path/property/kind 唯一派生。
+- Sealer 已形成 occurrenceId→path/sourceNodeId 与 resourceId→occurrence/property 的 request-local canonical sidecar；
+  cap-024 `diagnostics.sidecarBytes=8388608` 在保留 UTF-8 前原子 reserve，exact-at 成功、above 以冻结 MATERIALIZATION
+  problem 零文档终止。raw sidecar 不进入 RenderDocument/digest/public outcome/app/log/persistence。
+- TDD RED 覆盖 missing guard、typed ConsumerPropertyRef、sibling collision、TemplateUse path 与 sidecar accessor；
+  受影响 reactor 519/519。`render` `.sdlc/evidence/20260829-152404-render/` 与 `fast`
+  `.sdlc/evidence/20260829-152454-fast/` 均 passed/A1；T185-specific A2/A3 无，J0 pending、J1 未批准。
+- 无 API/OpenAPI/Web/Flyway/app/Profile/provider/API Key/真实数据/费用/push/tag/PR 变化；按影响面未重复 server/full。
+
 ## 当前目标与进度
 - 2026-08-28 **Template v1 implementation TV1-T124 已由 Codex `/root` single-writer 完成，状态
   `resolved/automated_verified`**：PostgreSQL transaction-scoped advisory lock seam 已让 Template current shared

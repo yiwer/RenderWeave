@@ -378,6 +378,27 @@ class RenderingPipelineCapacityGuardTest {
     }
 
     @Test
+    void diagnosticSidecarBytesBoundaryUsesTheFrozenProductionGuardContract() {
+        var guard = new RenderingPipelineCapacityGuard();
+
+        assertTrue(guard.admit(
+                RenderingPipelineCapacityGuard.Limit.DIAGNOSTICS_SIDECAR_BYTES,
+                8_388_607).isEmpty());
+        assertTrue(guard.admit(
+                RenderingPipelineCapacityGuard.Limit.DIAGNOSTICS_SIDECAR_BYTES,
+                8_388_608).isEmpty());
+
+        var problem = guard.admit(
+                        RenderingPipelineCapacityGuard.Limit.DIAGNOSTICS_SIDECAR_BYTES,
+                        8_388_609)
+                .orElseThrow();
+        assertEquals(EvaluationStage.MATERIALIZATION, problem.stage());
+        assertEquals(ProblemCode.RENDER_DIAGNOSTIC_LIMIT_EXCEEDED, problem.code());
+        assertEquals("diagnostics.sidecarBytes",
+                problem.limitId().orElseThrow().value());
+    }
+
+    @Test
     void authoredAssetOccurrencesBoundaryUsesTheFrozenProductionGuardContract() {
         var guard = new RenderingPipelineCapacityGuard();
 

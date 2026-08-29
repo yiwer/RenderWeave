@@ -271,6 +271,59 @@ class SealerTest {
     }
 
     @Test
+    void sealMaterializesCanonicalRequestSidecarWithoutLeakingItIntoRenderDocument() {
+        var sealed = assertInstanceOf(Sealer.Sealed.class, Sealer.seal(
+                closure(), admitted(), oneImageResourceTree(),
+                "sha256:" + "c".repeat(64)));
+
+        var sidecar = new String(
+                sealed.evaluation().diagnosticSidecarCanonicalUtf8(), StandardCharsets.UTF_8);
+        var document = new String(
+                sealed.evaluation().renderDocumentCanonicalUtf8(), StandardCharsets.UTF_8);
+
+        assertTrue(sidecar.contains("\"sidecarVersion\":"
+                + "\"renderweave-diagnostic-sidecar/1.0\""));
+        assertTrue(sidecar.contains("rwocc_0000000000000000"));
+        assertTrue(sidecar.contains("rwocc_0000000000000001"));
+        assertTrue(sidecar.contains("canvas-background"));
+        assertTrue(sidecar.contains("source-node"));
+        assertTrue(sidecar.contains("\"consumerPropertyRef\":"
+                + "{\"rootPropertyId\":\"imageRef\",\"selectors\":[]}"));
+        assertTrue(!document.contains("sidecarVersion"));
+        assertTrue(!document.contains("renderweave-occurrence-path/1.0"));
+        assertTrue(!document.contains("source-node"));
+    }
+
+    @Test
+    void canonicalSidecarWriterAdmitsAtAndRejectsAboveTheInclusiveByteBudget() {
+        var baseline = assertInstanceOf(Sealer.Sealed.class, Sealer.seal(
+                closure(), admitted(), oneChildTree(), "sha256:" + "c".repeat(64)));
+        var expected = baseline.evaluation().diagnosticSidecarCanonicalUtf8();
+
+        var atCapacity = new RenderingPipelineCapacityGuard().newRequestTracker();
+        assertTrue(atCapacity.reserve(
+                RenderingPipelineCapacityGuard.Limit.DIAGNOSTICS_SIDECAR_BYTES,
+                8_388_608L - expected.length).isEmpty());
+        var at = assertInstanceOf(Sealer.Sealed.class, Sealer.seal(
+                closure(), admitted(), oneChildTree(), "sha256:" + "c".repeat(64),
+                atCapacity));
+        assertArrayEquals(expected, at.evaluation().diagnosticSidecarCanonicalUtf8());
+
+        var aboveCapacity = new RenderingPipelineCapacityGuard().newRequestTracker();
+        assertTrue(aboveCapacity.reserve(
+                RenderingPipelineCapacityGuard.Limit.DIAGNOSTICS_SIDECAR_BYTES,
+                8_388_608L - expected.length + 1).isEmpty());
+        var rejected = assertInstanceOf(Sealer.SealRejected.class, Sealer.seal(
+                closure(), admitted(), oneChildTree(), "sha256:" + "c".repeat(64),
+                aboveCapacity));
+        assertEquals(EvaluationStage.MATERIALIZATION, rejected.problem().stage());
+        assertEquals(ProblemCode.RENDER_DIAGNOSTIC_LIMIT_EXCEEDED,
+                rejected.problem().code());
+        assertEquals("diagnostics.sidecarBytes",
+                rejected.problem().limitId().orElseThrow().value());
+    }
+
+    @Test
     void staticNodeCounterAdmitsTheRootAtAndRejectsItAboveTheInclusiveBudget() {
         var atCapacity = new RenderingPipelineCapacityGuard().newRequestTracker();
         assertTrue(atCapacity.reserve(
@@ -531,6 +584,29 @@ class SealerTest {
         return new Materializer.MaterializedTree(root, List.of(), List.of());
     }
 
+    private static Materializer.MaterializedTree oneImageResourceTree() {
+        var resourceId = "rwres_" + "a".repeat(64);
+        var image = new Materializer.MaterializedNode(
+                "image",
+                new ObjectNode(Map.of(
+                        "kind", new Text("image"),
+                        "placement", absoluteFixedPlacement("10", "10"),
+                        "imageRef", new ObjectNode(Map.of(
+                                "resourceId", new Text(resourceId))))),
+                List.of(),
+                "/path");
+        var root = new Materializer.MaterializedNode(
+                "canvas",
+                new ObjectNode(Map.of(
+                        "kind", new Text("canvas"),
+                        "widthMm", new NumberToken("210"),
+                        "heightMm", new NumberToken("297"))),
+                List.of(image),
+                "");
+        return new Materializer.MaterializedTree(
+                root, List.of(entry(resourceId, "asset-a")), List.of());
+    }
+
     private static Materializer.MaterializedTree viewportTree() {
         var sourceCanvas = new Materializer.MaterializedNode(
                 "canvas",
@@ -702,8 +778,10 @@ class SealerTest {
                 "renderweave-asset-acceptance/1.0",
                 assetId,
                 "content-version-1",
-                occurrencePath,
-                "fontRef",
+                OccurrencePath.testing(occurrencePath, "text"),
+                ConsumerPropertyRef.of("runs", List.of(
+                        new ConsumerPropertyRef.IndexSelector(0),
+                        new ConsumerPropertyRef.MemberSelector("fontRef"))),
                 new cn.hbads.renderweave.asset.api.AssetAcceptanceAuthority.FontDescriptor(
                         0,
                         cn.hbads.renderweave.asset.api.AssetAcceptanceAuthority.FontFlavor

@@ -85,6 +85,11 @@ final class RenderingPipelineCapacityGuard {
                 25_000,
                 ProblemCode.RENDER_DIAGNOSTIC_LIMIT_EXCEEDED,
                 EvaluationStage.MATERIALIZATION),
+        DIAGNOSTICS_SIDECAR_BYTES(
+                "diagnostics.sidecarBytes",
+                8_388_608,
+                ProblemCode.RENDER_DIAGNOSTIC_LIMIT_EXCEEDED,
+                EvaluationStage.MATERIALIZATION),
         ASSETS_AND_FETCH_AUTHORED_ASSET_OCCURRENCES(
                 "assetsAndFetch.authoredAssetOccurrences",
                 4_096,

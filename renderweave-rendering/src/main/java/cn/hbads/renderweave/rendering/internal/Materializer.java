@@ -23,7 +23,6 @@ import cn.hbads.renderweave.template.api.DesignSemanticAuthority.Text;
 import cn.hbads.renderweave.template.api.TemplateClosureAuthority.ClosureSnapshot;
 import cn.hbads.renderweave.template.api.TemplateClosureAuthority.TemplateSnapshot;
 
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -57,8 +56,18 @@ final class Materializer {
             String kind,
             ObjectNode members,
             List<MaterializedNode> children,
-            String occurrencePath
+            OccurrencePath occurrencePath,
+            String sourceNodeId
     ) {
+        MaterializedNode(
+                String kind,
+                ObjectNode members,
+                List<MaterializedNode> children,
+                String testPath
+        ) {
+            this(kind, members, children,
+                    OccurrencePath.testing(testPath, kind), sourceNodeIdOf(members));
+        }
     }
 
     private record PackingShape(
@@ -88,13 +97,34 @@ final class Materializer {
             String acceptanceProfileId,
             String assetId,
             String contentVersion,
-            String occurrencePath,
-            String consumerPropertyRef,
+            OccurrencePath occurrencePath,
+            ConsumerPropertyRef consumerPropertyRef,
             cn.hbads.renderweave.asset.api.AssetAcceptanceAuthority.TechnicalDescriptor technicalDescriptor
     ) {
+        ResourceEntry(
+                String resourceId,
+                String kind,
+                String fetchUrl,
+                long leaseExpiresAtEpochSecond,
+                String sha256,
+                String mediaType,
+                long byteLength,
+                String acceptanceProfileId,
+                String assetId,
+                String contentVersion,
+                String testPath,
+                String consumerPropertyRef,
+                cn.hbads.renderweave.asset.api.AssetAcceptanceAuthority.TechnicalDescriptor technicalDescriptor
+        ) {
+            this(resourceId, kind, fetchUrl, leaseExpiresAtEpochSecond, sha256, mediaType,
+                    byteLength, acceptanceProfileId, assetId, contentVersion,
+                    OccurrencePath.testing(testPath, "image"),
+                    ConsumerPropertyRef.root(consumerPropertyRef),
+                    technicalDescriptor);
+        }
     }
 
-    record SidecarEntry(String occurrencePath, String sourceNodeId) {
+    record SidecarEntry(OccurrencePath occurrencePath, String sourceNodeId) {
     }
 
     sealed interface MaterializationOutcome permits Materialized, MaterializationFailed,
@@ -308,11 +338,14 @@ final class Materializer {
                 0);
         var children = new ArrayList<MaterializedNode>();
         var expandFailure = expandNode(
-                designRoot, rootSnapshot, rootScope, "", children);
+                designRoot, rootSnapshot, rootScope, children);
         if (expandFailure != null) {
             return expandFailure;
         }
         if (children.size() != 1) {
+            return failed(EvaluationStage.MATERIALIZATION, ProblemCode.RENDER_INTERNAL_ERROR, null);
+        }
+        if (sidecar.size() != nodes) {
             return failed(EvaluationStage.MATERIALIZATION, ProblemCode.RENDER_INTERNAL_ERROR, null);
         }
         stageControl.checkpoint();
@@ -328,7 +361,6 @@ final class Materializer {
             ObjectNode node,
             TemplateSnapshot snapshot,
             InvocationScope scope,
-            String path,
             List<MaterializedNode> output
     ) {
         stageControl.checkpoint();
@@ -349,18 +381,22 @@ final class Materializer {
         }
         return switch (kind) {
             case "conditional" -> expandConditional(
-                    evaluatedNode, snapshot, scope, path, output);
-            case "repeat" -> expandRepeat(evaluatedNode, snapshot, scope, path, output);
+                    evaluatedNode, snapshot, scope,
+                    occurrencePath(node, kind, scope), output);
+            case "repeat" -> expandRepeat(
+                    evaluatedNode, snapshot, scope,
+                    occurrencePath(node, kind, scope), output);
             case "templateUse" -> expandTemplateUse(
-                    evaluatedNode, snapshot, scope, path, output);
+                    evaluatedNode, snapshot, scope, output);
             default -> materializeNode(
-                    evaluatedNode, snapshot, scope, path, output, kind);
+                    evaluatedNode, snapshot, scope,
+                    occurrencePath(node, kind, scope), output, kind);
         };
     }
 
     private MaterializationOutcome expandConditional(
             ObjectNode node, TemplateSnapshot snapshot, InvocationScope scope,
-            String path, List<MaterializedNode> output) {
+            OccurrencePath path, List<MaterializedNode> output) {
         var conditionWire = node.members().get("condition");
         if (conditionWire == null) {
             return failed(EvaluationStage.MATERIALIZATION, ProblemCode.RENDER_INTERNAL_ERROR, null);
@@ -392,7 +428,7 @@ final class Materializer {
 
     private MaterializationOutcome expandRepeat(
             ObjectNode node, TemplateSnapshot snapshot, InvocationScope scope,
-            String path, List<MaterializedNode> output) {
+            OccurrencePath path, List<MaterializedNode> output) {
         var itemsWire = node.members().get("items");
         var loopId = textMember(node, "loopId");
         if (itemsWire == null || loopId == null) {
@@ -449,10 +485,11 @@ final class Materializer {
             }
             var itemScope = scope.withLoopFrame(
                     loopId, new DefinitionEngine.LoopFrame(toTypedValue(item), index));
-            var itemPath = path + "/repeat(" + loopId + ")[" + index + "]";
+            var itemPath = OccurrencePath.synthetic(
+                    itemScope.capabilityPath(), OccurrencePath.Role.REPEAT_ITEM);
             var expandedChildren = new ArrayList<MaterializedNode>();
             var failure = expandChildList(
-                    node, snapshot, itemScope, itemPath, expandedChildren);
+                    node, snapshot, itemScope, expandedChildren);
             if (failure != null) {
                 return failure;
             }
@@ -477,7 +514,11 @@ final class Materializer {
                     null,
                     null);
             itemNodes.add(new MaterializedNode(
-                    itemShape.kind(), itemMembers, packedChildren, itemPath));
+                    itemShape.kind(), itemMembers, packedChildren, itemPath, null));
+            var sidecarFailure = recordSidecar(itemPath, (String) null);
+            if (sidecarFailure != null) {
+                return sidecarFailure;
+            }
             index++;
         }
         if (itemNodes.isEmpty()) {
@@ -499,7 +540,8 @@ final class Materializer {
                 null,
                 node);
         output.add(new MaterializedNode(
-                instanceShape.kind(), instanceMembers, placedItems, path));
+                instanceShape.kind(), instanceMembers, placedItems, path,
+                sourceNodeIdOf(node)));
         return recordSidecar(path, node);
     }
 
@@ -519,7 +561,8 @@ final class Materializer {
             members.put("placement", convertedPackingPlacement(
                     placement, shape, index));
             lowered.add(new MaterializedNode(
-                    child.kind(), new ObjectNode(members), child.children(), child.occurrencePath()));
+                    child.kind(), new ObjectNode(members), child.children(),
+                    child.occurrencePath(), child.sourceNodeId()));
         }
         return List.copyOf(lowered);
     }
@@ -534,7 +577,8 @@ final class Materializer {
             var members = new LinkedHashMap<>(child.members().members());
             members.put("placement", generatedPackingPlacement(shape, index));
             placed.add(new MaterializedNode(
-                    child.kind(), new ObjectNode(members), child.children(), child.occurrencePath()));
+                    child.kind(), new ObjectNode(members), child.children(),
+                    child.occurrencePath(), child.sourceNodeId()));
         }
         return List.copyOf(placed);
     }
@@ -663,18 +707,19 @@ final class Materializer {
     /** conditional/repeat 生成的普通 frame 容器：展开 children，无 authored 外观成员。 */
     private MaterializationOutcome expandFrame(
             ObjectNode node, TemplateSnapshot snapshot, InvocationScope scope,
-            String path, List<MaterializedNode> output) {
+            OccurrencePath path, List<MaterializedNode> output) {
         var capacityFailure = reserveMaterializedNode();
         if (capacityFailure != null) {
             return capacityFailure;
         }
         var children = new ArrayList<MaterializedNode>();
-        var failure = expandChildList(node, snapshot, scope, path, children);
+        var failure = expandChildList(node, snapshot, scope, children);
         if (failure != null) {
             return failure;
         }
         output.add(new MaterializedNode(
-                "frame", loweredStructuralMembers("frame", node), children, path));
+                "frame", loweredStructuralMembers("frame", node), children, path,
+                sourceNodeIdOf(node)));
         return recordSidecar(path, node);
     }
 
@@ -694,7 +739,6 @@ final class Materializer {
             ObjectNode node,
             TemplateSnapshot snapshot,
             InvocationScope scope,
-            String path,
             List<MaterializedNode> children
     ) {
         if (node.members().get("children") instanceof ArrayNode childArray) {
@@ -704,7 +748,7 @@ final class Materializer {
                     return failed(EvaluationStage.MATERIALIZATION,
                             ProblemCode.RENDER_INTERNAL_ERROR, null);
                 }
-                var failure = expandNode(childObject, snapshot, scope, path, children);
+                var failure = expandNode(childObject, snapshot, scope, children);
                 if (failure != null) {
                     return failure;
                 }
@@ -715,7 +759,7 @@ final class Materializer {
 
     private MaterializationOutcome expandTemplateUse(
             ObjectNode node, TemplateSnapshot snapshot, InvocationScope scope,
-            String path, List<MaterializedNode> output) {
+            List<MaterializedNode> output) {
         var templateRef = node.members().get("templateRef");
         if (!(templateRef instanceof ObjectNode refObject)
                 || !(refObject.members().get("templateId") instanceof Text targetId)
@@ -750,7 +794,7 @@ final class Materializer {
                         && domainObject.members().get("loopId") instanceof Text loopId) {
                     var frame = scope.loopFrames().frames().get(loopId.value());
                     if (frame == null) {
-                        return contextFailure(node, path);
+                        return contextFailure(node);
                     }
                     root = frame.item();
                 }
@@ -758,7 +802,7 @@ final class Materializer {
                         ? DefinitionEngine.selectSubview(root, "")
                         : DefinitionEngine.selectReferenceSubview(root, pointer);
                 if (selected == null) {
-                    var failure = contextFailure(node, path);
+                    var failure = contextFailure(node);
                     if (failure != null) {
                         return failure;
                     }
@@ -809,11 +853,14 @@ final class Materializer {
                         useId.value(), childSnapshot.templateId().value(), childSnapshot.revision()),
                 childInvocationDepth,
                 scope.repeatNestingDepth());
+        var viewportPath = OccurrencePath.sourceNode(
+                childScope.capabilityPath(),
+                sourceNodeIdOf(node),
+                OccurrencePath.Role.TEMPLATE_USE_VIEWPORT);
         var childRoot = childObject(childDocument, "designRoot");
         if (childRoot == null) {
             return failed(EvaluationStage.MATERIALIZATION, ProblemCode.RENDER_INTERNAL_ERROR, null);
         }
-        var usePath = path + "/templateUse(" + targetId.value() + ")";
         var capacityFailure = reserveCompositionViewport();
         if (capacityFailure != null) {
             return capacityFailure;
@@ -823,7 +870,7 @@ final class Materializer {
             return capacityFailure;
         }
         var viewportChildren = new ArrayList<MaterializedNode>();
-        var failure = expandNode(childRoot, childSnapshot, childScope, usePath, viewportChildren);
+        var failure = expandNode(childRoot, childSnapshot, childScope, viewportChildren);
         if (failure != null) {
             return failure;
         }
@@ -836,11 +883,12 @@ final class Materializer {
             }
         }
         output.add(new MaterializedNode(
-                "compositionViewport", new ObjectNode(viewportMembers), viewportChildren, usePath));
-        return recordSidecar(usePath, node);
+                "compositionViewport", new ObjectNode(viewportMembers), viewportChildren,
+                viewportPath, sourceNodeIdOf(node)));
+        return recordSidecar(viewportPath, node);
     }
 
-    private MaterializationOutcome contextFailure(ObjectNode node, String path) {
+    private MaterializationOutcome contextFailure(ObjectNode node) {
         var selector = node.members().get("contextSelector");
         if (selector instanceof ObjectNode selectorObject
                 && "SKIP".equals(textMember(selectorObject, "contextAbsentPolicy"))) {
@@ -851,7 +899,7 @@ final class Materializer {
 
     private MaterializationOutcome materializeNode(
             ObjectNode node, TemplateSnapshot snapshot, InvocationScope scope,
-            String path, List<MaterializedNode> output, String kind) {
+            OccurrencePath path, List<MaterializedNode> output, String kind) {
         var capacityFailure = reserveMaterializedNode();
         if (capacityFailure != null) {
             return capacityFailure;
@@ -862,11 +910,12 @@ final class Materializer {
         }
         var finalMembers = ((ResolvedMembers) resolvedMembers).members();
         var children = new ArrayList<MaterializedNode>();
-        var childFailure = expandChildList(node, snapshot, scope, path, children);
+        var childFailure = expandChildList(node, snapshot, scope, children);
         if (childFailure != null) {
             return childFailure;
         }
-        output.add(new MaterializedNode(kind, finalMembers, children, path));
+        output.add(new MaterializedNode(
+                kind, finalMembers, children, path, sourceNodeIdOf(node)));
         return recordSidecar(path, node);
     }
 
@@ -1133,7 +1182,7 @@ final class Materializer {
     private record ResolvedMembers(ObjectNode members) implements AssetResolutionStep {
     }
 
-    private AssetResolutionStep resolveAssetsIn(ObjectNode members, String path) {
+    private AssetResolutionStep resolveAssetsIn(ObjectNode members, OccurrencePath path) {
         stageControl.checkpoint();
         var updated = new LinkedHashMap<String, DesignNodeValue>();
         for (var entry : members.members().entrySet()) {
@@ -1143,7 +1192,8 @@ final class Materializer {
                 updated.put(entry.getKey(), entry.getValue());
                 continue;
             }
-            var step = resolveValueAssets(entry.getKey(), entry.getValue(), path);
+            var step = resolveValueAssets(entry.getKey(), entry.getValue(), path,
+                    ConsumerPropertyCursor.root(entry.getKey()));
             if (step instanceof MaterializationFailed failure) {
                 return failure;
             }
@@ -1158,17 +1208,60 @@ final class Materializer {
     private record ResolvedValue(DesignNodeValue value) implements ValueStep {
     }
 
-    private ValueStep resolveValueAssets(String memberName, DesignNodeValue value, String path) {
+    /** Unbounded traversal cursor; it closes to the frozen at-most-two selector form at AssetRef. */
+    private record ConsumerPropertyCursor(
+            String rootPropertyId,
+            List<ConsumerPropertyRef.Selector> selectors
+    ) {
+        private ConsumerPropertyCursor {
+            Objects.requireNonNull(rootPropertyId, "rootPropertyId");
+            selectors = List.copyOf(selectors);
+        }
+
+        static ConsumerPropertyCursor root(String rootPropertyId) {
+            return new ConsumerPropertyCursor(rootPropertyId, List.of());
+        }
+
+        ConsumerPropertyCursor member(String memberId) {
+            return appending(new ConsumerPropertyRef.MemberSelector(memberId));
+        }
+
+        ConsumerPropertyCursor index(int index) {
+            return appending(new ConsumerPropertyRef.IndexSelector(index));
+        }
+
+        ConsumerPropertyRef close() {
+            return ConsumerPropertyRef.of(rootPropertyId, selectors);
+        }
+
+        private ConsumerPropertyCursor appending(ConsumerPropertyRef.Selector selector) {
+            var next = new ArrayList<ConsumerPropertyRef.Selector>(selectors.size() + 1);
+            next.addAll(selectors);
+            next.add(selector);
+            return new ConsumerPropertyCursor(rootPropertyId, next);
+        }
+    }
+
+    private ValueStep resolveValueAssets(
+            String memberName,
+            DesignNodeValue value,
+            OccurrencePath path,
+            ConsumerPropertyCursor consumerProperty
+    ) {
         stageControl.checkpoint();
         if (value instanceof ObjectNode object) {
             if (isAssetRefShape(object)
                     && ("imageRef".equals(memberName) || "fontRef".equals(memberName))) {
-                return resolveAtom(memberName, object, path);
+                return resolveAtom(memberName, consumerProperty.close(), object, path);
             }
             var updated = new LinkedHashMap<String, DesignNodeValue>();
             for (var entry : object.members().entrySet()) {
                 stageControl.checkpoint();
-                var step = resolveValueAssets(entry.getKey(), entry.getValue(), path);
+                var step = resolveValueAssets(
+                        entry.getKey(),
+                        entry.getValue(),
+                        path,
+                        consumerProperty.member(entry.getKey()));
                 if (step instanceof MaterializationFailed failure) {
                     return failure;
                 }
@@ -1178,9 +1271,13 @@ final class Materializer {
         }
         if (value instanceof ArrayNode array) {
             var updatedItems = new ArrayList<DesignNodeValue>(array.items().size());
-            for (var item : array.items()) {
+            for (var index = 0; index < array.items().size(); index++) {
                 stageControl.checkpoint();
-                var step = resolveValueAssets(memberName, item, path);
+                var step = resolveValueAssets(
+                        memberName,
+                        array.items().get(index),
+                        path,
+                        consumerProperty.index(index));
                 if (step instanceof MaterializationFailed failure) {
                     return failure;
                 }
@@ -1191,7 +1288,12 @@ final class Materializer {
         return new ResolvedValue(value);
     }
 
-    private ValueStep resolveAtom(String memberName, ObjectNode atom, String path) {
+    private ValueStep resolveAtom(
+            String memberName,
+            ConsumerPropertyRef consumerPropertyRef,
+            ObjectNode atom,
+            OccurrencePath path
+    ) {
         stageControl.checkpoint();
         var capacityFailure = capacityFailure(requestCapacity.reserve(
                 RenderingPipelineCapacityGuard.Limit
@@ -1206,10 +1308,9 @@ final class Materializer {
         }
         var assetId = ((Text) atom.members().get("assetId")).value();
         var kind = "imageRef".equals(memberName) ? AssetKind.IMAGE : AssetKind.FONT;
-        // 冻结公式：SHA-256(canonical OccurrencePath + ConsumerPropertyRef + expectedKind)。
-        // T21 边界：OccurrencePath 以物化路径字符串近似，完整语义随求值硬化票。
-        var canonicalIdentity = (path + "\0" + memberName + "\0" + kind.name())
-                .getBytes(StandardCharsets.UTF_8);
+        // 冻结公式：SHA-256(versioned canonical OccurrencePath + ConsumerPropertyRef
+        // + expectedKind)。OccurrencePath 是 T185 的单一 exact authority。
+        var canonicalIdentity = path.resourceIdentityBytes(consumerPropertyRef, kind);
         var resourceId = new AssetResolutionPort.ResourceId(
                 "rwres_" + RenderingDigests.sha256Hex(canonicalIdentity));
         var outcome = assets.resolve(new AssetResolutionPort.ResolveRequest(
@@ -1286,7 +1387,7 @@ final class Materializer {
                 assetId,
                 fact.contentVersion(),
                 path,
-                memberName,
+                consumerPropertyRef,
                 fact.technicalDescriptor());
         var manifestByteFailure = reserveResourceManifestBytes(Math.addExact(
                 resources.isEmpty() ? 0 : 1,
@@ -1428,15 +1529,38 @@ final class Materializer {
         return node.members().get(member) instanceof Text text ? text.value() : null;
     }
 
-    private MaterializationFailed recordSidecar(String path, ObjectNode node) {
+    private static OccurrencePath occurrencePath(
+            ObjectNode node,
+            String kind,
+            InvocationScope scope
+    ) {
+        var role = switch (kind) {
+            case "repeat" -> OccurrencePath.Role.REPEAT_CONTAINER;
+            case "conditional" -> OccurrencePath.Role.CONDITIONAL_FRAME;
+            case "templateUse" -> OccurrencePath.Role.TEMPLATE_USE_VIEWPORT;
+            case "canvas" -> OccurrencePath.Role.CANVAS_BACKGROUND;
+            default -> OccurrencePath.Role.SOURCE_NODE;
+        };
+        return OccurrencePath.sourceNode(
+                scope.capabilityPath(), sourceNodeIdOf(node), role);
+    }
+
+    private static String sourceNodeIdOf(ObjectNode node) {
+        return node.members().get("nodeId") instanceof Text nodeId
+                ? nodeId.value() : null;
+    }
+
+    private MaterializationFailed recordSidecar(OccurrencePath path, ObjectNode node) {
+        return recordSidecar(path, sourceNodeIdOf(node));
+    }
+
+    private MaterializationFailed recordSidecar(OccurrencePath path, String sourceNodeId) {
         stageControl.checkpoint();
         var capacityFailure = capacityFailure(requestCapacity.reserve(
                 RenderingPipelineCapacityGuard.Limit.DIAGNOSTICS_SIDECAR_ITEMS, 1));
         if (capacityFailure != null) {
             return capacityFailure;
         }
-        var sourceNodeId = node.members().get("nodeId") instanceof Text nodeId
-                ? nodeId.value() : null;
         sidecar.add(new SidecarEntry(path, sourceNodeId));
         return null;
     }
