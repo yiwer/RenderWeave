@@ -4659,3 +4659,29 @@
 - T182-specific A2/A3 无，J0 pending、J1 未批准，因此状态为 `automated_verified`。cap-053+ deferred；无
   HTTP/OpenAPI/Web/Flyway/Renderer wire/manifest/Profile registration/certification/provider/API Key/真实数据/费用/
   push/tag/PR，OpenAPI 保持当前 `0.16.0`。
+
+# 2026-08-29 Template-v1 T183 Renderer Stack water-fill round formula guard（resolved / automated_verified）
+
+- T182 已以 verified commit `b3e8fc10` 收口，worktree clean、相对 upstream ahead 173 且 DAG 无其他 active claim；
+  Renderer exact-output cap-053 是首个 unblocked residual，现按 single-writer claim T183。
+- cap-053 固定 `layoutFontAndRaster.stackWaterFillRoundsPerContainer` FORMULA_MAX `fillChildCount+1`，observed
+  `fillChildCount/fillChildCount+1/fillChildCount+2`、LAYOUT_PROFILE / public ENGINE / code-less
+  ALGORITHM_INVARIANT，关联 `RW-T19-S8-083`、`RW-T19-S9-015/018/019`。
+- T120 Rust production state machine 已 inline 限制 `0..=fillChildCount`，但 frozen fixture 要求的唯一
+  `renderweave-renderer-exact-output-capacity-guard/1.0` seam 尚未物化。T183 只深化既有 layout module，让 guard tracer
+  与真实 loop 共用 checked formula；不新建 crate/test override，不发明 public problem。
+- cap-054+ deferred；无 HTTP/OpenAPI/Web/Flyway/Renderer process wire/manifest/Profile/provider/API Key/真实数据/
+  费用/push/tag/PR，claim 时 A0、J0 pending、J1 未批准。
+- `renderweave-renderer-layout` 已物化唯一 `RendererExactOutputCapacityGuard` Interface，封闭 contract/limit/stage/
+  zero-boundary identity 与 code-less outcome；`fillChildCount+1` 使用 checked arithmetic，0-child 的 `0/1/2`
+  分别按 below/at/above 判定，公式 overflow fail closed。
+- production `stack_main_fill_allocations` 已删除 inline range authority，改为每轮 active-set/share/allocation work
+  前递增 observed round 并调用同一 guard；超公式继续映射既有 `STACK_MAIN_FILL` internal unsupported，零 partial
+  layout/output，不发明 public Render problem。
+- TDD compile RED 精确来自 guard Interface 缺失；GREEN 后 focused layout `7/7`，Rust workspace all-target tests、
+  fmt、clippy `-D warnings` 全绿。A1 render `.sdlc/evidence/20260829-142852-render/` 2/2、fast
+  `.sdlc/evidence/20260829-142948-fast/` 3/3，metadata 均 passed。
+- render gate 的 Python independent definite layout `288/288` cases、`868` checks 证明 T120 输出未漂移，但不冒充
+  T183 guard identity 专项 A2；T183-specific A2/A3 无，J0 pending、J1 未批准，因此状态为
+  `automated_verified`。cap-054+ deferred；Profile 仍 NOT_REGISTERED、Certification NOT_CERTIFIED、Raster ABSENT；
+  无 HTTP/OpenAPI/Web/Flyway/process wire/manifest/Profile/provider/API Key/真实数据/费用/push/tag/PR。

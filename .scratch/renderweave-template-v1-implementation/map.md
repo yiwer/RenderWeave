@@ -1118,6 +1118,12 @@ Label: wayfinder:map
   arithmetic、retry/load/cancel/downstream 均不续期。guard `44/44`、Evaluator `84/84`、AssetResolver `4/4`、
   app PostgreSQL slices `17/17`；asset/server/web/full metadata 全部 passed/A1，full `17/17` steps。T182-specific
   A2/A3 无、J0 pending、J1 未批准；cap-053+ deferred，无 HTTP/OpenAPI/Web/Flyway/Profile/provider/push/tag/PR 变化。
+- [T183 — Renderer Stack water-fill round formula guard](issues/183-stack-water-fill-round-formula-guard.md)
+  — **resolved / automated_verified**；blocked by T120/T122/T182（均 resolved）。Renderer exact-output cap-053 的
+  FORMULA_MAX `fillChildCount+1` 已从 Rust Stack inline loop 收口到唯一
+  `renderweave-renderer-exact-output-capacity-guard/1.0` seam；真实 loop 在每轮 work 前与 isolated tracer 共用
+  checked guard。focused layout `7/7`、workspace all-target/fmt/clippy、render 2/2 与 fast 3/3 全绿。T183-specific
+  A2/A3 无、J0 pending、J1 未批准；cap-054+ deferred，无 API/OpenAPI/Web/Flyway/Profile/provider/push/tag/PR 变化。
 
 - 改写或重解释现有 Schema/Inference v1 已提交历史，或在 dirty main 上直接实施 Template。
 - Workspace、组织/成员/分享/协作、跨 ownerScope 复制、通用 connector、任意 SQL/HTTP/文件/脚本、插件节点或运行时代码注册。

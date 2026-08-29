@@ -22,6 +22,10 @@
 //! prepared Text shaping, world transforms, paint, rasterization, and encoding, and it
 //! never exposes a partial layout on failure.
 
+mod capacity;
+
+pub use capacity::{RendererExactOutputCapacityGuard, RendererExactOutputCapacityInvariant};
+
 use renderweave_renderer_document::{
     AdmittedRenderDocument, AdmittedTechnicalDescriptor, RenderResourceKind,
 };
@@ -2299,7 +2303,13 @@ fn stack_main_fill_allocations(
     let mut frozen = vec![false; weighted_indices.len()];
     let mut has_frozen_minimum = false;
 
-    for _ in 0..=weighted_indices.len() {
+    let round_guard = RendererExactOutputCapacityGuard::new();
+    let mut observed_rounds = 0usize;
+    loop {
+        observed_rounds = observed_rounds.checked_add(1).ok_or_else(unsupported)?;
+        round_guard
+            .admit_stack_water_fill_rounds(weighted_indices.len(), observed_rounds)
+            .map_err(|_| unsupported())?;
         let unfrozen_positions: Vec<usize> = frozen
             .iter()
             .enumerate()
@@ -2397,8 +2407,6 @@ fn stack_main_fill_allocations(
             return Ok(allocations);
         }
     }
-
-    Err(unsupported())
 }
 
 fn stack_axis_size(
