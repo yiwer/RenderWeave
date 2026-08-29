@@ -389,14 +389,32 @@ def require_complete_poststate(
     ):
         raise SystemExit("formal registries are complete but acceptance manifest is not exact")
     spec_target = load_worktree_json(repo, SPEC_TARGET_PATH)
-    issuance = spec_target.get("registryBindings", {}).get("appendOnlyIssuance", {})
+    bindings = spec_target.get("registryBindings", {})
+    issuance = bindings.get("appendOnlyIssuance", {})
     predecessor = issuance.get("predecessorIssuance", {})
     if (
-        spec_target.get("implementationRevision") != SPEC_IMPLEMENTATION_REVISION
+        spec_target.get("status") != "ISSUED_APPEND_ONLY_EXACT_TARGET"
+        or bindings.get("formalStatus") != "ISSUED_APPEND_ONLY_PREFIX"
+        or bindings.get("formalCases", {}).get("expectedSha256")
+        != expected_target["poststate"]["formalCases"]["sha256"]
+        or bindings.get("formalCases", {}).get("observedSha256")
+        != expected_target["poststate"]["formalCases"]["sha256"]
+        or bindings.get("formalOracles", {}).get("expectedSha256")
+        != expected_target["poststate"]["formalOracles"]["sha256"]
+        or bindings.get("formalOracles", {}).get("observedSha256")
+        != expected_target["poststate"]["formalOracles"]["sha256"]
         or issuance.get("target") != relative_binding(target_binding)
+        or issuance.get("preservedCasePrefixSha256")
+        != expected_target["poststate"]["formalCases"]["preservedPrefixSha256"]
+        or issuance.get("preservedOraclePrefixSha256")
+        != expected_target["poststate"]["formalOracles"]["preservedPrefixSha256"]
         or issuance.get("appendedExecutionClass") != EXECUTION_CLASS
         or issuance.get("appendedCaseCount") != ASSIGNED_CASE_COUNT
         or issuance.get("appendedOracleCount") != ASSIGNED_ORACLE_COUNT
+        or issuance.get("assignedCorpusDigest")
+        != expected_target["assignedCorpus"]["assignedCorpusDigest"]
+        or predecessor.get("target")
+        != relative_binding(expected_target["prestate"]["previousCapacityIssuance"])
         or predecessor.get("appendedExecutionClass") != PREDECESSOR_CLASS
     ):
         raise SystemExit("formal registries are complete but SPEC target issuance chain is not exact")
