@@ -14,7 +14,6 @@ final class CapabilityBudget {
 
     private static final RenderingPipelineCapacityGuard CAPACITY_GUARD =
             new RenderingPipelineCapacityGuard();
-    private static final long MAX_POSITION_BYTES_TOTAL = 16_777_216;
     private static final long MAX_CAPABILITY_STATE_RECORD_BYTES = 1_048_576;
     private static final long MAX_RESULT_DIGEST_STREAMING_BYTES = 16_777_216;
     private static final long MAX_INITIALIZATION_ATTEMPTS = 3;
@@ -38,7 +37,8 @@ final class CapabilityBudget {
                         .CAPABILITY_RUNTIME_RANDOM_DEMANDS),
                 CAPACITY_GUARD.maximumInclusive(RenderingPipelineCapacityGuard.Limit
                         .CAPABILITY_RUNTIME_POSITION_CANONICAL_BYTES_PER_DEMAND),
-                MAX_POSITION_BYTES_TOTAL,
+                CAPACITY_GUARD.maximumInclusive(RenderingPipelineCapacityGuard.Limit
+                        .CAPABILITY_RUNTIME_POSITION_CANONICAL_BYTES_TOTAL),
                 MAX_CAPABILITY_STATE_RECORD_BYTES,
                 MAX_RESULT_DIGEST_STREAMING_BYTES,
                 MAX_INITIALIZATION_ATTEMPTS));
@@ -74,7 +74,9 @@ final class CapabilityBudget {
                 limit(limits, "positionCanonicalBytesPerDemand",
                         CAPACITY_GUARD.maximumInclusive(RenderingPipelineCapacityGuard.Limit
                                 .CAPABILITY_RUNTIME_POSITION_CANONICAL_BYTES_PER_DEMAND)),
-                limit(limits, "positionCanonicalBytesTotal", MAX_POSITION_BYTES_TOTAL),
+                limit(limits, "positionCanonicalBytesTotal",
+                        CAPACITY_GUARD.maximumInclusive(RenderingPipelineCapacityGuard.Limit
+                                .CAPABILITY_RUNTIME_POSITION_CANONICAL_BYTES_TOTAL)),
                 limit(limits, "capabilityStateRecordBytes",
                         MAX_CAPABILITY_STATE_RECORD_BYTES),
                 limit(limits, "resultDigestStreamingBytes",
@@ -221,8 +223,18 @@ final class CapabilityBudget {
                 return new LimitExceeded(
                         positionPerDemandProblem.limitId().orElseThrow().value());
             }
-            if (wouldExceed(positionBytes, canonicalPositionBytes, limits.positionBytesTotal())) {
-                return exceeded("positionCanonicalBytesTotal");
+            var nextPositionBytes = positionBytes > Long.MAX_VALUE - canonicalPositionBytes
+                    ? Long.MAX_VALUE
+                    : positionBytes + canonicalPositionBytes;
+            var positionTotalProblem = CAPACITY_GUARD.admit(
+                            RenderingPipelineCapacityGuard.Limit
+                                    .CAPABILITY_RUNTIME_POSITION_CANONICAL_BYTES_TOTAL,
+                            nextPositionBytes,
+                            limits.positionBytesTotal())
+                    .orElse(null);
+            if (positionTotalProblem != null) {
+                return new LimitExceeded(
+                        positionTotalProblem.limitId().orElseThrow().value());
             }
             totalDemands++;
             if ("CLOCK".equals(capability)) {
@@ -232,7 +244,7 @@ final class CapabilityBudget {
             } else {
                 throw new IllegalArgumentException("unknown capability");
             }
-            positionBytes += canonicalPositionBytes;
+            positionBytes = nextPositionBytes;
             return null;
         }
 

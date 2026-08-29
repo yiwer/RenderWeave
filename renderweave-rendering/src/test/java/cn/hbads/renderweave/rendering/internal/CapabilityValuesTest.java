@@ -182,6 +182,23 @@ class CapabilityValuesTest {
     }
 
     @Test
+    void positionBytesTotalRejectsWithoutPartiallyCommittingAnyCounter() {
+        var tracker = CapabilityBudget.fromEffectiveVector(
+                tightenedPositionTotalBudgetVector()).newTracker();
+        assertNull(tracker.reserveDemand("CLOCK", 1));
+        assertNull(tracker.reserveDemand("RANDOM", 2));
+
+        var positionExceeded = tracker.reserveDemand("CLOCK", 1);
+
+        assertEquals("capabilityRuntime.positionCanonicalBytesTotal",
+                positionExceeded.limitId());
+        assertNull(tracker.reserveDemand("CLOCK", 0));
+        assertNull(tracker.reserveDemand("RANDOM", 0));
+        assertEquals("capabilityRuntime.totalDemands",
+                tracker.reserveDemand("RANDOM", 0).limitId());
+    }
+
+    @Test
     void resultDigestEmbedsCanonicalCallPositionObject() {
         var values = CapabilityValues.forState(
                 new CapabilityValues.CapabilityState(0, FIXED_NONCE));
@@ -224,5 +241,19 @@ class CapabilityValuesTest {
         leaked[0] = 99;
         assertEquals((byte) 1, state.randomNonce()[0]);
         assertNull(null);
+    }
+
+    private static String tightenedPositionTotalBudgetVector() {
+        return "{\"groups\":{\"capabilityRuntime\":{\"limits\":{"
+                + "\"staticCapabilitySources\":4096,"
+                + "\"totalDemands\":4,"
+                + "\"clockDemands\":2,"
+                + "\"randomDemands\":2,"
+                + "\"positionCanonicalBytesPerDemand\":2048,"
+                + "\"positionCanonicalBytesTotal\":3,"
+                + "\"capabilityStateRecordBytes\":1048576,"
+                + "\"resultDigestStreamingBytes\":16777216,"
+                + "\"initializationAttempts\":3,"
+                + "\"randomRejectionAttempts\":128}}}}";
     }
 }

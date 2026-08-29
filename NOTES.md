@@ -4385,3 +4385,32 @@
   A2/A3，既有独立 replay 不冒充本票证据；J0 pending、J1 未批准，未重复 server/full。
 - 状态回填后的 `fast` A1 `.sdlc/evidence/20260829-091316-fast/` metadata passed、3/3；stderr 仅 npm 配置
   warning，step exit code 与 metadata truth 均为成功。
+
+# 2026-08-29 Template-v1 T172 Capability position bytes total guard 合流（resolved / automated_verified）
+
+- T171 已以 verified commit `886fb6f2` 收口，worktree clean、ahead 162 且 DAG 无其他 active claim；冻结
+  `RW-T19-S8-029` / cap-042 是下一个 unblocked frontier，现按 single-writer claim T172。
+- cap-042 固定 `capabilityRuntime.positionCanonicalBytesTotal` MAX_INCLUSIVE `16777216`、observed
+  `16777215/16777216/16777217`，CAPABILITY_FIRST_DEMAND / public MATERIALIZATION /
+  CAPABILITY_BUDGET_EXCEEDED / ZERO_DOCUMENT_OUTPUT，reservation point 为下一 total+kind demand 在 state/result
+  返回前。
+- T131 已有真实 cumulative position-byte admission；本票只做 exact production guard 合流，保留
+  effectiveBudgetVector 收紧、total→kind→per-demand→position-total first-failure，以及所有 admission 成功后才
+  共同提交 counters 的原子边界。frozen maxima 下该轴与 8192×2048 同时到顶，production first-failure 用有效
+  effective tightening 构造。
+- cap-043+ state/result/retry/rejection 轴继续 deferred；claim 时 A0、J0。无 app wiring/API/Web/migration/Profile/
+  provider/API Key/真实数据/费用/Profile registration/push/tag/PR。
+- TDD 首轮得到缺失 `CAPABILITY_RUNTIME_POSITION_CANONICAL_BYTES_TOTAL` 的唯一预期 compile RED；catalog 与
+  production tracker 合流后 guard + CapabilityValues 49/49，expanded focused 127/127。未伪造行为 RED：T131 已有
+  正确 cumulative admission，本票只收敛 frozen guard authority。
+- `RenderingPipelineCapacityGuard` 现独占 position-total id/16777216/problem/public stage；effective maximum 只能在
+  `0..16777216` 收紧。`CapabilityBudget` 删除重复常量与本地 `wouldExceed`，使用 saturating projected sum 检查并
+  提交同一值，继续保持 total→kind→per-demand→position-total 顺序与全 admission 成功后才提交 counters。
+- 有效收紧 vector（total=4、CLOCK=2、RANDOM=2、position-total=3）以 1+2 bytes 到顶，第 3 个非零 demand 失败；
+  后续 CLOCK/RANDOM 各一个 0-byte demand 仍成功并填满 counters，证明失败未部分提交。公开 Evaluator max `1`
+  回归仍证明 provider 调用为零。
+- 受影响 reactor 为 20/13/84/92/267；`render` A1 `.sdlc/evidence/20260829-091730-render/`（2/2）与 `fast` A1
+  `.sdlc/evidence/20260829-091819-fast/`（3/3）metadata passed，`git diff --check` 通过。cap-042 无 T172 专属
+  A2/A3，既有独立 replay 不冒充本票证据；J0 pending、J1 未批准，未重复 server/full。
+- 状态回填后的 `fast` A1 `.sdlc/evidence/20260829-091922-fast/` metadata passed、3/3；stderr 仅 npm 配置
+  warning，step exit code 与 metadata truth 均为成功。

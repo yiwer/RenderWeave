@@ -163,6 +163,11 @@ final class RenderingPipelineCapacityGuard {
                 "capabilityRuntime.positionCanonicalBytesPerDemand",
                 2_048L,
                 ProblemCode.CAPABILITY_BUDGET_EXCEEDED,
+                EvaluationStage.MATERIALIZATION),
+        CAPABILITY_RUNTIME_POSITION_CANONICAL_BYTES_TOTAL(
+                "capabilityRuntime.positionCanonicalBytesTotal",
+                16_777_216L,
+                ProblemCode.CAPABILITY_BUDGET_EXCEEDED,
                 EvaluationStage.MATERIALIZATION);
 
         private final String id;
