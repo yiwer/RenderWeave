@@ -139,10 +139,11 @@ final class CanonicalDesignDslAuthority implements DesignDslAuthority {
             var bleed = object(canvas.members().get("bleed"), "/designRoot/bleed");
             rejectUnknown(bleed, BLEED_MEMBERS, "/designRoot/bleed");
             for (var member : BLEED_MEMBER_ORDER) {
-                nonNegativeDecimal(
+                capacityDecimal(
                         bleed,
                         member,
-                        "/designRoot/bleed/" + member
+                        "/designRoot/bleed/" + member,
+                        Limit.GEOMETRY_BLEED_MM_PER_SIDE_MIN
                 );
             }
         }
@@ -2466,6 +2467,21 @@ final class CanonicalDesignDslAuthority implements DesignDslAuthority {
             String name,
             String pointer
     ) throws DesignDslFailureException {
+        capacityDecimal(
+                object,
+                name,
+                pointer,
+                Limit.GEOMETRY_CANVAS_TRIM_MM_PER_AXIS_EXCLUSIVE_MIN,
+                Limit.GEOMETRY_CANVAS_TRIM_MM_PER_AXIS_MAX
+        );
+    }
+
+    private void capacityDecimal(
+            JsonValue.ObjectValue object,
+            String name,
+            String pointer,
+            Limit... limits
+    ) throws DesignDslFailureException {
         var value = required(object, name, pointer);
         if (!(value instanceof JsonValue.NumberValue number)) {
             throw failure(FailureCode.DESIGN_STRUCTURE_INVALID, pointer);
@@ -2485,10 +2501,7 @@ final class CanonicalDesignDslAuthority implements DesignDslAuthority {
         } catch (NumberFormatException exception) {
             throw failure(FailureCode.DESIGN_VALUE_INVALID, pointer);
         }
-        for (var limit : List.of(
-                Limit.GEOMETRY_CANVAS_TRIM_MM_PER_AXIS_EXCLUSIVE_MIN,
-                Limit.GEOMETRY_CANVAS_TRIM_MM_PER_AXIS_MAX
-        )) {
+        for (var limit : limits) {
             DesignInputExpressionCapacityAuthority.Decision decision;
             try {
                 decision = capacity.evaluate(

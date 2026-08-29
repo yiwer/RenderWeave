@@ -112,7 +112,8 @@ public interface DesignDslAuthority {
         EXPRESSION_EXPLICIT_ROUNDING_SCALE_MAX("expression.explicitRoundingScaleMax"),
         GEOMETRY_CANVAS_TRIM_MM_PER_AXIS_EXCLUSIVE_MIN(
                 "geometry.canvasTrimMmPerAxisExclusiveMin"),
-        GEOMETRY_CANVAS_TRIM_MM_PER_AXIS_MAX("geometry.canvasTrimMmPerAxisMax");
+        GEOMETRY_CANVAS_TRIM_MM_PER_AXIS_MAX("geometry.canvasTrimMmPerAxisMax"),
+        GEOMETRY_BLEED_MM_PER_SIDE_MIN("geometry.bleedMmPerSideMin");
 
         private final String id;
 

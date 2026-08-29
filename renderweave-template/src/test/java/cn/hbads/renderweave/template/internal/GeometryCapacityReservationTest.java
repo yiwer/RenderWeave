@@ -15,6 +15,8 @@ class GeometryCapacityReservationTest {
 
     private static final String MIN_POSITIVE_SCALE_64 =
             "0.0000000000000000000000000000000000000000000000000000000000000001";
+    private static final String MIN_NEGATIVE_SCALE_64 =
+            "-0.0000000000000000000000000000000000000000000000000000000000000001";
     private static final String MAX_BELOW_SCALE_64 =
             "999.9999999999999999999999999999999999999999999999999999999999999999";
     private static final String MAX_ABOVE_SCALE_64 =
@@ -38,6 +40,72 @@ class GeometryCapacityReservationTest {
                         maxObservation("297")
                 ),
                 recording.geometryObservations()
+        );
+    }
+
+    @Test
+    void canvasBleedObservesEverySideInWireOrderAtThePublicAdmissionSeam() {
+        var recording = new RecordingAuthority();
+
+        assertInstanceOf(
+                DesignDslAuthority.Admitted.class,
+                new CanonicalDesignDslAuthority(recording).admit(canvasWithBleed(
+                        "1e-64",
+                        "-0.00",
+                        "2.500",
+                        "10"
+                ))
+        );
+
+        assertEquals(
+                List.of(
+                        bleedMinObservation(MIN_POSITIVE_SCALE_64),
+                        bleedMinObservation("0"),
+                        bleedMinObservation("2.5"),
+                        bleedMinObservation("10")
+                ),
+                recording.bleedObservations()
+        );
+    }
+
+    @Test
+    void absentCanvasBleedDoesNotReserveBleedCapacity() {
+        var recording = new RecordingAuthority();
+
+        assertInstanceOf(
+                DesignDslAuthority.Admitted.class,
+                new CanonicalDesignDslAuthority(recording).admit(canvas("210", "297"))
+        );
+
+        assertEquals(List.of(), recording.bleedObservations());
+    }
+
+    @Test
+    void defaultAuthorityEnforcesBleedMinimumForEverySide() {
+        assertInstanceOf(
+                DesignDslAuthority.Admitted.class,
+                new CanonicalDesignDslAuthority().admit(canvasWithBleed(
+                        "0",
+                        "1e-64",
+                        "-0.00",
+                        "100"
+                ))
+        );
+        assertBleedMinimumRejected(
+                canvasWithBleed(MIN_NEGATIVE_SCALE_64, "0", "0", "0"),
+                "/designRoot/bleed/topMm"
+        );
+        assertBleedMinimumRejected(
+                canvasWithBleed("0", MIN_NEGATIVE_SCALE_64, "0", "0"),
+                "/designRoot/bleed/rightMm"
+        );
+        assertBleedMinimumRejected(
+                canvasWithBleed("0", "0", MIN_NEGATIVE_SCALE_64, "0"),
+                "/designRoot/bleed/bottomMm"
+        );
+        assertBleedMinimumRejected(
+                canvasWithBleed("0", "0", "0", MIN_NEGATIVE_SCALE_64),
+                "/designRoot/bleed/leftMm"
         );
     }
 
@@ -124,6 +192,31 @@ class GeometryCapacityReservationTest {
     }
 
     @Test
+    void bleedMinimumAuthorityRejectInvalidAndThrowFailClosedAtTheExactSide() {
+        for (var mode : FailureMode.values()) {
+            var authority = new FailingAuthority(
+                    mode,
+                    "geometry.bleedMmPerSideMin"
+            );
+
+            assertGeometryRejected(
+                    new CanonicalDesignDslAuthority(authority).admit(canvasWithBleed(
+                            "0",
+                            "1",
+                            "2",
+                            "3"
+                    )),
+                    "/designRoot/bleed/topMm",
+                    DesignDslAuthority.Limit.GEOMETRY_BLEED_MM_PER_SIDE_MIN
+            );
+            assertEquals(
+                    List.of(bleedMinObservation("0")),
+                    authority.bleedObservations()
+            );
+        }
+    }
+
+    @Test
     void canonicalExpansionDominatesBeforeAllocatingAnOversizedGeometryObservation() {
         var recording = new RecordingAuthority();
 
@@ -137,6 +230,22 @@ class GeometryCapacityReservationTest {
         assertEquals(DesignDslAuthority.FailureStage.DESIGN_CANONICAL_COUNT, rejected.stage());
         assertEquals(DesignDslAuthority.Limit.CANONICAL_BYTES, rejected.limit().orElseThrow());
         assertEquals(List.of(), recording.geometryObservations());
+    }
+
+    @Test
+    void canonicalExpansionDominatesBeforeAllocatingAnOversizedBleedObservation() {
+        var recording = new RecordingAuthority();
+
+        var rejected = assertInstanceOf(
+                DesignDslAuthority.Rejected.class,
+                new CanonicalDesignDslAuthority(recording)
+                        .admit(canvasWithBleed("1e16777216", "0", "0", "0"))
+        );
+
+        assertEquals(DesignDslAuthority.FailureCode.DESIGN_DSL_LIMIT_EXCEEDED, rejected.code());
+        assertEquals(DesignDslAuthority.FailureStage.DESIGN_CANONICAL_COUNT, rejected.stage());
+        assertEquals(DesignDslAuthority.Limit.CANONICAL_BYTES, rejected.limit().orElseThrow());
+        assertEquals(List.of(), recording.bleedObservations());
     }
 
     private static byte[] canvas(String widthMm, String heightMm) {
@@ -158,6 +267,37 @@ class GeometryCapacityReservationTest {
                 """).formatted(widthMm, heightMm).getBytes(StandardCharsets.UTF_8);
     }
 
+    private static byte[] canvasWithBleed(
+            String topMm,
+            String rightMm,
+            String bottomMm,
+            String leftMm
+    ) {
+        return ("""
+                {
+                  "dslVersion":"renderweave-design/1.0",
+                  "expressionProfile":"renderweave-expression/1.0",
+                  "displayName":"Geometry capacity",
+                  "definitions":[],
+                  "designRoot":{
+                    "nodeId":"00000000-0000-4000-8000-000000000001",
+                    "kind":"canvas",
+                    "widthMm":210,
+                    "heightMm":297,
+                    "bleed":{
+                      "topMm":%s,
+                      "rightMm":%s,
+                      "bottomMm":%s,
+                      "leftMm":%s
+                    },
+                    "bindings":[],
+                    "children":[]
+                  }
+                }
+                """).formatted(topMm, rightMm, bottomMm, leftMm)
+                .getBytes(StandardCharsets.UTF_8);
+    }
+
     private static DesignInputExpressionCapacityAuthority.Observation minObservation(
             String observedValue
     ) {
@@ -172,6 +312,15 @@ class GeometryCapacityReservationTest {
     ) {
         return new DesignInputExpressionCapacityAuthority.Observation(
                 "geometry.canvasTrimMmPerAxisMax",
+                observedValue
+        );
+    }
+
+    private static DesignInputExpressionCapacityAuthority.Observation bleedMinObservation(
+            String observedValue
+    ) {
+        return new DesignInputExpressionCapacityAuthority.Observation(
+                "geometry.bleedMmPerSideMin",
                 observedValue
         );
     }
@@ -199,6 +348,14 @@ class GeometryCapacityReservationTest {
         assertEquals(limit, rejected.limit().orElse(null));
     }
 
+    private static void assertBleedMinimumRejected(byte[] designDsl, String pointer) {
+        assertGeometryRejected(
+                new CanonicalDesignDslAuthority().admit(designDsl),
+                pointer,
+                DesignDslAuthority.Limit.GEOMETRY_BLEED_MM_PER_SIDE_MIN
+        );
+    }
+
     private static final class RecordingAuthority
             implements DesignInputExpressionCapacityAuthority {
         private final List<Observation> observations = new ArrayList<>();
@@ -212,6 +369,13 @@ class GeometryCapacityReservationTest {
         private List<Observation> geometryObservations() {
             return observations.stream()
                     .filter(observation -> observation.limitId().startsWith("geometry."))
+                    .toList();
+        }
+
+        private List<Observation> bleedObservations() {
+            return observations.stream()
+                    .filter(observation -> observation.limitId()
+                            .equals("geometry.bleedMmPerSideMin"))
                     .toList();
         }
     }
@@ -265,6 +429,13 @@ class GeometryCapacityReservationTest {
 
         private List<Observation> geometryObservations() {
             return List.copyOf(observations);
+        }
+
+        private List<Observation> bleedObservations() {
+            return observations.stream()
+                    .filter(observation -> observation.limitId()
+                            .equals("geometry.bleedMmPerSideMin"))
+                    .toList();
         }
     }
 }
