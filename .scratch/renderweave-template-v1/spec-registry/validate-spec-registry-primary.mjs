@@ -604,6 +604,57 @@ function compareOracle(oracle, observation) {
 
 let formalRegistry = null;
 
+function authorityRelativePath(path) {
+  return path.replace(/^\.scratch\/renderweave-template-v1\//u, "");
+}
+
+function validateAppendOnlyIssuance(issuance, expectedPoststate, seenTargets = new Set()) {
+  const relativeTargetPath = authorityRelativePath(issuance.target.path);
+  check(!seenTargets.has(relativeTargetPath), "APPEND_ISSUANCE_CYCLE", relativeTargetPath);
+  if (seenTargets.has(relativeTargetPath)) return null;
+  seenTargets.add(relativeTargetPath);
+
+  const issuanceBytes = bytes(`.scratch/renderweave-template-v1/${relativeTargetPath}`);
+  check(digest(issuanceBytes) === issuance.target.sha256 && issuanceBytes.length === issuance.target.byteLength,
+    "APPEND_ISSUANCE_TARGET_BINDING", relativeTargetPath);
+  const issuanceTarget = JSON.parse(issuanceBytes.toString("utf8"));
+  const assigned = issuanceTarget.assignedCorpus;
+  const prestate = issuanceTarget.prestate;
+  const poststate = issuanceTarget.poststate;
+  check(issuanceTarget.executionClass === issuance.appendedExecutionClass &&
+      assigned.assignedCorpusDigest === issuance.assignedCorpusDigest &&
+      assigned.caseCount === issuance.appendedCaseCount &&
+      assigned.oracleCount === issuance.appendedOracleCount &&
+      prestate.formalCases.sha256 === issuance.preservedCasePrefixSha256 &&
+      prestate.formalOracles.sha256 === issuance.preservedOraclePrefixSha256 &&
+      poststate.formalCases.recordCount === prestate.formalCases.recordCount + issuance.appendedCaseCount &&
+      poststate.formalOracles.recordCount === prestate.formalOracles.recordCount + issuance.appendedOracleCount &&
+      poststate.formalCases.preservedPrefixSha256 === prestate.formalCases.sha256 &&
+      poststate.formalOracles.preservedPrefixSha256 === prestate.formalOracles.sha256,
+    "APPEND_ISSUANCE_CORPUS", issuance.assignedCorpusDigest);
+  check(poststate.formalCases.sha256 === expectedPoststate.formalCases.sha256 &&
+      poststate.formalCases.byteLength === expectedPoststate.formalCases.byteLength &&
+      poststate.formalCases.recordCount === expectedPoststate.formalCases.recordCount &&
+      poststate.formalOracles.sha256 === expectedPoststate.formalOracles.sha256 &&
+      poststate.formalOracles.byteLength === expectedPoststate.formalOracles.byteLength &&
+      poststate.formalOracles.recordCount === expectedPoststate.formalOracles.recordCount,
+    "APPEND_ISSUANCE_POSTSTATE", relativeTargetPath);
+
+  const predecessor = issuance.predecessorIssuance;
+  const previousTarget = prestate.previousCapacityIssuance;
+  if (predecessor) {
+    check(previousTarget &&
+        authorityRelativePath(previousTarget.path) === authorityRelativePath(predecessor.target.path) &&
+        previousTarget.sha256 === predecessor.target.sha256 &&
+        previousTarget.byteLength === predecessor.target.byteLength,
+      "APPEND_PREDECESSOR_ISSUANCE", predecessor.target.path);
+    validateAppendOnlyIssuance(predecessor, prestate, seenTargets);
+  } else {
+    check(previousTarget === undefined, "APPEND_ISSUANCE_CHAIN_ROOT", relativeTargetPath);
+  }
+  return issuanceTarget;
+}
+
 function validateTarget() {
   if (!targetPath) throw new Error("--target is required unless --bootstrap-only is used");
   const target = json(`.scratch/renderweave-template-v1/${targetPath.replace(/^.*?spec-registry\//, "spec-registry/")}`);
@@ -634,31 +685,18 @@ function validateTarget() {
       "FORMAL_CASE_PREFIX_PRESERVED", formalCasePath);
     check(formalOracleBytes.subarray(0, candidateOracleBytes.length).equals(candidateOracleBytes),
       "FORMAL_ORACLE_PREFIX_PRESERVED", formalOraclePath);
-    const issuance = target.registryBindings.appendOnlyIssuance;
-    const issuanceBytes = bytes(`.scratch/renderweave-template-v1/${issuance.target.path}`);
-    check(digest(issuanceBytes) === issuance.target.sha256 && issuanceBytes.length === issuance.target.byteLength,
-      "APPEND_ISSUANCE_TARGET_BINDING", issuance.target.path);
-    const issuanceTarget = JSON.parse(issuanceBytes.toString("utf8"));
-    check(issuanceTarget.assignedCorpus.assignedCorpusDigest === issuance.assignedCorpusDigest &&
-      issuance.appendedExecutionClass === "EXEC::DESIGN_INPUT_EXPRESSION::1.0" &&
-      issuance.appendedCaseCount === 195 && issuance.appendedOracleCount === 195,
-    "APPEND_ISSUANCE_CORPUS", issuance.assignedCorpusDigest);
-    check(issuanceTarget.poststate.formalCases.sha256 === digest(formalCaseBytes) &&
-      issuanceTarget.poststate.formalOracles.sha256 === digest(formalOracleBytes),
-    "APPEND_ISSUANCE_POSTSTATE", issuance.target.path);
-    const predecessor = issuance.predecessorIssuance;
-    const predecessorBytes = bytes(`.scratch/renderweave-template-v1/${predecessor.target.path}`);
-    const predecessorTarget = JSON.parse(predecessorBytes.toString("utf8"));
-    check(digest(predecessorBytes) === predecessor.target.sha256 &&
-      predecessorBytes.length === predecessor.target.byteLength &&
-      predecessor.appendedExecutionClass === "EXEC::DOMAIN_SERVICES::1.0" &&
-      predecessor.appendedCaseCount === 12 && predecessor.appendedOracleCount === 12,
-    "APPEND_PREDECESSOR_ISSUANCE", predecessor.target.path);
-    check(predecessorTarget.assignedCorpus.assignedCorpusDigest === predecessor.assignedCorpusDigest &&
-      predecessorTarget.poststate.formalCases.sha256 === issuanceTarget.prestate.formalCases.sha256 &&
-      predecessorTarget.poststate.formalOracles.sha256 === issuanceTarget.prestate.formalOracles.sha256 &&
-      issuanceTarget.prestate.previousCapacityIssuance.sha256 === predecessor.target.sha256,
-    "APPEND_ISSUANCE_CHAIN", predecessor.target.path);
+    validateAppendOnlyIssuance(target.registryBindings.appendOnlyIssuance, {
+      formalCases: {
+        sha256: digest(formalCaseBytes),
+        byteLength: formalCaseBytes.length,
+        recordCount: parseJsonl(formalCasePath).length,
+      },
+      formalOracles: {
+        sha256: digest(formalOracleBytes),
+        byteLength: formalOracleBytes.length,
+        recordCount: parseJsonl(formalOraclePath).length,
+      },
+    });
   } else {
     check(false, "FORMAL_STATUS", formalStatus);
   }

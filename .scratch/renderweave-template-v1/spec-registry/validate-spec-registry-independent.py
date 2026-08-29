@@ -627,6 +627,64 @@ def compare_oracle(oracle, observation):
 formal_registry = None
 
 
+def authority_relative_path(path: str) -> str:
+    prefix = ".scratch/renderweave-template-v1/"
+    return path[len(prefix):] if path.startswith(prefix) else path
+
+
+def validate_append_only_issuance(issuance, expected_poststate, seen_targets=None):
+    if seen_targets is None:
+        seen_targets = set()
+    relative_target_path = authority_relative_path(issuance["target"]["path"])
+    check(relative_target_path not in seen_targets, "APPEND_ISSUANCE_CYCLE", relative_target_path)
+    if relative_target_path in seen_targets:
+        return None
+    seen_targets.add(relative_target_path)
+
+    issuance_bytes = raw(".scratch/renderweave-template-v1/" + relative_target_path)
+    check(digest(issuance_bytes) == issuance["target"]["sha256"] and
+          len(issuance_bytes) == issuance["target"]["byteLength"],
+          "APPEND_ISSUANCE_TARGET_BINDING", relative_target_path)
+    issuance_target = json.loads(issuance_bytes)
+    assigned = issuance_target["assignedCorpus"]
+    prestate = issuance_target["prestate"]
+    poststate = issuance_target["poststate"]
+    check(issuance_target["executionClass"] == issuance["appendedExecutionClass"] and
+          assigned["assignedCorpusDigest"] == issuance["assignedCorpusDigest"] and
+          assigned["caseCount"] == issuance["appendedCaseCount"] and
+          assigned["oracleCount"] == issuance["appendedOracleCount"] and
+          prestate["formalCases"]["sha256"] == issuance["preservedCasePrefixSha256"] and
+          prestate["formalOracles"]["sha256"] == issuance["preservedOraclePrefixSha256"] and
+          poststate["formalCases"]["recordCount"] ==
+              prestate["formalCases"]["recordCount"] + issuance["appendedCaseCount"] and
+          poststate["formalOracles"]["recordCount"] ==
+              prestate["formalOracles"]["recordCount"] + issuance["appendedOracleCount"] and
+          poststate["formalCases"]["preservedPrefixSha256"] == prestate["formalCases"]["sha256"] and
+          poststate["formalOracles"]["preservedPrefixSha256"] == prestate["formalOracles"]["sha256"],
+          "APPEND_ISSUANCE_CORPUS", issuance["assignedCorpusDigest"])
+    check(poststate["formalCases"]["sha256"] == expected_poststate["formalCases"]["sha256"] and
+          poststate["formalCases"]["byteLength"] == expected_poststate["formalCases"]["byteLength"] and
+          poststate["formalCases"]["recordCount"] == expected_poststate["formalCases"]["recordCount"] and
+          poststate["formalOracles"]["sha256"] == expected_poststate["formalOracles"]["sha256"] and
+          poststate["formalOracles"]["byteLength"] == expected_poststate["formalOracles"]["byteLength"] and
+          poststate["formalOracles"]["recordCount"] == expected_poststate["formalOracles"]["recordCount"],
+          "APPEND_ISSUANCE_POSTSTATE", relative_target_path)
+
+    predecessor = issuance.get("predecessorIssuance")
+    previous_target = prestate.get("previousCapacityIssuance")
+    if predecessor is not None:
+        check(previous_target is not None and
+              authority_relative_path(previous_target["path"]) ==
+                  authority_relative_path(predecessor["target"]["path"]) and
+              previous_target["sha256"] == predecessor["target"]["sha256"] and
+              previous_target["byteLength"] == predecessor["target"]["byteLength"],
+              "APPEND_PREDECESSOR_ISSUANCE", predecessor["target"]["path"])
+        validate_append_only_issuance(predecessor, prestate, seen_targets)
+    else:
+        check(previous_target is None, "APPEND_ISSUANCE_CHAIN_ROOT", relative_target_path)
+    return issuance_target
+
+
 def validate_target() -> None:
     global formal_registry
     if not cli.target:
@@ -659,36 +717,18 @@ def validate_target() -> None:
     elif formal_status == "ISSUED_APPEND_ONLY_PREFIX":
         check(formal_cases.startswith(candidate_cases), "FORMAL_CASE_PREFIX_PRESERVED", formal_case_path)
         check(formal_oracles.startswith(candidate_oracles), "FORMAL_ORACLE_PREFIX_PRESERVED", formal_oracle_path)
-        issuance = target["registryBindings"]["appendOnlyIssuance"]
-        issuance_bytes = raw(".scratch/renderweave-template-v1/" + issuance["target"]["path"])
-        check(digest(issuance_bytes) == issuance["target"]["sha256"] and
-              len(issuance_bytes) == issuance["target"]["byteLength"],
-              "APPEND_ISSUANCE_TARGET_BINDING", issuance["target"]["path"])
-        issuance_target = json.loads(issuance_bytes)
-        check(issuance_target["assignedCorpus"]["assignedCorpusDigest"] == issuance["assignedCorpusDigest"] and
-              issuance["appendedExecutionClass"] == "EXEC::DESIGN_INPUT_EXPRESSION::1.0" and
-              issuance["appendedCaseCount"] == 195 and issuance["appendedOracleCount"] == 195,
-              "APPEND_ISSUANCE_CORPUS", issuance["assignedCorpusDigest"])
-        check(issuance_target["poststate"]["formalCases"]["sha256"] == digest(formal_cases) and
-              issuance_target["poststate"]["formalOracles"]["sha256"] == digest(formal_oracles),
-              "APPEND_ISSUANCE_POSTSTATE", issuance["target"]["path"])
-        predecessor = issuance["predecessorIssuance"]
-        predecessor_bytes = raw(".scratch/renderweave-template-v1/" + predecessor["target"]["path"])
-        predecessor_target = json.loads(predecessor_bytes)
-        check(digest(predecessor_bytes) == predecessor["target"]["sha256"] and
-              len(predecessor_bytes) == predecessor["target"]["byteLength"] and
-              predecessor["appendedExecutionClass"] == "EXEC::DOMAIN_SERVICES::1.0" and
-              predecessor["appendedCaseCount"] == 12 and predecessor["appendedOracleCount"] == 12,
-              "APPEND_PREDECESSOR_ISSUANCE", predecessor["target"]["path"])
-        check(predecessor_target["assignedCorpus"]["assignedCorpusDigest"] ==
-              predecessor["assignedCorpusDigest"] and
-              predecessor_target["poststate"]["formalCases"]["sha256"] ==
-              issuance_target["prestate"]["formalCases"]["sha256"] and
-              predecessor_target["poststate"]["formalOracles"]["sha256"] ==
-              issuance_target["prestate"]["formalOracles"]["sha256"] and
-              issuance_target["prestate"]["previousCapacityIssuance"]["sha256"] ==
-              predecessor["target"]["sha256"],
-              "APPEND_ISSUANCE_CHAIN", predecessor["target"]["path"])
+        validate_append_only_issuance(target["registryBindings"]["appendOnlyIssuance"], {
+            "formalCases": {
+                "sha256": digest(formal_cases),
+                "byteLength": len(formal_cases),
+                "recordCount": len(parse_jsonl(formal_case_path)),
+            },
+            "formalOracles": {
+                "sha256": digest(formal_oracles),
+                "byteLength": len(formal_oracles),
+                "recordCount": len(parse_jsonl(formal_oracle_path)),
+            },
+        })
     else:
         check(False, "FORMAL_STATUS", formal_status)
     formal_registry = {

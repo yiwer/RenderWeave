@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = resolve(here, "..");
-const implementationRevision = "spec-registry-bootstrap/1.15";
+const implementationRevision = "spec-registry-bootstrap/1.16";
 
 function bytes(relativePath) {
   return readFileSync(resolve(root, relativePath));

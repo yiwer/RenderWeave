@@ -294,7 +294,7 @@ try {
             -or $registryIndependent.failureCount -ne 0) {
         throw 'Template SPEC_REGISTRY replay counts or status drifted.'
     }
-    if ($targetManifest.implementationRevision -ne 'spec-registry-bootstrap/1.15' `
+    if ($targetManifest.implementationRevision -ne 'spec-registry-bootstrap/1.16' `
             -or $targetManifest.artifacts.Count -lt 404 -or $ticket19.Count -ne 1 `
             -or $ticket19[0].sha256 -ne 'sha256:ce7335f4b50ad23fb77b018cea1d9d89d94c11e02c72da13e1d392b13a065cae' `
             -or $ticket19[0].byteLength -ne 74549) {
