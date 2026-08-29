@@ -2369,6 +2369,11 @@ final class CanonicalDesignDslAuthority implements DesignDslAuthority {
                 pointer,
                 Limit.GEOMETRY_ROTATION_DEGREES_MIN
         );
+        reserveCapacityDecimal(
+                value,
+                pointer,
+                Limit.GEOMETRY_ROTATION_DEGREES_MAX
+        );
     }
 
     private void rangedDecimal(
