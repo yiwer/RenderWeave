@@ -1561,7 +1561,16 @@ fn apply_grid_auto_constraints(
             constraint.materialized_order,
         )
     });
+    let constraint_guard = RendererExactOutputCapacityGuard::new();
     for constraint in constraints {
+        constraint_guard
+            .admit_grid_span_passes_per_constraint(1)
+            .map_err(|_| {
+                DefiniteLayoutError::unsupported(
+                    grid_occurrence,
+                    DefiniteLayoutUnsupported::GridAutoTrack,
+                )
+            })?;
         let occupied = grid_span_extent(sizes, gap, constraint.start, constraint.span);
         let deficit = constraint.contribution - occupied;
         if deficit > 0.0 {

@@ -4685,3 +4685,28 @@
   T183 guard identity 专项 A2；T183-specific A2/A3 无，J0 pending、J1 未批准，因此状态为
   `automated_verified`。cap-054+ deferred；Profile 仍 NOT_REGISTERED、Certification NOT_CERTIFIED、Raster ABSENT；
   无 HTTP/OpenAPI/Web/Flyway/process wire/manifest/Profile/provider/API Key/真实数据/费用/push/tag/PR。
+
+# 2026-08-29 Template-v1 T184 Renderer Grid span constraint exact-pass guard（resolved / automated_verified）
+
+- T183 已以 verified commit `6b7aca62` 收口，worktree clean、相对 upstream ahead 174 且 DAG 无其他 active claim；
+  Renderer exact-output cap-054 是当前首个 unblocked residual，现按 single-writer claim T184。
+- cap-054 固定 `layoutFontAndRaster.gridSpanPassesPerConstraint` EXACT `1`，observed `0/1/2`、LAYOUT_PROFILE /
+  public ENGINE / code-less ALGORITHM_INVARIANT，关联 `RW-T19-S8-084`、`RW-T19-S9-015/018/019`。
+- T66 production loop 已按 `(spanLength,startIndex,materializedOrder)` 稳定排序并逐条处理 constraint；T184 只深化
+  T183 建立的唯一 `renderweave-renderer-exact-output-capacity-guard/1.0` seam，让 public tracer 与真实 loop 共用
+  exact identity，不新建 crate、重复 guard 或 test-only override。
+- cap-054 之后 residual deferred；无 HTTP/OpenAPI/Web/Flyway/Renderer process wire/manifest/Profile/provider/
+  API Key/真实数据/费用/push/tag/PR，claim 时 A0、J0 pending、J1 未批准。
+- 唯一 `RendererExactOutputCapacityGuard` 已用私有 limit discriminator 同时承载 cap-053/cap-054 identity；
+  cap-054 public tracer 的 `0/1/2` 精确判定为 reject/accept/reject，且 cap-053 公式/metadata 回归保持不变。
+- production Grid constraint vector 继续按 `(spanLength,startIndex,materializedOrder)` 稳定排序并按值消费；每条实际
+  constraint 在读取 span extent、计算 deficit 或分配 AUTO tracks 前调用 EXACT `1` guard。guard mismatch 沿既有
+  `GRID_AUTO_TRACK` internal unsupported fail closed，零 partial layout/output。
+- TDD compile RED 精确为缺失 public method 的两处 E0599；GREEN 后 public guard 2/2、focused layout 8/8，Rust
+  workspace all-target 97/97、fmt、clippy `-D warnings` 全绿。
+- A1 render `.sdlc/evidence/20260829-143918-render/` 2/2、fast
+  `.sdlc/evidence/20260829-144014-fast/` 3/3，metadata 均 passed。render gate 的 Python independent definite
+  layout `288/288` cases、`868` checks 只证明 T66 输出无漂移，不冒充 T184 guard identity 专项 A2。
+- T184-specific A2/A3 无，J0 pending、J1 未批准，因此状态为 `automated_verified`。Profile 仍
+  NOT_REGISTERED、Certification NOT_CERTIFIED、Raster ABSENT；无 HTTP/OpenAPI/Web/Flyway/process wire/
+  manifest/Profile/provider/API Key/真实数据/费用/push/tag/PR。

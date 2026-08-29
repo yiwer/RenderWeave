@@ -1124,6 +1124,11 @@ Label: wayfinder:map
   `renderweave-renderer-exact-output-capacity-guard/1.0` seam；真实 loop 在每轮 work 前与 isolated tracer 共用
   checked guard。focused layout `7/7`、workspace all-target/fmt/clippy、render 2/2 与 fast 3/3 全绿。T183-specific
   A2/A3 无、J0 pending、J1 未批准；cap-054+ deferred，无 API/OpenAPI/Web/Flyway/Profile/provider/push/tag/PR 变化。
+- [T184 — Renderer Grid span constraint exact-pass guard](issues/184-grid-span-pass-exact-guard.md)
+  — **resolved / automated_verified**；blocked by T66/T122/T183（均 resolved）。Renderer exact-output cap-054 的
+  EXACT `1` 已进入同一唯一 guard；稳定排序后的真实 Grid loop 按值消费每条 constraint，并在 span/deficit work
+  前调用 guard。focused layout `8/8`、workspace all-target `97/97`、fmt/clippy、render 2/2 与 fast 3/3 全绿。
+  T184-specific A2/A3 无、J0 pending、J1 未批准；无 API/OpenAPI/Web/Flyway/Profile/provider/push/tag/PR 变化。
 
 - 改写或重解释现有 Schema/Inference v1 已提交历史，或在 dirty main 上直接实施 Template。
 - Workspace、组织/成员/分享/协作、跨 ownerScope 复制、通用 connector、任意 SQL/HTTP/文件/脚本、插件节点或运行时代码注册。

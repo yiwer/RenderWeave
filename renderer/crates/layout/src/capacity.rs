@@ -1,6 +1,8 @@
 const CONTRACT_ID: &str = "renderweave-renderer-exact-output-capacity-guard/1.0";
 const STACK_WATER_FILL_ROUNDS_LIMIT_ID: &str =
     "layoutFontAndRaster.stackWaterFillRoundsPerContainer";
+const GRID_SPAN_PASSES_PER_CONSTRAINT_LIMIT_ID: &str =
+    "layoutFontAndRaster.gridSpanPassesPerConstraint";
 const LAYOUT_PROFILE_STAGE: &str = "LAYOUT_PROFILE";
 const ENGINE_STAGE: &str = "ENGINE";
 const ALGORITHM_INVARIANT_ZERO_BOUNDARY: &str = "ALGORITHM_INVARIANT";
@@ -24,17 +26,50 @@ impl RendererExactOutputCapacityGuard {
     ) -> Result<(), RendererExactOutputCapacityInvariant> {
         match fill_child_count.checked_add(1) {
             Some(maximum_rounds) if observed_rounds <= maximum_rounds => Ok(()),
-            _ => Err(RendererExactOutputCapacityInvariant),
+            _ => Err(RendererExactOutputCapacityInvariant::new(
+                RendererExactOutputCapacityLimit::StackWaterFillRoundsPerContainer,
+            )),
+        }
+    }
+
+    pub fn admit_grid_span_passes_per_constraint(
+        &self,
+        observed_passes: usize,
+    ) -> Result<(), RendererExactOutputCapacityInvariant> {
+        match observed_passes {
+            1 => Ok(()),
+            _ => Err(RendererExactOutputCapacityInvariant::new(
+                RendererExactOutputCapacityLimit::GridSpanPassesPerConstraint,
+            )),
         }
     }
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub struct RendererExactOutputCapacityInvariant;
+enum RendererExactOutputCapacityLimit {
+    StackWaterFillRoundsPerContainer,
+    GridSpanPassesPerConstraint,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct RendererExactOutputCapacityInvariant {
+    limit: RendererExactOutputCapacityLimit,
+}
 
 impl RendererExactOutputCapacityInvariant {
+    const fn new(limit: RendererExactOutputCapacityLimit) -> Self {
+        Self { limit }
+    }
+
     pub const fn limit_id(&self) -> &'static str {
-        STACK_WATER_FILL_ROUNDS_LIMIT_ID
+        match self.limit {
+            RendererExactOutputCapacityLimit::StackWaterFillRoundsPerContainer => {
+                STACK_WATER_FILL_ROUNDS_LIMIT_ID
+            }
+            RendererExactOutputCapacityLimit::GridSpanPassesPerConstraint => {
+                GRID_SPAN_PASSES_PER_CONSTRAINT_LIMIT_ID
+            }
+        }
     }
 
     pub const fn contract_stage(&self) -> &'static str {
