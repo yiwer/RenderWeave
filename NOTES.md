@@ -4279,3 +4279,31 @@
   T167 行为路径专属 A2/A3；render 内既有 RenderDocument 独立 replay 83/83 不冒充本票 A2。J0 pending、J1 未批准；
   未重复 server/full。provider attempts/API Key reads/真实数据/费用/Profile registration/push/tag/PR 均为 0。
 - 状态回填后的 `fast` A1 `.sdlc/evidence/20260829-084134-fast/` metadata 为 `passed`，3/3 steps 全绿。
+
+# 2026-08-29 Template-v1 T168 total Capability demands guard 合流（resolved / automated_verified）
+
+- T167 已以 verified commit `4b70be5f` 收口，worktree clean、ahead 158 且 DAG 无其他 active claim；冻结
+  `RW-T19-S8-025` / cap-038 是下一个 unblocked frontier，现按 single-writer claim T168。
+- cap-038 固定 `capabilityRuntime.totalDemands` MAX_INCLUSIVE `8192`、observed `8191/8192/8193`，
+  CAPABILITY_FIRST_DEMAND / public MATERIALIZATION / CAPABILITY_BUDGET_EXCEEDED / ZERO_DOCUMENT_OUTPUT，
+  reservation point 为下一 total+kind demand 在 state/result 返回前。
+- T131 已有真实 lazy demand admission，但 frozen fixture 要求 exact production guard 且禁止 duplicate implementation；
+  本票只做 total 轴 guard 合流，保留 effectiveBudgetVector 收紧、total→kind→position first-failure、memo/lazy 与所有
+  admission 成功后才提交 counters 的原子边界。
+- cap-039+ kind/position/result 轴继续 deferred；claim 时 A0、J0。无 app wiring/API/Web/migration/Profile/provider/
+  API Key/真实数据/费用/Profile registration/push/tag/PR。
+- TDD 首轮得到唯一 compile RED：缺失 `CAPABILITY_RUNTIME_TOTAL_DEMANDS`。本票不伪造 T131 已经满足的产品行为
+  RED；catalog 与 production tracker 迁移后 guard + CapabilityValues 41/41 转绿。
+- production guard 现独占 total frozen id/8192/problem/stage，effective maximum 只可在 `0..8192` 收紧；
+  `CapabilityBudget` 删除重复 `MAX_TOTAL_DEMANDS` 与本地 total comparison。tracker 先经 guard admission，再检查
+  kind/position，全部成功后才共同提交 counters。
+- 4096 CLOCK + 4096 RANDOM exact-at 成功，下一 CLOCK 先以 `capabilityRuntime.totalDemands` 失败；公开 Evaluator
+  effective maximum `1` 回归继续证明第二 distinct alias 前失败、provider 只调用一次，memo/lazy 不变。
+- 最终 expanded focused 119/119；受影响 reactor Schema 20/20、Validation 13/13、Template 84/84、Asset 92/92、
+  Rendering 259/259，均 0 failure/error；`git diff --check` 通过。
+- A1 `render` `.sdlc/evidence/20260829-084840-render/`（2/2）与 `fast`
+  `.sdlc/evidence/20260829-084928-fast/`（3/3）metadata 均 `passed`。cap-038 只执行 exact production guard，故无
+  T168 行为路径专属 A2/A3；既有独立 replay 不冒充本票证据。J0 pending、J1 未批准；未重复 server/full。
+  provider attempts/API Key reads/真实数据/费用/Profile registration/push/tag/PR 均为 0。
+- 最终 overflow-safe counter 与状态回填后的 `fast` A1 `.sdlc/evidence/20260829-085209-fast/` metadata 为 `passed`，
+  3/3 steps 全绿。

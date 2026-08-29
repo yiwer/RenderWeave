@@ -115,6 +115,21 @@ class CapabilityValuesTest {
     }
 
     @Test
+    void totalDemandTrackerAcceptsTheExactFrozenBoundaryThenFailsFirst() {
+        var tracker = CapabilityBudget.frozen().newTracker();
+        for (int index = 0; index < 4_096; index++) {
+            assertNull(tracker.reserveDemand("CLOCK", 0));
+        }
+        for (int index = 0; index < 4_096; index++) {
+            assertNull(tracker.reserveDemand("RANDOM", 0));
+        }
+
+        var exceeded = tracker.reserveDemand("CLOCK", 0);
+
+        assertEquals("capabilityRuntime.totalDemands", exceeded.limitId());
+    }
+
+    @Test
     void resultDigestEmbedsCanonicalCallPositionObject() {
         var values = CapabilityValues.forState(
                 new CapabilityValues.CapabilityState(0, FIXED_NONCE));

@@ -143,7 +143,12 @@ final class RenderingPipelineCapacityGuard {
                 "capabilityRuntime.staticCapabilitySources",
                 4_096L,
                 ProblemCode.CAPABILITY_BUDGET_EXCEEDED,
-                EvaluationStage.TEMPLATE_CLOSURE);
+                EvaluationStage.TEMPLATE_CLOSURE),
+        CAPABILITY_RUNTIME_TOTAL_DEMANDS(
+                "capabilityRuntime.totalDemands",
+                8_192L,
+                ProblemCode.CAPABILITY_BUDGET_EXCEEDED,
+                EvaluationStage.MATERIALIZATION);
 
         private final String id;
         private final long maximumInclusive;
