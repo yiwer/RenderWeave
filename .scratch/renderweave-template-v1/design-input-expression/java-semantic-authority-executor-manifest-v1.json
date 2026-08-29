@@ -1,0 +1,33 @@
+{
+  "artifactVersion": "renderweave-design-input-expression-executor-manifest/1.0",
+  "executorId": "DESIGN_INPUT_EXPRESSION_EXECUTOR::JAVA_SEMANTIC_AUTHORITY::1.0",
+  "role": "java-semantic-authority",
+  "executionClass": "EXEC::DESIGN_INPUT_EXPRESSION::1.0",
+  "targetId": "DESIGN_INPUT_EXPRESSION_TARGET::JAVA_TYPESCRIPT_PRODUCT::1.0",
+  "targetManifest": {
+    "path": ".scratch/renderweave-template-v1/design-input-expression/execution-class-target-v1.json",
+    "sha256": "sha256:0629760e9ec6232709ffe20943733232996a379d17303a12dd1596e8118e765c",
+    "byteLength": 5823
+  },
+  "implementationRevision": "bc027d4bb81732e2214642dce429881e529387f0",
+  "runtime": "Java 21",
+  "entrypoint": {
+    "path": "renderweave-template/src/test/java/cn/hbads/renderweave/template/internal/DesignInputExpressionCapacityConformanceTest.java",
+    "sha256": "sha256:ac5e20d1d77bdaf4a70a8a7d73ec81730933eedb7cc9596c32c0ca7362d5fffb",
+    "byteLength": 12689
+  },
+  "command": "mvn -B -ntp -pl renderweave-app -am -Dtest=<frozen-design-input-expression-product-proof-suite> -Drenderweave.designInputExpression.target=<component-target> -Drenderweave.designInputExpression.primaryReport=<evidence> test",
+  "componentTarget": {
+    "path": ".scratch/renderweave-template-v1/design-input-expression/capacity-component-target-v17.json",
+    "sha256": "sha256:2369720282648dbc02d91d6b9730762b639e04034cb68094000fdb23213cb0b4",
+    "byteLength": 21520
+  },
+  "observationAdapter": {
+    "path": ".scratch/renderweave-template-v1/design-input-expression/observation-adapter-v1.json",
+    "sha256": "sha256:e46af856d38c1844d1c3b222479e25208c0f5297caabdfea16ccd779301d77e9",
+    "byteLength": 5368
+  },
+  "sharedSemanticLibrary": null,
+  "networkReadsAllowed": false,
+  "productMutationAllowed": false
+}
