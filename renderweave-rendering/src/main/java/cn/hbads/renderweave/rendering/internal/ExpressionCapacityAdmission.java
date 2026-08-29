@@ -65,6 +65,18 @@ final class ExpressionCapacityAdmission {
                             || !(definition.members().get("kind") instanceof Text kind)) {
                         return new Fault();
                     }
+                    if ("mapping".equals(kind.value())) {
+                        if (!(definition.members().get("cases") instanceof ArrayNode cases)) {
+                            return new Fault();
+                        }
+                        var caseCapacityProblem = CAPACITY_GUARD.admit(
+                                DesignInputExpressionCapacityGuard.Limit.MAPPING_CASES_PER_DEFINITION,
+                                cases.items().size());
+                        if (caseCapacityProblem.isPresent()) {
+                            return new Rejected(caseCapacityProblem.orElseThrow());
+                        }
+                        continue;
+                    }
                     if (!"expression".equals(kind.value())) {
                         continue;
                     }

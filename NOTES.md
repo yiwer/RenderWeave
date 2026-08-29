@@ -1,5 +1,19 @@
 # NOTES.md
 
+# 2026-08-29 Template-v1 T191 Mapping cases per-definition capacity（resolved / automated_verified）
+- cap-043 `expression.mappingCasesPerDefinition=256` 已合流到现有 Rendering.internal 单一 guard；closure
+  admission 对每 frozen snapshot 的每个 MappingDefinition 在 InputAdmission/惰性求值前检查完整 authored
+  `cases`，使未被 demand 的 Mapping 与未选择 case 仍消耗静态预算。
+- TDD 记录 missing-enum compile RED 与公共 Evaluator behavioral RED：unused 257-case Mapping 原错误到达
+  `SealedDocument`；合流后以 exact TEMPLATE_CLOSURE / EXPRESSION_LIMIT_EXCEEDED /
+  `expression.mappingCasesPerDefinition` 拒绝，validation target resolution、capability establish/restore 与
+  state load/save 均为 0；同一真实 closure path 上 unused exact-at 256-case 成功 seal。
+- focused 135/135、受影响 reactor 542/542（Schema 20、Validation 13、Template 86、Asset 92、Rendering
+  331）；`render` `.sdlc/evidence/20260829-164442-render/metadata.json` 与 `fast`
+  `.sdlc/evidence/20260829-164530-fast/metadata.json` 均 passed/A1。cap-044+ deferred；T191-specific A2/A3 与
+  formal record issuance 均无；J0 pending、J1 未批准。无 public/app/Profile/provider/API Key/真实数据/费用/
+  push/tag/PR 变化。
+
 # 2026-08-29 Template-v1 T190 Expression inputs total capacity（resolved / automated_verified）
 - cap-042 `expression.inputsTotal=4096` 已合流到现有 Rendering.internal 单一 guard；per-DesignDSL
   `InputBudget` 逐 Expression 先 cap-041、再以 `BigInteger` projected total 原子检查 cap-042，成功后才提交

@@ -357,6 +357,55 @@ class EvaluatorContractTest {
     }
 
     @Test
+    void mappingCasesPerDefinitionOverBudgetRejectsBeforeAllDownstreamWork() {
+        var stateStore = new RecordingCapabilityStateStore();
+        var runtime = new RecordingCapabilityRuntime();
+        var inputResolutions = new AtomicInteger();
+        var targetResolver = resolver();
+        ValidationTargetResolver recordingResolver = target -> {
+            inputResolutions.incrementAndGet();
+            return targetResolver.resolve(target);
+        };
+        var evaluator = evaluator(
+                closureWith(withMappingCaseCount(canvasWithRect(), 257)),
+                recordingResolver,
+                stateStore,
+                runtime);
+
+        var rejected = assertInstanceOf(EvaluationOutcome.Rejected.class,
+                evaluator.evaluate(command("{\"rootDocument\":{}}")));
+
+        assertEquals(EvaluationStage.TEMPLATE_CLOSURE, rejected.stage());
+        assertEquals(RenderingProblem.ProblemCode.EXPRESSION_LIMIT_EXCEEDED,
+                rejected.problem().code());
+        assertEquals("expression.mappingCasesPerDefinition",
+                rejected.problem().limitId().orElseThrow().value());
+        assertEquals(0, inputResolutions.get());
+        assertEquals(0, runtime.establishCalls);
+        assertEquals(0, runtime.restoreCalls);
+        assertEquals(0, stateStore.loadCalls);
+        assertEquals(0, stateStore.saveCalls);
+    }
+
+    @Test
+    void mappingCasesPerDefinitionAcceptsTheExactMaximumOnTheRealClosurePath() {
+        var stateStore = new RecordingCapabilityStateStore();
+        var runtime = new RecordingCapabilityRuntime();
+        var evaluator = evaluator(
+                closureWith(withMappingCaseCount(canvasWithRect(), 256)),
+                resolver(),
+                stateStore,
+                runtime);
+
+        assertInstanceOf(EvaluationOutcome.SealedDocument.class,
+                evaluator.evaluate(command("{\"rootDocument\":{}}")));
+        assertEquals(0, runtime.establishCalls);
+        assertEquals(0, runtime.restoreCalls);
+        assertEquals(0, stateStore.loadCalls);
+        assertEquals(0, stateStore.saveCalls);
+    }
+
+    @Test
     void randomDemandOverBudgetRejectsBeforeCallingProviderForTheNextPosition() {
         var runtime = new SupplyingCapabilityRuntime();
         var evaluator = evaluator(
@@ -3262,6 +3311,24 @@ class EvaluatorContractTest {
 
     private static String withInputTotalAtLimit(String designDocument) {
         return withExpressionInputTotal(designDocument, 4_096, false);
+    }
+
+    private static String withMappingCaseCount(String designDocument, int caseCount) {
+        var thenSource = "{\"kind\":\"literal\",\"valueType\":\"text\","
+                + "\"value\":\"matched\"}";
+        var cases = new ArrayList<String>(caseCount);
+        for (var index = 0; index < caseCount; index++) {
+            cases.add("{\"operator\":\"IS_PRESENT\",\"then\":" + thenSource + "}");
+        }
+        return designDocument.replace(
+                "\"definitions\":[]",
+                "\"definitions\":[{\"definitionId\":\"" + capacityUuid(7, 40_000)
+                        + "\",\"kind\":\"mapping\",\"displayName\":\"Case capacity\","
+                        + "\"domain\":\"invocation\",\"output\":\"text\","
+                        + "\"input\":{\"kind\":\"literal\",\"valueType\":\"decimal\","
+                        + "\"value\":0},\"cases\":[" + String.join(",", cases) + "],"
+                        + "\"otherwise\":{\"kind\":\"literal\",\"valueType\":\"text\","
+                        + "\"value\":\"other\"}}]");
     }
 
     private static String withExpressionInputTotal(

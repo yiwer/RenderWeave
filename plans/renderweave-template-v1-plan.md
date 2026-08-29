@@ -1,5 +1,29 @@
 # RenderWeave Template v1 Implementation Plan
 
+## 191. TV1-T191 执行卡
+
+- 状态：`resolved / automated_verified`；single writer: Codex；blocked by T21/T126/T190（均 resolved）。
+- authority：Ticket 19 `RW-T19-S7-051` 与 DESIGN_INPUT_EXPRESSION cap-043；
+  `expression.mappingCasesPerDefinition` MAX_INCLUSIVE `256`，observed `255/256/257`，
+  EXPRESSION_PARSE_AND_STATIC_ANALYSIS / public TEMPLATE_CLOSURE /
+  EXPRESSION_LIMIT_EXCEEDED / ZERO_WRITE_AND_DOWNSTREAM。
+- seam：深化 Rendering.internal 单一 `DesignInputExpressionCapacityGuard`；closure-wide
+  `ExpressionCapacityAdmission` 对每 snapshot 的每个 MappingDefinition 在 InputAdmission/惰性求值前检查
+  admitted `cases`。测试 seam 为既有 guard tracer 与公共 `Evaluator.evaluate`，不新增 public API/SPI。
+- TDD：先取得 missing enum compile RED，再取得 unused 257-case Mapping 的 Evaluator behavioral RED；覆盖
+  255/256/257 identity、exact-at success、above static admission 与零 downstream。
+- 边界：不实现 cap-044 cases total、后续 AST/graph/list/decimal axes、formal records 或完整 execution-class
+  target；不实现 app/Profile/provider/真实数据，不 push/tag/PR；claim=A0、J0 pending、J1 未批准。
+- Resolution：现有 internal guard 已承载 cap-043；closure admission 在 InputAdmission/惰性求值前检查每个
+  frozen snapshot 中每个 MappingDefinition 的完整 authored `cases`。TDD 得到 missing-enum compile RED，且
+  unused 257-case Mapping 原错误到达 `SealedDocument`；合流后以 exact TEMPLATE_CLOSURE /
+  EXPRESSION_LIMIT_EXCEEDED / `expression.mappingCasesPerDefinition` 拒绝，validation target resolution、
+  capability establish/restore 与 state load/save 均为 0，unused exact-at 256-case 则成功 seal。focused
+  135/135、受影响 reactor 542/542（Rendering 331/331）；`render`
+  `.sdlc/evidence/20260829-164442-render/metadata.json` 与 `fast`
+  `.sdlc/evidence/20260829-164530-fast/metadata.json` 均 passed/A1。cap-044+ deferred；T191-specific A2/A3
+  无，J0 pending、J1 未批准；无 public/app/Profile/provider/push/tag/PR 变化。
+
 ## 190. TV1-T190 执行卡
 
 - 状态：`resolved / automated_verified`；single writer: Codex；blocked by T21/T126/T189（均 resolved）。

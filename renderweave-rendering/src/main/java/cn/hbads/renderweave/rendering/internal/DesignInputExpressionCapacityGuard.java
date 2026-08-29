@@ -39,6 +39,11 @@ final class DesignInputExpressionCapacityGuard {
                 4_096,
                 ProblemCode.EXPRESSION_LIMIT_EXCEEDED,
                 EvaluationStage.TEMPLATE_CLOSURE),
+        MAPPING_CASES_PER_DEFINITION(
+                "expression.mappingCasesPerDefinition",
+                256,
+                ProblemCode.EXPRESSION_LIMIT_EXCEEDED,
+                EvaluationStage.TEMPLATE_CLOSURE),
         EXPLICIT_ROUNDING_SCALE_MAX(
                 "expression.explicitRoundingScaleMax",
                 64,
