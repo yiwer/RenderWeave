@@ -1112,6 +1112,12 @@ Label: wayfinder:map
   Linux `17+3`、workspace all-target/clippy/fmt 与 Maven 20/13/86/92/297 均绿；render `20260829-131604` 2/2、
   fast `20260829-131658` 3/3 metadata passed/A1。T181 专项 A2/A3 无、J0 pending；cap-052+ deferred，无
   public/app/wire/manifest/Profile 或 provider/push/tag/PR 变化。
+- [T182 — CapabilityState / AssetResolver recovery 5 分钟 retention](issues/182-capability-resolver-recovery-retention.md)
+  — **resolved / automated_verified**；blocked by T13/T21/T122/T181（均 resolved）。cap-052 已固定
+  CapabilityState 与 Asset selection recovery record 为原始 deadline 后 EXACT `300000 ms`：毫秒精度、checked
+  arithmetic、retry/load/cancel/downstream 均不续期。guard `44/44`、Evaluator `84/84`、AssetResolver `4/4`、
+  app PostgreSQL slices `17/17`；asset/server/web/full metadata 全部 passed/A1，full `17/17` steps。T182-specific
+  A2/A3 无、J0 pending、J1 未批准；cap-053+ deferred，无 HTTP/OpenAPI/Web/Flyway/Profile/provider/push/tag/PR 变化。
 
 - 改写或重解释现有 Schema/Inference v1 已提交历史，或在 dirty main 上直接实施 Template。
 - Workspace、组织/成员/分享/协作、跨 ownerScope 复制、通用 connector、任意 SQL/HTTP/文件/脚本、插件节点或运行时代码注册。

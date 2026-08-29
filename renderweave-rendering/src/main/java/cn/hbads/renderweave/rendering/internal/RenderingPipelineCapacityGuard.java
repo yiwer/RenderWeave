@@ -219,6 +219,11 @@ final class RenderingPipelineCapacityGuard {
                 60_000L,
                 Comparison.EXACT,
                 EvaluationStage.ENGINE),
+        DEADLINE_AND_RETENTION_CAPABILITY_AND_RESOLVER_RECOVERY_RETENTION_AFTER_DEADLINE_MILLIS(
+                "deadlineAndRetention.capabilityAndResolverRecoveryRetentionAfterDeadlineMillis",
+                300_000L,
+                Comparison.EXACT,
+                EvaluationStage.ENGINE),
         DEADLINE_AND_RETENTION_TOTAL_DEADLINE_MILLIS(
                 "deadlineAndRetention.totalDeadlineMillis",
                 60_000L,

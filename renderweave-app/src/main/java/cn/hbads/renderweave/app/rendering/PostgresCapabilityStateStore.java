@@ -68,10 +68,10 @@ public final class PostgresCapabilityStateStore implements CapabilityStateStore 
                             rs.getLong("expires_at")))
                     .stream()
                     .findFirst();
-            var nowSecond = System.currentTimeMillis() / 1000L;
+            var nowMillis = System.currentTimeMillis();
             if (existing.isPresent()) {
                 var record = existing.get();
-                if (record.expiresAt() <= nowSecond) {
+                if (record.expiresAt() <= nowMillis) {
                     jdbc.sql("""
                             delete from rendering_capability_state
                             where capability_state_id = :id
@@ -96,8 +96,8 @@ public final class PostgresCapabilityStateStore implements CapabilityStateStore 
                     .param("renderRequestId", request.renderRequestId().value())
                     .param("fingerprint", request.evaluationFingerprint())
                     .param("cipher", cipher)
-                    .param("issuedAt", request.issuedAtEpochSecond())
-                    .param("expiresAt", request.expiresAtEpochSecond())
+                    .param("issuedAt", request.issuedAtEpochMilli())
+                    .param("expiresAt", request.expiresAtEpochMilli())
                     .update();
             return new SaveOutcome.Stored(new CapabilityStateId(id));
         } catch (GeneralSecurity unavailable) {
@@ -126,8 +126,8 @@ public final class PostgresCapabilityStateStore implements CapabilityStateStore 
                 return new LoadOutcome.Missing();
             }
             var record = found.get();
-            var nowSecond = System.currentTimeMillis() / 1000L;
-            if (record.expiresAt() <= nowSecond) {
+            var nowMillis = System.currentTimeMillis();
+            if (record.expiresAt() <= nowMillis) {
                 return new LoadOutcome.Missing();
             }
             if (!record.fingerprint().equals(evaluationFingerprint)) {
@@ -144,12 +144,12 @@ public final class PostgresCapabilityStateStore implements CapabilityStateStore 
 
     /** 固定 TTL 过期清扫：只删过期行，不续期、不读取明文。 */
     public int sweepExpired() {
-        var nowSecond = System.currentTimeMillis() / 1000L;
+        var nowMillis = System.currentTimeMillis();
         return jdbc.sql("""
                         delete from rendering_capability_state
                         where expires_at <= :now
                         """)
-                .param("now", nowSecond)
+                .param("now", nowMillis)
                 .update();
     }
 

@@ -4629,3 +4629,33 @@
   不构成 T181 clock-retention 专项 A2；T181-specific A2/A3 无，J0 pending、J1 未批准。
 - cap-050 保持独立、cap-052 deferred；无 HTTP/OpenAPI/Web/migration/wire/manifest/Profile registration/
   certification/provider/API Key/真实数据/费用/push/tag/PR，OpenAPI 保持 0.13.0。
+
+# 2026-08-29 Template-v1 T182 CapabilityState / AssetResolver recovery retention（resolved / automated_verified）
+
+- T181 已以 verified commit `66fbfc00` 收口，worktree clean、ahead 172 且 DAG 无其他 active claim；冻结
+  `RW-T19-S8-074`、`RW-T19-S9-015/018/019` / Rendering-pipeline cap-052 是首个 unblocked residual，现按
+  single-writer claim T182。
+- cap-052 固定 `deadlineAndRetention.capabilityAndResolverRecoveryRetentionAfterDeadlineMillis` EXACT `300000`、
+  observed `299999/300000/300001`、REQUEST_CONTROL / public ENGINE / code-less retention invariant /
+  ALGORITHM_INVARIANT；不为 deployment/profile mismatch 发明 public Render problem code。
+- seam 固定为 Java internal capacity guard、Rendering-owned `CapabilityStateStore` 与 Asset-owned `AssetResolver`；
+  不新增共享 retention module，不把 retention 暴露成 caller-controlled request 字段。CapabilityState 当前秒级 expiry
+  会丢失非整秒 deadline 精度，是本票首个真实 RED；Asset resolver 已按 deadline + `300000 ms` 计算，需强化
+  immutable replay/non-renewal 证据。claim 时 A0、J0 pending，J1 未批准。
+- cap-053+ deferred；无 HTTP/OpenAPI/Web/Flyway/Renderer wire/manifest/Profile/provider/API Key/真实数据/费用/
+  push/tag/PR，OpenAPI 在 claim 时保持当时基线。
+- Java internal guard 已登记 code-less EXACT cap-052，覆盖 `299999/300000/300001` 并禁止 public rejection。
+  `CapabilityStateStore` 改为 epoch-millisecond lifecycle；Evaluator 从原始 deadline 使用 checked addition 固定
+  `+300000 ms` expiry，非整秒 deadline 保真，confirmed-missing retry、committed replay、load 与 wall-clock 漂移均
+  不续期，overflow 在 capability sampling/store 前 fail-closed。
+- PostgreSQL capability-state adapter 按毫秒保存、比较和清理，并重放首次 record/expiry。Asset-owned resolver 的既有
+  exact `deadline + 300000 ms` 行为由 production PostgreSQL tracer 强化：content replacement 后 retry 仍重放原
+  selection record 与原 expiry。
+- TDD/focused 全绿：guard `44/44`、Evaluator `84/84`、AssetResolver contract `4/4`、app PostgreSQL slices
+  `17/17`。A1：asset `.sdlc/evidence/20260829-133704-asset/`、server
+  `.sdlc/evidence/20260829-133725-server/`、web `.sdlc/evidence/20260829-135305-web/`、full
+  `.sdlc/evidence/20260829-135355-full/` metadata 均 passed；full `17/17` steps、runtime canary contract
+  `0.16.0`、provider attempts `0`。
+- T182-specific A2/A3 无，J0 pending、J1 未批准，因此状态为 `automated_verified`。cap-053+ deferred；无
+  HTTP/OpenAPI/Web/Flyway/Renderer wire/manifest/Profile registration/certification/provider/API Key/真实数据/费用/
+  push/tag/PR，OpenAPI 保持当前 `0.16.0`。

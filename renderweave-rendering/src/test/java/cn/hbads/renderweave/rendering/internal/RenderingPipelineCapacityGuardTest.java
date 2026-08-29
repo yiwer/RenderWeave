@@ -1044,4 +1044,27 @@ class RenderingPipelineCapacityGuardTest {
         assertThrows(IllegalArgumentException.class,
                 () -> guard.rejection(limit));
     }
+
+    @Test
+    void capabilityAndResolverRecoveryRetentionRequiresFrozenCodeLessDeploymentInvariant() {
+        var guard = new RenderingPipelineCapacityGuard();
+        var limit = RenderingPipelineCapacityGuard.Limit
+                .DEADLINE_AND_RETENTION_CAPABILITY_AND_RESOLVER_RECOVERY_RETENTION_AFTER_DEADLINE_MILLIS;
+
+        var below = guard.admitInvariant(limit, 299_999L).orElseThrow();
+        assertEquals(EvaluationStage.ENGINE, below.publicStage());
+        assertEquals("deadlineAndRetention.capabilityAndResolverRecoveryRetentionAfterDeadlineMillis",
+                below.limitId().value());
+        assertTrue(guard.admitInvariant(limit, 300_000L).isEmpty());
+        var above = guard.admitInvariant(limit, 300_001L).orElseThrow();
+        assertEquals(EvaluationStage.ENGINE, above.publicStage());
+        assertEquals("deadlineAndRetention.capabilityAndResolverRecoveryRetentionAfterDeadlineMillis",
+                above.limitId().value());
+
+        assertEquals(300_000L, guard.exactValue(limit));
+        assertThrows(IllegalArgumentException.class,
+                () -> guard.admit(limit, 300_000L));
+        assertThrows(IllegalArgumentException.class,
+                () -> guard.rejection(limit));
+    }
 }

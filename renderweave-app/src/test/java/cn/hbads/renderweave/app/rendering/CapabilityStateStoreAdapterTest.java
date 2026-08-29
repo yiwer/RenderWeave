@@ -48,27 +48,27 @@ class CapabilityStateStoreAdapterTest {
                 new RenderRequestId(requestId),
                 fingerprint,
                 "{\"clock\":1750000000}".getBytes(StandardCharsets.UTF_8),
-                1_750_000_000L,
+                1_750_000_000_000L,
                 expiresAt);
     }
 
     @Test
     void saveThenLoadRoundTripsEncryptedState() {
         var saved = (CapabilityStateStore.SaveOutcome.Stored) store.save(
-                request("00000000-0000-4000-8000-000000000001", "sha256:fp-1", 9_999_999_999L));
+                request("00000000-0000-4000-8000-000000000001", "sha256:fp-1", 9_999_999_999_999L));
 
         var loaded = (CapabilityStateStore.LoadOutcome.Loaded) store.load(
                 new RenderRequestId("00000000-0000-4000-8000-000000000001"), "sha256:fp-1");
 
         assertThat(new String(loaded.sealedState(), StandardCharsets.UTF_8))
                 .isEqualTo("{\"clock\":1750000000}");
-        assertThat(loaded.expiresAtEpochSecond()).isEqualTo(9_999_999_999L);
+        assertThat(loaded.expiresAtEpochMilli()).isEqualTo(9_999_999_999_999L);
     }
 
     @Test
     void cipherBytesNeverContainPlaintextState() {
         var saved = (CapabilityStateStore.SaveOutcome.Stored) store.save(
-                request("00000000-0000-4000-8000-000000000002", "sha256:fp-2", 9_999_999_999L));
+                request("00000000-0000-4000-8000-000000000002", "sha256:fp-2", 9_999_999_999_999L));
 
         var cipher = jdbc.sql("""
                         select state_cipher from rendering_capability_state
@@ -85,11 +85,27 @@ class CapabilityStateStoreAdapterTest {
     @Test
     void sameKeySameFingerprintReplaysExistingId() {
         var first = (CapabilityStateStore.SaveOutcome.Stored) store.save(
-                request("00000000-0000-4000-8000-000000000003", "sha256:fp-3", 9_999_999_999L));
+                request("00000000-0000-4000-8000-000000000003", "sha256:fp-3", 9_999_999_999_999L));
         var replayed = (CapabilityStateStore.SaveOutcome.Replayed) store.save(
-                request("00000000-0000-4000-8000-000000000003", "sha256:fp-3", 9_999_999_999L));
+                request("00000000-0000-4000-8000-000000000003", "sha256:fp-3", 9_999_999_999_999L));
 
         assertThat(replayed.id()).isEqualTo(first.id());
+    }
+
+    @Test
+    void sameKeyReplayDoesNotRenewMillisecondExpiry() {
+        var requestId = "00000000-0000-4000-8000-000000000008";
+        var originalExpiry = System.currentTimeMillis() + 300_000L;
+        var first = (CapabilityStateStore.SaveOutcome.Stored) store.save(
+                request(requestId, "sha256:fp-8", originalExpiry));
+
+        var replayed = (CapabilityStateStore.SaveOutcome.Replayed) store.save(
+                request(requestId, "sha256:fp-8", originalExpiry + 1_000L));
+        var loaded = (CapabilityStateStore.LoadOutcome.Loaded) store.load(
+                new RenderRequestId(requestId), "sha256:fp-8");
+
+        assertThat(replayed.id()).isEqualTo(first.id());
+        assertThat(loaded.expiresAtEpochMilli()).isEqualTo(originalExpiry);
     }
 
     @Test
@@ -97,7 +113,7 @@ class CapabilityStateStoreAdapterTest {
         var request = request(
                 "00000000-0000-4000-8000-000000000007",
                 "sha256:fp-7",
-                9_999_999_999L);
+                9_999_999_999_999L);
         try (var executor = Executors.newFixedThreadPool(2)) {
             var first = executor.submit(() -> store.save(request));
             var second = executor.submit(() -> store.save(request));
@@ -110,9 +126,9 @@ class CapabilityStateStoreAdapterTest {
 
     @Test
     void sameKeyDifferentFingerprintConflicts() {
-        store.save(request("00000000-0000-4000-8000-000000000004", "sha256:fp-4", 9_999_999_999L));
+        store.save(request("00000000-0000-4000-8000-000000000004", "sha256:fp-4", 9_999_999_999_999L));
 
-        var outcome = store.save(request("00000000-0000-4000-8000-000000000004", "sha256:other", 9_999_999_999L));
+        var outcome = store.save(request("00000000-0000-4000-8000-000000000004", "sha256:other", 9_999_999_999_999L));
 
         assertThat(outcome)
                 .isInstanceOf(CapabilityStateStore.SaveOutcome.FingerprintConflict.class);
@@ -121,7 +137,7 @@ class CapabilityStateStoreAdapterTest {
     @Test
     void loadWithWrongFingerprintConflicts() {
         var saved = (CapabilityStateStore.SaveOutcome.Stored) store.save(
-                request("00000000-0000-4000-8000-000000000005", "sha256:fp-5", 9_999_999_999L));
+                request("00000000-0000-4000-8000-000000000005", "sha256:fp-5", 9_999_999_999_999L));
 
         var outcome = store.load(
                 new RenderRequestId("00000000-0000-4000-8000-000000000005"),

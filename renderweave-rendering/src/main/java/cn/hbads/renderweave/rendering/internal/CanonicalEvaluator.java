@@ -39,6 +39,10 @@ final class CanonicalEvaluator implements Evaluator {
             EVALUATION_AND_DOCUMENT_SEAL_DEADLINE_LIMIT =
             RenderingPipelineCapacityGuard.Limit
                     .DEADLINE_AND_RETENTION_EVALUATION_AND_DOCUMENT_SEAL_MILLIS;
+    private static final RenderingPipelineCapacityGuard.Limit
+            CAPABILITY_AND_RESOLVER_RECOVERY_RETENTION_LIMIT =
+            RenderingPipelineCapacityGuard.Limit
+                    .DEADLINE_AND_RETENTION_CAPABILITY_AND_RESOLVER_RECOVERY_RETENTION_AFTER_DEADLINE_MILLIS;
     private static final RenderingPipelineCapacityGuard.Limit TOTAL_DEADLINE_LIMIT =
             RenderingPipelineCapacityGuard.Limit
                     .DEADLINE_AND_RETENTION_TOTAL_DEADLINE_MILLIS;
@@ -356,12 +360,21 @@ final class CanonicalEvaluator implements Evaluator {
         if (evaluationControl.deadlineExceeded()) {
             return new CapabilityRuntimeStageDeadlineExceeded();
         }
-        var issuedAt = clock.instant().getEpochSecond();
+        var issuedAt = clock.millis();
         var deadlineMillis = command.deadlineAtEpochMilli();
         var deadlineAtMonotonicNanos = command.deadlineAtMonotonicNanos();
-        var deadlineSecond = Math.floorDiv(deadlineMillis, 1_000L)
-                + (Math.floorMod(deadlineMillis, 1_000L) == 0L ? 0L : 1L);
-        var expiresAt = Math.max(issuedAt + 1L, deadlineSecond + 300L);
+        final long expiresAt;
+        try {
+            expiresAt = Math.addExact(
+                    deadlineMillis,
+                    CAPACITY_GUARD.exactValue(
+                            CAPABILITY_AND_RESOLVER_RECOVERY_RETENTION_LIMIT));
+        } catch (ArithmeticException overflow) {
+            return new CapabilityRuntimeRejected(ProblemCode.CAPABILITY_STATE_UNAVAILABLE);
+        }
+        if (expiresAt <= issuedAt) {
+            return new CapabilityRuntimeRejected(ProblemCode.CAPABILITY_STATE_UNAVAILABLE);
+        }
         var initializationAttempts = capabilityBudget.newInitializationAttempts();
         while (true) {
             if (deadlineExpired(deadlineAtMonotonicNanos)) {

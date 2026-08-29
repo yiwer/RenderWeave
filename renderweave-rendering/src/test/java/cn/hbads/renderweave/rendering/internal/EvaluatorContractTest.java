@@ -516,13 +516,35 @@ class EvaluatorContractTest {
                 clock);
 
         assertInstanceOf(EvaluationOutcome.SealedDocument.class,
-                evaluator.evaluate(command("{\"rootDocument\":{}}")));
+                evaluator.evaluate(command("{\"rootDocument\":{}}", 61_123L)));
 
         assertEquals(2, stateStore.requests.size());
-        assertEquals(1L, stateStore.requests.get(0).issuedAtEpochSecond());
-        assertEquals(1L, stateStore.requests.get(1).issuedAtEpochSecond());
-        assertEquals(361L, stateStore.requests.get(0).expiresAtEpochSecond());
-        assertEquals(361L, stateStore.requests.get(1).expiresAtEpochSecond());
+        assertEquals(1_000L, stateStore.requests.get(0).issuedAtEpochMilli());
+        assertEquals(1_000L, stateStore.requests.get(1).issuedAtEpochMilli());
+        assertEquals(361_123L, stateStore.requests.get(0).expiresAtEpochMilli());
+        assertEquals(361_123L, stateStore.requests.get(1).expiresAtEpochMilli());
+    }
+
+    @Test
+    void capabilityRecoveryExpiryOverflowFailsClosedBeforeSampling() {
+        var stateStore = new RecordingCapabilityStateStore();
+        var runtime = new RecordingCapabilityRuntime();
+        var evaluator = evaluator(
+                closureWith(withUnusedClock(canvasWithRect())),
+                resolver(),
+                stateStore,
+                runtime,
+                DEFAULT_BUDGET_VECTOR,
+                new MutableClock(1_000L));
+
+        var rejected = assertInstanceOf(EvaluationOutcome.Rejected.class,
+                evaluator.evaluate(command("{\"rootDocument\":{}}", Long.MAX_VALUE)));
+
+        assertEquals(EvaluationStage.CAPABILITY_STATE, rejected.stage());
+        assertEquals(RenderingProblem.ProblemCode.CAPABILITY_STATE_UNAVAILABLE,
+                rejected.problem().code());
+        assertEquals(0, runtime.establishCalls);
+        assertEquals(0, stateStore.saveCalls);
     }
 
     @Test
@@ -2290,7 +2312,7 @@ class EvaluatorContractTest {
             if (!committed.evaluationFingerprint().equals(evaluationFingerprint)) {
                 return new LoadOutcome.LoadFingerprintConflict();
             }
-            return new LoadOutcome.Loaded(committed.sealedState(), committed.expiresAtEpochSecond());
+            return new LoadOutcome.Loaded(committed.sealedState(), committed.expiresAtEpochMilli());
         }
     }
 
@@ -2314,7 +2336,7 @@ class EvaluatorContractTest {
                 return new LoadOutcome.Missing();
             }
             return new LoadOutcome.Loaded(
-                    committed.sealedState(), committed.expiresAtEpochSecond());
+                    committed.sealedState(), committed.expiresAtEpochMilli());
         }
     }
 
@@ -2408,7 +2430,7 @@ class EvaluatorContractTest {
         @Override
         public LoadOutcome load(RenderRequestId requestId, String evaluationFingerprint) {
             ticker.setNanos(deadlineNanos);
-            return new LoadOutcome.Loaded(new byte[]{1, 2, 3}, 361L);
+            return new LoadOutcome.Loaded(new byte[]{1, 2, 3}, 361_000L);
         }
     }
 
@@ -2439,7 +2461,7 @@ class EvaluatorContractTest {
             }
             ticker.setNanos(deadlineNanos);
             return new LoadOutcome.Loaded(
-                    committed.sealedState(), committed.expiresAtEpochSecond());
+                    committed.sealedState(), committed.expiresAtEpochMilli());
         }
     }
 
