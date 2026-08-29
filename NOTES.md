@@ -1,5 +1,14 @@
 # NOTES.md
 
+# 2026-08-29 Template-v1 T207 Rendering Pipeline execution-class preissuance（resolved / automated_verified）
+- 实现 `665f9568`、gate hardening `3da7892a`、digest evidence fix `9782359c`、target `9f1a3f44`；target
+  SHA-256 `a834125e...c99bd9`，assigned digest `a91ad6cc...65ad4c`，materializer 3/3 byte-identical。
+- fresh class gate `20260829-225411` passed 2/2 roles、52 axes、156+156 candidates、1248 assertions，并经真实
+  Java Evaluator/Sealer → Rust public parser/document/resource-free Engine/result chain 生成完整 794x1123 PNG（A2）。
+- `render` `20260829-225515`、`template` `20260829-225630`、`fast` `20260829-225704` passed（A1）。formal
+  仍 253/253、本 class 0/0、ordinal 4 pending；A3 absent、J0 pending、J1 未批准。网络/provider attempts 0；
+  无 Profile/deployment/API/真实数据/生产/push/tag/PR，用户 dirty work/stash 未触碰。claim 已释放。
+
 # 2026-08-29 Template-v1 T206 Design/Input/Expression formal issuance（resolved / automated_verified）
 - 实现 `7d10f776`、transport hardening `74ebc88c`、target `eb843497`、issuance `e75ba4c4`；原 58/58 prefix
   byte-identical，仅追加 assigned 195+195，formal 253/253、capacity 207/525、ordinal 3

@@ -6664,3 +6664,17 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
   `template` `20260829-221731` 与 `fast` `20260829-221902` passed（A1）。A3 absent、J0 pending、J1 未批准；
   无 app wiring/product-semantic delta，未重复 server/full。provider attempts 0，未触碰用户 dirty work/stash，
   未 push/tag/PR。claim 已释放；Rendering/Renderer Exact Output 318 条与 Ticket 19 继续 pending。
+
+## 207. TV1-T207 执行卡
+
+- 状态：`resolved / automated_verified / unclaimed`；Blocked by T206/T21/T22/T122/T123/T136–T182（均 resolved）。
+- 实现 `665f9568`、gate hardening `3da7892a`、digest evidence fix `9782359c`、target `9f1a3f44` 已冻结
+  resource-free root 的 Java `Evaluator.evaluate` seal → exact command/document → Rust public parser/document/
+  resource-free Engine/result terminal chain。target SHA-256 `a834125e...c99bd9`，assigned digest
+  `a91ad6cc...65ad4c`，materializer 3/3 byte-identical。
+- fresh class gate `20260829-225411` passed 2/2 roles、52 axes、156+156 candidates、1248 assertions，并生成完整
+  794x1123 PNG（A2）；fresh `render` `20260829-225515`、`template` `20260829-225630`、`fast`
+  `20260829-225704` passed（A1）。
+- formal 仍 253/253、本 class 0/0、ordinal 4 pending、`recordIssuanceAllowed=false`、
+  `executionClassExecutable=false`；A3 absent、J0 pending、J1 未批准。无 Profile/deployment/API/provider/真实数据/
+  生产/push/tag/PR，claim 已释放；下一 frontier 为独立 156+156 formal issuance，尚未登记或 claim。

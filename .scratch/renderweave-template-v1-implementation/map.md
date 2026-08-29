@@ -925,6 +925,13 @@ Label: wayfinder:map
 
 ## Current frontier
 
+- [T207 — 物化 Rendering Pipeline execution-class preissuance](issues/207-rendering-pipeline-execution-class-preissuance.md)
+  — **resolved / automated_verified / unclaimed**；实现 `665f9568`、gate hardening `3da7892a`、digest fix
+  `9782359c` 与 target `9f1a3f44` 已冻结 Java Evaluator/Sealer → exact command/document → Rust public
+  parser/document/resource-free Engine/result chain。target SHA-256 `a834125e...c99bd9`，assigned digest
+  `a91ad6cc...65ad4c`，materializer 3/3 byte-identical；fresh class gate 为 2/2 roles、52 axes、156+156、1248
+  assertions（A2），`render`/`template`/`fast` passed（A1）。formal 253/253、本 class 0/0、ordinal 4 pending；
+  A3 absent、J0 pending、J1 未批准。claim 已释放，下一 Rendering Pipeline 156+156 issuance frontier 尚未登记或 claim。
 - [T206 — 发行 Design/Input/Expression 195+195 容量记录](issues/206-issue-design-input-expression-capacity-records.md)
   — **resolved / automated_verified / unclaimed**；实现 `7d10f776`、transport hardening `74ebc88c`、target
   `eb843497` 与 issuance `e75ba4c4` 已保持原 58/58 prefix 逐字节不变并仅追加 assigned 195+195 suffix。
