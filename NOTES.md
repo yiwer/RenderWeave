@@ -4435,6 +4435,8 @@
   `.sdlc/evidence/20260829-092653-fast/`（3/3）metadata passed，`git diff --check` 与重复 authority 搜索通过。
   cap-043 无 T173 专属 A2/A3，既有独立 replay 不冒充本票证据；J0 pending、J1 未批准，未重复 server/full。
 - 无 app wiring/API/Web/migration/Profile/provider/API Key/真实数据/费用/Profile registration/push/tag/PR。
+- 状态回填后的 `fast` A1 `.sdlc/evidence/20260829-095005-fast/` metadata passed、3/3；stderr 仅 npm 配置
+  warning，step exit code 与 metadata truth 均为成功。
 - 状态回填后的 `fast` A1 `.sdlc/evidence/20260829-092820-fast/` metadata passed、3/3；stderr 仅 npm 配置
   warning，step exit code 与 metadata truth 均为成功。
 
@@ -4461,3 +4463,25 @@
 - 无 app wiring/API/Web/migration/Profile/provider/API Key/真实数据/费用/Profile registration/push/tag/PR。
 - 状态回填后的 `fast` A1 `.sdlc/evidence/20260829-093801-fast/` metadata passed、3/3；stderr 仅 npm 配置
   warning，step exit code 与 metadata truth 均为成功。
+
+# 2026-08-29 Template-v1 T175 CapabilityState initialization attempts guard 合流（resolved / automated_verified）
+
+- T174 已以 verified commit `16d205a4` 收口，worktree clean、ahead 165 且 DAG 无其他 active claim；冻结
+  `RW-T19-S8-032` / cap-045 是下一个 unblocked frontier，现按 single-writer claim T175。
+- cap-045 固定 `capabilityRuntime.initializationAttempts` EXACT `3`、observed `2/3/4`，
+  CAPABILITY_STATE_INITIALIZATION / public CAPABILITY_STATE / CAPABILITY_STATE_UNAVAILABLE /
+  ZERO_DOCUMENT_OUTPUT，reservation point 为开始下一次 initialization attempt 之前。
+- profile admission 必须仅接受 `3`；runtime 继续允许第 1–3 次 reserve 并在第 4 次前 fail closed。两种语义将
+  复用同一 catalog authority，删除 `CapabilityBudget` 的重复 frozen value、比较、maximum 与手写 limitId。
+  cap-046 继续 deferred。
+- TDD 首轮得到缺失 `CAPABILITY_RUNTIME_INITIALIZATION_ATTEMPTS` 的唯一预期 compile RED；catalog 与
+  production counter 合流后 guard 37/37，expanded focused 131/131。未伪造行为 RED：T135 已有正确
+  exact-profile/retry 行为，本票只收敛 frozen guard authority。
+- `RenderingPipelineCapacityGuard` 现独占 initialization-attempt id/EXACT 3/problem/public stage；profile
+  `2/4` 继续 fail closed，runtime 第 1–3 次 reserve 后第 4 次前以相同 taxonomy 拒绝。`CapabilityBudget`
+  删除重复常量、stored maximum、本地比较与手写 limitId，并仅在成功 admission 后提交 counter。
+- 受影响 reactor 为 20/13/84/92/271；`render` A1 `.sdlc/evidence/20260829-094806-render/`（2/2）与
+  `fast` A1 `.sdlc/evidence/20260829-094853-fast/`（3/3）metadata passed，`git diff --check` 与重复
+  authority 搜索通过。cap-045 无 T175 专属 A2/A3，既有独立 replay 不冒充本票证据；J0 pending、J1 未批准，
+  未重复 server/full。
+- 无 app wiring/API/Web/migration/Profile/provider/API Key/真实数据/费用/Profile registration/push/tag/PR。

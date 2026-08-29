@@ -1064,6 +1064,12 @@ Label: wayfinder:map
   effective tightening、provider 后/结果返回前 reservation、overflow-safe projected sum 与失败不提交 result-byte
   counter。focused 130/130、受影响 reactor 20/13/84/92/270 与 render/fast metadata 全绿；A1、无 T174 专属
   A2/A3、J0。
+- [T175 — CapabilityState initialization attempts production guard 合流](issues/175-capability-initialization-attempts-production-guard.md)
+  — **resolved / automated_verified**；blocked by T21/T133/T135/T174（均 resolved）。按
+  `RW-T19-S8-032` 与 cap-045，已将 exact-profile `2/3/4` 与 runtime 第 1–3 次可尝试、第 4 次前拒绝合流到
+  唯一 production guard；删除重复 frozen value/比较/stored maximum/手写 limitId，并保持 retry、
+  unknown-commit recovery 与零第 4 次 store/provider 交互。focused 131/131、受影响 reactor
+  20/13/84/92/271 与 render/fast metadata 全绿；A1、无 T175 专属 A2/A3、J0。cap-046 继续 deferred。
 
 - 改写或重解释现有 Schema/Inference v1 已提交历史，或在 dirty main 上直接实施 Template。
 - Workspace、组织/成员/分享/协作、跨 ownerScope 复制、通用 connector、任意 SQL/HTTP/文件/脚本、插件节点或运行时代码注册。

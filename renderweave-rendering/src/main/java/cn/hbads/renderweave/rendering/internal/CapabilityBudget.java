@@ -14,7 +14,6 @@ final class CapabilityBudget {
 
     private static final RenderingPipelineCapacityGuard CAPACITY_GUARD =
             new RenderingPipelineCapacityGuard();
-    private static final long MAX_INITIALIZATION_ATTEMPTS = 3;
     private static final long MAX_RANDOM_REJECTION_ATTEMPTS = 128;
 
     private final Limits limits;
@@ -40,8 +39,7 @@ final class CapabilityBudget {
                 CAPACITY_GUARD.maximumInclusive(RenderingPipelineCapacityGuard.Limit
                         .CAPABILITY_RUNTIME_CAPABILITY_STATE_RECORD_BYTES),
                 CAPACITY_GUARD.maximumInclusive(RenderingPipelineCapacityGuard.Limit
-                        .CAPABILITY_RUNTIME_RESULT_DIGEST_STREAMING_BYTES),
-                MAX_INITIALIZATION_ATTEMPTS));
+                        .CAPABILITY_RUNTIME_RESULT_DIGEST_STREAMING_BYTES)));
     }
 
     static CapabilityBudget fromEffectiveVector(String effectiveBudgetVector) {
@@ -58,6 +56,11 @@ final class CapabilityBudget {
         var capabilityRuntime = objectMember(groups, "capabilityRuntime");
         var limits = objectMember(capabilityRuntime, "limits");
         exactLimit(limits, "randomRejectionAttempts", MAX_RANDOM_REJECTION_ATTEMPTS);
+        exactCatalogLimit(
+                limits,
+                "initializationAttempts",
+                RenderingPipelineCapacityGuard.Limit
+                        .CAPABILITY_RUNTIME_INITIALIZATION_ATTEMPTS);
         return new CapabilityBudget(new Limits(
                 limit(limits, "staticCapabilitySources",
                         CAPACITY_GUARD.maximumInclusive(RenderingPipelineCapacityGuard.Limit
@@ -82,8 +85,7 @@ final class CapabilityBudget {
                                 .CAPABILITY_RUNTIME_CAPABILITY_STATE_RECORD_BYTES)),
                 limit(limits, "resultDigestStreamingBytes",
                         CAPACITY_GUARD.maximumInclusive(RenderingPipelineCapacityGuard.Limit
-                                .CAPABILITY_RUNTIME_RESULT_DIGEST_STREAMING_BYTES)),
-                exactLimit(limits, "initializationAttempts", MAX_INITIALIZATION_ATTEMPTS)));
+                                .CAPABILITY_RUNTIME_RESULT_DIGEST_STREAMING_BYTES))));
     }
 
     RenderingProblem admitStaticSources(long sourceCount) {
@@ -113,7 +115,7 @@ final class CapabilityBudget {
     }
 
     InitializationAttempts newInitializationAttempts() {
-        return new InitializationAttempts(limits.initializationAttempts());
+        return new InitializationAttempts();
     }
 
     private static RenderJson.ObjectValue objectMember(
@@ -125,6 +127,17 @@ final class CapabilityBudget {
     }
 
     private static long limit(RenderJson.ObjectValue limits, String member, long frozenMaximum) {
+        var value = canonicalNonNegativeLimit(limits, member);
+        if (value > frozenMaximum) {
+            throw invalidVector();
+        }
+        return value;
+    }
+
+    private static long canonicalNonNegativeLimit(
+            RenderJson.ObjectValue limits,
+            String member
+    ) {
         if (!(limits.members().get(member) instanceof RenderJson.NumberValue number)) {
             throw invalidVector();
         }
@@ -134,13 +147,24 @@ final class CapabilityBudget {
         } catch (NumberFormatException invalid) {
             throw invalidVector();
         }
-        if (value < 0 || value > frozenMaximum) {
+        if (value < 0) {
             throw invalidVector();
         }
         if (!Long.toString(value).equals(number.rawToken())) {
             throw invalidVector();
         }
         return value;
+    }
+
+    private static void exactCatalogLimit(
+            RenderJson.ObjectValue limits,
+            String member,
+            RenderingPipelineCapacityGuard.Limit limit
+    ) {
+        var value = canonicalNonNegativeLimit(limits, member);
+        if (CAPACITY_GUARD.admit(limit, value).isPresent()) {
+            throw invalidVector();
+        }
     }
 
     private static long exactLimit(
@@ -278,18 +302,21 @@ final class CapabilityBudget {
     }
 
     static final class InitializationAttempts {
-        private final long maximum;
         private long attempts;
 
-        private InitializationAttempts(long maximum) {
-            this.maximum = maximum;
-        }
-
         synchronized LimitExceeded reserve() {
-            if (attempts >= maximum) {
-                return new LimitExceeded("capabilityRuntime.initializationAttempts");
+            var nextAttempts = attempts == Long.MAX_VALUE
+                    ? Long.MAX_VALUE
+                    : attempts + 1L;
+            var problem = CAPACITY_GUARD.admitRuntimeMaximum(
+                            RenderingPipelineCapacityGuard.Limit
+                                    .CAPABILITY_RUNTIME_INITIALIZATION_ATTEMPTS,
+                            nextAttempts)
+                    .orElse(null);
+            if (problem != null) {
+                return new LimitExceeded(problem.limitId().orElseThrow().value());
             }
-            attempts++;
+            attempts = nextAttempts;
             return null;
         }
     }
@@ -302,8 +329,7 @@ final class CapabilityBudget {
             long positionBytesPerDemand,
             long positionBytesTotal,
             long capabilityStateRecordBytes,
-            long resultDigestStreamingBytes,
-            long initializationAttempts
+            long resultDigestStreamingBytes
     ) {
     }
 }

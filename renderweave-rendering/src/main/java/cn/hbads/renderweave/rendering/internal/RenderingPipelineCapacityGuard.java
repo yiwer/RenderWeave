@@ -18,6 +18,11 @@ import java.util.Optional;
  */
 final class RenderingPipelineCapacityGuard {
 
+    enum Comparison {
+        MAX_INCLUSIVE,
+        EXACT
+    }
+
     enum Limit {
         ACTUAL_TEMPLATE_INVOCATIONS(
                 "closureAndExpansion.actualTemplateInvocations", 256),
@@ -178,15 +183,22 @@ final class RenderingPipelineCapacityGuard {
                 "capabilityRuntime.resultDigestStreamingBytes",
                 16_777_216L,
                 ProblemCode.CAPABILITY_BUDGET_EXCEEDED,
-                EvaluationStage.MATERIALIZATION);
+                EvaluationStage.MATERIALIZATION),
+        CAPABILITY_RUNTIME_INITIALIZATION_ATTEMPTS(
+                "capabilityRuntime.initializationAttempts",
+                3L,
+                Comparison.EXACT,
+                ProblemCode.CAPABILITY_STATE_UNAVAILABLE,
+                EvaluationStage.CAPABILITY_STATE);
 
         private final String id;
-        private final long maximumInclusive;
+        private final long frozenValue;
+        private final Comparison comparison;
         private final ProblemCode problemCode;
         private final EvaluationStage publicStage;
 
         Limit(String id, long maximumInclusive) {
-            this(id, maximumInclusive,
+            this(id, maximumInclusive, Comparison.MAX_INCLUSIVE,
                     ProblemCode.EVALUATION_BUDGET_EXCEEDED,
                     EvaluationStage.MATERIALIZATION);
         }
@@ -197,15 +209,32 @@ final class RenderingPipelineCapacityGuard {
                 ProblemCode problemCode,
                 EvaluationStage publicStage
         ) {
+            this(id, maximumInclusive, Comparison.MAX_INCLUSIVE, problemCode, publicStage);
+        }
+
+        Limit(
+                String id,
+                long frozenValue,
+                Comparison comparison,
+                ProblemCode problemCode,
+                EvaluationStage publicStage
+        ) {
             this.id = id;
-            this.maximumInclusive = maximumInclusive;
+            this.frozenValue = frozenValue;
+            this.comparison = comparison;
             this.problemCode = problemCode;
             this.publicStage = publicStage;
         }
     }
 
     Optional<RenderingProblem> admit(Limit limit, long observedValue) {
-        return admit(limit, observedValue, limit.maximumInclusive);
+        Objects.requireNonNull(limit, "limit");
+        requireNonNegative(observedValue, "observedValue");
+        var admitted = switch (limit.comparison) {
+            case MAX_INCLUSIVE -> observedValue <= limit.frozenValue;
+            case EXACT -> observedValue == limit.frozenValue;
+        };
+        return admitted ? Optional.empty() : problem(limit);
     }
 
     Optional<RenderingProblem> admit(
@@ -214,30 +243,62 @@ final class RenderingPipelineCapacityGuard {
             long effectiveMaximumInclusive
     ) {
         Objects.requireNonNull(limit, "limit");
-        if (observedValue < 0) {
-            throw new IllegalArgumentException("observedValue must be non-negative");
-        }
+        requireComparison(limit, Comparison.MAX_INCLUSIVE);
+        requireNonNegative(observedValue, "observedValue");
         if (effectiveMaximumInclusive < 0
-                || effectiveMaximumInclusive > limit.maximumInclusive) {
+                || effectiveMaximumInclusive > limit.frozenValue) {
             throw new IllegalArgumentException(
                     "effective maximum must be within the frozen limit");
         }
         if (observedValue <= effectiveMaximumInclusive) {
             return Optional.empty();
         }
-        return Optional.of(RenderingProblem.ofLimit(
-                limit.problemCode,
-                limit.publicStage,
-                new LimitId(limit.id)));
+        return problem(limit);
     }
 
     long maximumInclusive(Limit limit) {
         Objects.requireNonNull(limit, "limit");
-        return limit.maximumInclusive;
+        requireComparison(limit, Comparison.MAX_INCLUSIVE);
+        return limit.frozenValue;
+    }
+
+    long exactValue(Limit limit) {
+        Objects.requireNonNull(limit, "limit");
+        requireComparison(limit, Comparison.EXACT);
+        return limit.frozenValue;
+    }
+
+    Optional<RenderingProblem> admitRuntimeMaximum(Limit limit, long observedValue) {
+        Objects.requireNonNull(limit, "limit");
+        requireComparison(limit, Comparison.EXACT);
+        requireNonNegative(observedValue, "observedValue");
+        return observedValue <= limit.frozenValue
+                ? Optional.empty()
+                : problem(limit);
     }
 
     RequestTracker newRequestTracker() {
         return new RequestTracker(this);
+    }
+
+    private static void requireComparison(Limit limit, Comparison expected) {
+        if (limit.comparison != expected) {
+            throw new IllegalArgumentException(
+                    "limit comparison must be " + expected);
+        }
+    }
+
+    private static void requireNonNegative(long value, String name) {
+        if (value < 0) {
+            throw new IllegalArgumentException(name + " must be non-negative");
+        }
+    }
+
+    private static Optional<RenderingProblem> problem(Limit limit) {
+        return Optional.of(RenderingProblem.ofLimit(
+                limit.problemCode,
+                limit.publicStage,
+                new LimitId(limit.id)));
     }
 
     /** Request-local atomic accumulator backed by the same frozen limit catalog. */
@@ -251,6 +312,7 @@ final class RenderingPipelineCapacityGuard {
 
         Optional<RenderingProblem> reserve(Limit limit, long delta) {
             Objects.requireNonNull(limit, "limit");
+            requireComparison(limit, Comparison.MAX_INCLUSIVE);
             if (delta < 0) {
                 throw new IllegalArgumentException("delta must be non-negative");
             }
@@ -267,6 +329,7 @@ final class RenderingPipelineCapacityGuard {
 
         Optional<RenderingProblem> observeMaximum(Limit limit, long observedValue) {
             Objects.requireNonNull(limit, "limit");
+            requireComparison(limit, Comparison.MAX_INCLUSIVE);
             if (observedValue < 0) {
                 throw new IllegalArgumentException("observedValue must be non-negative");
             }
