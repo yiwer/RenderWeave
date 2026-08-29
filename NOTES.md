@@ -1,5 +1,18 @@
 # NOTES.md
 
+# 2026-08-29 Template-v1 T188 Expression source total capacity（resolved / automated_verified）
+- cap-040 `expression.sourceUtf8BytesTotal=1048576` 已合流到现有 Rendering.internal 单一 guard；其
+  per-DesignDSL `SourceBudget` 先执行 T187 单项检查，再用 `BigInteger` 精确累计总量，并按 frozen snapshot
+  重置。真实 parser 在 UTF-8 decode/AST 前消费同一 authority，全部 unused Expression 均计入。
+- TDD 记录 missing-limit/missing-budget compile RED 与真实 Evaluator behavioral RED；GREEN 覆盖
+  `1048575/1048576/1048577`、单项 precedence、root/child 各 exact-at，以及单 DSL above 时
+  TEMPLATE_CLOSURE / EXPRESSION_LIMIT_EXCEEDED 与零 input/capability/state work。
+- focused 124/124、受影响 reactor 531/531（Rendering 320/320）；`render`
+  `.sdlc/evidence/20260829-160741-render/metadata.json` 与 `fast`
+  `.sdlc/evidence/20260829-160857-fast/metadata.json` 均 passed/A1。T188-specific A2/A3 与 formal record
+  issuance 均无；J0 pending、J1 未批准。无 public/app/OpenAPI/Web/Flyway/Profile/provider/API Key/真实数据/
+  费用/push/tag/PR 变化。
+
 # 2026-08-29 Template-v1 T187 Expression source UTF-8 capacity（resolved / automated_verified）
 - 冻结 cap-039 `expression.sourceUtf8BytesPerExpression=65536` 已合流到现有 Rendering.internal 单一 guard；
   parser 在 decode/AST 前对 `65535/65536/65537` 返回 exact typed outcome，移除了裸 `65_536`、重复 limitId 与

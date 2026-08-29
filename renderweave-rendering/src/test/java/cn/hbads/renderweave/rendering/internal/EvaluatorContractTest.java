@@ -192,6 +192,55 @@ class EvaluatorContractTest {
     }
 
     @Test
+    void sourceUtf8TotalOverBudgetRejectsAtClosureBeforeAllDownstreamWork() {
+        var stateStore = new RecordingCapabilityStateStore();
+        var runtime = new RecordingCapabilityRuntime();
+        var inputResolutions = new AtomicInteger();
+        var targetResolver = resolver();
+        ValidationTargetResolver recordingResolver = target -> {
+            inputResolutions.incrementAndGet();
+            return targetResolver.resolve(target);
+        };
+        var evaluator = evaluator(
+                closureWith(withUnusedSourceTotalOverflow(canvasWithRect())),
+                recordingResolver,
+                stateStore,
+                runtime);
+
+        var rejected = assertInstanceOf(EvaluationOutcome.Rejected.class,
+                evaluator.evaluate(command("{\"rootDocument\":{}}")));
+
+        assertEquals(EvaluationStage.TEMPLATE_CLOSURE, rejected.stage());
+        assertEquals(RenderingProblem.ProblemCode.EXPRESSION_LIMIT_EXCEEDED,
+                rejected.problem().code());
+        assertEquals("expression.sourceUtf8BytesTotal",
+                rejected.problem().limitId().orElseThrow().value());
+        assertEquals(0, inputResolutions.get());
+        assertEquals(0, runtime.establishCalls);
+        assertEquals(0, runtime.restoreCalls);
+        assertEquals(0, stateStore.loadCalls);
+        assertEquals(0, stateStore.saveCalls);
+    }
+
+    @Test
+    void sourceUtf8TotalResetsForEachDslAtTheFrozenMaximum() {
+        var stateStore = new RecordingCapabilityStateStore();
+        var runtime = new RecordingCapabilityRuntime();
+        var evaluator = evaluator(
+                closureWithSourceTotalAtLimitPerDsl(),
+                resolver(),
+                stateStore,
+                runtime);
+
+        assertInstanceOf(EvaluationOutcome.SealedDocument.class,
+                evaluator.evaluate(command("{\"rootDocument\":{}}")));
+        assertEquals(0, runtime.establishCalls);
+        assertEquals(0, runtime.restoreCalls);
+        assertEquals(0, stateStore.loadCalls);
+        assertEquals(0, stateStore.saveCalls);
+    }
+
+    @Test
     void randomDemandOverBudgetRejectsBeforeCallingProviderForTheNextPosition() {
         var runtime = new SupplyingCapabilityRuntime();
         var evaluator = evaluator(
@@ -2606,6 +2655,38 @@ class EvaluatorContractTest {
                 List.copyOf(edges));
     }
 
+    private static ClosureSnapshot closureWithSourceTotalAtLimitPerDsl() {
+        var useId = capacityUuid(2, 700);
+        var sources = new ArrayList<CapacityExpressionSource>();
+        for (var index = 0; index < 16; index++) {
+            sources.add(new CapacityExpressionSource(asciiTextExpression(65_536), false));
+        }
+        var sourceBytes = sources.stream()
+                .mapToInt(source -> source.source().getBytes(StandardCharsets.UTF_8).length)
+                .sum();
+        assertEquals(1_048_576, sourceBytes);
+
+        var rootSnapshot = snapshot(
+                ROOT_ID,
+                withCapacityExpressionSources(
+                        canvasWithChildren(templateUse(CHILD_ID, useId, 700)),
+                        sources));
+        var childSnapshot = snapshot(
+                CHILD_ID,
+                withCapacityExpressionSources(canvasWithChildren(""), sources));
+        return new ClosureSnapshot(
+                new TemplateClosureAuthority.OwnerScope("owner-a"),
+                rootSnapshot.templateId(),
+                1,
+                List.of(rootSnapshot, childSnapshot),
+                List.of(new ClosureEdge(
+                        rootSnapshot.templateId(),
+                        1,
+                        useId,
+                        childSnapshot.templateId(),
+                        1)));
+    }
+
     private static ClosureSnapshot closureWithSkippedTemplateUses(int skippedCount) {
         var skippedUseId = capacityUuid(4, 1);
         var actualUseId = capacityUuid(4, 2);
@@ -3015,6 +3096,57 @@ class EvaluatorContractTest {
                 + "\"inputs\":[{\"alias\":\"draw\",\"source\":{\"kind\":\"capability\","
                 + "\"capability\":\"RANDOM\",\"operation\":\"UNIFORM_DECIMAL_0_1\"}}],"
                 + "\"source\":\"" + source + "\"}]");
+    }
+
+    private static String withUnusedSourceTotalOverflow(String designDocument) {
+        var sources = new ArrayList<CapacityExpressionSource>();
+        for (var index = 0; index < 15; index++) {
+            sources.add(new CapacityExpressionSource(asciiTextExpression(65_536), false));
+        }
+        sources.add(new CapacityExpressionSource(asciiTextExpression(65_500), false));
+        sources.add(new CapacityExpressionSource(asciiRandomExpression(37), true));
+        assertEquals(1_048_577, sources.stream()
+                .mapToInt(source -> source.source().getBytes(StandardCharsets.UTF_8).length)
+                .sum());
+        return withCapacityExpressionSources(designDocument, sources);
+    }
+
+    private static String withCapacityExpressionSources(
+            String designDocument,
+            List<CapacityExpressionSource> sources
+    ) {
+        var definitions = new ArrayList<String>(sources.size());
+        for (var index = 0; index < sources.size(); index++) {
+            var source = sources.get(index);
+            var inputs = source.randomInput()
+                    ? "[{\"alias\":\"draw\",\"source\":{\"kind\":\"capability\","
+                    + "\"capability\":\"RANDOM\",\"operation\":\"UNIFORM_DECIMAL_0_1\"}}]"
+                    : "[]";
+            definitions.add("{\"definitionId\":\"" + capacityUuid(7, 10_000 + index) + "\","
+                    + "\"kind\":\"expression\",\"displayName\":\"Capacity " + index + "\","
+                    + "\"domain\":\"invocation\",\"output\":\"text\","
+                    + "\"inputs\":" + inputs + ",\"source\":\"" + source.source() + "\"}");
+        }
+        return designDocument.replace(
+                "\"definitions\":[]",
+                "\"definitions\":[" + String.join(",", definitions) + "]");
+    }
+
+    private static String asciiTextExpression(int sourceUtf8Bytes) {
+        return "'" + "a".repeat(sourceUtf8Bytes - 2) + "'";
+    }
+
+    private static String asciiRandomExpression(int sourceUtf8Bytes) {
+        var prefix = "if(input.draw < 0.5, '";
+        var suffix = "', 'B')";
+        var source = prefix
+                + "a".repeat(sourceUtf8Bytes - prefix.length() - suffix.length())
+                + suffix;
+        assertEquals(sourceUtf8Bytes, source.getBytes(StandardCharsets.UTF_8).length);
+        return source;
+    }
+
+    private record CapacityExpressionSource(String source, boolean randomInput) {
     }
 
     private static String loopRandomCapabilityDocument(String items) {

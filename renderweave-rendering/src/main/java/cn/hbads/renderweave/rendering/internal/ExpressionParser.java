@@ -53,9 +53,15 @@ final class ExpressionParser {
     }
 
     static ParseResult parse(byte[] sourceUtf8) {
-        var capacityProblem = CAPACITY_GUARD.admit(
-                DesignInputExpressionCapacityGuard.Limit.SOURCE_UTF8_BYTES_PER_EXPRESSION,
-                sourceUtf8.length);
+        return parse(sourceUtf8, CAPACITY_GUARD.newSourceBudget());
+    }
+
+    static ParseResult parse(
+            byte[] sourceUtf8,
+            DesignInputExpressionCapacityGuard.SourceBudget sourceBudget
+    ) {
+        Objects.requireNonNull(sourceBudget, "sourceBudget");
+        var capacityProblem = sourceBudget.admit(sourceUtf8.length);
         if (capacityProblem.isPresent()) {
             return new ParseLimitExceeded(capacityProblem.orElseThrow());
         }

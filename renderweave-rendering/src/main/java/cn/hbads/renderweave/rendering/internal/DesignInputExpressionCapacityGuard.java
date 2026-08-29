@@ -24,6 +24,11 @@ final class DesignInputExpressionCapacityGuard {
                 65_536,
                 ProblemCode.EXPRESSION_LIMIT_EXCEEDED,
                 EvaluationStage.TEMPLATE_CLOSURE),
+        SOURCE_UTF8_BYTES_TOTAL(
+                "expression.sourceUtf8BytesTotal",
+                1_048_576,
+                ProblemCode.EXPRESSION_LIMIT_EXCEEDED,
+                EvaluationStage.TEMPLATE_CLOSURE),
         EXPLICIT_ROUNDING_SCALE_MAX(
                 "expression.explicitRoundingScaleMax",
                 64,
@@ -46,6 +51,27 @@ final class DesignInputExpressionCapacityGuard {
             this.problemCode = problemCode;
             this.publicStage = publicStage;
         }
+    }
+
+    final class SourceBudget {
+        private BigInteger totalUtf8Bytes = BigInteger.ZERO;
+
+        Optional<RenderingProblem> admit(long sourceUtf8Bytes) {
+            var perExpressionProblem = DesignInputExpressionCapacityGuard.this.admit(
+                    Limit.SOURCE_UTF8_BYTES_PER_EXPRESSION,
+                    sourceUtf8Bytes);
+            if (perExpressionProblem.isPresent()) {
+                return perExpressionProblem;
+            }
+            totalUtf8Bytes = totalUtf8Bytes.add(BigInteger.valueOf(sourceUtf8Bytes));
+            return DesignInputExpressionCapacityGuard.this.admit(
+                    Limit.SOURCE_UTF8_BYTES_TOTAL,
+                    totalUtf8Bytes);
+        }
+    }
+
+    SourceBudget newSourceBudget() {
+        return new SourceBudget();
     }
 
     Optional<RenderingProblem> admit(Limit limit, long observedValue) {

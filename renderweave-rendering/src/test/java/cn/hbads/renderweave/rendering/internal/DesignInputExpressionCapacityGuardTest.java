@@ -10,6 +10,38 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class DesignInputExpressionCapacityGuardTest {
 
     @Test
+    void sourceTotalBoundaryUsesFrozenProductionGuardContract() {
+        var guard = new DesignInputExpressionCapacityGuard();
+        var limit = DesignInputExpressionCapacityGuard.Limit.SOURCE_UTF8_BYTES_TOTAL;
+
+        assertTrue(guard.admit(limit, 1_048_575).isEmpty());
+        assertTrue(guard.admit(limit, 1_048_576).isEmpty());
+
+        var problem = guard.admit(limit, 1_048_577).orElseThrow();
+        assertEquals(EvaluationStage.TEMPLATE_CLOSURE, problem.stage());
+        assertEquals(ProblemCode.EXPRESSION_LIMIT_EXCEEDED, problem.code());
+        assertEquals("expression.sourceUtf8BytesTotal",
+                problem.limitId().orElseThrow().value());
+    }
+
+    @Test
+    void sourceBudgetAccumulatesOneDslAndPreservesPerExpressionPrecedence() {
+        var guard = new DesignInputExpressionCapacityGuard();
+        var sourceBudget = guard.newSourceBudget();
+
+        for (var index = 0; index < 16; index++) {
+            assertTrue(sourceBudget.admit(65_536).isEmpty());
+        }
+        var totalProblem = sourceBudget.admit(1).orElseThrow();
+        assertEquals("expression.sourceUtf8BytesTotal",
+                totalProblem.limitId().orElseThrow().value());
+
+        var perExpressionProblem = guard.newSourceBudget().admit(65_537).orElseThrow();
+        assertEquals("expression.sourceUtf8BytesPerExpression",
+                perExpressionProblem.limitId().orElseThrow().value());
+    }
+
+    @Test
     void sourceUtf8BoundaryUsesFrozenProductionGuardContract() {
         var guard = new DesignInputExpressionCapacityGuard();
         var limit = DesignInputExpressionCapacityGuard.Limit.SOURCE_UTF8_BYTES_PER_EXPRESSION;

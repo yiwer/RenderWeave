@@ -1,5 +1,28 @@
 # RenderWeave Template v1 Implementation Plan
 
+## 188. TV1-T188 执行卡
+
+- 状态：`resolved / automated_verified`；single writer: Codex；blocked by T21/T126/T187（均 resolved）。
+- authority：Ticket 19 `RW-T19-S7-048` 与 design-input-expression cap-040；
+  `expression.sourceUtf8BytesTotal` MAX_INCLUSIVE `1048576`，observed `1048575/1048576/1048577`，
+  EXPRESSION_PARSE_AND_STATIC_ANALYSIS / public TEMPLATE_CLOSURE /
+  EXPRESSION_LIMIT_EXCEEDED / ZERO_WRITE_AND_DOWNSTREAM；计数按每份 DesignDSL 重置。
+- seam：深化 Rendering.internal 单一 `DesignInputExpressionCapacityGuard`，由其拥有 per-DesignDSL SourceBudget；
+  closure admission 每 snapshot 创建一次并让真实 parser 在 AST 前消费，standalone parser 保持 fresh budget。
+  不新增 public API/SPI 或重复 guard。
+- TDD：先取得 missing total-limit/SourceBudget compile RED 与 Evaluator behavioral RED，再覆盖 guard
+  1048575/1048576/1048577、真实累计、root/child 各 exact-at、unused overflow 与零 downstream；随后 focused
+  Rendering、受影响 reactor、render/fast。
+- 边界：fixture tracer 不冒充 complete execution-class target、formal records 或 A2/A3；不实现 app/Profile/
+  provider/真实数据，不 push/tag/PR；claim 时 A0、J0 pending、J1 未批准。
+- Resolution：现有 internal guard 已承载 cap-040 与 per-DesignDSL `SourceBudget`；先检查单项、再以
+  `BigInteger` 精确累计总量，closure admission 每 frozen snapshot 重置并在 parser decode/AST 前消费。
+  root/child 各 `1048576` 的真实 TemplateUse closure 成功，单 DSL `1048577` 在 TEMPLATE_CLOSURE 以 exact
+  problem 且零 input/capability/state work 拒绝。focused 124/124、受影响 reactor 531/531（Rendering
+  320/320）；`render` `.sdlc/evidence/20260829-160741-render/metadata.json` 与 `fast`
+  `.sdlc/evidence/20260829-160857-fast/metadata.json` 均 passed/A1。T188-specific A2/A3 无，J0 pending、
+  J1 未批准；无 public/app/Profile/provider/push/tag/PR 变化。
+
 ## 187. TV1-T187 执行卡
 
 - 状态：`resolved / automated_verified`；single writer: Codex；blocked by T21/T126/T186（均 resolved）。

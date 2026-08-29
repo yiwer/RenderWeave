@@ -16,6 +16,9 @@ import java.util.Objects;
  */
 final class ExpressionCapacityAdmission {
 
+    private static final DesignInputExpressionCapacityGuard CAPACITY_GUARD =
+            new DesignInputExpressionCapacityGuard();
+
     sealed interface Outcome permits Admitted, Rejected, Fault, DeadlineExceeded {
     }
 
@@ -48,6 +51,7 @@ final class ExpressionCapacityAdmission {
         try {
             for (var snapshot : closure.snapshots()) {
                 stageControl.checkpoint();
+                var sourceBudget = CAPACITY_GUARD.newSourceBudget();
                 var interpretation = semantics.interpret(snapshot.canonicalDesignDslUtf8());
                 if (!(interpretation instanceof DesignSemanticAuthority.Interpreted interpreted)
                         || !(interpreted.document().members().get("definitions")
@@ -67,7 +71,8 @@ final class ExpressionCapacityAdmission {
                         return new Fault();
                     }
                     var parsed = ExpressionParser.parse(
-                            source.value().getBytes(StandardCharsets.UTF_8));
+                            source.value().getBytes(StandardCharsets.UTF_8),
+                            sourceBudget);
                     if (parsed instanceof ExpressionParser.ParseLimitExceeded limited) {
                         return new Rejected(limited.problem());
                     }

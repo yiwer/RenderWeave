@@ -1146,6 +1146,12 @@ Label: wayfinder:map
   closure-wide unused Expression admission 与 defensive late path 共同保留 exact capacity identity，并在
   decode/AST/Input/Capability/Asset/materialization 前 fail closed。focused 120/120、受影响 reactor 527/527，
   `render`/`fast` passed/A1；T187-specific A2/A3 无、J0 pending、J1 未批准。
+- [T188 — Expression source total capacity authority](issues/188-expression-source-total-capacity.md)
+  — **resolved / automated_verified**；blocked by T21/T126/T187（均 resolved）。cap-040
+  `expression.sourceUtf8BytesTotal=1048576` 已由现有 Rendering.internal guard 的 per-DesignDSL SourceBudget
+  承载；先单项后总量、按 snapshot 重置，并在真实 parser decode/AST 前累计全部 unused Expression source。
+  root/child 各 exact-at 成功，单 DSL above 以 exact closure problem 且零 downstream 拒绝；focused 124/124、
+  受影响 reactor 531/531，`render`/`fast` 均 passed/A1。T188-specific A2/A3 无，J0 pending、J1 未批准。
 
 - 改写或重解释现有 Schema/Inference v1 已提交历史，或在 dirty main 上直接实施 Template。
 - Workspace、组织/成员/分享/协作、跨 ownerScope 复制、通用 connector、任意 SQL/HTTP/文件/脚本、插件节点或运行时代码注册。
