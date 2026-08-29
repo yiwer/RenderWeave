@@ -18,10 +18,31 @@ import java.util.Objects;
  */
 public interface TemplateClosureAuthority {
 
-    ClosureOutcome freezeClosure(
+    default ClosureOutcome freezeClosure(
             RenderRequestId renderRequestId,
             TemplateApplication.TemplateId rootTemplateId
+    ) {
+        return freezeClosure(renderRequestId, rootTemplateId, ClosureControl.unbounded());
+    }
+
+    ClosureOutcome freezeClosure(
+            RenderRequestId renderRequestId,
+            TemplateApplication.TemplateId rootTemplateId,
+            ClosureControl control
     );
+
+    /**
+     * Rendering-owned cooperative stop signal. Template observes only expiry and deliberately
+     * does not own a clock, duration, public stage, limit id, or Rendering problem taxonomy.
+     */
+    @FunctionalInterface
+    interface ClosureControl {
+        boolean deadlineExceeded();
+
+        static ClosureControl unbounded() {
+            return () -> false;
+        }
+    }
 
     /** Rendering 传入的请求级不透明身份；Template 只做关联，不做生命周期解释。 */
     record RenderRequestId(String value) {
@@ -130,7 +151,7 @@ public interface TemplateClosureAuthority {
     sealed interface ClosureOutcome
             permits ClosureFrozen, ClosureNotFound, ClosureDeleted, ClosureDependencyInvalid,
                     ClosureIntegrityViolation, ClosureUnstable, ClosureLimitExceeded,
-                    ClosureUnavailable {
+                    ClosureUnavailable, ClosureDeadlineExceeded {
     }
 
     record ClosureFrozen(ClosureSnapshot closure) implements ClosureOutcome {
@@ -167,6 +188,10 @@ public interface TemplateClosureAuthority {
     }
 
     record ClosureUnavailable() implements ClosureOutcome {
+    }
+
+    /** Rendering-owned cooperative deadline expired while the closure was still freezing. */
+    record ClosureDeadlineExceeded() implements ClosureOutcome {
     }
 
     record LimitId(String value) {

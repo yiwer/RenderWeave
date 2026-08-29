@@ -4538,3 +4538,25 @@
 - cap-047 isolated guard 不冒充正式 Ticket 19 record；T177-specific A2/A3 无，J0 pending、J1 未批准。cap-048+ 阶段
   deadline 与 Renderer-owned registry/cancel/fetch/layout 继续 deferred；无 HTTP/OpenAPI/Web/migration/Profile/provider/
   API Key/真实数据/费用/Profile registration/push/tag/PR。
+
+# 2026-08-29 Template-v1 T178 admission + closure stage deadline（resolved / automated_verified）
+
+- T177 已以 verified commit `37ddf8ad` 收口，worktree clean、ahead 168 且 DAG 无其他 active claim；冻结
+  `RW-T19-S8-053/058/059`、`RW-T19-S9-015/018/019` / cap-048 是首个 unblocked residual，现按 single-writer
+  claim T178。
+- cap-048 固定 `deadlineAndRetention.admissionAndClosureMillis` EXACT `5000`、observed `4999/5000/5001`，
+  ADMISSION_AND_CLOSURE_DEADLINE / public TEMPLATE_CLOSURE / RENDER_DEADLINE_EXCEEDED /
+  ALGORITHM_INVARIANT；profile 在 accepted execution 前固定，runtime 从公共 admission 的同一 monotonic origin 派生。
+- seam：Rendering 独占数值、deadline arithmetic 与 problem；Template closure 只消费 opaque cooperative control 并返回
+  closed deadline outcome，不学习 Rendering clock/limitId/problem。authorization/Profile 时间计入 5 秒，closure 成功后
+  stage cap 停止生效，后续仍受 T177 的不可延长 60 秒总 deadline。
+- RED 依次捕获 guard enum、Template controlled closure seam、integrity replay 后到期、Evaluator closure control 与
+  authorization 计时缺口；GREEN 后 focused 为 Template closure 22/22、guard 40/40、Evaluator 73/73、application
+  14/14，app assembly 2/2；受影响 reactor 为 Schema 20 / Validation 13 / Template 86 / Asset 92 / Rendering 283。
+- A1：template `.sdlc/evidence/20260829-113547-template/`、render
+  `.sdlc/evidence/20260829-113617-render/`、fast `.sdlc/evidence/20260829-113706-fast/`、server
+  `.sdlc/evidence/20260829-113739-server/` metadata 全部 passed。server 全 Reactor BUILD SUCCESS，app 372 tests、
+  0 failure、0 error、15 个显式 live/manual skip；容器销毁后的 Hikari stderr noise 不改变 metadata truth。
+- cap-049+ 与其他阶段 deadline/Renderer retention 继续 deferred；T178-specific A2/A3 无，J0 pending、J1 未批准。
+  provider attempts/API Key reads/真实数据/费用/Profile registration/push/tag/PR 均为 0 或未推进；无 HTTP/OpenAPI/
+  Web/migration/Profile 变化，OpenAPI 保持 0.13.0。

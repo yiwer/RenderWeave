@@ -948,4 +948,29 @@ class RenderingPipelineCapacityGuardTest {
         assertThrows(IllegalArgumentException.class,
                 () -> guard.admit(limit, 60_000L, 60_000L));
     }
+
+    @Test
+    void admissionAndClosureDeadlineRequiresFrozenExactDurationAndClosureTaxonomy() {
+        var guard = new RenderingPipelineCapacityGuard();
+        var limit = RenderingPipelineCapacityGuard.Limit
+                .DEADLINE_AND_RETENTION_ADMISSION_AND_CLOSURE_MILLIS;
+
+        var below = guard.admit(limit, 4_999L).orElseThrow();
+        assertEquals(EvaluationStage.TEMPLATE_CLOSURE, below.stage());
+        assertEquals(ProblemCode.RENDER_DEADLINE_EXCEEDED, below.code());
+        assertEquals("deadlineAndRetention.admissionAndClosureMillis",
+                below.limitId().orElseThrow().value());
+        assertTrue(guard.admit(limit, 5_000L).isEmpty());
+        var above = guard.admit(limit, 5_001L).orElseThrow();
+        assertEquals(EvaluationStage.TEMPLATE_CLOSURE, above.stage());
+        assertEquals(ProblemCode.RENDER_DEADLINE_EXCEEDED, above.code());
+        assertEquals("deadlineAndRetention.admissionAndClosureMillis",
+                above.limitId().orElseThrow().value());
+
+        assertEquals(5_000L, guard.exactValue(limit));
+        assertThrows(IllegalArgumentException.class,
+                () -> guard.maximumInclusive(limit));
+        assertThrows(IllegalArgumentException.class,
+                () -> guard.admit(limit, 5_000L, 5_000L));
+    }
 }

@@ -1006,7 +1006,7 @@ class EvaluatorContractTest {
     }
 
     @Test
-    void expiredMonotonicDeadlineUsesFrozenTotalDeadlineTaxonomyAtEntry() {
+    void expiredTotalDeadlineUsesFrozenTaxonomyWhenStageControlIsStillOpen() {
         var evaluator = evaluator(
                 closureWith(canvasWithRect()),
                 resolver(),
@@ -1017,7 +1017,7 @@ class EvaluatorContractTest {
                 () -> 1_000L);
 
         var outcome = evaluator.evaluate(command(
-                "{\"rootDocument\":{}}", 61_000L, 1_000L));
+                "{\"rootDocument\":{}}", 61_000L, 1_000L, 2_000L));
 
         var rejected = assertInstanceOf(EvaluationOutcome.Rejected.class, outcome);
         assertEquals(EvaluationStage.ENGINE, rejected.stage());
@@ -1025,6 +1025,100 @@ class EvaluatorContractTest {
                 rejected.problem().code());
         assertEquals("deadlineAndRetention.totalDeadlineMillis",
                 rejected.problem().limitId().orElseThrow().value());
+    }
+
+    @Test
+    void closureReceivesTheAdmissionAndClosureDeadlineControl() {
+        var ticker = new MutableTicker(1_000L);
+        var frozenClosure = closureWith(canvasWithRect());
+        TemplateClosureAuthority controlledClosure =
+                (renderRequestId, rootTemplateId, control) -> {
+                    ticker.setNanos(5_000L);
+                    return control.deadlineExceeded()
+                            ? new TemplateClosureAuthority.ClosureDeadlineExceeded()
+                            : new TemplateClosureAuthority.ClosureFrozen(frozenClosure);
+                };
+        var evaluator = new CanonicalEvaluator(
+                controlledClosure,
+                TemplateModule.designSemanticAuthority(),
+                TemplateModule.designDslAuthority(),
+                null,
+                scriptedRuntime(),
+                new RecordingCapabilityStateStore(),
+                DEFAULT_BUDGET_VECTOR,
+                ignored -> {
+                    throw new AssertionError("input admission must not run after closure expiry");
+                },
+                new MutableClock(1_000L),
+                ticker);
+
+        var outcome = evaluator.evaluate(command(
+                "{\"rootDocument\":{}}", 61_000L, 60_000L, 5_000L));
+
+        var rejected = assertInstanceOf(EvaluationOutcome.Rejected.class, outcome);
+        assertEquals(EvaluationStage.TEMPLATE_CLOSURE, rejected.stage());
+        assertEquals(RenderingProblem.ProblemCode.RENDER_DEADLINE_EXCEEDED,
+                rejected.problem().code());
+        assertEquals("deadlineAndRetention.admissionAndClosureMillis",
+                rejected.problem().limitId().orElseThrow().value());
+    }
+
+    @Test
+    void evaluatorRejectsAClosureThatReturnsAfterDeadlineWithoutObservingControl() {
+        var ticker = new MutableTicker(1_000L);
+        var frozenClosure = closureWith(canvasWithRect());
+        TemplateClosureAuthority nonCooperativeClosure =
+                (renderRequestId, rootTemplateId, control) -> {
+                    ticker.setNanos(5_000L);
+                    return new TemplateClosureAuthority.ClosureFrozen(frozenClosure);
+                };
+        var evaluator = new CanonicalEvaluator(
+                nonCooperativeClosure,
+                TemplateModule.designSemanticAuthority(),
+                TemplateModule.designDslAuthority(),
+                null,
+                scriptedRuntime(),
+                new RecordingCapabilityStateStore(),
+                DEFAULT_BUDGET_VECTOR,
+                ignored -> {
+                    throw new AssertionError("input admission must not run after closure expiry");
+                },
+                new MutableClock(1_000L),
+                ticker);
+
+        var outcome = evaluator.evaluate(command(
+                "{\"rootDocument\":{}}", 61_000L, 60_000L, 5_000L));
+
+        var rejected = assertInstanceOf(EvaluationOutcome.Rejected.class, outcome);
+        assertEquals(EvaluationStage.TEMPLATE_CLOSURE, rejected.stage());
+        assertEquals("deadlineAndRetention.admissionAndClosureMillis",
+                rejected.problem().limitId().orElseThrow().value());
+    }
+
+    @Test
+    void admissionAndClosureDeadlineStopsApplyingAfterClosureFreezes() {
+        var ticker = new MutableTicker(1_000L);
+        var targetResolver = resolver();
+        ValidationTargetResolver inputAdvancesPastStageDeadline = target -> {
+            ticker.setNanos(5_000L);
+            return targetResolver.resolve(target);
+        };
+        var evaluator = new CanonicalEvaluator(
+                scriptedClosure(closureWith(canvasWithRect())),
+                TemplateModule.designSemanticAuthority(),
+                TemplateModule.designDslAuthority(),
+                null,
+                scriptedRuntime(),
+                new RecordingCapabilityStateStore(),
+                DEFAULT_BUDGET_VECTOR,
+                inputAdvancesPastStageDeadline,
+                new MutableClock(1_000L),
+                ticker);
+
+        var outcome = evaluator.evaluate(command(
+                "{\"rootDocument\":{}}", 61_000L, 60_000L, 5_000L));
+
+        assertInstanceOf(EvaluationOutcome.SealedDocument.class, outcome);
     }
 
     @Test
@@ -1061,6 +1155,7 @@ class EvaluatorContractTest {
                 OutputSelection.defaultPng(),
                 "renderweave-renderer/1.0",
                 61_000L,
+                System.nanoTime() + 60_000_000_000L,
                 System.nanoTime() + 60_000_000_000L));
 
         var rejected = assertInstanceOf(EvaluationOutcome.Rejected.class, outcome);
@@ -1070,7 +1165,8 @@ class EvaluatorContractTest {
     @Test
     void unstableClosureRejectsWithFrozenCode() {
         var evaluator = new cn.hbads.renderweave.rendering.internal.CanonicalEvaluator(
-                (renderRequestId, rootTemplateId) -> new TemplateClosureAuthority.ClosureUnstable(),
+                (renderRequestId, rootTemplateId, control) ->
+                        new TemplateClosureAuthority.ClosureUnstable(),
                 TemplateModule.designSemanticAuthority(),
                 TemplateModule.designDslAuthority(),
                 null,
@@ -1223,6 +1319,18 @@ class EvaluatorContractTest {
             long deadlineAtMonotonicNanos
     ) {
         return command(envelope, deadlineAtEpochMilli, deadlineAtMonotonicNanos,
+                deadlineAtMonotonicNanos,
+                AUTH_DIGEST, ExternalAssetReadAuthorization.GRANTED);
+    }
+
+    private static EvaluationCommand command(
+            String envelope,
+            long deadlineAtEpochMilli,
+            long deadlineAtMonotonicNanos,
+            long admissionAndClosureDeadlineAtMonotonicNanos
+    ) {
+        return command(envelope, deadlineAtEpochMilli, deadlineAtMonotonicNanos,
+                admissionAndClosureDeadlineAtMonotonicNanos,
                 AUTH_DIGEST, ExternalAssetReadAuthorization.GRANTED);
     }
 
@@ -1242,6 +1350,7 @@ class EvaluatorContractTest {
                 envelope,
                 deadlineAtEpochMilli,
                 System.nanoTime() + 60_000_000_000L,
+                System.nanoTime() + 60_000_000_000L,
                 authorizationDigest,
                 externalAssetReadAuthorization);
     }
@@ -1250,6 +1359,7 @@ class EvaluatorContractTest {
             String envelope,
             long deadlineAtEpochMilli,
             long deadlineAtMonotonicNanos,
+            long admissionAndClosureDeadlineAtMonotonicNanos,
             String authorizationDigest,
             ExternalAssetReadAuthorization externalAssetReadAuthorization
     ) {
@@ -1263,7 +1373,8 @@ class EvaluatorContractTest {
                 OutputSelection.defaultPng(),
                 "renderweave-renderer/1.0",
                 deadlineAtEpochMilli,
-                deadlineAtMonotonicNanos);
+                deadlineAtMonotonicNanos,
+                admissionAndClosureDeadlineAtMonotonicNanos);
     }
 
     private static cn.hbads.renderweave.rendering.internal.CanonicalEvaluator evaluator(
@@ -1274,7 +1385,7 @@ class EvaluatorContractTest {
     private static cn.hbads.renderweave.rendering.internal.CanonicalEvaluator evaluator(
             ClosureOutcome closureOutcome) {
         return new cn.hbads.renderweave.rendering.internal.CanonicalEvaluator(
-                (renderRequestId, rootTemplateId) -> closureOutcome,
+                (renderRequestId, rootTemplateId, control) -> closureOutcome,
                 TemplateModule.designSemanticAuthority(),
                 TemplateModule.designDslAuthority(),
                 null,
@@ -1851,7 +1962,8 @@ class EvaluatorContractTest {
     }
 
     private static TemplateClosureAuthority scriptedClosure(ClosureSnapshot closure) {
-        return (renderRequestId, rootTemplateId) -> new TemplateClosureAuthority.ClosureFrozen(closure);
+        return (renderRequestId, rootTemplateId, control) ->
+                new TemplateClosureAuthority.ClosureFrozen(closure);
     }
 
     private static RenderingCapabilityRuntime scriptedRuntime() {

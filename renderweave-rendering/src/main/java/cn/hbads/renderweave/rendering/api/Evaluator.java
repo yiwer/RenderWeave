@@ -64,6 +64,8 @@ public interface Evaluator {
      * @param deadlineAtEpochMilli public admission 一次展开且不可延长的 absolute wire/lease deadline
      * @param deadlineAtMonotonicNanos Rendering 在同一 admission 捕获的进程内 monotonic deadline；
      *                                 仅用于 cooperative request control，不进入 wire/digest/persistence
+     * @param admissionAndClosureDeadlineAtMonotonicNanos 与 total deadline 同源的 stage 2–3
+     *                                 cooperative monotonic deadline；不进入 wire/digest/persistence
      */
     record EvaluationCommand(
             RenderRequestId renderRequestId,
@@ -75,7 +77,8 @@ public interface Evaluator {
             OutputSelection outputSelection,
             String rendererProfile,
             long deadlineAtEpochMilli,
-            long deadlineAtMonotonicNanos
+            long deadlineAtMonotonicNanos,
+            long admissionAndClosureDeadlineAtMonotonicNanos
     ) {
         public EvaluationCommand {
             Objects.requireNonNull(renderRequestId, "renderRequestId");

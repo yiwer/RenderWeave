@@ -31,6 +31,10 @@ final class CanonicalEvaluator implements Evaluator {
 
     private static final RenderingPipelineCapacityGuard CAPACITY_GUARD =
             new RenderingPipelineCapacityGuard();
+    private static final RenderingPipelineCapacityGuard.Limit
+            ADMISSION_AND_CLOSURE_DEADLINE_LIMIT =
+            RenderingPipelineCapacityGuard.Limit
+                    .DEADLINE_AND_RETENTION_ADMISSION_AND_CLOSURE_MILLIS;
     private static final RenderingPipelineCapacityGuard.Limit TOTAL_DEADLINE_LIMIT =
             RenderingPipelineCapacityGuard.Limit
                     .DEADLINE_AND_RETENTION_TOTAL_DEADLINE_MILLIS;
@@ -92,14 +96,24 @@ final class CanonicalEvaluator implements Evaluator {
     public EvaluationOutcome evaluate(EvaluationCommand command) {
         Objects.requireNonNull(command, "command");
 
+        if (deadlineExpired(command.admissionAndClosureDeadlineAtMonotonicNanos())) {
+            return deadlineRejected(ADMISSION_AND_CLOSURE_DEADLINE_LIMIT);
+        }
         if (deadlineExpired(command.deadlineAtMonotonicNanos())) {
-            var problem = CAPACITY_GUARD.rejection(TOTAL_DEADLINE_LIMIT);
-            return new EvaluationOutcome.Rejected(problem.stage(), problem);
+            return deadlineRejected(TOTAL_DEADLINE_LIMIT);
         }
 
         var closureOutcome = closureAuthority.freezeClosure(
                 new TemplateClosureAuthority.RenderRequestId(command.renderRequestId().value()),
-                command.rootTemplateId());
+                command.rootTemplateId(),
+                () -> deadlineExpired(
+                        command.admissionAndClosureDeadlineAtMonotonicNanos()));
+        if (deadlineExpired(command.admissionAndClosureDeadlineAtMonotonicNanos())) {
+            return deadlineRejected(ADMISSION_AND_CLOSURE_DEADLINE_LIMIT);
+        }
+        if (closureOutcome instanceof TemplateClosureAuthority.ClosureDeadlineExceeded) {
+            return deadlineRejected(ADMISSION_AND_CLOSURE_DEADLINE_LIMIT);
+        }
         if (closureOutcome instanceof TemplateClosureAuthority.ClosureNotFound) {
             return rejected(EvaluationStage.TEMPLATE_CLOSURE,
                     ProblemCode.TEMPLATE_NOT_FOUND, null);
@@ -363,6 +377,13 @@ final class CanonicalEvaluator implements Evaluator {
     private boolean deadlineExpired(long deadlineAtMonotonicNanos) {
         // Signed subtraction is wrap-safe for System.nanoTime intervals below 2^63 ns.
         return deadlineAtMonotonicNanos - monotonicNanos.getAsLong() <= 0;
+    }
+
+    private static EvaluationOutcome.Rejected deadlineRejected(
+            RenderingPipelineCapacityGuard.Limit limit
+    ) {
+        var problem = CAPACITY_GUARD.rejection(limit);
+        return new EvaluationOutcome.Rejected(problem.stage(), problem);
     }
 
     private sealed interface CapabilityRuntimeOutcome permits CapabilityRuntimeReady, CapabilityRuntimeRejected { }

@@ -55,15 +55,29 @@ final class CanonicalTemplateClosureAuthority implements TemplateClosureAuthorit
     @Override
     public ClosureOutcome freezeClosure(
             RenderRequestId renderRequestId,
-            TemplateApplication.TemplateId rootTemplateId
+            TemplateApplication.TemplateId rootTemplateId,
+            ClosureControl control
     ) {
         Objects.requireNonNull(renderRequestId, "renderRequestId");
         Objects.requireNonNull(rootTemplateId, "rootTemplateId");
+        Objects.requireNonNull(control, "control");
+        if (control.deadlineExceeded()) {
+            return new ClosureDeadlineExceeded();
+        }
         for (int attempt = 0; attempt < MAX_FREEZE_ATTEMPTS; attempt++) {
-            var step = tryFreeze(rootTemplateId);
+            if (control.deadlineExceeded()) {
+                return new ClosureDeadlineExceeded();
+            }
+            var step = tryFreeze(rootTemplateId, control);
+            if (control.deadlineExceeded()) {
+                return new ClosureDeadlineExceeded();
+            }
             if (!(step instanceof Drifted)) {
                 return ((Done) step).outcome();
             }
+        }
+        if (control.deadlineExceeded()) {
+            return new ClosureDeadlineExceeded();
         }
         return new ClosureUnstable();
     }
@@ -77,26 +91,50 @@ final class CanonicalTemplateClosureAuthority implements TemplateClosureAuthorit
     private record Drifted() implements FreezeStep {
     }
 
-    private FreezeStep tryFreeze(TemplateApplication.TemplateId rootTemplateId) {
+    private FreezeStep tryFreeze(
+            TemplateApplication.TemplateId rootTemplateId,
+            ClosureControl control
+    ) {
+        var deadline = deadlineExceeded(control);
+        if (deadline != null) {
+            return deadline;
+        }
         var snapshots = new TreeMap<String, TemplateSnapshot>(UTF8_ORDER);
         var edges = new ArrayList<ClosureEdge>();
         var inPath = new LinkedHashSet<String>();
         var budget = new ClosureBudget();
 
-        var visitFailure = visit(rootTemplateId, 1, snapshots, edges, inPath, budget);
+        var visitFailure = visit(
+                rootTemplateId, 1, snapshots, edges, inPath, budget, control);
+        deadline = deadlineExceeded(control);
+        if (deadline != null) {
+            return deadline;
+        }
         if (visitFailure != null) {
             return visitFailure;
         }
 
         var rootSnapshot = snapshots.get(rootTemplateId.value());
         for (var snapshot : snapshots.values()) {
+            deadline = deadlineExceeded(control);
+            if (deadline != null) {
+                return deadline;
+            }
             if (!snapshot.ownerScope().equals(rootSnapshot.ownerScope())) {
                 return new Done(new ClosureDependencyInvalid());
             }
         }
 
         for (var snapshot : snapshots.values()) {
+            deadline = deadlineExceeded(control);
+            if (deadline != null) {
+                return deadline;
+            }
             var located = persistence.locate(snapshot.templateId());
+            deadline = deadlineExceeded(control);
+            if (deadline != null) {
+                return deadline;
+            }
             if (located instanceof LocateUnavailable) {
                 return new Done(new ClosureUnavailable());
             }
@@ -107,12 +145,20 @@ final class CanonicalTemplateClosureAuthority implements TemplateClosureAuthorit
             }
         }
 
+        deadline = deadlineExceeded(control);
+        if (deadline != null) {
+            return deadline;
+        }
         var sortedEdges = edges.stream()
                 .sorted(Comparator
                         .comparing((ClosureEdge edge) -> edge.parentTemplateId().value(), UTF8_ORDER)
                         .thenComparing(ClosureEdge::parentRevision)
                         .thenComparing(edge -> edge.useId(), UTF8_ORDER))
                 .toList();
+        deadline = deadlineExceeded(control);
+        if (deadline != null) {
+            return deadline;
+        }
         return new Done(new ClosureFrozen(new ClosureSnapshot(
                 rootSnapshot.ownerScope(),
                 rootTemplateId,
@@ -129,8 +175,13 @@ final class CanonicalTemplateClosureAuthority implements TemplateClosureAuthorit
             TreeMap<String, TemplateSnapshot> snapshots,
             ArrayList<ClosureEdge> edges,
             LinkedHashSet<String> inPath,
-            ClosureBudget budget
+            ClosureBudget budget,
+            ClosureControl control
     ) {
+        var deadline = deadlineExceeded(control);
+        if (deadline != null) {
+            return deadline;
+        }
         if (depth > MAX_CLOSURE_DEPTH) {
             return new Done(new ClosureLimitExceeded(new LimitId("closureDepth")));
         }
@@ -144,6 +195,10 @@ final class CanonicalTemplateClosureAuthority implements TemplateClosureAuthorit
         }
 
         var loaded = persistence.loadCurrent(templateId);
+        deadline = deadlineExceeded(control);
+        if (deadline != null) {
+            return deadline;
+        }
         boolean root = depth == 1;
         if (loaded instanceof CurrentNotFound) {
             return new Done(root ? new ClosureNotFound() : new ClosureDependencyInvalid());
@@ -157,12 +212,20 @@ final class CanonicalTemplateClosureAuthority implements TemplateClosureAuthorit
         }
 
         var integrityFailure = verifyIntegrity(stored);
+        deadline = deadlineExceeded(control);
+        if (deadline != null) {
+            return deadline;
+        }
         if (integrityFailure != null) {
             return integrityFailure;
         }
 
         var canonicalDesignDslUtf8 = stored.canonicalDesignDslUtf8();
         var versions = readVersions(canonicalDesignDslUtf8);
+        deadline = deadlineExceeded(control);
+        if (deadline != null) {
+            return deadline;
+        }
         if (versions == null) {
             return new Done(new ClosureIntegrityViolation());
         }
@@ -189,9 +252,22 @@ final class CanonicalTemplateClosureAuthority implements TemplateClosureAuthorit
         }
 
         var projection = new AssetRefAtomExtractor().extract(canonicalDesignDslUtf8);
+        deadline = deadlineExceeded(control);
+        if (deadline != null) {
+            return deadline;
+        }
         for (var use : projection.templateUses()) {
+            deadline = deadlineExceeded(control);
+            if (deadline != null) {
+                return deadline;
+            }
             var childId = new TemplateApplication.TemplateId(use.targetTemplateId());
-            var childFailure = visit(childId, depth + 1, snapshots, edges, inPath, budget);
+            var childFailure = visit(
+                    childId, depth + 1, snapshots, edges, inPath, budget, control);
+            deadline = deadlineExceeded(control);
+            if (deadline != null) {
+                return deadline;
+            }
             if (childFailure != null) {
                 return childFailure;
             }
@@ -208,7 +284,17 @@ final class CanonicalTemplateClosureAuthority implements TemplateClosureAuthorit
             }
         }
         inPath.remove(templateId.value());
+        deadline = deadlineExceeded(control);
+        if (deadline != null) {
+            return deadline;
+        }
         return null;
+    }
+
+    private static Done deadlineExceeded(ClosureControl control) {
+        return control.deadlineExceeded()
+                ? new Done(new ClosureDeadlineExceeded())
+                : null;
     }
 
     private static final class ClosureBudget {

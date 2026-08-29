@@ -631,6 +631,7 @@ class AssetSliceIntegrationTest {
             String renderRequestId,
             TemplateApplication.TemplateId templateId
     ) {
+        var admittedAtMonotonicNanos = System.nanoTime();
         return new Evaluator.EvaluationCommand(
                 new Evaluator.RenderRequestId(renderRequestId),
                 new Evaluator.OwnerScope("it-scope"),
@@ -641,7 +642,8 @@ class AssetSliceIntegrationTest {
                 Evaluator.OutputSelection.defaultPng(),
                 "renderweave-renderer/1.0",
                 System.currentTimeMillis() + 60_000L,
-                System.nanoTime() + 60_000_000_000L);
+                admittedAtMonotonicNanos + 60_000_000_000L,
+                admittedAtMonotonicNanos + 5_000_000_000L);
     }
 
     private static byte[] imageDesign(AssetApplication.AssetId assetId) {

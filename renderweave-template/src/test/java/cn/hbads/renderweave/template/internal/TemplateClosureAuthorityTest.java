@@ -14,6 +14,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -57,6 +58,46 @@ class TemplateClosureAuthorityTest {
         assertEquals("renderweave-expression/1.0", snapshot.expressionProfile());
         assertEquals(SCHEMA, snapshot.staticSchema());
         assertTrue(snapshot.contentHash().startsWith("sha256:"));
+    }
+
+    @Test
+    void expiredClosureControlStopsBeforePersistenceRead() {
+        var rootId = id("00000000-0000-4000-8000-0000000000a1");
+
+        var outcome = authority.freezeClosure(
+                request("render-deadline-entry"),
+                rootId,
+                () -> true);
+
+        assertInstanceOf(TemplateClosureAuthority.ClosureDeadlineExceeded.class, outcome);
+        assertEquals(0, persistence.loadCurrentCalls);
+    }
+
+    @Test
+    void expiryAfterIntegrityReplayStopsClosureBeforeItCanFreeze() {
+        var expired = new AtomicBoolean();
+        DesignDslAuthority expiringDesigns = rawUtf8 -> {
+            var outcome = DESIGNS.admit(rawUtf8);
+            expired.set(true);
+            return outcome;
+        };
+        var controlledAuthority = new CanonicalTemplateClosureAuthority(
+                persistence,
+                expiringDesigns);
+        var rootId = id("00000000-0000-4000-8000-0000000000a1");
+        var childId = id("00000000-0000-4000-8000-0000000000b1");
+        persistence.put(childId, 1, "owner-a", canvasDoc("Child"));
+        persistence.put(rootId, 3, "owner-a", useDoc(
+                "Root", childId.value(), useId(1)));
+
+        var outcome = controlledAuthority.freezeClosure(
+                request("render-deadline-integrity"),
+                rootId,
+                expired::get);
+
+        assertInstanceOf(TemplateClosureAuthority.ClosureDeadlineExceeded.class, outcome);
+        // Root replay expired the control, so child DFS never reads its current revision.
+        assertEquals(1, persistence.loadCurrentCalls);
     }
 
     @Test
@@ -453,6 +494,7 @@ class TemplateClosureAuthorityTest {
         private final Map<String, Entry> store = new HashMap<>();
         private final Map<String, Long> driftNextLocate = new HashMap<>();
         private final Map<String, Boolean> driftEveryLocate = new HashMap<>();
+        int loadCurrentCalls;
         boolean unavailable;
 
         record Entry(StoredCurrent current, boolean deleted) {
@@ -574,6 +616,7 @@ class TemplateClosureAuthorityTest {
 
         @Override
         public LoadCurrentOutcome loadCurrent(TemplateApplication.TemplateId templateId) {
+            loadCurrentCalls++;
             if (unavailable) {
                 return new CurrentLoadUnavailable();
             }

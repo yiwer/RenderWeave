@@ -69,6 +69,9 @@ class RenderingApplicationContractTest {
         assertNotEquals(rendered.operationId().value(), evaluation.renderRequestId().value());
         assertEquals(evaluation.renderRequestId(), engineCommand.renderRequestId());
         assertEquals(NOW + 60_000L, evaluation.deadlineAtEpochMilli());
+        assertEquals(55_000_000_000L,
+                evaluation.deadlineAtMonotonicNanos()
+                        - evaluation.admissionAndClosureDeadlineAtMonotonicNanos());
         assertEquals(evaluation.deadlineAtEpochMilli(), engineCommand.deadlineAtEpochMilli());
         assertEquals("renderweave-renderer/1.0", evaluation.rendererProfile());
         assertEquals(ExternalAssetReadAuthorization.GRANTED,
@@ -234,8 +237,11 @@ class RenderingApplicationContractTest {
 
     @Test
     void repeatedUnknownStopsAtTheOriginalDeadlineWithoutReevaluation() {
+        var ticker = new MutableTicker(0L);
         var evaluator = new ScriptedEvaluator();
-        var engine = new ScriptedEngine(new EngineOutcome.Unknown());
+        var engine = new ScriptedEngine(
+                () -> ticker.setNanos(Duration.ofSeconds(60).toNanos()),
+                new EngineOutcome.Unknown());
         var authority = grantedAuthority(RenderPurpose.FORMAL_OUTPUT);
         var application = new CanonicalRenderingApplication(
                 evaluator,
@@ -244,7 +250,7 @@ class RenderingApplicationContractTest {
                 availableProfiles(),
                 Clock.fixed(Instant.ofEpochMilli(NOW), ZoneOffset.UTC),
                 Duration.ZERO,
-                new AdvancingTicker(0L, Duration.ofSeconds(20).toNanos()));
+                ticker);
 
         var outcome = application.render(INVOCATION, command(RenderPurpose.FORMAL_OUTPUT));
 
@@ -282,13 +288,15 @@ class RenderingApplicationContractTest {
         assertEquals(NOW + 60_000L, evaluator.seen.get(0).deadlineAtEpochMilli());
         assertEquals(60_000_000_007L,
                 evaluator.seen.get(0).deadlineAtMonotonicNanos());
+        assertEquals(5_000_000_007L,
+                evaluator.seen.get(0).admissionAndClosureDeadlineAtMonotonicNanos());
         assertEquals(evaluator.seen.get(0).deadlineAtEpochMilli(),
                 engine.seen.get(0).deadlineAtEpochMilli());
         assertEquals(2, engine.seen.size());
     }
 
     @Test
-    void monotonicDeadlineExhaustionBeforeEvaluationUsesFrozenPublicTaxonomy() {
+    void monotonicStageDeadlineExhaustionBeforeEvaluationUsesFrozenPublicTaxonomy() {
         var evaluator = new ScriptedEvaluator();
         var engine = new ScriptedEngine(new EngineOutcome.SealedOutput(output(OUTPUT)));
         var authority = grantedAuthority(RenderPurpose.FORMAL_OUTPUT);
@@ -306,9 +314,75 @@ class RenderingApplicationContractTest {
         var rejected = assertInstanceOf(RenderOutcome.Rejected.class, outcome);
         assertEquals(RenderingProblem.ProblemCode.RENDER_DEADLINE_EXCEEDED,
                 rejected.problem().code());
-        assertEquals(EvaluationStage.ENGINE, rejected.problem().stage());
-        assertEquals("deadlineAndRetention.totalDeadlineMillis",
+        assertEquals(EvaluationStage.TEMPLATE_CLOSURE, rejected.problem().stage());
+        assertEquals("deadlineAndRetention.admissionAndClosureMillis",
                 rejected.problem().limitId().orElseThrow().value());
+        assertEquals(0, evaluator.seen.size());
+        assertEquals(0, engine.seen.size());
+        assertEquals(1, authority.recheckCalls);
+    }
+
+    @Test
+    void authorizationTimeConsumesTheAdmissionAndClosureDeadline() {
+        var ticker = new MutableTicker(100L);
+        var evaluator = new ScriptedEvaluator();
+        var engine = new ScriptedEngine(new EngineOutcome.SealedOutput(output(OUTPUT)));
+        var authority = new ScriptedAuthority(
+                granted(RenderPurpose.FORMAL_OUTPUT),
+                new RenderingAuthority.RecheckGranted(
+                        RenderingAuthority.Disclosure.OPAQUE),
+                () -> ticker.setNanos(5_000_000_100L));
+        var profiles = availableProfiles();
+        var application = new CanonicalRenderingApplication(
+                evaluator,
+                engine,
+                authority,
+                profiles,
+                Clock.fixed(Instant.ofEpochMilli(NOW), ZoneOffset.UTC),
+                Duration.ZERO,
+                ticker);
+
+        var outcome = application.render(INVOCATION, command(RenderPurpose.FORMAL_OUTPUT));
+
+        var rejected = assertInstanceOf(RenderOutcome.Rejected.class, outcome);
+        assertEquals(RenderingProblem.ProblemCode.RENDER_DEADLINE_EXCEEDED,
+                rejected.problem().code());
+        assertEquals(EvaluationStage.TEMPLATE_CLOSURE, rejected.problem().stage());
+        assertEquals("deadlineAndRetention.admissionAndClosureMillis",
+                rejected.problem().limitId().orElseThrow().value());
+        assertEquals(0, profiles.calls);
+        assertEquals(0, evaluator.seen.size());
+        assertEquals(0, engine.seen.size());
+        assertEquals(1, authority.recheckCalls);
+    }
+
+    @Test
+    void profileSelectionTimeConsumesTheSameAdmissionAndClosureDeadline() {
+        var ticker = new MutableTicker(100L);
+        var evaluator = new ScriptedEvaluator();
+        var engine = new ScriptedEngine(new EngineOutcome.SealedOutput(output(OUTPUT)));
+        var authority = grantedAuthority(RenderPurpose.FORMAL_OUTPUT);
+        var profiles = new ScriptedProfiles(
+                new RendererProfileAuthority.Available(
+                        "renderweave-renderer/1.0",
+                        "renderweave-layout/1.0"),
+                () -> ticker.setNanos(5_000_000_100L));
+        var application = new CanonicalRenderingApplication(
+                evaluator,
+                engine,
+                authority,
+                profiles,
+                Clock.fixed(Instant.ofEpochMilli(NOW), ZoneOffset.UTC),
+                Duration.ZERO,
+                ticker);
+
+        var outcome = application.render(INVOCATION, command(RenderPurpose.FORMAL_OUTPUT));
+
+        var rejected = assertInstanceOf(RenderOutcome.Rejected.class, outcome);
+        assertEquals(EvaluationStage.TEMPLATE_CLOSURE, rejected.problem().stage());
+        assertEquals("deadlineAndRetention.admissionAndClosureMillis",
+                rejected.problem().limitId().orElseThrow().value());
+        assertEquals(1, profiles.calls);
         assertEquals(0, evaluator.seen.size());
         assertEquals(0, engine.seen.size());
         assertEquals(1, authority.recheckCalls);
@@ -426,15 +500,22 @@ class RenderingApplicationContractTest {
 
     private static final class ScriptedEngine implements RenderEngine {
         private final ArrayDeque<EngineOutcome> outcomes;
+        private final Runnable onExecute;
         private final List<RendererCommand> seen = new ArrayList<>();
 
         private ScriptedEngine(EngineOutcome... outcomes) {
+            this(() -> { }, outcomes);
+        }
+
+        private ScriptedEngine(Runnable onExecute, EngineOutcome... outcomes) {
             this.outcomes = new ArrayDeque<>(List.of(outcomes));
+            this.onExecute = onExecute;
         }
 
         @Override
         public EngineOutcome execute(RendererCommand command) {
             seen.add(command);
+            onExecute.run();
             return outcomes.removeFirst();
         }
     }
@@ -442,6 +523,7 @@ class RenderingApplicationContractTest {
     private static final class ScriptedAuthority implements RenderingAuthority {
         private final AuthorizationDecision authorization;
         private final RecheckDecision recheck;
+        private final Runnable onAuthorize;
         private RenderPurpose seenPurpose;
         private int recheckCalls;
 
@@ -449,8 +531,17 @@ class RenderingApplicationContractTest {
                 AuthorizationDecision authorization,
                 RecheckDecision recheck
         ) {
+            this(authorization, recheck, () -> { });
+        }
+
+        private ScriptedAuthority(
+                AuthorizationDecision authorization,
+                RecheckDecision recheck,
+                Runnable onAuthorize
+        ) {
             this.authorization = authorization;
             this.recheck = recheck;
+            this.onAuthorize = onAuthorize;
         }
 
         @Override
@@ -460,6 +551,7 @@ class RenderingApplicationContractTest {
                 RenderPurpose purpose
         ) {
             seenPurpose = purpose;
+            onAuthorize.run();
             return authorization;
         }
 
@@ -472,15 +564,22 @@ class RenderingApplicationContractTest {
 
     private static final class ScriptedProfiles implements RendererProfileAuthority {
         private final Selection selection;
+        private final Runnable onSelect;
         private int calls;
 
         private ScriptedProfiles(Selection selection) {
+            this(selection, () -> { });
+        }
+
+        private ScriptedProfiles(Selection selection, Runnable onSelect) {
             this.selection = selection;
+            this.onSelect = onSelect;
         }
 
         @Override
         public Selection select(OutputSelection outputSelection) {
             calls++;
+            onSelect.run();
             return selection;
         }
     }
@@ -531,6 +630,23 @@ class RenderingApplicationContractTest {
             var result = currentNanos;
             currentNanos += stepNanos;
             return result;
+        }
+    }
+
+    private static final class MutableTicker implements LongSupplier {
+        private long nanos;
+
+        private MutableTicker(long nanos) {
+            this.nanos = nanos;
+        }
+
+        private void setNanos(long nanos) {
+            this.nanos = nanos;
+        }
+
+        @Override
+        public long getAsLong() {
+            return nanos;
         }
     }
 }

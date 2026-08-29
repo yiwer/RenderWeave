@@ -88,6 +88,7 @@ class EvaluatorAssemblyTest {
         var created = (TemplateApplication.CreatedReadable) templates.create(
                 invocation,
                 new TemplateApplication.CreateCommand(SYSTEM_EMPTY, DESIGN));
+        var admittedAtMonotonicNanos = System.nanoTime();
 
         var outcome = evaluator.evaluate(new EvaluationCommand(
                 new RenderRequestId("00000000-0000-4000-8000-000000000101"),
@@ -99,7 +100,8 @@ class EvaluatorAssemblyTest {
                 OutputSelection.defaultPng(),
                 "renderweave-renderer/1.0",
                 System.currentTimeMillis() + 60_000L,
-                System.nanoTime() + 60_000_000_000L));
+                admittedAtMonotonicNanos + 60_000_000_000L,
+                admittedAtMonotonicNanos + 5_000_000_000L));
 
         assertThat(outcome).isInstanceOf(EvaluationOutcome.SealedDocument.class);
         var sealed = (EvaluationOutcome.SealedDocument) outcome;
@@ -115,6 +117,7 @@ class EvaluatorAssemblyTest {
 
     @Test
     void evaluatingUnknownTemplateRejectsAtClosureStage() {
+        var admittedAtMonotonicNanos = System.nanoTime();
         var outcome = evaluator.evaluate(new EvaluationCommand(
                 new RenderRequestId("00000000-0000-4000-8000-000000000102"),
                 new OwnerScope("owner-a"),
@@ -125,7 +128,8 @@ class EvaluatorAssemblyTest {
                 OutputSelection.defaultPng(),
                 "renderweave-renderer/1.0",
                 System.currentTimeMillis() + 60_000L,
-                System.nanoTime() + 60_000_000_000L));
+                admittedAtMonotonicNanos + 60_000_000_000L,
+                admittedAtMonotonicNanos + 5_000_000_000L));
 
         assertThat(outcome).isInstanceOf(EvaluationOutcome.Rejected.class);
         var rejected = (EvaluationOutcome.Rejected) outcome;

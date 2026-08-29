@@ -1084,6 +1084,13 @@ Label: wayfinder:map
   20/13/84/92/277，asset/server/web、17-step full、render 与 resolution fast 均 passed/A1；T177-specific
   A2/A3 无，J0 pending。
   cap-048+ 继续 deferred；无 HTTP/OpenAPI/Web/migration/Profile/provider/push/tag/PR 变化。
+- [T178 — admission + closure 5 秒 stage deadline 合流](issues/178-admission-closure-stage-deadline.md)
+  — **resolved / automated_verified**；blocked by T21/T177（均 resolved）。按 `RW-T19-S8-053/058/059`、
+  `RW-T19-S9-015/018/019` 与 cap-048，已将 EXACT `5000` profile/taxonomy 合流到唯一 production guard；从 T177
+  同一 admission monotonic origin 派生不可重置 stage deadline，并以 Template-owned opaque cooperative control
+  覆盖 closure retry/IO/integrity/DFS/consistency。focused 22/40/73/14、app assembly 2/2、受影响 reactor
+  20/13/86/92/283，template/render/fast/server metadata 全部 passed/A1；T178-specific A2/A3 无，J0 pending。
+  cap-049+ 继续 deferred；无 HTTP/OpenAPI/Web/migration/Profile/provider/push/tag/PR 变化。
 
 - 改写或重解释现有 Schema/Inference v1 已提交历史，或在 dirty main 上直接实施 Template。
 - Workspace、组织/成员/分享/协作、跨 ownerScope 复制、通用 connector、任意 SQL/HTTP/文件/脚本、插件节点或运行时代码注册。

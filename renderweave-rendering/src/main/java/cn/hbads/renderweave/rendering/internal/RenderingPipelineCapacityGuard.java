@@ -197,6 +197,12 @@ final class RenderingPipelineCapacityGuard {
                 Comparison.EXACT,
                 ProblemCode.CAPABILITY_RESULT_INVALID,
                 EvaluationStage.MATERIALIZATION),
+        DEADLINE_AND_RETENTION_ADMISSION_AND_CLOSURE_MILLIS(
+                "deadlineAndRetention.admissionAndClosureMillis",
+                5_000L,
+                Comparison.EXACT,
+                ProblemCode.RENDER_DEADLINE_EXCEEDED,
+                EvaluationStage.TEMPLATE_CLOSURE),
         DEADLINE_AND_RETENTION_TOTAL_DEADLINE_MILLIS(
                 "deadlineAndRetention.totalDeadlineMillis",
                 60_000L,
