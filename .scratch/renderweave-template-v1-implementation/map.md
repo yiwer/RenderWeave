@@ -925,6 +925,14 @@ Label: wayfinder:map
 
 ## Current frontier
 
+- [T199 — 接线 authored mm coordinate/length absolute 产品容量](issues/199-wire-authored-mm-absolute-capacity.md)
+  — **resolved / automated_verified / unclaimed**；实现 `86e7169c`，immutable component v12 SHA-256
+  `9237af14b1bd8bab2232fc55c7d3499aa6e9b3477ad9d8f311c305ffd333b9cd`、21449 bytes。cap-060
+  `geometry.authoredCoordinateOrLengthMmAbsoluteMax=10000` 已覆盖 placement、padding/corner/stroke、container/
+  Repeat gap、FIXED track 与 Point/Path 全部 authored mm 叶子；signed 叶子观察 canonical absolute magnitude，
+  Canvas trim/bleed 不重复 reservation。Java/TypeScript 195/195、Template 162/162、Java/Python 211/211、
+  `template`/`fast` 全绿，wired 60/65、remaining geometry 5、formal records 0。A3 无，J0 pending、J1 未批准；
+  claim 已释放，下一 unblocked frontier 为 cap-061 `geometry.fontSizePtExclusiveMin`，尚未登记或 claim。
 - [T198 — 接线 Canvas bleed 每边 maximum 产品容量](issues/198-wire-canvas-bleed-maximum-capacity.md)
   — **resolved / automated_verified / unclaimed**；实现 `ca1a0b55`，immutable component v11 SHA-256
   `957abb68737d22ccbb9dfa8d4007135ee018b08c3e920e6df04c7653a1c94d90`。cap-059

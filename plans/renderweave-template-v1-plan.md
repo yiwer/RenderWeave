@@ -6434,3 +6434,30 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
   `.sdlc/evidence/20260829-194829-template/` 与 `fast` `.sdlc/evidence/20260829-194900-fast/` passed/A1，Template
   Java/Python 211/211 且 static/registry replay 通过。A3 无，J0 pending、J1 未批准；本票非 app wiring，未重复
   server/full，formal records 仍为 0。claim 已释放，下一 unblocked frontier 为 cap-060，尚未登记或 claim。
+
+## 199. TV1-T199 执行卡
+
+- 状态：`resolved / automated_verified / unclaimed`；Blocked by T198（resolved）。
+- authority：Ticket 19 `RW-T19-S7-110 / RW-T19-S9-017 / RW-T19-S9-019` 与 cap-060 固定
+  `geometry.authoredCoordinateOrLengthMmAbsoluteMax=10000`、MAX_INCLUSIVE / CANONICAL_DECIMAL；terminal 为
+  `DESIGN_PROPERTY_CONSTRAINT_INVALID / DESIGN_PROPERTY_AND_AGGREGATE_VALIDATION`，public stage
+  TEMPLATE_CLOSURE，reservation point 为 persisted write/Evaluation 前，zero boundary 为
+  ZERO_WRITE_AND_DOWNSTREAM。
+- seam/scope：只深化 `DesignDslAuthority.admit(rawUtf8)` 与同一 Template-owned capacity authority；覆盖 placement、
+  padding/corner/stroke、container/Repeat gap、FIXED track 与 vector Point/Path 的全部 authored mm 叶子。signed
+  coordinate/margin/inset 观察 absolute magnitude；Canvas trim/bleed 由既有更窄轴独占，不重复 reservation。
+- TDD：先经真实公共 admission 取得 cap-060 observation 缺失 RED，再按 placement、box/container、Repeat/Grid、vector
+  纵切补齐 below/at/scale-64 above、正负绝对值、exact pointer、local-validation/aggregate order 与 authority
+  reject/invalid/throw fail-closed。
+- target/gates：冻结 immutable component target v12，目标 wired 60/65、remaining geometry 5；执行 focused Template、
+  Template module、component Java/TypeScript、canonical vectors、`template`、`fast`。无 app wiring，不重复 server/full。
+- boundary：不接线 cap-061–065，不发行 formal records/class manifests，不运行 Renderer/Profile/provider/API Key/
+  真实数据/生产/J1/A3/READY，不改用户 dirty work/stash，不 push/tag/PR。claim 时 A0、J0 pending。
+- 实现/证据：实现基线 `86e7169cc19c33661ef7d536bc489fd2e006afc8`；全部 authored mm family 已通过共享
+  canonical absolute reservation 接线，Canvas trim/bleed 保持更窄轴独占。immutable v12 target SHA-256
+  `9237af14b1bd8bab2232fc55c7d3499aa6e9b3477ad9d8f311c305ffd333b9cd`、21449 bytes；component
+  `.sdlc/evidence/20260829-201458-template-t199-component-final/` Java primary 195/195（A1）+ TypeScript independent
+  195/195、2692 checks（A2），wired 60/65、remaining geometry 5、formal records 0。focused Geometry 23/23、
+  Template module 162/162；`template` `.sdlc/evidence/20260829-200955-template/` 与 `fast`
+  `.sdlc/evidence/20260829-201026-fast/` passed/A1，Template Java/Python 211/211。A3 无，J0 pending、J1 未批准；
+  本票无 app wiring，未重复 server/full。claim 已释放；下一 frontier 为 cap-061，尚未登记或 claim。

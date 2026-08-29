@@ -1,5 +1,26 @@
 # NOTES.md
 
+# 2026-08-29 Template-v1 T199 authored mm absolute capacity（resolved / automated_verified）
+- T198 已以实现 `ca1a0b55`、治理 `bf4bfb81` 收口并释放 claim；DAG 无其他 active claim。现按 single-writer
+  claim cap-060 `geometry.authoredCoordinateOrLengthMmAbsoluteMax=10000`，关联 `RW-T19-S7-110` 与
+  `RW-T19-S9-017/019`，目标 wired 60/65、remaining geometry 5。
+- 作用域是全部已准入 authored mm 几何叶子：placement、padding/corner/stroke、container/Repeat gap、FIXED track、
+  Point/Path；允许负值的 coordinate/margin/inset 以 canonical absolute magnitude 观察。Canvas trim/bleed 已由
+  cap-056–059 更窄约束独占，不重复 reservation；pt/unitless/degree 与 cap-061–065 保持 deferred。
+- 只深化公共 `DesignDslAuthority.admit(rawUtf8)` 与既有 Template-owned capacity authority，按 TDD 先取得 observation
+  缺失 RED。claim 时 A0、J0 pending、J1 未批准；无 app wiring/Profile/provider/API Key/真实数据/生产/push/tag/PR，
+  用户 Image/Inference dirty work 与 stash 保持不动。
+- 实现 `86e7169c` 已把 placement、padding/corner/stroke、container/Repeat gap、FIXED track、Point/Path 全部
+  authored mm 叶子接入共享 canonical absolute reservation；positive/non-negative local constraint 在前、aggregate
+  在后，authority reject/invalid/throw 与 oversized canonical expansion 均 fail closed。Canvas trim/bleed 不重复观察。
+- immutable v12 target SHA-256 `9237af14b1bd8bab2232fc55c7d3499aa6e9b3477ad9d8f311c305ffd333b9cd`、
+  21449 bytes；component `.sdlc/evidence/20260829-201458-template-t199-component-final/` Java 195/195（A1）+
+  TypeScript 195/195、2692 checks（A2），wired 60/65、remaining geometry 5、formal records 0。
+- Geometry 23/23、Template module 162/162；`template` `.sdlc/evidence/20260829-200955-template/metadata.json` 与
+  `fast` `.sdlc/evidence/20260829-201026-fast/metadata.json` passed/A1，Template Java/Python 211/211。claim 已释放；
+  A3 无，J0 pending、J1 未批准，server/full 按非 app-wiring boundary 未重复，用户 dirty work/stash 未改，未
+  push/tag/PR。下一 frontier 为 cap-061 `geometry.fontSizePtExclusiveMin`，尚未登记。
+
 # 2026-08-29 Template-v1 T198 Canvas bleed maximum（resolved / automated_verified）
 - cap-059 `geometry.bleedMmPerSideMax=100` 已沿公共 `DesignDslAuthority.admit(rawUtf8)` 接入唯一
   Template-owned capacity authority；可选 bleed 存在时按 `topMm -> rightMm -> bottomMm -> leftMm`，每边共享

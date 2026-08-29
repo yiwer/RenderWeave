@@ -30,7 +30,7 @@ if (-not $resolvedEvidenceDir.StartsWith(
 }
 
 $target = Join-Path $repoRoot `
-    '.scratch\renderweave-template-v1\design-input-expression\capacity-component-target-v11.json'
+    '.scratch\renderweave-template-v1\design-input-expression\capacity-component-target-v12.json'
 $primaryReport = Join-Path $resolvedEvidenceDir `
     'design-input-expression-capacity-primary.json'
 $independentReport = Join-Path $resolvedEvidenceDir `
@@ -105,14 +105,14 @@ try {
             -or $result.caseCount -ne 195 `
             -or $result.passed -ne 195 `
             -or $result.failed -ne 0 `
-            -or $result.boundary.wiredProductAxisCount -ne 59 `
-            -or $result.boundary.remainingProductAxisCount -ne 6 `
+            -or $result.boundary.wiredProductAxisCount -ne 60 `
+            -or $result.boundary.remainingProductAxisCount -ne 5 `
             -or $result.boundary.preissuanceReady `
             -or $result.boundary.recordIssuanceAllowed `
             -or $result.boundary.executionClassExecutable) {
         throw 'Design/Input/Expression independent report boundary drifted.'
     }
-    Write-Host 'DESIGN_INPUT_EXPRESSION component gate: 195/195 scalar PASS, 59/65 wired'
+    Write-Host 'DESIGN_INPUT_EXPRESSION component gate: 195/195 scalar PASS, 60/65 wired'
 }
 finally {
     Pop-Location
