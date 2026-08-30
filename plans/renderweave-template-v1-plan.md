@@ -6728,7 +6728,8 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
 
 ## 210. TV1-T210 执行卡
 
-- 状态：`active / claimed`；Blocked by T209（resolved）与产品语义 owner decision（2026-08-31 approved）。
+- 状态：`resolved / automated_verified / unclaimed`；Blocked by T209（resolved）与产品语义 owner decision
+  （2026-08-31 approved）。
 - authority：发行新 candidateId `rw-renderer-spike-linux-x86_64-v2-000002`；旧 `000001` bytes 保持不可变，以独立
   append-only supersession metadata 建立 successor 关系。FreeType 2.14.3 保留
   `TT_CONFIG_OPTION_BYTECODE_INTERPRETER` 与派生 `TT_USE_BYTECODE_INTERPRETER`，使 frozen `FT_IS_TRICKY`
@@ -6744,3 +6745,11 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
   不发行 Renderer Exact Output 162 records、不注册 Profile、不升级 Certified/READY、不关闭 Ticket 19。无
   API/OpenAPI/Web/Flyway/provider/API Key/真实数据/生产/push/tag/PR；不触碰用户 dirty work。claim 时 A0；
   semantic J1 approved，但 build/certification authorization absent。
+- resolution：实现 `f5ba9a05`；candidate SHA-256 `f245a597...351b71`，decision SHA-256
+  `c7672cb5...e1a7e79`。旧 candidate/T209 decision bytes exact 不变；append-only supersession 建立 000001→000002。
+  missing-v2 RED 5/5；final old+new 10/10；focused A1
+  `20260831-template-t210-tricky-font-candidate-v2-final` 785 checks；fresh `template`
+  `20260831-template-t210-integration-final` 为 Editor 38/21867、SPEC 24519/24427、artifacts 404、authorityDiff=0。
+  classification compile path compatible=true，但 runtime bytecode non-execution、target materialization、
+  preissuance/issuance、Certified/READY/Ticket19 closure 均 false。T210-specific A2/A3 absent；semantic J1 approved，
+  build/certification authorization absent。无 build/font bytes/provider/API Key/真实数据/生产/push/tag/PR；claim 已释放。

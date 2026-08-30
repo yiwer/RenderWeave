@@ -1,5 +1,17 @@
 # NOTES.md
 
+# 2026-08-31 Template-v1 T210 Renderer tricky-font candidate v2（resolved / automated_verified）
+- 产品语义 J1 已确认：新 candidate `rw-renderer-spike-linux-x86_64-v2-000002` 保留 FreeType interpreter compile
+  path 以承载 `FT_IS_TRICKY` 分类；production glyph load 仍强制 `NO_HINTING | NO_AUTOHINT | NO_BITMAP | NO_SVG`，
+  任何旁路 fail closed。实现 `f5ba9a05` 发行 additive authority、v2 header/policy/application-order/source-target/
+  prerequisites 与 append-only supersession；旧 candidate/T209 decision bytes 未改写。
+- candidate SHA-256 `f245a597...351b71`，decision SHA-256 `c7672cb5...e1a7e79`。missing-v2 RED 5/5；final
+  old+new 10/10；focused A1 `20260831-template-t210-tricky-font-candidate-v2-final` 785 checks；fresh Template
+  `20260831-template-t210-integration-final` 为 Editor 38/21867、SPEC 24519/24427、artifacts 404、authorityDiff=0。
+- runtime bytecode non-execution、exact target、preissuance、162 record issuance、Certified、READY 与 Ticket 19 closure
+  均保持 false；无 build/font bytes/Profile/provider/API Key/真实数据/生产/push/tag/PR。T210-specific A2/A3 absent；
+  build/certification authorization absent。claim 已释放；下一 portable tricky-font fixture frontier 尚未登记或 claim。
+
 # 2026-08-29 Template-v1 T209 Renderer tricky-font compatibility gate（resolved / automated_verified）
 - T208 收口后按 single-writer claim 并完成 T209。已确认 frozen policy 要求每个 Certified target
   `FT_IS_TRICKY`，而 exact candidate custom header 同时 `#undef TT_USE_BYTECODE_INTERPRETER`；FreeType 2.14.3

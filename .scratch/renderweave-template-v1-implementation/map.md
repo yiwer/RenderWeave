@@ -926,11 +926,14 @@ Label: wayfinder:map
 ## Current frontier
 
 - [T210 — Renderer tricky-font classification candidate v2](issues/210-renderer-tricky-font-classification-candidate-v2.md)
-  — **active / claimed**；Blocked by T209（resolved）and owner semantic decision（approved 2026-08-31）。发行 immutable
-  candidate `rw-renderer-spike-linux-x86_64-v2-000002`，保留 FreeType 的 interpreter compile path 以承载
-  `FT_IS_TRICKY` 分类，同时要求所有 production glyph load 强制 `NO_HINTING | NO_AUTOHINT`，任何旁路 fail closed。
-  本票只物化 additive authority/candidate/supersession/offline gate；不 build、不认证、不发行 162 records，所有
-  target/issuance/Certified/READY/Ticket19 lifecycle 保持 false。A0，J1 semantic choice approved；single writer claimed。
+  — **resolved / automated_verified / unclaimed**；实现 `f5ba9a05` 已发行 immutable candidate `000002` 与 additive
+  authority/header/policy/application-order/source-target/prerequisites；append-only supersession 保证旧 candidate 与
+  T209 decision bytes 不变。decision SHA-256 `c7672cb5...e1a7e79`，candidate SHA-256
+  `f245a597...351b71`。RED 5/5；final old+new 10/10；focused 785 checks；fresh Template Editor 38/21867、
+  SPEC 24519/24427、artifacts 404、authorityDiff=0。分类 compile path compatible=true，但 runtime bytecode
+  non-execution/target/preissuance/issuance/Certified/READY/Ticket19 closure 全 false。A1 passed，T210 A2/A3 absent；
+  semantic J1 approved，build/certification authorization absent。claim 已释放；下一安全 frontier 为 portable
+  license-safe tricky-font fixture authority/bytes/proof plan，尚未登记或 claim。
 - [T209 — Renderer tricky-font classification compatibility gate](issues/209-renderer-tricky-font-classification-compatibility-gate.md)
   — **resolved / automated_verified / unclaimed**；实现 `c194178e` 已把 frozen portable `FT_IS_TRICKY`
   requirement 与当前 candidate `#undef TT_USE_BYTECODE_INTERPRETER` 的矛盾物化为 offline fail-closed
