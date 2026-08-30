@@ -1,5 +1,11 @@
 # RenderWeave Template v1 Implementation Plan
 
+## 2026-08-31 skills-first migration
+
+- 本文 T01–T210 的执行卡、A0–A3/J0–J1、Phase、claim、evidence 路径与生命周期标签均保留为历史事实，不再驱动后续工作，也不批量改写。
+- 新工作遵循 `docs/agents/issue-tracker.md` 与 `plans/execution-protocol.md`：`to-tickets → implement → code-review`，一张票一个纵向增量、受影响验证和独立提交。
+- 当前 goal 在 `main` 上持续推进；新票从 T211 继续。首张 ready ticket 是 portable、license-safe tricky-font fixture，不触发 build、认证、provider、真实数据或生产操作。
+
 ## 2026-08-29 main integration
 
 - 本次合并保留两条已验证历史。main-line 的 TV1-T123–T136 保持原编号；并行

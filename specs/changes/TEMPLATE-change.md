@@ -1,41 +1,38 @@
-# Spec Delta：____
+# Spec delta: ____
 
-- 状态：proposed / approved / rejected / merged
-- 触发任务：____
-- 触发证据：____
-- 影响 AC/规则：____
-- 再锚定关系：本 delta 一经批准，即成为 `RULE-ANCHOR-001` 的对照基准之一；批准前的需求演化不视为漂移。
+Status: proposed / approved / rejected / superseded
+Triggered by: ticket / observation / decision ____
 
-## 冲突或新事实
+## New fact or conflict
 
-____
+What changed or what the implementation proved inconsistent with the current authority?
 
-## 变更
+## Decision
 
-### ADDED
+Describe the approved product or technical semantic change. If not approved, keep this document proposed and do not implement the semantic delta.
 
-____
+## Added
 
-### MODIFIED
+- __.
 
-____
+## Modified
 
-### REMOVED
+- __.
 
-____
+## Removed
 
-## 影响面
+- __.
 
-- 用户价值/范围：____
-- 实现与数据：____
-- 验证与发布：____
-- DAG/预算：____
-- 恢复影响（源码/数据/外部副作用，RULE-REC-001）：____
+## Consequences
 
-## 决策
+- User-visible scope: __.
+- Domain/module/API/data impact: __.
+- Test and compatibility impact: __.
+- Source, database and external-side-effect recovery impact: __.
+- Follow-up tickets: __.
 
-- 批准人：____
-- 日期：____
-- 结论与理由：____
+## Approval
 
-> 只有批准的 delta 才能让某 AC 进入 `deferred`；不得用未批准的 delta 偷绕承诺 AC（`RULE-STATE-001`）。
+- Decision owner: __.
+- Date: __.
+- Rationale: __.

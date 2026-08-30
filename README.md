@@ -1,10 +1,11 @@
 # RenderWeave
 
-RenderWeave 是一个 AI-native 设计出图系统。本仓库当前固定的是 v1 的定义层：设计 Schema Draft、发布不可变 StaticSchema、验证数据，并把图片/JSON/文本中的结构推断为可逐项审核的 Candidate。Template、数据适配、Workspace 与图片渲染明确属于后续版本。
+RenderWeave 是一个 AI-native 设计出图系统。本仓库包含已交付的 Schema/Inference v1 定义层，以及正在实现的 additive Template v1：DesignDSL、Template、Asset、Evaluator、Editor、RenderDocument 与独立 Renderer。数据适配和 Workspace 仍不在当前批准范围；Template、Editor 与 Renderer 在剩余认证完成前不得宣称 READY。
 
 ## 当前交付
 
 - 权威产品与软件规格：[`specs/renderweave-v1.md`](specs/renderweave-v1.md)
+- Additive Template v1 实施权威：[`specs/changes/20260817-template-v1-implementation-authority.md`](specs/changes/20260817-template-v1-implementation-authority.md)
 - 五维领域模型：[`docs/modeling/renderweave-v1-domain-model.md`](docs/modeling/renderweave-v1-domain-model.md)
 - 架构决策：[`docs/adr/`](docs/adr/)
 - 分阶段实施计划：[`plans/renderweave-v1-plan.md`](plans/renderweave-v1-plan.md)
@@ -15,7 +16,7 @@ RenderWeave 是一个 AI-native 设计出图系统。本仓库当前固定的是
 - Form + 一层 Map 共享状态的 Schema Studio，以及 RootDocument 批量验证
 - synthetic replay 与受控 DashScope live 识别：durable run → evidence review → create-only 原子 Draft Bundle
 
-当前实现已完成 P1–P5 的受控能力验证并进入 P6 产品收口。基础 Compose 中 DashScope adapter
+Schema/Inference v1 的既有产品纵切继续可用；Template v1 当前在 `main` 上按 skills-first ticket 持续推进，尚未完成 Renderer 认证与最终 READY 条件。基础 Compose 中 DashScope adapter
 默认关闭；live overlay 开放逐任务确认的用户输入，提供四个产品 Profile 与可选累计成本硬上限。
 所有产品 Profile 仍为 `EXPERIMENTAL`，只能生成待审核 Candidate，不能直接发布或修改 Schema。
 
@@ -64,7 +65,7 @@ powershell -ExecutionPolicy Bypass -File tools\run-gate.ps1 -Gate runtime
 powershell -ExecutionPolicy Bypass -File tools\run-gate.ps1 -Gate full
 ```
 
-每次运行把输入文件清单、Git 状态、逐步原始日志、退出码和元数据写入忽略提交的 `.sdlc/evidence/<timestamp>-<gate>/`。这是本机工具捕获的 A1 证据，不等同于 CI/独立复核的 A2，也不是外部强制门禁 A3。
+gate 为兼容历史脚本仍会把输入清单、Git 状态、日志、退出码和元数据写入忽略提交的 `.sdlc/evidence/<timestamp>-<gate>/`。这些目录只作为本地构建日志使用，不再分级或承担人工/发布状态判断。
 
 ## 本地拓扑
 

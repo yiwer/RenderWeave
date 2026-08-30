@@ -1,29 +1,29 @@
-# ADR-____：____
+# ADR-____: ____
 
-- 状态：proposed / accepted / superseded / rejected
-- 日期：____
-- 关联：goal/task/AC ____
+Status: proposed / accepted / superseded / rejected
+Date: ____
+Related spec/ticket: ____
 
-> 仅记录存在真实取舍的关键决策（`RULE-MIN-001`）；一次性实现细节不进 ADR。Agent 先给推荐、备选与理由。
-> 人否决时：把否决理由记入「备选方案」或本 ADR 转 `rejected` 分支，不重复提交同一方案，除非有新证据。
+Use an ADR only for a durable choice with meaningful alternatives. Keep ordinary implementation details in code, tests and the ticket.
 
-## 背景与约束
+## Context
 
-____
+What forces a decision now? Which domain terms, constraints and existing ADRs apply?
 
-## 决策
+## Decision
 
-____
+State the chosen rule precisely.
 
-## 备选方案
+## Alternatives
 
-| 方案 | 优点 | 代价/风险 | 未选择原因 |
+| Alternative | Benefits | Costs and risks | Why not chosen |
 |---|---|---|---|
 | | | | |
 
-## 后果与验证
+## Consequences
 
-- 正向后果：____
-- 负向后果/债务：____
-- 验证或观测方式（保证等级）：____
-- 回退/替代条件（见 references/recovery-model.md）：____
+- Positive: __.
+- Negative / debt: __.
+- Compatibility and migration: __.
+- How the decision is tested or observed: __.
+- Conditions for superseding it: __.

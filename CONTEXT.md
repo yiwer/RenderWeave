@@ -4,7 +4,7 @@
 
 RenderWeave 已交付的 Schema/Inference v1 让技术型设计者定义可变的 Schema Draft，把精确 revision 发布为
 不可变 StaticSchema，并通过确定性验证或带证据的 AI 推断获得可审核的数据结构。2026-08-17 起，Template v1
-作为 approved additive effort 在独立分支实施；它不反向改写既有 Schema/Inference 语义，当前也不代表
+作为 approved additive effort 在 `main` 通过 skills-first ticket 持续实施；它不反向改写既有 Schema/Inference 语义，当前也不代表
 Template、Editor 或 Renderer READY。
 
 ## 统一语言
@@ -291,7 +291,7 @@ QUEUED → RUNNING → REVIEW_REQUIRED → APPLYING → COMPLETED
 - `specs/renderweave-v1.md` 的历史 Schema/Inference scope 不定义 Template DSL、映射语言、Workspace 或 Renderer
   API；其中 AC-025 继续禁止该历史计划为未来能力预建占位。
 - approved additive Template v1 由 `specs/changes/20260817-template-v1-implementation-authority.md`、冻结
-  checkpoint `0b485f4` 及其 source records 管辖，可按已 claim ticket 实现真实纵切，但不得反向改变
+  checkpoint `0b485f4` 及其 source records 管辖，可按已批准的 ready ticket 实现真实纵切，但不得反向改变
   StaticSchema、Validation 或 Inference 的既有合同。
 - Schema/Inference 提供给 Template 的稳定接缝仍是精确 StaticSchema 标识、不可变 DSL 快照和已保存的
   compiled JSON Schema；Template module 的精确依赖方向与 owning interfaces 由实施 Ticket 02 冻结。

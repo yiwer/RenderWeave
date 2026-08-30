@@ -2,11 +2,17 @@
 
 Label: wayfinder:map
 
+## 2026-08-31 workflow migration
+
+T01–T210 与下方 A/J、claim、`automated_verified`、evidence 记录是只读历史。后续实现使用
+`docs/agents/issue-tracker.md` 的 compact ticket 与 `to-tickets → implement → code-review` 循环；`map.md` 仅作导航，
+不再是强制状态账本。当前 goal 在 `main` 上保持 active，新编号从 T211 继续。
+
 ## Destination
 
 在不改写现有 Schema/Inference v1 历史的前提下，把冻结于 `0b485f4a13de9d754a81d07f464730776e13c14b` 的 Template v1 合同实现为可验证的新增产品能力：交付 DesignDSL、Template、Asset、Evaluator、Editor、RenderDocument 与独立 Rust Renderer，并以真实产品 target/executor、浏览器观察、人工 J1 和两种物理 Linux CPU-family 认证如实推进生命周期；外部门控未完成前不得宣称 Editor、Renderer 或 Template v1 READY。
 
-## Notes
+## Legacy notes (non-operative since 2026-08-31)
 
 - 本地图是新的实施 effort。旧 `.scratch/renderweave-template-v1/map.md` 仍是决策完备的规格探索记录；其中“本地图不实施产品代码”只约束旧 effort，本地图依据用户明确授权承载产品实施。
 - 权威起点由三部分组成：本地 `main` 的已提交锚点 `7848c821...`、Template 规格提交 `b14c2d7` 与 `0b485f4`、以及 7 份已核验的 Ticket 19 LF registry 修复。Ticket 01 已在相邻独立 worktree 中整合它们；dirty main 未被 reset、checkout、覆盖或清理。
@@ -925,6 +931,10 @@ Label: wayfinder:map
 
 ## Current frontier
 
+- [T211 — Materialize a portable tricky-font fixture](issues/211-materialize-portable-tricky-font-fixture.md)
+  — **ready-for-agent**；blocked by T210（done）。提交可离线复现、license-safe 的 exact fixture bytes、recipe、
+  provenance 与 independent checksum/classifier verifier；不 build FreeType/Skia、不做 runtime/physical Linux 认证、
+  不发行 Renderer Exact Output records，也不升级 Certified/READY/Ticket 19。
 - [T210 — Renderer tricky-font classification candidate v2](issues/210-renderer-tricky-font-classification-candidate-v2.md)
   — **resolved / automated_verified / unclaimed**；实现 `f5ba9a05` 已发行 immutable candidate `000002` 与 additive
   authority/header/policy/application-order/source-target/prerequisites；append-only supersession 保证旧 candidate 与
@@ -932,15 +942,16 @@ Label: wayfinder:map
   `f245a597...351b71`。RED 5/5；final old+new 10/10；focused 785 checks；fresh Template Editor 38/21867、
   SPEC 24519/24427、artifacts 404、authorityDiff=0。分类 compile path compatible=true，但 runtime bytecode
   non-execution/target/preissuance/issuance/Certified/READY/Ticket19 closure 全 false。A1 passed，T210 A2/A3 absent；
-  semantic J1 approved，build/certification authorization absent。claim 已释放；下一安全 frontier 为 portable
-  license-safe tricky-font fixture authority/bytes/proof plan，尚未登记或 claim。
+  semantic J1 approved，build/certification authorization absent。历史 claim 已释放；当时的 portable
+  license-safe tricky-font fixture frontier 现已登记为 T211。
 - [T209 — Renderer tricky-font classification compatibility gate](issues/209-renderer-tricky-font-classification-compatibility-gate.md)
   — **resolved / automated_verified / unclaimed**；实现 `c194178e` 已把 frozen portable `FT_IS_TRICKY`
   requirement 与当前 candidate `#undef TT_USE_BYTECODE_INTERPRETER` 的矛盾物化为 offline fail-closed
   decision/verifier/gate，并接入 `template`。decision SHA-256 `8c2488ea...0d62ce5a5`；focused 5/5、gate
   401 checks、fresh Template Editor 38/21867、SPEC 24519/24427、authorityDiff=0。A1 passed，A2/A3 absent、
   J0 pending；J1 仅用于后续产品语义选择。未 build/生成字体/发行 162 records/升级 Certified/READY；claim 已释放。
-  下一 Renderer Exact Output frontier 仍被 candidate semantics decision 阻塞，尚未登记或 claim。
+  下一 Renderer Exact Output frontier 当时仍被 candidate semantics decision 阻塞且尚未登记；现由 T211 承接其
+  portable fixture 子问题。
 - [T208 — 发行 Rendering Pipeline 156+156 容量记录](issues/208-issue-rendering-pipeline-capacity-records.md)
   — **resolved / automated_verified / unclaimed**；实现 `5da2bd93`、target `6966be31`、derived hardening
   `525db9bc`/`86ae31ee`/`c2f8e827`/`731e7dcb` 与 issuance `7530c324` 保持 formal 253/253 prefix

@@ -1,85 +1,46 @@
-# 模板 1：需求、五维模型与原型
+# Feature spec: ____
 
-> 保存为 `specs/<feature>.md`。Agent 先调查并提交草案，再与人确认；不要让用户从空表开始填写。
-> 行为规则引用 skill 内 `references/core-rules.md` 的 rule ID。
+> Prefer `to-spec` to synthesize this document from an already discussed feature. Use exact vocabulary from `CONTEXT.md` and respect relevant ADRs.
 
-## 产品定位与边界
+Status: proposed / approved / superseded
 
-| 项 | 内容 |
-|---|---|
-| 用户、场景与痛点 | __ |
-| 产品提供的价值 | __ |
-| 成功表现/指标 | __ |
-| 非目标 | __ |
-| 关键假设 | __ |
-| 主要风险 | __ |
+## Problem Statement
 
-边界按项目检查输入、空态、权限、并发/幂等、失败/恢复、性能、兼容和数据生命周期。不适用可省略，但先经过判断。
+Describe the problem from the user's perspective.
 
-## 实体五维建模
+## Solution
 
-> **先回答：本项目是否真有领域实体值得建模？** 纯工具/脚本/薄封装 → 跳过五表，写一句理由即可。
-> 五表是**探针不是交付物**：填满≠想清楚；为凑表编造的属性/事件是负资产（`RULE-MIN-001`）。判据：这一行是否真约束实现或验证？若不影响任何 AC，删掉它。
+Describe the observable solution from the user's perspective.
 
-### 对象 Objects
+## User Stories
 
-| 对象 | 关键属性 | 生命周期/状态 | 所有权边界 |
-|---|---|---|---|
-| | | | |
+1. As a __, I want __, so that __.
 
-### 行为 Behaviors
+Cover the main path, empty state, invalid input, authorization, concurrency/idempotency, failure/recovery, compatibility and data lifecycle where relevant.
 
-| 行为 | 发起者 | 前置条件 | 结果/失败语义 | 关联 AC |
-|---|---|---|---|---|
-| | | | | |
+## Implementation Decisions
 
-### 事件 Events
+- Affected domain concepts and module ownership: __.
+- Existing interface or highest behavior seam to reuse: __.
+- API/schema/persistence/state decisions: __.
+- Important failure and recovery semantics: __.
 
-| 事件 | 触发行为 | 载荷 | 订阅者/副作用 |
-|---|---|---|---|
-| | | | |
+Record durable decisions, not guessed file paths or implementation snippets. Use an ADR when alternatives have materially different long-term consequences.
 
-### 关系 Relations
+## Testing Decisions
 
-| 关系 | 基数/方向 | 更新或删除规则 |
-|---|---|---|
-| | | |
+- Highest observable seam: __.
+- Expected external behavior: __.
+- Existing test precedent to follow: __.
+- PostgreSQL, cross-language, browser or property/golden coverage needed: __.
 
-### 规则 Rules
+Test behavior and contracts rather than private implementation details.
 
-| # | 不变量/业务规则 | 强制位置 | 失败行为 | 关联 AC |
-|---|---|---|---|---|
-| R-1 | | DB/service/client/policy | | |
+## Out of Scope
 
-五个维度是需求探针；Behaviors/Rules 每行应能溯源到 AC，指不到即为删除候选。不适用时写一句理由即可。
+- __.
 
-## 验收标准
+## Further Notes
 
-| AC | 可观察行为 | 关联规则 | 验证方式 | 期望保证等级 |
-|---|---|---|---|---|
-| AC-1 | WHEN __，系统应 __ | R-1 | 自动命令 / 人工体验 | A1/A2/J1 |
-
-- 条件、行为和结果必须无歧义，句式不必机械统一。
-- Agent auto 所依赖的 AC 应能自动验证；保证等级含义见 `references/evidence-assurance.md`。
-- 人工体验或业务签字明确标为人工 gate（J1），不以自证代替。
-
-## 原型迭代
-
-模型形成后选择能回答当前不确定性的最低成本原型。默认先用流程表、状态图或静态线框；只有必须验证真实交互时才制作可运行原型。循环验证：
-
-| 检查 | 结果/证据 | 回填模型或 AC |
-|---|---|---|
-| 核心行为是否都有合理入口和反馈 | | |
-| 关键规则、状态和异常能否被产品正确表达 | | |
-| 产品功能是否被原型完整诠释 | | |
-| 视觉、交互和信息层级是否满意 | | |
-
-原型是检验模型的探针，不是一次性美术交付。每轮发现的问题回填五维模型和 AC；阶段末由人集中确认核心流程、功能表达和当前必须决定的体验方向，视觉精修可以明确延期。
-
-## 退出门控
-
-- [ ] 产品定位、非目标、假设和主要边界清楚
-- [ ] 五个维度均已检查，适用内容无关键悬置项（或已写 N/A 理由）
-- [ ] AC 覆盖主路径与重要失败路径，并有验证方式与期望保证等级
-- [ ] 原型能诠释核心功能，问题已回填模型/AC
-- [ ] 人确认关键功能表达及适用的视觉/交互体验（J1）
+- Assumptions and unresolved decisions: __.
+- Required explicit authorization, if any: __.
