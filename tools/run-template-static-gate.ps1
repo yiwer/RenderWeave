@@ -103,9 +103,13 @@ Invoke-Checked 'renderer-tricky-font-compatibility' {
 }
 $trickyFontReport = Get-Content -Raw -Encoding UTF8 -LiteralPath $trickyFontReportPath |
     ConvertFrom-Json
-if ($trickyFontReport.status -ne 'PASS_FAIL_CLOSED' `
-        -or $trickyFontReport.decisionStatus -ne 'BLOCKED_CANDIDATE_SEMANTIC_CONTRADICTION' `
+if ($trickyFontReport.status -ne 'PASS_NEW_CANDIDATE_CLASSIFICATION_COMPATIBLE_FAIL_CLOSED' `
+        -or $trickyFontReport.decisionStatus -ne 'NEW_CANDIDATE_CLASSIFICATION_COMPILE_PATH_COMPATIBLE_BUILD_UNPROVEN' `
         -or $trickyFontReport.failureCount -ne 0 `
+        -or -not $trickyFontReport.observedCompatibility.classificationImplementationCompiled `
+        -or -not $trickyFontReport.observedCompatibility.currentCandidateCanSatisfyPortableAuthority `
+        -or $trickyFontReport.observedCompatibility.runtimeBytecodeNonExecutionProven `
+        -or $trickyFontReport.observedCompatibility.exactBuiltTargetObserved `
         -or $trickyFontReport.boundary.exactRendererTargetMayMaterialize `
         -or $trickyFontReport.boundary.rendererExactOutputRecordIssuanceAllowed `
         -or $trickyFontReport.boundary.certified `
@@ -349,6 +353,8 @@ try {
             decisionStatus = $trickyFontReport.decisionStatus
             candidateId = $trickyFontReport.candidateId
             checkCount = $trickyFontReport.checkCount
+            classificationImplementationCompiled = [bool]$trickyFontReport.observedCompatibility.classificationImplementationCompiled
+            runtimeBytecodeNonExecutionProven = [bool]$trickyFontReport.observedCompatibility.runtimeBytecodeNonExecutionProven
             exactRendererTargetMayMaterialize = [bool]$trickyFontReport.boundary.exactRendererTargetMayMaterialize
             recordIssuanceAllowed = [bool]$trickyFontReport.boundary.rendererExactOutputRecordIssuanceAllowed
             certified = [bool]$trickyFontReport.boundary.certified

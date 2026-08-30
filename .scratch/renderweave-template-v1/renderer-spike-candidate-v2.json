@@ -1,0 +1,282 @@
+{
+  "artifactVersion": "renderweave-renderer-spike-candidate/1.0",
+  "candidateId": "rw-renderer-spike-linux-x86_64-v2-000002",
+  "status": "SPIKE_CANDIDATE",
+  "authority": "T210 owner-approved additive source/configuration successor; this artifact is not a Certified Renderer manifest and cannot authorize READY",
+  "supersedesCandidateId": "rw-renderer-spike-linux-x86_64-v2-000001",
+  "supersededBy": null,
+  "semanticAuthority": {
+    "path": "specs/changes/20260831-renderer-tricky-font-classification-candidate-v2.md",
+    "sha256": "39b2080ed39c43cf2bc7e7de40fb577f9966da4a7b1f706324a75f25af5590e1",
+    "byteLength": 2321,
+    "approvedAt": "2026-08-31",
+    "approvalScope": "classification compile path retained; runtime hinting remains forbidden"
+  },
+  "identityRules": {
+    "mutableInPlace": false,
+    "failureOrSourceChange": "issue a new candidateId and append supersession metadata without rewriting predecessor bytes",
+    "certificationUpgradeInPlace": false
+  },
+  "target": {
+    "operatingSystem": "linux",
+    "architecture": "amd64",
+    "minimumIsa": "x86-64-v2",
+    "executionPath": "single-cpu-only",
+    "runtimeIsaDispatch": false
+  },
+  "pinnedCandidates": {
+    "skia": {
+      "releaseLine": "M151",
+      "gitCommit": "93458b5faf9cd8befbe6c93158d4d8ee7c8424ee",
+      "gitTree": "e3eaee9c6a83beffdf115a267c3d9a4bd7d9348e",
+      "archiveSha256": "9dfc76b78fc6363e77f96b4faca566cfa0c28d06ad478f809f241e98966652af",
+      "archiveRule": "normalized git 2.55.0.windows.2 archive tar over the exact commit with prefix skia-<commit>/; certification must independently reproduce or mirror these bytes"
+    },
+    "freetype": {
+      "release": "2.14.3",
+      "tagObject": "c740f0fda4274d6ffd2e5b64a25b06ef69803a07",
+      "gitCommit": "0a0221a1347e2f1e07c395263540026e9a0aa7c7",
+      "officialTarSha256": "36bc4f1cc413335368ee656c42afca65c5a3987e8768cc28cf11ba775e785a5f"
+    },
+    "libjpegTurbo": {
+      "release": "3.2.0",
+      "gitCommit": "c85e6b905bf237038faa936dab160ebfc5da0344",
+      "officialTarSha256": "6f30092cef9fb839779646608f4ee14ae3cbac989c47fa05e841b0841f09878e"
+    },
+    "llvmClangLld": {
+      "release": "22.1.8",
+      "gitCommit": "ca7933e47d3a3451d81e72ac174dcb5aa28b59d1",
+      "archiveSha256": "df0e1ecf16caf3489a272a5eea4eec9b0d82878f6477fa309504f918a0006384"
+    },
+    "gn": {
+      "gitCommit": "b2afae122eeb6ce09c52d63f67dc53fc517dbdc8"
+    },
+    "ninja": {
+      "distribution": "chromium-cipd",
+      "version": "1.12.1.chromium.4",
+      "package": "infra/3pp/tools/ninja/linux-amd64",
+      "cipdInstanceId": "Px8cwPaaG8_fZ_tsK8dBmx3YEruNDnmvqb-oo1U7UIIC"
+    },
+    "cmake": {
+      "release": "4.4.2",
+      "archiveSha256": "3ada9a3f5d8a85413579bdd0ea6aa8e8da86efdd6d15c91a1afa517f2021956c"
+    }
+  },
+  "candidateBuildContract": {
+    "linkage": "static",
+    "targetFlags": [
+      "-march=x86-64-v2",
+      "-mtune=generic"
+    ],
+    "forbiddenCompilerModes": [
+      "fast-math",
+      "FMA contraction",
+      "LTO"
+    ],
+    "forbiddenRuntimePaths": [
+      "GPU",
+      "runtime ISA dispatch",
+      "fontconfig or system-font fallback",
+      "libjpeg-turbo SIMD",
+      "TrueType bytecode hinting"
+    ],
+    "freetypePatchPolicy": {
+      "status": "SOURCE_CONFIGURATION_A1_RECORDED_BUILD_AND_RUNTIME_EVIDENCE_PENDING",
+      "skiaSeam": {
+        "sourcePath": "src/ports/SkFontHost_FreeType.cpp",
+        "function": "SkScalerContext_FreeType::SkScalerContext_FreeType",
+        "rule": "When SkFontHinting::kNone is selected, add FT_LOAD_NO_AUTOHINT independently of SK_BUILD_FOR_ANDROID_FRAMEWORK and assert the final load-flag invariant before any glyph load."
+      },
+      "requiredFinalLoadFlags": [
+        "FT_LOAD_NO_HINTING",
+        "FT_LOAD_NO_AUTOHINT",
+        "FT_LOAD_NO_BITMAP",
+        "FT_LOAD_NO_SVG"
+      ],
+      "forbiddenFinalLoadFlags": [
+        "FT_LOAD_FORCE_AUTOHINT",
+        "FT_LOAD_COLOR"
+      ],
+      "fixedSizeAndBitmapPolicy": "Reject non-scalable, fixed-size, and bitmap-only faces before Skia can clear FT_LOAD_NO_BITMAP or add FT_LOAD_COLOR; re-adding a flag after the fixed-size branch is not sufficient.",
+      "classificationCompilePolicy": {
+        "requiredFreetypeOptions": [
+          "TT_CONFIG_OPTION_BYTECODE_INTERPRETER"
+        ],
+        "requiredDerivedFreetypeMacros": [
+          "TT_USE_BYTECODE_INTERPRETER"
+        ],
+        "purpose": "retain upstream tt_check_trickyness and FT_FACE_FLAG_TRICKY classification",
+        "runtimeHintingAuthorized": false
+      },
+      "requiredGnArgs": {
+        "skia_use_system_freetype2": false,
+        "skia_use_freetype_svg": false,
+        "skia_use_fontconfig": false,
+        "skia_enable_fontmgr_fontconfig": false,
+        "skia_enable_fontmgr_FontConfigInterface": false
+      },
+      "customFreetypeHeaders": [
+        {
+          "macro": "FT_CONFIG_OPTIONS_H",
+          "path": "renderer-spike/rw-freetype-ftoption-v2.h",
+          "bytesSha256": "433306f92270063236760e0b7f0c5328dd486bf0ebaf161ac19118b9588ea90e",
+          "status": "source-bytes-frozen-build-unproven"
+        },
+        {
+          "macro": "FT_CONFIG_MODULES_H",
+          "path": "renderer-spike/rw-freetype-ftmodule.h",
+          "bytesSha256": "2daa0dc83ec934272c28b2d6aa5f801f13cf19bf5a05096752637dd63b224f00",
+          "status": "source-bytes-frozen-build-unproven"
+        }
+      ],
+      "disabledFreetypeOptions": [
+        "FT_CONFIG_OPTION_SVG",
+        "TT_CONFIG_OPTION_EMBEDDED_BITMAPS",
+        "TT_CONFIG_OPTION_COLOR_LAYERS",
+        "TT_CONFIG_OPTION_SUBPIXEL_HINTING",
+        "FT_CONFIG_OPTION_SUBPIXEL_RENDERING",
+        "FT_CONFIG_OPTION_ENVIRONMENT_PROPERTIES",
+        "FT_CONFIG_OPTION_USE_PNG",
+        "FT_CONFIG_OPTION_USE_HARFBUZZ",
+        "TT_CONFIG_OPTION_GX_VAR_SUPPORT"
+      ],
+      "disabledDerivedFreetypeMacros": [
+        "FT_CONFIG_OPTION_USE_HARFBUZZ_DYNAMIC",
+        "TT_SUPPORT_SUBPIXEL_HINTING_MINIMAL",
+        "TT_SUPPORT_COLRV1"
+      ],
+      "retainedFreetypeModules": [
+        "tt_driver_class",
+        "cff_driver_class",
+        "sfnt_module_class",
+        "psaux_module_class",
+        "psnames_module_class",
+        "ft_smooth_renderer_class"
+      ],
+      "removedFreetypeModules": [
+        "autofit_module_class",
+        "pshinter_module_class",
+        "ft_svg_renderer_class",
+        "ft_raster1_renderer_class",
+        "ft_sdf_renderer_class",
+        "ft_bitmap_sdf_renderer_class",
+        "type1_driver_class",
+        "t1cid_driver_class",
+        "pfr_driver_class",
+        "t42_driver_class",
+        "winfnt_driver_class",
+        "pcf_driver_class",
+        "bdf_driver_class"
+      ],
+      "assetAdmissionRejects": [
+        "non-scalable or num_fixed_sizes greater than zero",
+        "SVG glyphs",
+        "COLR or CPAL color layers",
+        "CBDT or CBLC color bitmaps",
+        "EBDT or EBLC embedded bitmaps",
+        "sbix strikes",
+        "variable fonts"
+      ],
+      "glyphLoadAudit": "Every FT_Load_Glyph call reachable from metrics, image, path, drawable, cache, or future generation must use the same final invariant; any bypass fails the candidate.",
+      "runtimeBytecodePolicy": {
+        "executionAllowed": false,
+        "sourceConfigurationProofSufficient": false,
+        "instrumentedBuiltTargetProofRequired": true,
+        "currentProof": "PENDING"
+      },
+      "patchIdentity": {
+        "required": true,
+        "path": "renderer-spike/skia-m151-freetype-policy.patch",
+        "contentSha256": "a573de549efe6deb7673aec7046f39731a9847ce9453a78b076b10eed338e28d",
+        "applicationOrderPath": "renderer-spike/application-order-v2.json",
+        "applicationOrderSha256": "6ccb8960ccee5162cb3b8a61f53f105932cc7f2669ad58ec9bd895c6bbf4752c",
+        "changeRule": "Any semantic patch or custom-header change issues a new candidateId and cannot mutate this candidate meaning."
+      },
+      "trickyFontFixturePolicy": {
+        "path": "renderer-spike/tricky-font-fixture-policy-v2.json",
+        "sha256": "b315154f48683eeedce28a2648b282de42a57c908831303dd94c3294f50170ac",
+        "status": "policy-frozen-fixture-bytes-pending"
+      },
+      "stillUnproven": [
+        "portable tricky-font fixture bytes and executed equivalence of NO_HINTING plus NO_AUTOHINT to the patched Skia kNone path",
+        "compiled reachability proves every actual Skia glyph path preserves the final flag invariant",
+        "instrumentation proves the compiled TrueType interpreter executes no bytecode on production glyph paths",
+        "CFF OTF build and exact pixels after removing pshinter",
+        "M151 builds with the custom headers and trimmed modules",
+        "ELF and symbol audit excludes system FreeType, fontconfig, autofit, pshinter, SVG, and bitmap paths"
+      ]
+    }
+  },
+  "certificationClosureRequired": [
+    "HarfBuzz source and build",
+    "Unicode and BiDi data identity",
+    "PNG input decoder source and build",
+    "WebP input decoder source and build",
+    "all Rust crates and feature graph",
+    "libc and libc++ identity",
+    "compiler sysroot",
+    "OCI image digest",
+    "downstream patchset",
+    "complete build flags",
+    "canonical ICC bytes and SHA-256",
+    "golden corpus manifest"
+  ],
+  "requiredAudits": {
+    "elfTools": [
+      "readelf",
+      "objdump",
+      "nm",
+      "ldd"
+    ],
+    "mustExclude": [
+      "AVX",
+      "AVX2",
+      "FMA",
+      "x86-64-v3-only instructions",
+      "x86-64-v4-only instructions",
+      "GPU paths",
+      "undeclared dynamic dependencies",
+      "system FreeType or fontconfig dynamic dependencies",
+      "autofit, pshinter, SVG, or bitmap modules and symbols"
+    ],
+    "mustInclude": [
+      "the exact FreeType TrueType interpreter/classification compile path required by TT_USE_BYTECODE_INTERPRETER"
+    ],
+    "mustProve": [
+      "all reachable production FT_Load_Glyph calls preserve the required and forbidden final flags",
+      "instrumented production-path replay executes no TrueType bytecode"
+    ]
+  },
+  "requiredIndependentReplay": {
+    "physicalLinuxHosts": 2,
+    "differentCpuFamilies": true,
+    "preferredCpuVendors": [
+      "AMD",
+      "Intel"
+    ],
+    "mustMatch": [
+      "exact pixels",
+      "exact PNG bytes",
+      "exact JPEG bytes"
+    ],
+    "virtualizedEvidenceMayCertifyReady": false
+  },
+  "currentEvidence": {
+    "level": "A1 source-configuration authority",
+    "predecessorContradiction": "renderer-spike/tricky-font-compatibility-decision-v1.json",
+    "sourceIntegrity": "renderer-source-integrity-a1-2026-08-16.json",
+    "sourceIntegritySha256": "e94b3b9109ca982915f3569ba7c056e8e0e289bfaff254634f3b11694baa1412",
+    "buildAuthorized": false,
+    "exactRendererTargetMayMaterialize": false,
+    "rendererExactOutputPreissuanceReady": false,
+    "rendererExactOutputRecordIssuanceAllowed": false,
+    "ready": false,
+    "certified": false,
+    "ticket19MayClose": false
+  },
+  "openRisks": [
+    "Compiled interpreter code is required for upstream tricky-face classification, but runtime bytecode non-execution is not proven until a built target is instrumented.",
+    "Skia M151 optimize-size behavior and every actual glyph-load execution path require a build spike.",
+    "Portable tricky-font fixture bytes, CFF behavior, ELF proof, complete transitive dependency closure, canonical ICC, and golden manifest remain absent."
+  ]
+}

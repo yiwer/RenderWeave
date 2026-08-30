@@ -925,6 +925,12 @@ Label: wayfinder:map
 
 ## Current frontier
 
+- [T210 — Renderer tricky-font classification candidate v2](issues/210-renderer-tricky-font-classification-candidate-v2.md)
+  — **active / claimed**；Blocked by T209（resolved）and owner semantic decision（approved 2026-08-31）。发行 immutable
+  candidate `rw-renderer-spike-linux-x86_64-v2-000002`，保留 FreeType 的 interpreter compile path 以承载
+  `FT_IS_TRICKY` 分类，同时要求所有 production glyph load 强制 `NO_HINTING | NO_AUTOHINT`，任何旁路 fail closed。
+  本票只物化 additive authority/candidate/supersession/offline gate；不 build、不认证、不发行 162 records，所有
+  target/issuance/Certified/READY/Ticket19 lifecycle 保持 false。A0，J1 semantic choice approved；single writer claimed。
 - [T209 — Renderer tricky-font classification compatibility gate](issues/209-renderer-tricky-font-classification-compatibility-gate.md)
   — **resolved / automated_verified / unclaimed**；实现 `c194178e` 已把 frozen portable `FT_IS_TRICKY`
   requirement 与当前 candidate `#undef TT_USE_BYTECODE_INTERPRETER` 的矛盾物化为 offline fail-closed

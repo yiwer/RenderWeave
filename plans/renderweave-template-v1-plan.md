@@ -6725,3 +6725,22 @@ process protocol 或 `full` 组成变化属于共享面，必须提前扩大回�
   404、authorityDiff=0，且 target materialization/record issuance/Certified/READY/Ticket19 closure 全 false。
   一次受限官方开源 source read 用于 A1 fact，未保留 vendor source；offline gate network/provider attempts 0。
   A2/A3 absent、J0 pending；产品语义 J1 仍待 owner，claim 已释放。
+
+## 210. TV1-T210 执行卡
+
+- 状态：`active / claimed`；Blocked by T209（resolved）与产品语义 owner decision（2026-08-31 approved）。
+- authority：发行新 candidateId `rw-renderer-spike-linux-x86_64-v2-000002`；旧 `000001` bytes 保持不可变，以独立
+  append-only supersession metadata 建立 successor 关系。FreeType 2.14.3 保留
+  `TT_CONFIG_OPTION_BYTECODE_INTERPRETER` 与派生 `TT_USE_BYTECODE_INTERPRETER`，使 frozen `FT_IS_TRICKY`
+  classification compile path 存在。
+- runtime policy：interpreter 被编译不等于允许 hinting。每个 production `FT_Load_Glyph` reachable path 必须强制
+  `FT_LOAD_NO_HINTING | FT_LOAD_NO_AUTOHINT | FT_LOAD_NO_BITMAP | FT_LOAD_NO_SVG`，禁止
+  `FT_LOAD_FORCE_AUTOHINT | FT_LOAD_COLOR`；任何旁路 fail closed。无 runtime bytecode execution 仍需未来真实 build/
+  instrumentation A2 证明，本票不得宣称已证明。
+- test-first/gates：先令 verifier 依赖 v2 authority 并取得 missing-artifact RED；再覆盖 predecessor immutability、
+  exact supersession、宏 retained/asserted、load flags、pending runtime proof 与 lifecycle overclaim。运行 focused Python、
+  compatibility gate 与 fresh `template`。
+- boundary：不改 central acceptance、不 build/link/run、不生成/读取 proprietary font bytes、不用 physical Linux、
+  不发行 Renderer Exact Output 162 records、不注册 Profile、不升级 Certified/READY、不关闭 Ticket 19。无
+  API/OpenAPI/Web/Flyway/provider/API Key/真实数据/生产/push/tag/PR；不触碰用户 dirty work。claim 时 A0；
+  semantic J1 approved，但 build/certification authorization absent。

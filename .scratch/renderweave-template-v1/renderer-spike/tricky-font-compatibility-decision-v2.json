@@ -1,0 +1,116 @@
+{
+  "artifactVersion": "renderweave-renderer-tricky-font-compatibility-decision/1.1",
+  "decisionId": "rw-renderer-tricky-font-compatibility-000002",
+  "status": "NEW_CANDIDATE_CLASSIFICATION_COMPILE_PATH_COMPATIBLE_BUILD_UNPROVEN",
+  "candidateId": "rw-renderer-spike-linux-x86_64-v2-000002",
+  "supersedesDecisionId": "rw-renderer-tricky-font-compatibility-000001",
+  "sourceFacts": {
+    "upstream": "FreeType",
+    "commit": "0a0221a1347e2f1e07c395263540026e9a0aa7c7",
+    "tree": "589225074ab1eb876682820c482069693c251e88",
+    "optionHeaderPath": "include/freetype/config/ftoption.h",
+    "optionHeaderBlob": "b857e0ebbd9a5fed2b088c28ce409d9fbdbfd64e",
+    "requiredConfigurationMacro": "TT_CONFIG_OPTION_BYTECODE_INTERPRETER",
+    "derivedClassificationGuard": "TT_USE_BYTECODE_INTERPRETER",
+    "classificationSourcePath": "src/truetype/ttobjs.c",
+    "classificationSourceSha256": "sha256:c381554e81a00f9d5c430e7c51e1d6c289958867426b021a6165eb12b451922d",
+    "classificationSourceByteLength": 40600,
+    "classificationFunction": "tt_check_trickyness",
+    "assignedFaceFlag": "FT_FACE_FLAG_TRICKY",
+    "reviewedAt": "2026-08-31",
+    "sourceRetained": false
+  },
+  "inputs": [
+    {
+      "path": "specs/changes/20260831-renderer-tricky-font-classification-candidate-v2.md",
+      "sha256": "sha256:39b2080ed39c43cf2bc7e7de40fb577f9966da4a7b1f706324a75f25af5590e1",
+      "byteLength": 2321
+    },
+    {
+      "path": ".scratch/renderweave-template-v1/renderer-spike-candidate-v1.json",
+      "sha256": "sha256:c649e60e94bd56785074a8bbf514af856885e615d32ecd1ea680cb27fb0358f8",
+      "byteLength": 9619
+    },
+    {
+      "path": ".scratch/renderweave-template-v1/renderer-spike/tricky-font-compatibility-decision-v1.json",
+      "sha256": "sha256:8c2488ea27920b7762824f155f0db6a986216e65be2c35de609e3190d62ce5a5",
+      "byteLength": 3180
+    },
+    {
+      "path": ".scratch/renderweave-template-v1/renderer-spike/candidate-supersessions-v1.json",
+      "sha256": "sha256:1882d188ed8c689973d08b55a53b2d209ea28a1646879be26aebab026c178a49",
+      "byteLength": 1425
+    },
+    {
+      "path": ".scratch/renderweave-template-v1/renderer-spike-candidate-v2.json",
+      "sha256": "sha256:f245a597df86105ad6e5635e7b0041e0fbd2fe50f2f4499183842ebbe0351b71",
+      "byteLength": 11360
+    },
+    {
+      "path": ".scratch/renderweave-template-v1/renderer-spike/source-integrity-target-manifest-v2.json",
+      "sha256": "sha256:f37185ed98b8f28ec0b1306ae2008aa542a1c46223f11eb2d9be22c12c1011e6",
+      "byteLength": 2559
+    },
+    {
+      "path": ".scratch/renderweave-template-v1/renderer-spike/tricky-font-fixture-policy-v2.json",
+      "sha256": "sha256:b315154f48683eeedce28a2648b282de42a57c908831303dd94c3294f50170ac",
+      "byteLength": 1737
+    },
+    {
+      "path": ".scratch/renderweave-template-v1/renderer-spike/rw-freetype-ftoption-v2.h",
+      "sha256": "sha256:433306f92270063236760e0b7f0c5328dd486bf0ebaf161ac19118b9588ea90e",
+      "byteLength": 1474
+    },
+    {
+      "path": ".scratch/renderweave-template-v1/renderer-spike/hermetic-linux-build-prerequisites-v2.json",
+      "sha256": "sha256:c5b4d26713a685d646a1895cc8bce9d6de0ac261b938a52eb2373a1ed69128e7",
+      "byteLength": 5994
+    },
+    {
+      "path": ".scratch/renderweave-template-v1/renderer-spike/application-order-v2.json",
+      "sha256": "sha256:6ccb8960ccee5162cb3b8a61f53f105932cc7f2669ad58ec9bd895c6bbf4752c",
+      "byteLength": 1487
+    },
+    {
+      "path": "renderer/process-manifest.json",
+      "sha256": "sha256:f814c98e415e1bee96af198bb36a2eefd91726f3264f26909217e4270afbdeeb",
+      "byteLength": 1246
+    }
+  ],
+  "approvedSemanticResolution": {
+    "authority": "product-semantics-owner",
+    "approvedAt": "2026-08-31",
+    "choice": "compile the exact FreeType interpreter path for tricky-face classification while forbidding runtime hinting through mandatory production glyph-load flags",
+    "oldCandidateMutated": false,
+    "buildOrCertificationAuthorized": false
+  },
+  "observedCompatibility": {
+    "portableAuthorityRequiresFtIsTricky": true,
+    "candidateRetainsTtConfigOptionBytecodeInterpreter": true,
+    "candidateRetainsTtUseBytecodeInterpreter": true,
+    "candidateHeaderAssertsBothMacros": true,
+    "classificationImplementationCompiled": true,
+    "mandatoryNoHintingLoadFlagsDeclared": true,
+    "currentCandidateCanSatisfyPortableAuthority": true,
+    "runtimeBytecodeNonExecutionProven": false,
+    "exactBuiltTargetObserved": false
+  },
+  "enforcedBoundary": {
+    "buildAuthorized": false,
+    "buildAttemptedByThisDecision": false,
+    "exactRendererTargetMayMaterialize": false,
+    "rendererExactOutputPreissuanceReady": false,
+    "rendererExactOutputRecordIssuanceAllowed": false,
+    "certified": false,
+    "ready": false,
+    "ticket19MayClose": false
+  },
+  "nextRequiredEvidence": {
+    "portableFixtureBytes": "PENDING",
+    "hermeticBuild": "PENDING_FRESH_AUTHORIZATION",
+    "allGlyphLoadPathAudit": "PENDING",
+    "instrumentedRuntimeBytecodeNonExecution": "PENDING",
+    "physicalLinuxReplay": "PENDING",
+    "centralAcceptanceRebind": "PENDING_SEPARATE_TICKET"
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "artifactVersion": "renderweave-renderer-spike-candidate-supersessions/1.0",
+  "status": "APPEND_ONLY",
+  "mutationAllowed": false,
+  "records": [
+    {
+      "ordinal": 1,
+      "predecessorCandidateId": "rw-renderer-spike-linux-x86_64-v2-000001",
+      "predecessorPath": ".scratch/renderweave-template-v1/renderer-spike-candidate-v1.json",
+      "predecessorSha256": "sha256:c649e60e94bd56785074a8bbf514af856885e615d32ecd1ea680cb27fb0358f8",
+      "predecessorByteLength": 9619,
+      "predecessorDecisionPath": ".scratch/renderweave-template-v1/renderer-spike/tricky-font-compatibility-decision-v1.json",
+      "predecessorDecisionSha256": "sha256:8c2488ea27920b7762824f155f0db6a986216e65be2c35de609e3190d62ce5a5",
+      "successorCandidateId": "rw-renderer-spike-linux-x86_64-v2-000002",
+      "successorPath": ".scratch/renderweave-template-v1/renderer-spike-candidate-v2.json",
+      "successorSha256": "sha256:f245a597df86105ad6e5635e7b0041e0fbd2fe50f2f4499183842ebbe0351b71",
+      "successorByteLength": 11360,
+      "semanticAuthorityPath": "specs/changes/20260831-renderer-tricky-font-classification-candidate-v2.md",
+      "semanticAuthoritySha256": "sha256:39b2080ed39c43cf2bc7e7de40fb577f9966da4a7b1f706324a75f25af5590e1",
+      "approvedAt": "2026-08-31",
+      "reason": "retain FreeType tricky-face classification compile path while production glyph loads remain no-hinting and fail closed"
+    }
+  ]
+}

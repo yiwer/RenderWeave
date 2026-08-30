@@ -57,7 +57,7 @@ Push-Location $repoRoot
 try {
     & py.exe -3.13 'tools\verify-renderer-tricky-font-compatibility.py' `
         '--repo' $repoRoot `
-        '--decision' '.scratch/renderweave-template-v1/renderer-spike/tricky-font-compatibility-decision-v1.json' `
+        '--decision' '.scratch/renderweave-template-v1/renderer-spike/tricky-font-compatibility-decision-v2.json' `
         '--report' $report
     if ($LASTEXITCODE -ne 0) {
         throw "Renderer tricky-font compatibility verifier failed with exit code $LASTEXITCODE."
@@ -68,12 +68,17 @@ finally {
 }
 
 $result = Get-Content -Raw -Encoding UTF8 -LiteralPath $report | ConvertFrom-Json
-if ($result.reportVersion -ne 'renderweave-renderer-tricky-font-compatibility-gate/1.0' `
-        -or $result.status -ne 'PASS_FAIL_CLOSED' `
-        -or $result.decisionStatus -ne 'BLOCKED_CANDIDATE_SEMANTIC_CONTRADICTION' `
-        -or $result.candidateId -ne 'rw-renderer-spike-linux-x86_64-v2-000001' `
-        -or $result.checkCount -lt 50 `
+if ($result.reportVersion -ne 'renderweave-renderer-tricky-font-compatibility-gate/1.1' `
+        -or $result.status -ne 'PASS_NEW_CANDIDATE_CLASSIFICATION_COMPATIBLE_FAIL_CLOSED' `
+        -or $result.decisionStatus -ne 'NEW_CANDIDATE_CLASSIFICATION_COMPILE_PATH_COMPATIBLE_BUILD_UNPROVEN' `
+        -or $result.candidateId -ne 'rw-renderer-spike-linux-x86_64-v2-000002' `
+        -or $result.predecessorCandidateId -ne 'rw-renderer-spike-linux-x86_64-v2-000001' `
+        -or $result.checkCount -lt 100 `
         -or $result.failureCount -ne 0 `
+        -or -not $result.observedCompatibility.classificationImplementationCompiled `
+        -or -not $result.observedCompatibility.currentCandidateCanSatisfyPortableAuthority `
+        -or $result.observedCompatibility.runtimeBytecodeNonExecutionProven `
+        -or $result.observedCompatibility.exactBuiltTargetObserved `
         -or $result.boundary.buildAuthorized `
         -or $result.boundary.exactRendererTargetMayMaterialize `
         -or $result.boundary.rendererExactOutputPreissuanceReady `
@@ -89,6 +94,6 @@ if ($result.reportVersion -ne 'renderweave-renderer-tricky-font-compatibility-ga
 }
 
 Write-Host (
-    'Renderer tricky-font compatibility: {0}, checks={1}, Certified/READY=false' -f
+    'Renderer tricky-font compatibility: {0}, checks={1}, candidate=000002, target/Certified/READY=false' -f
     $result.status, $result.checkCount
 )

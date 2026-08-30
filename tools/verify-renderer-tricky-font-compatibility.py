@@ -16,6 +16,10 @@ DECISION_VERSION = "renderweave-renderer-tricky-font-compatibility-decision/1.0"
 DECISION_ID = "rw-renderer-tricky-font-compatibility-000001"
 DECISION_STATUS = "BLOCKED_CANDIDATE_SEMANTIC_CONTRADICTION"
 CANDIDATE_ID = "rw-renderer-spike-linux-x86_64-v2-000001"
+DECISION_VERSION_V2 = "renderweave-renderer-tricky-font-compatibility-decision/1.1"
+DECISION_ID_V2 = "rw-renderer-tricky-font-compatibility-000002"
+DECISION_STATUS_V2 = "NEW_CANDIDATE_CLASSIFICATION_COMPILE_PATH_COMPATIBLE_BUILD_UNPROVEN"
+CANDIDATE_ID_V2 = "rw-renderer-spike-linux-x86_64-v2-000002"
 FREETYPE_COMMIT = "0a0221a1347e2f1e07c395263540026e9a0aa7c7"
 FREETYPE_TREE = "589225074ab1eb876682820c482069693c251e88"
 UPSTREAM_SOURCE_SHA256 = "sha256:c381554e81a00f9d5c430e7c51e1d6c289958867426b021a6165eb12b451922d"
@@ -27,6 +31,26 @@ INPUT_PATHS = [
     ".scratch/renderweave-template-v1/renderer-spike/hermetic-linux-build-prerequisites-v1.json",
     "renderer/process-manifest.json",
 ]
+INPUT_PATHS_V2 = [
+    "specs/changes/20260831-renderer-tricky-font-classification-candidate-v2.md",
+    ".scratch/renderweave-template-v1/renderer-spike-candidate-v1.json",
+    ".scratch/renderweave-template-v1/renderer-spike/tricky-font-compatibility-decision-v1.json",
+    ".scratch/renderweave-template-v1/renderer-spike/candidate-supersessions-v1.json",
+    ".scratch/renderweave-template-v1/renderer-spike-candidate-v2.json",
+    ".scratch/renderweave-template-v1/renderer-spike/source-integrity-target-manifest-v2.json",
+    ".scratch/renderweave-template-v1/renderer-spike/tricky-font-fixture-policy-v2.json",
+    ".scratch/renderweave-template-v1/renderer-spike/rw-freetype-ftoption-v2.h",
+    ".scratch/renderweave-template-v1/renderer-spike/hermetic-linux-build-prerequisites-v2.json",
+    ".scratch/renderweave-template-v1/renderer-spike/application-order-v2.json",
+    "renderer/process-manifest.json",
+]
+REQUIRED_LOAD_FLAGS = [
+    "FT_LOAD_NO_HINTING",
+    "FT_LOAD_NO_AUTOHINT",
+    "FT_LOAD_NO_BITMAP",
+    "FT_LOAD_NO_SVG",
+]
+FORBIDDEN_LOAD_FLAGS = ["FT_LOAD_FORCE_AUTOHINT", "FT_LOAD_COLOR"]
 REQUIRED_PROPERTIES = [
     "FreeType classifies the face as FT_IS_TRICKY",
     "the corpus distinguishes NO_HINTING alone from NO_HINTING plus NO_AUTOHINT",
@@ -120,7 +144,7 @@ def macro_directives(data: bytes) -> list[tuple[str, str]]:
     ]
 
 
-def verify(repo: Path, decision_path: str) -> dict[str, Any]:
+def verify_v1(repo: Path, decision_path: str) -> dict[str, Any]:
     verifier = Verifier()
     decision_bytes, decision = read_json(verifier, repo, decision_path)
     require_members(
@@ -309,6 +333,546 @@ def verify(repo: Path, decision_path: str) -> dict[str, Any]:
             "providerAttempts": 0,
         },
     }
+
+
+def verify_v2(repo: Path, decision_path: str) -> dict[str, Any]:
+    verifier = Verifier()
+    decision_bytes, decision = read_json(verifier, repo, decision_path)
+    require_members(
+        verifier,
+        decision,
+        {
+            "artifactVersion", "decisionId", "status", "candidateId",
+            "supersedesDecisionId", "sourceFacts", "inputs",
+            "approvedSemanticResolution", "observedCompatibility",
+            "enforcedBoundary", "nextRequiredEvidence",
+        },
+        "DECISION_V2_MEMBERS",
+    )
+    verifier.require(
+        decision["artifactVersion"] == DECISION_VERSION_V2,
+        "DECISION_V2_VERSION",
+        decision,
+    )
+    verifier.require(decision["decisionId"] == DECISION_ID_V2, "DECISION_V2_ID", decision)
+    verifier.require(
+        decision["status"] == DECISION_STATUS_V2,
+        "DECISION_V2_STATUS",
+        decision,
+    )
+    verifier.require(decision["candidateId"] == CANDIDATE_ID_V2, "CANDIDATE_V2_ID", decision)
+    verifier.require(
+        decision["supersedesDecisionId"] == DECISION_ID,
+        "DECISION_V2_PREDECESSOR",
+        decision,
+    )
+
+    inputs = decision["inputs"]
+    verifier.require(isinstance(inputs, list), "INPUTS_V2_TYPE", type(inputs).__name__)
+    verifier.require(
+        [item.get("path") for item in inputs] == INPUT_PATHS_V2,
+        "INPUTS_V2_ORDER",
+        inputs,
+    )
+    input_values: dict[str, dict[str, Any]] = {}
+    input_bytes: dict[str, bytes] = {}
+    for item, relative in zip(inputs, INPUT_PATHS_V2, strict=True):
+        require_members(verifier, item, {"path", "sha256", "byteLength"}, "INPUT_V2_MEMBERS")
+        data = resolve_file(verifier, repo, relative).read_bytes()
+        verifier.require(item == binding(relative, data), "INPUT_V2_BINDING", relative)
+        input_bytes[relative] = data
+        if relative.endswith(".json"):
+            input_values[relative] = decode_json(verifier, data, relative)
+
+    authority_path = INPUT_PATHS_V2[0]
+    predecessor_path = INPUT_PATHS_V2[1]
+    predecessor_decision_path = INPUT_PATHS_V2[2]
+    supersessions_path = INPUT_PATHS_V2[3]
+    candidate_path = INPUT_PATHS_V2[4]
+    source_target_path = INPUT_PATHS_V2[5]
+    policy_path = INPUT_PATHS_V2[6]
+    header_path = INPUT_PATHS_V2[7]
+    prerequisites_path = INPUT_PATHS_V2[8]
+    application_order_path = INPUT_PATHS_V2[9]
+    process_path = INPUT_PATHS_V2[10]
+
+    predecessor = input_values[predecessor_path]
+    predecessor_decision = input_values[predecessor_decision_path]
+    verifier.require(predecessor.get("candidateId") == CANDIDATE_ID, "PREDECESSOR_ID", predecessor)
+    verifier.require(
+        predecessor_decision.get("decisionId") == DECISION_ID
+        and predecessor_decision.get("status") == DECISION_STATUS
+        and predecessor_decision.get("candidateId") == CANDIDATE_ID,
+        "PREDECESSOR_DECISION",
+        predecessor_decision,
+    )
+    verifier.require(
+        sha256(input_bytes[predecessor_path])
+        == "sha256:c649e60e94bd56785074a8bbf514af856885e615d32ecd1ea680cb27fb0358f8",
+        "PREDECESSOR_IMMUTABLE_BYTES",
+        predecessor_path,
+    )
+    verifier.require(
+        sha256(input_bytes[predecessor_decision_path]) ==
+        "sha256:8c2488ea27920b7762824f155f0db6a986216e65be2c35de609e3190d62ce5a5",
+        "PREDECESSOR_DECISION_IMMUTABLE_BYTES",
+        predecessor_decision_path,
+    )
+
+    supersessions = input_values[supersessions_path]
+    require_members(
+        verifier,
+        supersessions,
+        {"artifactVersion", "status", "mutationAllowed", "records"},
+        "SUPERSESSIONS_MEMBERS",
+    )
+    verifier.require(
+        supersessions["artifactVersion"] ==
+        "renderweave-renderer-spike-candidate-supersessions/1.0",
+        "SUPERSESSIONS_VERSION",
+        supersessions,
+    )
+    verifier.require(
+        supersessions["status"] == "APPEND_ONLY"
+        and supersessions["mutationAllowed"] is False,
+        "SUPERSESSIONS_APPEND_ONLY",
+        supersessions,
+    )
+    records = supersessions["records"]
+    verifier.require(isinstance(records, list) and len(records) == 1, "SUPERSESSION_COUNT", records)
+    record = records[0]
+    require_members(
+        verifier,
+        record,
+        {
+            "ordinal", "predecessorCandidateId", "predecessorPath",
+            "predecessorSha256", "predecessorByteLength", "predecessorDecisionPath",
+            "predecessorDecisionSha256", "successorCandidateId", "successorPath",
+            "successorSha256", "successorByteLength", "semanticAuthorityPath",
+            "semanticAuthoritySha256", "approvedAt", "reason",
+        },
+        "SUPERSESSION_RECORD_MEMBERS",
+    )
+    verifier.require(record["ordinal"] == 1, "SUPERSESSION_ORDINAL", record)
+    verifier.require(
+        record["predecessorCandidateId"] == CANDIDATE_ID
+        and record["predecessorPath"] == predecessor_path
+        and record["predecessorSha256"] == sha256(input_bytes[predecessor_path])
+        and record["predecessorByteLength"] == len(input_bytes[predecessor_path]),
+        "SUPERSESSION_PREDECESSOR_BINDING",
+        record,
+    )
+    verifier.require(
+        record["predecessorDecisionPath"] == predecessor_decision_path
+        and record["predecessorDecisionSha256"] == sha256(input_bytes[predecessor_decision_path]),
+        "SUPERSESSION_PREDECESSOR_DECISION_BINDING",
+        record,
+    )
+    verifier.require(
+        record["successorCandidateId"] == CANDIDATE_ID_V2
+        and record["successorPath"] == candidate_path
+        and record["successorSha256"] == sha256(input_bytes[candidate_path])
+        and record["successorByteLength"] == len(input_bytes[candidate_path]),
+        "SUPERSESSION_SUCCESSOR_BINDING",
+        record,
+    )
+    verifier.require(
+        record["semanticAuthorityPath"] == authority_path
+        and record["semanticAuthoritySha256"] == sha256(input_bytes[authority_path])
+        and record["approvedAt"] == "2026-08-31",
+        "SUPERSESSION_AUTHORITY_BINDING",
+        record,
+    )
+
+    candidate = input_values[candidate_path]
+    verifier.require(candidate.get("candidateId") == CANDIDATE_ID_V2, "CANDIDATE_V2_MANIFEST_ID", candidate)
+    verifier.require(candidate.get("status") == "SPIKE_CANDIDATE", "CANDIDATE_V2_STATUS", candidate)
+    verifier.require(
+        candidate.get("supersedesCandidateId") == CANDIDATE_ID
+        and candidate.get("supersededBy") is None,
+        "CANDIDATE_V2_SUCCESSION",
+        candidate,
+    )
+    verifier.require(candidate.get("target") == predecessor.get("target"), "CANDIDATE_V2_TARGET_DRIFT", candidate)
+    verifier.require(
+        candidate.get("pinnedCandidates") == predecessor.get("pinnedCandidates"),
+        "CANDIDATE_V2_PINS_DRIFT",
+        candidate,
+    )
+    semantic = candidate.get("semanticAuthority", {})
+    verifier.require(
+        semantic.get("path") == authority_path
+        and semantic.get("sha256") == sha256(input_bytes[authority_path]).removeprefix("sha256:")
+        and semantic.get("byteLength") == len(input_bytes[authority_path])
+        and semantic.get("approvedAt") == "2026-08-31",
+        "CANDIDATE_V2_AUTHORITY",
+        semantic,
+    )
+    patch_policy = candidate.get("candidateBuildContract", {}).get("freetypePatchPolicy", {})
+    verifier.require(
+        patch_policy.get("requiredFinalLoadFlags") == REQUIRED_LOAD_FLAGS,
+        "CANDIDATE_REQUIRED_LOAD_FLAGS",
+        patch_policy.get("requiredFinalLoadFlags"),
+    )
+    verifier.require(
+        patch_policy.get("forbiddenFinalLoadFlags") == FORBIDDEN_LOAD_FLAGS,
+        "CANDIDATE_FORBIDDEN_LOAD_FLAGS",
+        patch_policy.get("forbiddenFinalLoadFlags"),
+    )
+    compile_policy = patch_policy.get("classificationCompilePolicy", {})
+    verifier.require(
+        compile_policy.get("requiredFreetypeOptions") ==
+        ["TT_CONFIG_OPTION_BYTECODE_INTERPRETER"],
+        "CANDIDATE_CONFIG_REQUIRED",
+        compile_policy,
+    )
+    verifier.require(
+        compile_policy.get("requiredDerivedFreetypeMacros") ==
+        ["TT_USE_BYTECODE_INTERPRETER"],
+        "CANDIDATE_DERIVED_REQUIRED",
+        compile_policy,
+    )
+    verifier.require(
+        compile_policy.get("runtimeHintingAuthorized") is False,
+        "CANDIDATE_RUNTIME_HINTING",
+        compile_policy,
+    )
+    verifier.require(
+        "TT_CONFIG_OPTION_BYTECODE_INTERPRETER" not in
+        patch_policy.get("disabledFreetypeOptions", []),
+        "CANDIDATE_CONFIG_DISABLED",
+        patch_policy,
+    )
+    verifier.require(
+        "TT_USE_BYTECODE_INTERPRETER" not in
+        patch_policy.get("disabledDerivedFreetypeMacros", []),
+        "CANDIDATE_DERIVED_DISABLED",
+        patch_policy,
+    )
+    runtime_policy = patch_policy.get("runtimeBytecodePolicy", {})
+    verifier.require(
+        runtime_policy == {
+            "executionAllowed": False,
+            "sourceConfigurationProofSufficient": False,
+            "instrumentedBuiltTargetProofRequired": True,
+            "currentProof": "PENDING",
+        },
+        "CANDIDATE_RUNTIME_POLICY",
+        runtime_policy,
+    )
+    current = candidate.get("currentEvidence", {})
+    for field in (
+        "buildAuthorized", "exactRendererTargetMayMaterialize",
+        "rendererExactOutputPreissuanceReady",
+        "rendererExactOutputRecordIssuanceAllowed", "ready", "certified",
+        "ticket19MayClose",
+    ):
+        verifier.require(current.get(field) is False, "CANDIDATE_V2_LIFECYCLE_FALSE", field)
+
+    source_target = input_values[source_target_path]
+    verifier.require(
+        source_target.get("candidateId") == CANDIDATE_ID_V2,
+        "SOURCE_TARGET_V2_CANDIDATE",
+        source_target,
+    )
+    verifier.require(
+        source_target.get("targetKind") ==
+        "source identity and candidate configuration compatibility only",
+        "SOURCE_TARGET_V2_KIND",
+        source_target,
+    )
+    freetype = source_target.get("freetype", {})
+    verifier.require(
+        freetype.get("commit") == FREETYPE_COMMIT
+        and freetype.get("tree") == FREETYPE_TREE,
+        "SOURCE_TARGET_V2_FREETYPE",
+        freetype,
+    )
+    verifier.require(
+        freetype.get("classificationCompileFacts") == {
+            "requiredOption": "TT_CONFIG_OPTION_BYTECODE_INTERPRETER",
+            "derivedGuard": "TT_USE_BYTECODE_INTERPRETER",
+            "classificationPath": "src/truetype/ttobjs.c::tt_check_trickyness",
+            "assignedFlag": "FT_FACE_FLAG_TRICKY",
+        },
+        "SOURCE_TARGET_V2_CLASSIFICATION",
+        freetype,
+    )
+    verifier.require(
+        source_target.get("classificationCompilePathCompatible") is True
+        and source_target.get("runtimeBytecodeNonExecutionProven") is False
+        and source_target.get("rendererTarget") is False
+        and source_target.get("ready") is False,
+        "SOURCE_TARGET_V2_BOUNDARY",
+        source_target,
+    )
+    artifacts = source_target.get("candidateArtifactSha256", {})
+    verifier.require(
+        artifacts.get("ftoption") == sha256(input_bytes[header_path]).removeprefix("sha256:"),
+        "SOURCE_TARGET_V2_FTOPTION_BINDING",
+        artifacts,
+    )
+    verifier.require(
+        artifacts.get("applicationOrder") ==
+        sha256(input_bytes[application_order_path]).removeprefix("sha256:"),
+        "SOURCE_TARGET_V2_APPLICATION_ORDER_BINDING",
+        artifacts,
+    )
+    verifier.require(
+        artifacts.get("fixturePolicy") == sha256(input_bytes[policy_path]).removeprefix("sha256:"),
+        "SOURCE_TARGET_V2_POLICY_BINDING",
+        artifacts,
+    )
+    custom_headers = patch_policy.get("customFreetypeHeaders", [])
+    options_headers = [
+        item for item in custom_headers if item.get("macro") == "FT_CONFIG_OPTIONS_H"
+    ]
+    verifier.require(len(options_headers) == 1, "CANDIDATE_V2_OPTIONS_HEADER", custom_headers)
+    verifier.require(
+        options_headers[0].get("path") == "renderer-spike/rw-freetype-ftoption-v2.h"
+        and options_headers[0].get("bytesSha256") == artifacts.get("ftoption"),
+        "CANDIDATE_V2_FTOPTION_CROSS_BINDING",
+        options_headers,
+    )
+    patch_identity = patch_policy.get("patchIdentity", {})
+    verifier.require(
+        patch_identity.get("applicationOrderPath") == "renderer-spike/application-order-v2.json"
+        and patch_identity.get("applicationOrderSha256") == artifacts.get("applicationOrder"),
+        "CANDIDATE_V2_APPLICATION_ORDER_CROSS_BINDING",
+        patch_identity,
+    )
+    fixture_policy = patch_policy.get("trickyFontFixturePolicy", {})
+    verifier.require(
+        fixture_policy.get("path") == "renderer-spike/tricky-font-fixture-policy-v2.json"
+        and fixture_policy.get("sha256") == artifacts.get("fixturePolicy"),
+        "CANDIDATE_V2_POLICY_CROSS_BINDING",
+        fixture_policy,
+    )
+
+    header_bytes = input_bytes[header_path]
+    directives = macro_directives(header_bytes)
+    verifier.require(
+        ("undef", "TT_CONFIG_OPTION_BYTECODE_INTERPRETER") not in directives,
+        "HEADER_CONFIG_INTERPRETER_DISABLED",
+        directives,
+    )
+    verifier.require(
+        ("undef", "TT_USE_BYTECODE_INTERPRETER") not in directives,
+        "HEADER_DERIVED_INTERPRETER_DISABLED",
+        directives,
+    )
+    verifier.require(
+        ("define", "TT_CONFIG_OPTION_BYTECODE_INTERPRETER") not in directives
+        and ("define", "TT_USE_BYTECODE_INTERPRETER") not in directives,
+        "HEADER_INTERPRETER_REDEFINED",
+        directives,
+    )
+    header_text = header_bytes.decode("utf-8", "strict")
+    verifier.require(
+        "#include <freetype/config/ftoption.h>" in header_text,
+        "HEADER_STOCK_OPTIONS_INCLUDE",
+        header_path,
+    )
+    verifier.require(
+        re.search(r"(?m)^#ifndef TT_CONFIG_OPTION_BYTECODE_INTERPRETER$", header_text)
+        is not None,
+        "HEADER_CONFIG_ASSERTION",
+        header_path,
+    )
+    verifier.require(
+        re.search(r"(?m)^#ifndef TT_USE_BYTECODE_INTERPRETER$", header_text) is not None,
+        "HEADER_DERIVED_ASSERTION",
+        header_path,
+    )
+
+    policy = input_values[policy_path]
+    verifier.require(policy.get("candidateId") == CANDIDATE_ID_V2, "POLICY_V2_CANDIDATE", policy)
+    verifier.require(
+        policy.get("status") == "POLICY_FROZEN_FIXTURE_BYTES_PENDING",
+        "POLICY_V2_STATUS",
+        policy,
+    )
+    verifier.require(
+        policy.get("portableAuthority", {}).get("requiredProperties") == REQUIRED_PROPERTIES,
+        "POLICY_V2_PROPERTIES",
+        policy,
+    )
+    verifier.require(
+        policy.get("classificationCompilePolicy", {}).get("sourceCompatibilityOnly") is True,
+        "POLICY_V2_SOURCE_ONLY",
+        policy,
+    )
+    runtime_gate = policy.get("runtimeNonExecutionPolicy", {})
+    verifier.require(
+        runtime_gate.get("requiredFinalLoadFlags") == REQUIRED_LOAD_FLAGS
+        and runtime_gate.get("forbiddenFinalLoadFlags") == FORBIDDEN_LOAD_FLAGS
+        and runtime_gate.get("instrumentedBuiltTargetProofRequired") is True
+        and runtime_gate.get("currentState") == "pending",
+        "POLICY_V2_RUNTIME_GATE",
+        runtime_gate,
+    )
+
+    prerequisites = input_values[prerequisites_path]
+    verifier.require(
+        prerequisites.get("candidateId") == CANDIDATE_ID_V2
+        and prerequisites.get("supersedesCandidateId") == CANDIDATE_ID,
+        "PREREQUISITES_V2_CANDIDATE",
+        prerequisites,
+    )
+    verifier.require(
+        prerequisites.get("status") == "PREREQUISITES_FROZEN_BUILD_NOT_AUTHORIZED",
+        "PREREQUISITES_V2_STATUS",
+        prerequisites,
+    )
+    classification_gate = prerequisites.get("classificationAndRuntimeGate", {})
+    verifier.require(
+        classification_gate.get("classificationCompileMacrosRequired") == [
+            "TT_CONFIG_OPTION_BYTECODE_INTERPRETER", "TT_USE_BYTECODE_INTERPRETER"
+        ]
+        and classification_gate.get("productionLoadFlagsRequired") == REQUIRED_LOAD_FLAGS
+        and classification_gate.get("productionLoadFlagsForbidden") == FORBIDDEN_LOAD_FLAGS
+        and classification_gate.get("allReachableLoadPathsMustBeInventoried") is True
+        and classification_gate.get("instrumentedRuntimeBytecodeNonExecutionRequired") is True
+        and classification_gate.get("instrumentedRuntimeBytecodeNonExecutionCurrent") == "PENDING",
+        "PREREQUISITES_V2_RUNTIME_GATE",
+        classification_gate,
+    )
+    for field in (
+        "buildAuthorized", "buildAttemptedByThisDecision",
+        "exactRendererTargetMayMaterialize", "rendererExactOutputPreissuanceReady",
+        "rendererExactOutputRecordIssuanceAllowed", "certified", "ready",
+        "ticket19MayClose",
+    ):
+        verifier.require(prerequisites.get(field) is False, "PREREQUISITES_V2_FALSE", field)
+
+    application_order = input_values[application_order_path]
+    verifier.require(
+        application_order.get("candidateId") == CANDIDATE_ID_V2
+        and application_order.get("supersedesCandidateId") == CANDIDATE_ID,
+        "APPLICATION_ORDER_V2_CANDIDATE",
+        application_order,
+    )
+    steps = application_order.get("steps", [])
+    verifier.require(
+        [step.get("ordinal") for step in steps] == [1, 2, 3, 4, 5],
+        "APPLICATION_ORDER_V2_ORDINALS",
+        steps,
+    )
+    verifier.require(
+        steps[1].get("source") == "renderer-spike/rw-freetype-ftoption-v2.h"
+        and steps[4].get("source") == "renderer-spike-candidate-v2.json candidateBuildContract",
+        "APPLICATION_ORDER_V2_SOURCES",
+        steps,
+    )
+
+    process = input_values[process_path]
+    verifier.require(
+        process.get("certificationStatus") == "NOT_CERTIFIED"
+        and process.get("rasterImplementation") == "ABSENT"
+        and process.get("profileAvailability") == "NOT_REGISTERED"
+        and process.get("rendererProfiles") == []
+        and process.get("physicalCertificationRecords") == [],
+        "PROCESS_V2_BOUNDARY",
+        process,
+    )
+
+    source_facts = decision["sourceFacts"]
+    verifier.require(source_facts == {
+        "upstream": "FreeType",
+        "commit": FREETYPE_COMMIT,
+        "tree": FREETYPE_TREE,
+        "optionHeaderPath": "include/freetype/config/ftoption.h",
+        "optionHeaderBlob": "b857e0ebbd9a5fed2b088c28ce409d9fbdbfd64e",
+        "requiredConfigurationMacro": "TT_CONFIG_OPTION_BYTECODE_INTERPRETER",
+        "derivedClassificationGuard": "TT_USE_BYTECODE_INTERPRETER",
+        "classificationSourcePath": "src/truetype/ttobjs.c",
+        "classificationSourceSha256": UPSTREAM_SOURCE_SHA256,
+        "classificationSourceByteLength": 40600,
+        "classificationFunction": "tt_check_trickyness",
+        "assignedFaceFlag": "FT_FACE_FLAG_TRICKY",
+        "reviewedAt": "2026-08-31",
+        "sourceRetained": False,
+    }, "SOURCE_FACTS_V2", source_facts)
+    verifier.require(decision["approvedSemanticResolution"] == {
+        "authority": "product-semantics-owner",
+        "approvedAt": "2026-08-31",
+        "choice": (
+            "compile the exact FreeType interpreter path for tricky-face classification "
+            "while forbidding runtime hinting through mandatory production glyph-load flags"
+        ),
+        "oldCandidateMutated": False,
+        "buildOrCertificationAuthorized": False,
+    }, "APPROVED_SEMANTIC_RESOLUTION", decision["approvedSemanticResolution"])
+    expected_compatibility = {
+        "portableAuthorityRequiresFtIsTricky": True,
+        "candidateRetainsTtConfigOptionBytecodeInterpreter": True,
+        "candidateRetainsTtUseBytecodeInterpreter": True,
+        "candidateHeaderAssertsBothMacros": True,
+        "classificationImplementationCompiled": True,
+        "mandatoryNoHintingLoadFlagsDeclared": True,
+        "currentCandidateCanSatisfyPortableAuthority": True,
+        "runtimeBytecodeNonExecutionProven": False,
+        "exactBuiltTargetObserved": False,
+    }
+    verifier.require(
+        decision["observedCompatibility"] == expected_compatibility,
+        "OBSERVED_COMPATIBILITY",
+        decision["observedCompatibility"],
+    )
+    expected_boundary = {
+        "buildAuthorized": False,
+        "buildAttemptedByThisDecision": False,
+        "exactRendererTargetMayMaterialize": False,
+        "rendererExactOutputPreissuanceReady": False,
+        "rendererExactOutputRecordIssuanceAllowed": False,
+        "certified": False,
+        "ready": False,
+        "ticket19MayClose": False,
+    }
+    verifier.require(
+        decision["enforcedBoundary"] == expected_boundary,
+        "ENFORCED_BOUNDARY_V2",
+        decision["enforcedBoundary"],
+    )
+    verifier.require(decision["nextRequiredEvidence"] == {
+        "portableFixtureBytes": "PENDING",
+        "hermeticBuild": "PENDING_FRESH_AUTHORIZATION",
+        "allGlyphLoadPathAudit": "PENDING",
+        "instrumentedRuntimeBytecodeNonExecution": "PENDING",
+        "physicalLinuxReplay": "PENDING",
+        "centralAcceptanceRebind": "PENDING_SEPARATE_TICKET",
+    }, "NEXT_REQUIRED_EVIDENCE_V2", decision["nextRequiredEvidence"])
+
+    return {
+        "reportVersion": "renderweave-renderer-tricky-font-compatibility-gate/1.1",
+        "status": "PASS_NEW_CANDIDATE_CLASSIFICATION_COMPATIBLE_FAIL_CLOSED",
+        "decisionStatus": DECISION_STATUS_V2,
+        "candidateId": CANDIDATE_ID_V2,
+        "predecessorCandidateId": CANDIDATE_ID,
+        "checkCount": verifier.check_count,
+        "failureCount": 0,
+        "decision": binding(decision_path, decision_bytes),
+        "inputs": inputs,
+        "observedCompatibility": expected_compatibility,
+        "boundary": {
+            **expected_boundary,
+            "vendorSourceRetained": False,
+            "fontBytesRead": 0,
+            "networkAttempts": 0,
+            "providerAttempts": 0,
+        },
+    }
+
+
+def verify(repo: Path, decision_path: str) -> dict[str, Any]:
+    probe = Verifier()
+    _, decision = read_json(probe, repo, decision_path)
+    decision_id = decision.get("decisionId")
+    if decision_id == DECISION_ID:
+        return verify_v1(repo, decision_path)
+    if decision_id == DECISION_ID_V2:
+        return verify_v2(repo, decision_path)
+    raise VerificationFailure(f"DECISION_UNSUPPORTED: {decision_id}")
 
 
 def parse_args() -> argparse.Namespace:
