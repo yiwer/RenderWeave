@@ -1,0 +1,20 @@
+{
+  "artifactVersion": "renderweave-renderer-tricky-font-fixture-provenance/1.0",
+  "fixtureId": "rw-renderer-portable-tricky-font-v1",
+  "origin": "generated entirely from repository-owned numeric and text literals by the committed deterministic recipe",
+  "copyright": "Copyright (C) 2026 RenderWeave contributors",
+  "licenseSpdx": "0BSD",
+  "thirdPartyFontBytes": false,
+  "copiedGlyphOutlines": false,
+  "syntheticDesign": {
+    "familyName": "RenderWeave cpop Fixture",
+    "glyphs": [
+      ".notdef empty glyph",
+      "U+0041 three-point triangle"
+    ],
+    "bytecodePurpose": "minimal synthetic cvt/fpgm/prep/glyph programs retained for later built-target instrumentation",
+    "classifierTokenPurpose": "the lowercase cpop substring exercises the exact FreeType 2.14.3 family-name tricky classifier without impersonating a proprietary font"
+  },
+  "externalInputs": [],
+  "networkRequiredToGenerate": false
+}

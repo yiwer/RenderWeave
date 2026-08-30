@@ -1,0 +1,136 @@
+{
+  "artifactVersion": "renderweave-renderer-tricky-font-fixture-authority/1.0",
+  "status": "SOURCE_LEVEL_VERIFIED_BUILD_PENDING",
+  "fixtureId": "rw-renderer-portable-tricky-font-v1",
+  "candidateId": "rw-renderer-spike-linux-x86_64-v2-000002",
+  "authority": {
+    "kind": "SYNTHETIC_REPOSITORY_OWNED",
+    "recipePath": "tools/generate-renderer-tricky-font-fixture.py",
+    "recipeSha256": "sha256:41a01274b1ba3bec50f9119f7117f74c1a021608df933954901b022d77b7beda",
+    "licensePath": ".scratch/renderweave-template-v1/renderer-spike/tricky-font-fixture-v1/LICENSE-0BSD.txt",
+    "licenseSpdx": "0BSD",
+    "licenseSha256": "sha256:ba499d688d841a95bd0f986e523cd88e8306347a40c5ffa106ba073d97c8c805",
+    "provenancePath": ".scratch/renderweave-template-v1/renderer-spike/tricky-font-fixture-v1/provenance-v1.json",
+    "provenanceSha256": "sha256:6785953ad22d5e3808bb81f94f7d25e419638bd94271c9e4752b34dc537461b6"
+  },
+  "fixture": {
+    "path": ".scratch/renderweave-template-v1/renderer-spike/tricky-font-fixture-v1/renderweave-cpop-fixture-v1.ttf",
+    "sha256": "sha256:315504d5386a2e53f0c96cd3efbf71b9ccc3b1fef237dbec9e7d25cdbcf7139f",
+    "byteLength": 996,
+    "sfntVersionHex": "00010000",
+    "familyName": "RenderWeave cpop Fixture",
+    "postScriptName": "RenderWeave-cpop-Fixture",
+    "glyphCount": 2,
+    "unitsPerEm": 1000,
+    "tables": [
+      {
+        "tag": "OS/2",
+        "checksumHex": "653f6172",
+        "offset": 220,
+        "byteLength": 78
+      },
+      {
+        "tag": "cmap",
+        "checksumHex": "000c0074",
+        "offset": 300,
+        "byteLength": 44
+      },
+      {
+        "tag": "cvt ",
+        "checksumHex": "00000000",
+        "offset": 344,
+        "byteLength": 2
+      },
+      {
+        "tag": "fpgm",
+        "checksumHex": "00000000",
+        "offset": 348,
+        "byteLength": 1
+      },
+      {
+        "tag": "glyf",
+        "checksumHex": "087000fd",
+        "offset": 352,
+        "byteLength": 42
+      },
+      {
+        "tag": "head",
+        "checksumHex": "611243a1",
+        "offset": 396,
+        "byteLength": 54
+      },
+      {
+        "tag": "hhea",
+        "checksumHex": "0516012f",
+        "offset": 452,
+        "byteLength": 36
+      },
+      {
+        "tag": "hmtx",
+        "checksumHex": "03e80000",
+        "offset": 488,
+        "byteLength": 8
+      },
+      {
+        "tag": "loca",
+        "checksumHex": "00150006",
+        "offset": 496,
+        "byteLength": 6
+      },
+      {
+        "tag": "maxp",
+        "checksumHex": "00060007",
+        "offset": 504,
+        "byteLength": 32
+      },
+      {
+        "tag": "name",
+        "checksumHex": "233e3c0f",
+        "offset": 536,
+        "byteLength": 424
+      },
+      {
+        "tag": "post",
+        "checksumHex": "ffb80032",
+        "offset": 960,
+        "byteLength": 32
+      },
+      {
+        "tag": "prep",
+        "checksumHex": "00000000",
+        "offset": 992,
+        "byteLength": 1
+      }
+    ]
+  },
+  "classification": {
+    "upstream": "FreeType",
+    "version": "2.14.3",
+    "commit": "0a0221a1347e2f1e07c395263540026e9a0aa7c7",
+    "sourcePath": "src/truetype/ttobjs.c",
+    "sourceSha256": "sha256:c381554e81a00f9d5c430e7c51e1d6c289958867426b021a6165eb12b451922d",
+    "function": "tt_check_trickyness_family",
+    "requiredCompileMacro": "TT_USE_BYTECODE_INTERPRETER",
+    "path": "FAMILY_NAME_SUBSTRING",
+    "matchedToken": "cpop",
+    "pdfSubsetPrefixApplied": false,
+    "expectedFtIsTricky": true
+  },
+  "syntheticPrograms": {
+    "cvtHex": "0000",
+    "fpgmHex": "00",
+    "prepHex": "00",
+    "glyphInstructionHex": "00",
+    "runtimeExecutionClaimed": false
+  },
+  "boundary": {
+    "exactBuiltTargetObserved": false,
+    "runtimeBytecodeNonExecutionProven": false,
+    "noHintingVersusNoAutoHintDistinguished": false,
+    "physicalLinuxReplayComplete": false,
+    "rendererExactOutputRecordIssuanceAllowed": false,
+    "certified": false,
+    "ready": false,
+    "ticket19MayClose": false
+  }
+}

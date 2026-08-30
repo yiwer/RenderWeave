@@ -33,6 +33,10 @@ $report = Join-Path $resolvedEvidenceDir 'renderer-tricky-font-compatibility.jso
 if (Test-Path -LiteralPath $report) {
     throw "Renderer tricky-font compatibility evidence already exists: $report"
 }
+$fixtureReport = Join-Path $resolvedEvidenceDir 'renderer-tricky-font-fixture.json'
+if (Test-Path -LiteralPath $fixtureReport) {
+    throw "Renderer tricky-font fixture evidence already exists: $fixtureReport"
+}
 
 @(
     'DASHSCOPE_TOKEN_API_KEY',
@@ -55,6 +59,20 @@ if ($LASTEXITCODE -ne 0 -or -not $pythonVersion.StartsWith('Python 3.13.')) {
 
 Push-Location $repoRoot
 try {
+    & py.exe -3.13 'tools\test_verify_renderer_tricky_font_fixture.py'
+    if ($LASTEXITCODE -ne 0) {
+        throw "Renderer tricky-font fixture mutation tests failed with exit code $LASTEXITCODE."
+    }
+    & py.exe -3.13 'tools\generate-renderer-tricky-font-fixture.py' '--check'
+    if ($LASTEXITCODE -ne 0) {
+        throw "Renderer tricky-font fixture reproduction failed with exit code $LASTEXITCODE."
+    }
+    & py.exe -3.13 'tools\verify-renderer-tricky-font-fixture.py' `
+        '--repo' $repoRoot `
+        '--report' $fixtureReport
+    if ($LASTEXITCODE -ne 0) {
+        throw "Renderer tricky-font fixture verifier failed with exit code $LASTEXITCODE."
+    }
     & py.exe -3.13 'tools\verify-renderer-tricky-font-compatibility.py' `
         '--repo' $repoRoot `
         '--decision' '.scratch/renderweave-template-v1/renderer-spike/tricky-font-compatibility-decision-v2.json' `
@@ -65,6 +83,31 @@ try {
 }
 finally {
     Pop-Location
+}
+
+$fixtureResult = Get-Content -Raw -Encoding UTF8 -LiteralPath $fixtureReport | ConvertFrom-Json
+if ($fixtureResult.reportVersion -ne 'renderweave-renderer-tricky-font-fixture-gate/1.0' `
+        -or $fixtureResult.status -ne 'PASS_PORTABLE_TRICKY_FONT_FIXTURE_SOURCE_VERIFIED_BUILD_PENDING' `
+        -or $fixtureResult.fixtureId -ne 'rw-renderer-portable-tricky-font-v1' `
+        -or $fixtureResult.candidateId -ne 'rw-renderer-spike-linux-x86_64-v2-000002' `
+        -or $fixtureResult.checkCount -lt 300 `
+        -or $fixtureResult.failureCount -ne 0 `
+        -or -not $fixtureResult.reproducible `
+        -or $fixtureResult.fixture.sha256 -ne 'sha256:315504d5386a2e53f0c96cd3efbf71b9ccc3b1fef237dbec9e7d25cdbcf7139f' `
+        -or $fixtureResult.fixture.byteLength -ne 996 `
+        -or $fixtureResult.fixture.tableCount -ne 13 `
+        -or $fixtureResult.classification.path -ne 'FAMILY_NAME_SUBSTRING' `
+        -or $fixtureResult.classification.matchedToken -ne 'cpop' `
+        -or -not $fixtureResult.classification.expectedFtIsTricky `
+        -or $fixtureResult.boundary.exactBuiltTargetObserved `
+        -or $fixtureResult.boundary.runtimeBytecodeNonExecutionProven `
+        -or $fixtureResult.boundary.noHintingVersusNoAutoHintDistinguished `
+        -or $fixtureResult.boundary.physicalLinuxReplayComplete `
+        -or $fixtureResult.boundary.rendererExactOutputRecordIssuanceAllowed `
+        -or $fixtureResult.boundary.certified `
+        -or $fixtureResult.boundary.ready `
+        -or $fixtureResult.boundary.ticket19MayClose) {
+    throw 'Renderer tricky-font fixture report boundary drifted.'
 }
 
 $result = Get-Content -Raw -Encoding UTF8 -LiteralPath $report | ConvertFrom-Json
@@ -94,6 +137,6 @@ if ($result.reportVersion -ne 'renderweave-renderer-tricky-font-compatibility-ga
 }
 
 Write-Host (
-    'Renderer tricky-font compatibility: {0}, checks={1}, candidate=000002, target/Certified/READY=false' -f
-    $result.status, $result.checkCount
+    'Renderer tricky-font compatibility: {0}, checks={1}, fixture={2}/{3}, target/Certified/READY=false' -f
+    $result.status, $result.checkCount, $fixtureResult.fixture.byteLength, $fixtureResult.fixture.sha256
 )

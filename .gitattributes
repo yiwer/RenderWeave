@@ -32,3 +32,5 @@ renderer/vendor/** -text -whitespace
 # Template v1 replay artifacts are byte-addressed and must survive Windows checkout unchanged.
 .scratch/renderweave-template-v1/** text eol=lf
 .scratch/renderweave-template-v1/**/*.bin binary
+.scratch/renderweave-template-v1/renderer-spike/tricky-font-fixture-v1/*.ttf binary
+tools/generate-renderer-tricky-font-fixture.py text eol=lf

@@ -97,6 +97,7 @@ $env:RENDERWEAVE_LIVE_AI_ENABLED = 'false'
 $env:RENDERWEAVE_LIVE_UPLOAD_ENABLED = 'false'
 
 $trickyFontReportPath = Join-Path $resolvedEvidenceDir 'renderer-tricky-font-compatibility.json'
+$trickyFontFixtureReportPath = Join-Path $resolvedEvidenceDir 'renderer-tricky-font-fixture.json'
 Invoke-Checked 'renderer-tricky-font-compatibility' {
     & (Join-Path $PSScriptRoot 'run-renderer-tricky-font-compatibility-gate.ps1') `
         -EvidenceDir $resolvedEvidenceDir
@@ -116,6 +117,23 @@ if ($trickyFontReport.status -ne 'PASS_NEW_CANDIDATE_CLASSIFICATION_COMPATIBLE_F
         -or $trickyFontReport.boundary.ready `
         -or $trickyFontReport.boundary.ticket19MayClose) {
     throw 'Renderer tricky-font compatibility did not remain fail closed.'
+}
+$trickyFontFixtureReport = Get-Content -Raw -Encoding UTF8 -LiteralPath $trickyFontFixtureReportPath |
+    ConvertFrom-Json
+if ($trickyFontFixtureReport.status -ne 'PASS_PORTABLE_TRICKY_FONT_FIXTURE_SOURCE_VERIFIED_BUILD_PENDING' `
+        -or $trickyFontFixtureReport.failureCount -ne 0 `
+        -or -not $trickyFontFixtureReport.reproducible `
+        -or $trickyFontFixtureReport.classification.matchedToken -ne 'cpop' `
+        -or -not $trickyFontFixtureReport.classification.expectedFtIsTricky `
+        -or $trickyFontFixtureReport.boundary.exactBuiltTargetObserved `
+        -or $trickyFontFixtureReport.boundary.runtimeBytecodeNonExecutionProven `
+        -or $trickyFontFixtureReport.boundary.noHintingVersusNoAutoHintDistinguished `
+        -or $trickyFontFixtureReport.boundary.physicalLinuxReplayComplete `
+        -or $trickyFontFixtureReport.boundary.rendererExactOutputRecordIssuanceAllowed `
+        -or $trickyFontFixtureReport.boundary.certified `
+        -or $trickyFontFixtureReport.boundary.ready `
+        -or $trickyFontFixtureReport.boundary.ticket19MayClose) {
+    throw 'Renderer portable tricky-font fixture did not remain fail closed.'
 }
 
 $sourceManifest = @(Get-TreeManifest -Root $sourceSpecRoot)
@@ -360,6 +378,20 @@ try {
             certified = [bool]$trickyFontReport.boundary.certified
             ready = [bool]$trickyFontReport.boundary.ready
             ticket19MayClose = [bool]$trickyFontReport.boundary.ticket19MayClose
+            portableFixture = [ordered]@{
+                status = $trickyFontFixtureReport.status
+                fixtureId = $trickyFontFixtureReport.fixtureId
+                sha256 = $trickyFontFixtureReport.fixture.sha256
+                byteLength = $trickyFontFixtureReport.fixture.byteLength
+                tableCount = $trickyFontFixtureReport.fixture.tableCount
+                checkCount = $trickyFontFixtureReport.checkCount
+                reproducible = [bool]$trickyFontFixtureReport.reproducible
+                matchedToken = $trickyFontFixtureReport.classification.matchedToken
+                exactBuiltTargetObserved = [bool]$trickyFontFixtureReport.boundary.exactBuiltTargetObserved
+                runtimeBytecodeNonExecutionProven = [bool]$trickyFontFixtureReport.boundary.runtimeBytecodeNonExecutionProven
+                certified = [bool]$trickyFontFixtureReport.boundary.certified
+                ready = [bool]$trickyFontFixtureReport.boundary.ready
+            }
         }
         editor = [ordered]@{
             candidateCount = $editorIndependent.observed.candidateCount
