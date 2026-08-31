@@ -101,60 +101,100 @@ EXPECTED_DYNAMIC_EXPORTS = [
     {"name": "__libc_single_threaded@GLIBC_2.32", "type": "B"},
     {"name": "stderr@GLIBC_2.2.5", "type": "B"},
 ]
-EXPECTED_GLYPH_LOAD_PATHS = [
+EXPECTED_IMPLEMENTATION_FILE_COUNT = 596
+EXPECTED_IMPLEMENTATION_PATH_DIGEST = (
+    "sha256:794a3ef6c0a031c828363a4c271e6137a665815d46ae4475f5262a132045f539"
+)
+IMPLEMENTATION_SUFFIXES = {".c", ".cc", ".cpp", ".cxx"}
+GLYPH_LOAD_PATTERN = re.compile(
+    rb"(?<![A-Za-z0-9_])FT_Load_Glyph[ \t\r\n]*\("
+)
+EXPECTED_GLYPH_LOAD_OCCURRENCES = [
     (
         "src/ports/SkFontHost_FreeType.cpp",
         "FT_Load_Glyph(fFace, glyph_id, fLoadGlyphFlags)",
+        "CALL",
         "letter-cbox-metrics",
     ),
     (
         "src/ports/SkFontHost_FreeType.cpp",
         "FT_Load_Glyph(fFace, layerGlyphIndex, flags)",
+        "CALL",
         "color-layer-metrics",
     ),
     (
         "src/ports/SkFontHost_FreeType.cpp",
         "FT_Load_Glyph(fFace, glyph.getGlyphID(), fLoadGlyphFlags | FT_LOAD_BITMAP_METRICS_ONLY)",
+        "CALL",
         "base-glyph-metrics",
     ),
     (
         "src/ports/SkFontHost_FreeType.cpp",
         "FT_Load_Glyph(fFace, glyph.getGlyphID(), fLoadGlyphFlags)",
+        "CALL",
         "svg-image",
     ),
     (
         "src/ports/SkFontHost_FreeType.cpp",
         "FT_Load_Glyph(fFace, glyph.getGlyphID(), fLoadGlyphFlags)",
+        "CALL",
         "image",
     ),
     (
         "src/ports/SkFontHost_FreeType.cpp",
         "FT_Load_Glyph(fFace, glyph.getGlyphID(), fLoadGlyphFlags)",
+        "CALL",
         "svg-drawable",
     ),
     (
         "src/ports/SkFontHost_FreeType.cpp",
         "FT_Load_Glyph(fFace, glyphID, flags)",
+        "CALL",
         "path",
     ),
     (
         "src/ports/SkFontHost_FreeType.cpp",
         "FT_Load_Glyph(fFace, gid, fLoadGlyphFlags)",
+        "CALL",
         "bitmap-embolden",
     ),
     (
         "src/ports/SkFontHost_FreeType_common.cpp",
         "FT_Load_Glyph(face, glyphID, flags)",
+        "CALL",
         "static-path",
     ),
     (
         "src/ports/SkFontHost_FreeType_common.cpp",
         "FT_Load_Glyph(face, glyphID, flags)",
+        "CALL",
         "common-glyph-data",
     ),
+    (
+        "third_party/externals/freetype/src/base/ftadvanc.c",
+        "FT_Load_Glyph( face, gindex + nn, flags )",
+        "CALL",
+        "advance-fallback",
+    ),
+    (
+        "third_party/externals/freetype/src/base/ftobjs.c",
+        "FT_Load_Glyph( FT_Face face, FT_UInt glyph_index, FT_Int32 load_flags )",
+        "DEFINITION",
+        "freetype-api-entrypoint",
+    ),
+    (
+        "third_party/externals/freetype/src/base/ftobjs.c",
+        "FT_Load_Glyph( face, glyph_index, load_flags )",
+        "CALL",
+        "load-char-delegation",
+    ),
+    (
+        "third_party/externals/freetype/src/base/ftobjs.c",
+        "FT_Load_Glyph( face, glyph_index, load_flags )",
+        "CALL",
+        "color-layer-recursion",
+    ),
 ]
-
-
 class AuditError(RuntimeError):
     pass
 
@@ -230,57 +270,138 @@ def verify_probe(path: Path) -> dict[str, Any]:
     return probe
 
 
-def discover_glyph_load_calls(source_root: Path) -> list[dict[str, Any]]:
+def dependency_implementation_files(
+    source_root: Path, dependency_manifest: Path
+) -> list[Path]:
+    source_root = source_root.resolve()
+    build_root = source_root / "out/T213"
+    files: set[Path] = set()
+    for raw_line in dependency_manifest.read_text(encoding="utf-8").splitlines():
+        if not raw_line.startswith("    "):
+            continue
+        raw_path = Path(raw_line.strip())
+        path = raw_path if raw_path.is_absolute() else build_root / raw_path
+        path = path.resolve()
+        if path.suffix.lower() not in IMPLEMENTATION_SUFFIXES:
+            continue
+        try:
+            path.relative_to(source_root)
+        except ValueError as error:
+            raise AuditError(
+                f"compiled implementation source escapes exact source root: {path}"
+            ) from error
+        if not path.is_file():
+            raise AuditError(f"compiled implementation source is absent: {path}")
+        files.add(path)
+    if not files:
+        raise AuditError("exact build dependency manifest contains no implementation files")
+    return sorted(files, key=lambda item: item.relative_to(source_root).as_posix())
+
+
+def implementation_path_digest(source_root: Path, files: list[Path]) -> str:
+    digest = hashlib.sha256()
+    digest.update(b"renderweave-exact-build-implementation-files/1\0")
+    for path in files:
+        relative = path.relative_to(source_root).as_posix().encode("utf-8")
+        digest.update(struct.pack(">Q", len(relative)))
+        digest.update(relative)
+    return "sha256:" + digest.hexdigest()
+
+
+def discover_glyph_load_calls(
+    source_root: Path, dependency_manifest: Path
+) -> list[dict[str, Any]]:
+    source_root = source_root.resolve()
     calls: list[dict[str, Any]] = []
-    ports = source_root / "src/ports"
-    for path in sorted(ports.glob("SkFontHost_FreeType*.cpp")):
-        for line_number, line in enumerate(
-            path.read_text(encoding="utf-8").splitlines(), start=1
-        ):
-            start = line.find("FT_Load_Glyph(")
-            if start < 0:
-                continue
+    for path in dependency_implementation_files(source_root, dependency_manifest):
+        source = path.read_bytes()
+        for match in GLYPH_LOAD_PATTERN.finditer(source):
+            start = match.start()
+            open_parenthesis = source.find(b"(", start, match.end())
             depth = 0
             end = None
-            for index in range(start, len(line)):
-                if line[index] == "(":
+            for index in range(open_parenthesis, len(source)):
+                if source[index] == ord("("):
                     depth += 1
-                elif line[index] == ")":
+                elif source[index] == ord(")"):
                     depth -= 1
                     if depth == 0:
                         end = index + 1
                         break
             if end is None:
                 raise AuditError(
-                    f"multiline or unbalanced FT_Load_Glyph call: {path}:{line_number}"
+                    "unbalanced FT_Load_Glyph occurrence: "
+                    f"{path}:{source.count(b'\n', 0, start) + 1}"
                 )
+            expression_bytes = re.sub(rb"\s+", b" ", source[start:end])
+            try:
+                expression = expression_bytes.decode("ascii")
+            except UnicodeDecodeError as error:
+                raise AuditError(
+                    f"non-ASCII FT_Load_Glyph occurrence: {path}"
+                ) from error
             calls.append(
                 {
                     "path": path.relative_to(source_root).as_posix(),
-                    "line": line_number,
-                    "expression": re.sub(r"\s+", " ", line[start:end]),
+                    "line": source.count(b"\n", 0, start) + 1,
+                    "expression": expression,
                 }
             )
     return calls
 
 
-def glyph_load_inventory(source_root: Path) -> dict[str, Any]:
-    discovered = discover_glyph_load_calls(source_root)
+def glyph_load_inventory(
+    source_root: Path,
+    dependency_manifest: Path,
+    *,
+    enforce_exact_closure: bool = True,
+) -> dict[str, Any]:
+    source_root = source_root.resolve()
+    implementation_files = dependency_implementation_files(
+        source_root, dependency_manifest
+    )
+    path_digest = implementation_path_digest(source_root, implementation_files)
+    if (
+        enforce_exact_closure
+        and len(implementation_files) != EXPECTED_IMPLEMENTATION_FILE_COUNT
+    ):
+        raise AuditError(
+            "exact build implementation-file count differs: "
+            f"expected={EXPECTED_IMPLEMENTATION_FILE_COUNT} "
+            f"actual={len(implementation_files)}"
+        )
+    if enforce_exact_closure and path_digest != EXPECTED_IMPLEMENTATION_PATH_DIGEST:
+        raise AuditError(
+            "exact build implementation-path digest differs: "
+            f"expected={EXPECTED_IMPLEMENTATION_PATH_DIGEST} actual={path_digest}"
+        )
+    discovered = discover_glyph_load_calls(source_root, dependency_manifest)
     actual = [(item["path"], item["expression"]) for item in discovered]
-    expected = [(path, expression) for path, expression, _ in EXPECTED_GLYPH_LOAD_PATHS]
+    expected = [
+        (path, expression)
+        for path, expression, _kind, _consumer in EXPECTED_GLYPH_LOAD_OCCURRENCES
+    ]
     if actual != expected:
         raise AuditError(
             f"glyph-load path inventory differs: expected={expected} actual={actual}"
         )
     call_sites = []
-    for item, (_, _, consumer) in zip(discovered, EXPECTED_GLYPH_LOAD_PATHS):
-        call_sites.append({**item, "consumer": consumer})
+    definitions = []
+    for item, (_, _, kind, consumer) in zip(
+        discovered, EXPECTED_GLYPH_LOAD_OCCURRENCES
+    ):
+        target = call_sites if kind == "CALL" else definitions
+        target.append({**item, "consumer": consumer})
     return {
-        "coverage": "all-static-skia-freetype-direct-calls",
+        "coverage": "all-exact-build-dependency-implementation-files",
+        "implementationFileCount": len(implementation_files),
+        "implementationPathDigest": path_digest,
         "sourceCallSiteCount": len(call_sites),
+        "sourceDefinitionCount": len(definitions),
         "allSourceCallSitesRegistered": True,
         "runtimeEnforcement": "link-time FT_Load_Glyph wrapper rejects every observed invalid flag set",
         "callSites": call_sites,
+        "definitions": definitions,
     }
 
 
@@ -474,7 +595,13 @@ def isa_audit(objdump: str, binary: Path) -> dict[str, Any]:
 
 
 def command_identities(root: Path) -> list[dict[str, Any]]:
-    expected = ["gn-generate.txt", "ninja-build.txt", "ninja-commands.txt", "probe-link.txt"]
+    expected = [
+        "gn-generate.txt",
+        "ninja-build.txt",
+        "ninja-commands.txt",
+        "ninja-deps.txt",
+        "probe-link.txt",
+    ]
     identities = []
     for name in expected:
         path = root / name
@@ -571,7 +698,9 @@ def main() -> int:
             "dynamicExports": dynamic_export_audit(
                 str(toolchain / "llvm-nm"), binary
             ),
-            "glyphLoadPaths": glyph_load_inventory(source_root),
+            "glyphLoadPaths": glyph_load_inventory(
+                source_root, args.commands.resolve() / "ninja-deps.txt"
+            ),
             "isa": isa_audit(str(toolchain / "llvm-objdump"), binary),
             "probe": probe,
             "boundary": {

@@ -57,6 +57,10 @@ fn main() {
             .arg("-fno-rtti")
             .arg("-ffile-prefix-map=/work=/renderweave/build")
             .arg(format!("-I{}", skia_root.display()))
+            .arg(format!(
+                "-I{}/third_party/externals/freetype/include",
+                skia_root.display()
+            ))
             .arg(format!("-I{}/src", harfbuzz_root.display()))
             .arg("native/native_text_skia.cpp")
             .arg("-c")
@@ -91,6 +95,8 @@ fn main() {
 
     println!("cargo:rustc-link-search=native={}", out_dir.display());
     println!("cargo:rustc-link-lib=static=renderweave_native_text");
+    println!("cargo:rustc-link-arg=-Wl,--wrap=FT_Load_Glyph");
+    println!("cargo:rustc-link-arg=-Wl,--wrap=FT_New_Library");
     println!("cargo:rustc-link-lib=dylib=stdc++");
     println!("cargo:rustc-link-lib=dylib=dl");
     println!("cargo:rustc-link-lib=dylib=pthread");

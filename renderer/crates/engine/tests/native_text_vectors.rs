@@ -16,8 +16,12 @@ const ALL_KINDS: &str = include_str!("../../../render-document-all-kinds-v1.json
 const FONT_BYTES: &[u8] = include_bytes!(
     "../../../../renderweave-asset/src/test/resources/asset-fixtures/minimal-ttf.ttf"
 );
+const CFF_FONT_BYTES: &[u8] = include_bytes!(
+    "../../../../renderweave-asset/src/test/resources/asset-fixtures/minimal-otf.otf"
+);
 const DEFAULT_SUBSTITUTION_FONT_HEX: &str =
     include_str!("../../../fixtures/default-substitution-font-v1.hex");
+const TRICKY_FONT_HEX: &str = include_str!("../../../fixtures/tricky-font-v1.hex");
 const FETCH_ORIGIN: &str = "https://render.internal.example";
 const RESOURCE_ID: &str = "rwres_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
 const DEADLINE_EPOCH_MILLIS: i64 = 2_000_000_000_000;
@@ -156,6 +160,73 @@ fn frozen_shaper_applies_default_gsub_for_the_single_scalar_slice() {
         "sha256:8fae18975da6386236ffb7733472b3d7cec1fdd7dad601bd1bbe1daf4646ff58",
         output.pixel_sha256(),
         "the frozen cmap A -> A plus default ccmp A -> A.alt fixture must rasterize A.alt"
+    );
+}
+
+#[test]
+fn cff_outline_path_is_byte_deterministic_under_the_production_policy() {
+    assert_eq!(
+        "sha256:eeef766ac75aecac694bbd82fbb3cd2b9a315075db14d91ff0cbe1bdec20f77f",
+        format!("sha256:{}", hex::encode(Sha256::digest(CFF_FONT_BYTES)))
+    );
+    let document = admitted_text_document_with_font(CFF_FONT_BYTES, |document| {
+        document["resources"][0]["mediaType"] = Value::String("font/otf".to_owned());
+        document["resources"][0]["technicalDescriptor"]["flavor"] = Value::String("CFF".to_owned());
+    });
+    let manifest = prepare_font_manifest(
+        &document,
+        CFF_FONT_BYTES,
+        DEADLINE_EPOCH_MILLIS,
+        STARTED_EPOCH_MILLIS,
+    )
+    .expect("the frozen CFF fixture must prepare");
+
+    let first = render_png_with_prepared_resources(&document, &manifest, 96)
+        .expect("CFF outlines must remain functional without a PostScript hinter");
+    let second = render_png_with_prepared_resources(&document, &manifest, 96)
+        .expect("the same CFF command must replay");
+
+    assert_eq!(first.bytes(), second.bytes());
+    assert_eq!(
+        "sha256:630063ab4f18a8c0dd5341ec961b9fd95a4e1dabde296499c64cfdf0571a2215",
+        first.pixel_sha256()
+    );
+    assert_eq!(
+        "sha256:555f5dca44d2be490a21f1731367d0b5b3d07ad7aa0485a45c58f49ebf252895",
+        first.content_sha256()
+    );
+}
+
+#[test]
+fn tricky_true_type_path_is_deterministic_without_bytecode_execution() {
+    let font_bytes = hex::decode(TRICKY_FONT_HEX.trim())
+        .expect("the frozen tricky-font fixture must be lowercase hex");
+    assert_eq!(
+        "sha256:315504d5386a2e53f0c96cd3efbf71b9ccc3b1fef237dbec9e7d25cdbcf7139f",
+        format!("sha256:{}", hex::encode(Sha256::digest(&font_bytes)))
+    );
+    let document = admitted_text_document_with_font(&font_bytes, |_| {});
+    let manifest = prepare_font_manifest(
+        &document,
+        &font_bytes,
+        DEADLINE_EPOCH_MILLIS,
+        STARTED_EPOCH_MILLIS,
+    )
+    .expect("the frozen tricky TrueType fixture must prepare");
+
+    let first = render_png_with_prepared_resources(&document, &manifest, 96)
+        .expect("required flags must prevent bytecode while preserving outlines");
+    let second = render_png_with_prepared_resources(&document, &manifest, 96)
+        .expect("the same tricky-font command must replay");
+
+    assert_eq!(first.bytes(), second.bytes());
+    assert_eq!(
+        "sha256:c698e4d98a1d073bce25dbc5d1638c74bf3beaab9e490ec8039cd8a093608cab",
+        first.pixel_sha256()
+    );
+    assert_eq!(
+        "sha256:cd6c38b7dcef6b5998d166e3480a133e21fa070b7ccf0da94114ba569049f6ee",
+        first.content_sha256()
     );
 }
 

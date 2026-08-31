@@ -12,10 +12,49 @@ readonly RW_EVIDENCE="$RW_WORK/evidence"
 readonly RW_COMMANDS="$RW_EVIDENCE/commands"
 readonly RW_BINARY="$RW_WORK/output/renderweave-t213-probe"
 readonly RW_ARGS_SHA256="5cc1b1db22c8baa2efafc3eafa1cbcce50252ad198ffb0bcaba3cc6cbf4ef331"
+readonly RW_BOOTSTRAP_PYTHON="/usr/local/bin/python3"
 
 fail() {
     printf '%s\n' "T213_REHEARSAL_FAILED: $*" >&2
     exit 1
+}
+
+stream_xz() {
+    archive="$1"
+    [ -x "$RW_BOOTSTRAP_PYTHON" ] || fail "pinned OCI Python runtime is absent"
+    "$RW_BOOTSTRAP_PYTHON" - "$archive" <<'PY'
+import lzma
+import shutil
+import sys
+
+with lzma.open(sys.argv[1], "rb") as source:
+    shutil.copyfileobj(source, sys.stdout.buffer, length=1024 * 1024)
+PY
+}
+
+extract_zip() {
+    archive="$1"
+    destination="$2"
+    [ -x "$RW_BOOTSTRAP_PYTHON" ] || fail "pinned OCI Python runtime is absent"
+    "$RW_BOOTSTRAP_PYTHON" - "$archive" "$destination" <<'PY'
+import pathlib
+import stat
+import sys
+import zipfile
+
+destination = pathlib.Path(sys.argv[2]).resolve()
+with zipfile.ZipFile(sys.argv[1]) as archive:
+    for member in archive.infolist():
+        path = pathlib.PurePosixPath(member.filename.replace("\\", "/"))
+        if path.is_absolute() or any(part in {"", ".", ".."} for part in path.parts):
+            raise ValueError(f"unsafe ZIP member: {member.filename}")
+        if stat.S_ISLNK(member.external_attr >> 16):
+            raise ValueError(f"ZIP symlink is forbidden: {member.filename}")
+        target = destination.joinpath(*path.parts).resolve()
+        if not target.is_relative_to(destination):
+            raise ValueError(f"ZIP member escapes destination: {member.filename}")
+    archive.extractall(destination)
+PY
 }
 
 require_sha256() {
@@ -47,7 +86,7 @@ exact_env() {
         HOME="$RW_WORK/home" \
         LANG=C.UTF-8 \
         LC_ALL=C.UTF-8 \
-        PATH="$RW_WORK/toolchain/bin:$RW_WORK/tools/gn:$RW_WORK/tools/ninja:/usr/bin:/bin" \
+        PATH="$RW_WORK/toolchain/bin:$RW_WORK/tools/gn:$RW_WORK/tools/ninja:/usr/local/bin:/usr/bin:/bin" \
         SOURCE_DATE_EPOCH=0 \
         TMPDIR="$RW_WORK/tmp" \
         TZ=UTC \
@@ -69,7 +108,7 @@ prepare() {
     require_sha256 9dfc76b78fc6363e77f96b4faca566cfa0c28d06ad478f809f241e98966652af "$skia_archive"
     require_sha256 96b87b165f22e65edbba96409e3853fcbdccc290721a1ad54baa56ba710115cc "$freetype_archive"
     require_sha256 52178785eee689fcbbc42bf92db0d26665ea325b41003eaf73bd1930eee4a578 "$policy_archive"
-    require_sha256 04dc5cb06d3f0aca600afbec8ebb51b556018c549fe24c427e9d1de9eb89cd26 "$renderer_archive"
+    require_sha256 d1d577caff82a5df9a55e079098a84bf0decc6026112af50742f06c534694756 "$renderer_archive"
     require_sha256 eeef766ac75aecac694bbd82fbb3cd2b9a315075db14d91ff0cbe1bdec20f77f "$cff_source"
     require_sha256 df0e1ecf16caf3489a272a5eea4eec9b0d82878f6477fa309504f918a0006384 "$llvm_archive"
     require_sha256 6a3bfc53d825bccac5e5b4b7bdcc10ce9396a04a689ac684ec3308ca5c7f3d9c "$gn_archive"
@@ -88,9 +127,10 @@ prepare() {
     tar --no-same-owner -xf "$freetype_archive" -C "$freetype_root" --strip-components=1
     tar --no-same-owner -xf "$policy_archive" -C "$RW_WORK/policy"
     tar --no-same-owner -xf "$renderer_archive" -C "$RW_WORK/renderer-input"
-    tar --no-same-owner -xf "$llvm_archive" -C "$RW_WORK/toolchain" --strip-components=1
-    unzip -q "$gn_archive" -d "$RW_WORK/tools/gn"
-    unzip -q "$ninja_archive" -d "$RW_WORK/tools/ninja"
+    stream_xz "$llvm_archive" |
+        tar --no-same-owner -xf - -C "$RW_WORK/toolchain" --strip-components=1
+    extract_zip "$gn_archive" "$RW_WORK/tools/gn"
+    extract_zip "$ninja_archive" "$RW_WORK/tools/ninja"
     chmod 0555 "$RW_WORK/tools/gn/gn" "$RW_WORK/tools/ninja/ninja"
 
     patch_file="$RW_WORK/policy/renderer-spike/skia-m151-freetype-policy-v3.patch"
@@ -107,10 +147,16 @@ prepare() {
     cp "$ftoption" "$custom_config/ftoption.h"
     cp "$ftmodule" "$custom_config/ftmodule.h"
 
-    cd "$RW_WORK/src/skia"
-    # The frozen Skia archive records the Windows Git export's CRLF preimage.
-    git apply --check --ignore-space-change --whitespace=error-all "$patch_file"
-    git apply --ignore-space-change --whitespace=error-all "$patch_file"
+    renderer_root="$RW_WORK/renderer-input/renderer-root"
+    patch_applier="$renderer_root/probes/t213/apply_exact_unified_diff.py"
+    require_file "$patch_applier"
+    require_sha256 be6c7ee076341077409f8074cc2ba9bafbb86fa9bb14ceae4ee906f663b7cca7 \
+        "$patch_applier"
+    "$RW_BOOTSTRAP_PYTHON" "$patch_applier" \
+        --root "$RW_WORK/src/skia" \
+        --patch "$patch_file" \
+        --allow src/ports/SkFontHost_FreeType.cpp \
+        --allow third_party/freetype2/BUILD.gn
 
     require_sha256 9f12d3b32a6a8d82d70bb1f262fee951e66a250d172bee999040871109df0ec2 \
         "$RW_WORK/src/skia/src/ports/SkFontHost_FreeType.cpp"
@@ -121,7 +167,6 @@ prepare() {
     require_sha256 ab9cde7d2723b3ace2173a27a6a162bec064ed32abc06f5bb0be0f16b0bfc4d8 \
         "$custom_config/ftmodule.h"
 
-    renderer_root="$RW_WORK/renderer-input/renderer-root"
     args_source="$renderer_root/probes/t213/args.gn"
     probe_source="$renderer_root/probes/t213/instrumented_probe.cpp"
     audit_source="$renderer_root/probes/t213/audit_rehearsal.py"
@@ -161,6 +206,8 @@ build() {
     exact_env "$RW_WORK/tools/ninja/ninja" -C "$RW_OUT" skia
     exact_env "$RW_WORK/tools/ninja/ninja" -C "$RW_OUT" -t commands skia \
         > "$RW_COMMANDS/ninja-commands.txt"
+    exact_env "$RW_WORK/tools/ninja/ninja" -C "$RW_OUT" -t deps \
+        > "$RW_COMMANDS/ninja-deps.txt"
 
     probe_response="$RW_COMMANDS/probe-link.txt"
     printf '%s\n' \

@@ -13,6 +13,10 @@
 #include "hb.h"
 #include "hb-ot.h"
 
+#include <ft2build.h>
+#include FT_FREETYPE_H
+#include FT_MODULE_H
+
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
@@ -28,6 +32,55 @@ constexpr int kFontDecodeFailed = 2;
 constexpr int kGlyphMissing = 3;
 constexpr int kShapingFailed = 4;
 constexpr int kRasterFailed = 5;
+constexpr int kGlyphPolicyViolation = 6;
+
+constexpr FT_Int32 kRequiredLoadFlags =
+        FT_LOAD_NO_HINTING | FT_LOAD_NO_AUTOHINT | FT_LOAD_NO_BITMAP | FT_LOAD_NO_SVG;
+constexpr FT_Int32 kForbiddenLoadFlags = FT_LOAD_FORCE_AUTOHINT | FT_LOAD_COLOR;
+
+struct GlyphPolicyObservation {
+    bool active = false;
+    std::uint64_t loadCount = 0;
+    std::uint64_t invalidLoadCount = 0;
+    std::uint64_t interpreterCallCount = 0;
+    std::uint32_t loadFlagsOr = 0;
+    std::uint32_t loadFlagsAnd = std::numeric_limits<std::uint32_t>::max();
+};
+
+thread_local GlyphPolicyObservation gGlyphPolicyObservation{};
+
+bool glyphFlagsAreAllowed(FT_Int32 flags) {
+    return (flags & kRequiredLoadFlags) == kRequiredLoadFlags &&
+           (flags & kForbiddenLoadFlags) == 0;
+}
+
+void beginGlyphPolicyObservation() {
+    gGlyphPolicyObservation = GlyphPolicyObservation{};
+    gGlyphPolicyObservation.active = true;
+}
+
+int finishGlyphPolicyObservation(int result) {
+    const bool observedViolation =
+            gGlyphPolicyObservation.invalidLoadCount != 0 ||
+            gGlyphPolicyObservation.interpreterCallCount != 0;
+    const bool successfulLoadWasProved =
+            result != kSuccess ||
+            (gGlyphPolicyObservation.loadCount != 0 &&
+             (gGlyphPolicyObservation.loadFlagsAnd &
+              static_cast<std::uint32_t>(kRequiredLoadFlags)) ==
+                     static_cast<std::uint32_t>(kRequiredLoadFlags) &&
+             (gGlyphPolicyObservation.loadFlagsOr &
+              static_cast<std::uint32_t>(kForbiddenLoadFlags)) == 0);
+    gGlyphPolicyObservation.active = false;
+    return observedViolation || !successfulLoadWasProved ? kGlyphPolicyViolation : result;
+}
+
+FT_Error renderweaveRejectTrueTypeInterpreter(void*) {
+    if (gGlyphPolicyObservation.active) {
+        gGlyphPolicyObservation.interpreterCallCount += 1;
+    }
+    return FT_Err_Invalid_Argument;
+}
 
 template <typename T, void (*Destroy)(T*)>
 using HbHandle = std::unique_ptr<T, decltype(Destroy)>;
@@ -45,6 +98,41 @@ bool validBufferLength(std::uint32_t width,
 }
 
 }  // namespace
+
+extern "C" FT_Error __real_FT_Load_Glyph(
+        FT_Face face, FT_UInt glyphIndex, FT_Int32 flags);
+
+extern "C" FT_Error __wrap_FT_Load_Glyph(
+        FT_Face face, FT_UInt glyphIndex, FT_Int32 flags) {
+    if (gGlyphPolicyObservation.active) {
+        const std::uint32_t observed = static_cast<std::uint32_t>(flags);
+        gGlyphPolicyObservation.loadCount += 1;
+        gGlyphPolicyObservation.loadFlagsOr |= observed;
+        gGlyphPolicyObservation.loadFlagsAnd &= observed;
+    }
+    if (!glyphFlagsAreAllowed(flags)) {
+        if (gGlyphPolicyObservation.active) {
+            gGlyphPolicyObservation.invalidLoadCount += 1;
+        }
+        return FT_Err_Invalid_Argument;
+    }
+    return __real_FT_Load_Glyph(face, glyphIndex, flags);
+}
+
+extern "C" FT_Error __real_FT_New_Library(FT_Memory memory, FT_Library* library);
+
+extern "C" FT_Error __wrap_FT_New_Library(FT_Memory memory, FT_Library* library) {
+    const FT_Error result = __real_FT_New_Library(memory, library);
+    if (result == 0 && library != nullptr && *library != nullptr) {
+        FT_Set_Debug_Hook(
+                *library, FT_DEBUG_HOOK_TRUETYPE, renderweaveRejectTrueTypeInterpreter);
+    }
+    return result;
+}
+
+extern "C" int renderweave_glyph_policy_accepts_flags(std::uint32_t flags) {
+    return glyphFlagsAreAllowed(static_cast<FT_Int32>(flags)) ? 1 : 0;
+}
 
 extern "C" int renderweave_skia_raster_text(
         const std::uint8_t* fontBytes,
@@ -66,18 +154,20 @@ extern "C" int renderweave_skia_raster_text(
         return kInvalidArgument;
     }
 
+    beginGlyphPolicyObservation();
+
     sk_sp<SkData> fontData = SkData::MakeWithCopy(fontBytes, fontLength);
     if (!fontData) {
-        return kFontDecodeFailed;
+        return finishGlyphPolicyObservation(kFontDecodeFailed);
     }
     sk_sp<SkFontMgr> fontManager = SkFontMgr_New_Custom_Data(
             SkSpan<sk_sp<SkData>>(&fontData, 1));
     if (!fontManager) {
-        return kFontDecodeFailed;
+        return finishGlyphPolicyObservation(kFontDecodeFailed);
     }
     sk_sp<SkTypeface> typeface = fontManager->makeFromData(fontData, 0);
     if (!typeface) {
-        return kFontDecodeFailed;
+        return finishGlyphPolicyObservation(kFontDecodeFailed);
     }
 
     HbHandle<hb_blob_t, hb_blob_destroy> blob(
@@ -89,23 +179,23 @@ extern "C" int renderweave_skia_raster_text(
                     nullptr),
             hb_blob_destroy);
     if (!blob || hb_blob_get_length(blob.get()) != fontLength) {
-        return kFontDecodeFailed;
+        return finishGlyphPolicyObservation(kFontDecodeFailed);
     }
     HbHandle<hb_face_t, hb_face_destroy> face(
             hb_face_create(blob.get(), 0), hb_face_destroy);
     if (!face || hb_face_get_glyph_count(face.get()) == 0) {
-        return kFontDecodeFailed;
+        return finishGlyphPolicyObservation(kFontDecodeFailed);
     }
     const unsigned int unitsPerEm = hb_face_get_upem(face.get());
     if (unitsPerEm == 0) {
-        return kFontDecodeFailed;
+        return finishGlyphPolicyObservation(kFontDecodeFailed);
     }
     HbHandle<hb_font_t, hb_font_destroy> shapingFont(
             hb_font_create(face.get()), hb_font_destroy);
     HbHandle<hb_buffer_t, hb_buffer_destroy> buffer(
             hb_buffer_create(), hb_buffer_destroy);
     if (!shapingFont || !buffer) {
-        return kShapingFailed;
+        return finishGlyphPolicyObservation(kShapingFailed);
     }
     hb_ot_font_set_funcs(shapingFont.get());
     hb_font_set_scale(
@@ -119,11 +209,11 @@ extern "C" int renderweave_skia_raster_text(
     hb_buffer_set_language(buffer.get(), hb_language_from_string("und", -1));
     hb_buffer_add(buffer.get(), codepoint, 0);
     if (!hb_buffer_allocation_successful(buffer.get())) {
-        return kShapingFailed;
+        return finishGlyphPolicyObservation(kShapingFailed);
     }
     hb_shape(shapingFont.get(), buffer.get(), nullptr, 0);
     if (!hb_buffer_allocation_successful(buffer.get())) {
-        return kShapingFailed;
+        return finishGlyphPolicyObservation(kShapingFailed);
     }
 
     unsigned int glyphCount = 0;
@@ -134,17 +224,17 @@ extern "C" int renderweave_skia_raster_text(
             hb_buffer_get_glyph_positions(buffer.get(), &positionCount);
     if (glyphCount == 0 || positionCount != glyphCount || glyphInfos == nullptr ||
         glyphPositions == nullptr) {
-        return kShapingFailed;
+        return finishGlyphPolicyObservation(kShapingFailed);
     }
     std::unique_ptr<SkGlyphID[]> glyphs(new (std::nothrow) SkGlyphID[glyphCount]);
     std::unique_ptr<SkPoint[]> positions(new (std::nothrow) SkPoint[glyphCount]);
     if (!glyphs || !positions) {
-        return kRasterFailed;
+        return finishGlyphPolicyObservation(kRasterFailed);
     }
     for (unsigned int index = 0; index < glyphCount; ++index) {
         if (glyphInfos[index].codepoint == 0 ||
             glyphInfos[index].codepoint > std::numeric_limits<SkGlyphID>::max()) {
-            return kGlyphMissing;
+            return finishGlyphPolicyObservation(kGlyphMissing);
         }
         glyphs[index] = static_cast<SkGlyphID>(glyphInfos[index].codepoint);
     }
@@ -163,20 +253,20 @@ extern "C" int renderweave_skia_raster_text(
     float cursorY = 0.0F;
     const SkScalar baseline = -metrics.fAscent;
     if (!std::isfinite(unitToPixel) || !std::isfinite(baseline)) {
-        return kShapingFailed;
+        return finishGlyphPolicyObservation(kShapingFailed);
     }
     for (unsigned int index = 0; index < glyphCount; ++index) {
         const float x = cursorX + static_cast<float>(glyphPositions[index].x_offset) * unitToPixel;
         const float y = baseline -
                 (cursorY + static_cast<float>(glyphPositions[index].y_offset) * unitToPixel);
         if (!std::isfinite(x) || !std::isfinite(y)) {
-            return kShapingFailed;
+            return finishGlyphPolicyObservation(kShapingFailed);
         }
         positions[index] = SkPoint::Make(x, y);
         cursorX += static_cast<float>(glyphPositions[index].x_advance) * unitToPixel;
         cursorY += static_cast<float>(glyphPositions[index].y_advance) * unitToPixel;
         if (!std::isfinite(cursorX) || !std::isfinite(cursorY)) {
-            return kShapingFailed;
+            return finishGlyphPolicyObservation(kShapingFailed);
         }
     }
 
@@ -189,7 +279,7 @@ extern "C" int renderweave_skia_raster_text(
     std::unique_ptr<SkCanvas> canvas =
             SkCanvas::MakeRasterDirect(imageInfo, output, static_cast<std::size_t>(width) * 4U);
     if (!canvas) {
-        return kRasterFailed;
+        return finishGlyphPolicyObservation(kRasterFailed);
     }
     canvas->clear(SK_ColorTRANSPARENT);
     SkPaint paint;
@@ -201,5 +291,5 @@ extern "C" int renderweave_skia_raster_text(
             SkPoint::Make(0.0F, 0.0F),
             font,
             paint);
-    return kSuccess;
+    return finishGlyphPolicyObservation(kSuccess);
 }

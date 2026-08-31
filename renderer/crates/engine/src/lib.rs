@@ -40,6 +40,8 @@ mod native_text {
             output: *mut u8,
             output_length: usize,
         ) -> i32;
+        #[cfg(test)]
+        fn renderweave_glyph_policy_accepts_flags(flags: u32) -> i32;
     }
 
     pub(super) enum NativeTextError {
@@ -48,6 +50,7 @@ mod native_text {
         GlyphMissing,
         Shaping,
         Raster,
+        Policy,
     }
 
     pub(super) struct NativeTextRequest<'a> {
@@ -94,7 +97,29 @@ mod native_text {
             2 => Err(NativeTextError::FontDecode),
             3 => Err(NativeTextError::GlyphMissing),
             4 => Err(NativeTextError::Shaping),
-            _ => Err(NativeTextError::Raster),
+            5 => Err(NativeTextError::Raster),
+            _ => Err(NativeTextError::Policy),
+        }
+    }
+
+    #[cfg(test)]
+    mod tests {
+        const REQUIRED: u32 = 0x0100_800A;
+
+        fn accepts(flags: u32) -> bool {
+            // SAFETY: the policy validator is a pure total function over the integer flag word.
+            unsafe { super::renderweave_glyph_policy_accepts_flags(flags) == 1 }
+        }
+
+        #[test]
+        fn rejects_every_required_flag_mutation_and_each_forbidden_mode() {
+            assert!(accepts(REQUIRED));
+            for required_flag in [0x0000_0002, 0x0000_0008, 0x0000_8000, 0x0100_0000] {
+                assert!(!accepts(REQUIRED & !required_flag));
+            }
+            for forbidden_flag in [0x0000_0020, 0x0010_0000] {
+                assert!(!accepts(REQUIRED | forbidden_flag));
+            }
         }
     }
 }
@@ -1636,7 +1661,8 @@ fn prepare_text_paint(
         },
         native_text::NativeTextError::InvalidArgument
         | native_text::NativeTextError::FontDecode
-        | native_text::NativeTextError::Shaping => EnginePngError::TextShaping {
+        | native_text::NativeTextError::Shaping
+        | native_text::NativeTextError::Policy => EnginePngError::TextShaping {
             occurrence_id: occurrence_id.into(),
             resource_id: resource_id.into(),
         },
