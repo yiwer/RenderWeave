@@ -1,0 +1,530 @@
+{
+  "lockVersion": "renderweave-renderer-hermetic-build-lock/1.0",
+  "candidateId": "rw-renderer-spike-linux-x86_64-v2-000002",
+  "target": {
+    "operatingSystem": "linux",
+    "architecture": "amd64",
+    "minimumIsa": "x86-64-v2"
+  },
+  "environment": {
+    "sourceDateEpoch": 0,
+    "locale": "C.UTF-8",
+    "timezone": "UTC",
+    "umask": "0022",
+    "pathRemapRoot": "/renderweave/src",
+    "allowlist": [
+      "AR",
+      "CARGO_HOME",
+      "CC",
+      "CFLAGS",
+      "CMAKE",
+      "CXX",
+      "CXXFLAGS",
+      "GN",
+      "HOME",
+      "LANG",
+      "LC_ALL",
+      "LD",
+      "LDFLAGS",
+      "NINJA",
+      "PATH",
+      "PKG_CONFIG_LIBDIR",
+      "RUSTC",
+      "RUSTDOC",
+      "RUSTFLAGS",
+      "SOURCE_DATE_EPOCH",
+      "TMPDIR",
+      "TZ"
+    ]
+  },
+  "inputs": [
+    {
+      "id": "canonical-srgb-icc",
+      "category": "canonical-icc",
+      "bundlePath": "inputs/canonical-icc/sRGB-IEC61966-2.1.icc",
+      "sha256": "sha256:2b3aa1645779a9e634744faf9b01e9102b0c9b88fd6deced7934df86b949af7e",
+      "byteLength": 3144,
+      "source": {
+        "kind": "repository-file",
+        "path": "renderweave-asset/src/main/resources/cn/hbads/renderweave/asset/acceptance/sRGB-IEC61966-2.1.icc"
+      }
+    },
+    {
+      "id": "cmake-4.4.2-binary",
+      "category": "build-tools",
+      "bundlePath": "inputs/build-tools/cmake-4.4.2-linux-x86_64.tar.gz",
+      "sha256": "sha256:3ada9a3f5d8a85413579bdd0ea6aa8e8da86efdd6d15c91a1afa517f2021956c",
+      "byteLength": 64872648,
+      "source": {
+        "kind": "url-file",
+        "urls": [
+          "https://github.com/Kitware/CMake/releases/download/v4.4.2/cmake-4.4.2-linux-x86_64.tar.gz"
+        ],
+        "allowedRedirectOrigins": [
+          "https://release-assets.githubusercontent.com"
+        ],
+        "cachePath": "var/renderer-hermetic-build-v1/download-cache/cmake-4.4.2-linux-x86_64.tar.gz"
+      }
+    },
+    {
+      "id": "cmake-4.4.2-source",
+      "category": "build-tools",
+      "bundlePath": "inputs/build-tools/cmake-4.4.2-source.tar.gz",
+      "sha256": "sha256:1db9e61e60b6e0874c86386340b910382f3c5e75b9fbfb44d122063129a2789d",
+      "byteLength": 13283673,
+      "source": {
+        "kind": "url-file",
+        "urls": [
+          "https://github.com/Kitware/CMake/releases/download/v4.4.2/cmake-4.4.2.tar.gz"
+        ],
+        "allowedRedirectOrigins": [
+          "https://release-assets.githubusercontent.com"
+        ],
+        "cachePath": "var/renderer-hermetic-build-v1/download-cache/cmake-4.4.2.tar.gz"
+      }
+    },
+    {
+      "id": "freetype-2.14.3-official",
+      "category": "freetype",
+      "bundlePath": "inputs/freetype/freetype-2.14.3.tar.xz",
+      "sha256": "sha256:36bc4f1cc413335368ee656c42afca65c5a3987e8768cc28cf11ba775e785a5f",
+      "byteLength": 2670220,
+      "source": {
+        "kind": "url-file",
+        "urls": [
+          "https://download.savannah.gnu.org/releases/freetype/freetype-2.14.3.tar.xz"
+        ],
+        "allowedRedirectOrigins": [
+          "https://download-mirror.savannah.gnu.org",
+          "https://ftp.cc.uoc.gr"
+        ],
+        "cachePath": "var/renderer-hermetic-build-v1/download-cache/freetype-2.14.3.tar.xz"
+      }
+    },
+    {
+      "id": "freetype-2.14.3-source-tree",
+      "category": "freetype",
+      "bundlePath": "inputs/freetype/freetype-0a0221a1347e2f1e07c395263540026e9a0aa7c7.tar",
+      "sha256": "sha256:96b87b165f22e65edbba96409e3853fcbdccc290721a1ad54baa56ba710115cc",
+      "byteLength": 12134400,
+      "source": {
+        "kind": "git-archive",
+        "remote": "https://gitlab.freedesktop.org/freetype/freetype.git",
+        "commit": "0a0221a1347e2f1e07c395263540026e9a0aa7c7",
+        "tree": "589225074ab1eb876682820c482069693c251e88",
+        "prefix": "freetype-0a0221a1347e2f1e07c395263540026e9a0aa7c7/",
+        "gitVersion": "git version 2.45.1.windows.1",
+        "commitObject": {
+          "encoding": "base64",
+          "byteLength": 853,
+          "sha256": "sha256:738aca70cfb4bfb32d81960e3c6ba7bd9877f2bb242eff822ebcaf181e9e4204",
+          "bytes": "dHJlZSA1ODkyMjUwNzRhYjFlYjg3NjY4MjgyMGM0ODIwNjk2OTNjMjUxZTg4CnBhcmVudCA0MDJmYTAxYWQ5NzdhMGU0ZjEwY2EzMTk0MjNiNzZkNTliN2I0MGI0CmF1dGhvciBXZXJuZXIgTGVtYmVyZyA8d2xAZ251Lm9yZz4gMTc3NDE5MjAzMCArMDEwMApjb21taXR0ZXIgV2VybmVyIExlbWJlcmcgPHdsQGdudS5vcmc+IDE3NzQxOTIwMzAgKzAxMDAKCiogVmVyc2lvbiAyLjE0LjMgcmVsZWFzZWQuCj09PT09PT09PT09PT09PT09PT09PT09PT09CgpUYWcgc291cmNlcyB3aXRoIGBWRVItMi0xNC0zJy4KCiogZG9jcy9WRVJTSU9OLlRYVDogQWRkIGVudHJ5IGZvciB2ZXJzaW9uIDIuMTQuMy4KKiBkb2NzL0NIQU5HRVM6IFVwZGF0ZWQuCiogZG9jcy9yZWxlYXNlLCBkb2NzL1JFQURNRSwgYnVpbGRzL21hY3MvUkVBRE1FOiBVcGRhdGVkLgoKKiBSRUFETUUsIHNyYy9iYXNlL2Z0dmVyLnJjLCBidWlsZHMvd2luZG93cy92YzIwMTAvaW5kZXguaHRtbCwKICBidWlsZHMvd2luZG93cy92aXN1YWxjL2luZGV4Lmh0bWwsIGJ1aWxkcy93aW5kb3dzL3Zpc3VhbGNlL2luZGV4Lmh0bWwsCiAgYnVpbGRzL3dpbmNlL3ZjMjAwNS1jZS9pbmRleC5odG1sLCBidWlsZHMvd2luY2UvdmMyMDA4LWNlL2luZGV4Lmh0bWwsCiAgZG9jcy9mcmVldHlwZS1jb25maWcuMTogcy8yLjE0LjIvMi4xNC4zLywgcy8yMTQyLzIxNDMvLgoKKiBpbmNsdWRlL2ZyZWV0eXBlL2ZyZWV0eXBlLmggKEZSRUVUWVBFX1BBVENIKTogU2V0IHRvIDMuCgoqIGJ1aWxkcy91bml4L2NvbmZpZ3VyZS5yYXcgKHZlcnNpb25faW5mbyk6IFNldCB0byAyNjo2OjIwLgoqIENNYWtlTGlzdHMudHh0IChWRVJTSU9OX1BBVENIKTogU2V0IHRvIDMuCg=="
+        },
+        "cachePath": "var/renderer-hermetic-build-v1/download-cache/freetype-0a0221a1347e2f1e07c395263540026e9a0aa7c7.tar",
+        "archiveConfig": {
+          "coreAutocrlf": true
+        }
+      }
+    },
+    {
+      "id": "gn-b2afae122-source",
+      "category": "build-tools",
+      "bundlePath": "inputs/build-tools/gn-b2afae122eeb6ce09c52d63f67dc53fc517dbdc8.tar",
+      "sha256": "sha256:93878ed60868a36e0df1918a6f85717a0075acedb49ded2d0a012c89c30a513b",
+      "byteLength": 5826560,
+      "source": {
+        "kind": "git-archive",
+        "remote": "https://gn.googlesource.com/gn",
+        "commit": "b2afae122eeb6ce09c52d63f67dc53fc517dbdc8",
+        "tree": "999fdffccb48c0a8563e722e7ae193ccdba366b0",
+        "prefix": "gn-b2afae122eeb6ce09c52d63f67dc53fc517dbdc8/",
+        "gitVersion": "git version 2.45.1.windows.1",
+        "commitObject": {
+          "encoding": "base64",
+          "byteLength": 671,
+          "sha256": "sha256:9c846b63cb17ae1aa8ce0c2c4066df238dd7d5d4133d4a7bcffa7535f822f4c8",
+          "bytes": "dHJlZSA5OTlmZGZmY2NiNDhjMGE4NTYzZTcyMmU3YWUxOTNjY2RiYTM2NmIwCnBhcmVudCBiM2EwYmZmNDdkZDgxMDczYmZlNjdhNDAyOTcxYmFkOTJlNGYyNDIzCmF1dGhvciBBbGVrc2V5IEtob3Jvc2hpbG92IDxha2hvcm9zaGlsb3ZAYnJhdmUuY29tPiAxNzE4MDI3NjE0ICswNzAwCmNvbW1pdHRlciBHTiBMVUNJIDxnbi1zY29wZWRAbHVjaS1wcm9qZWN0LWFjY291bnRzLmlhbS5nc2VydmljZWFjY291bnQuY29tPiAxNzE4MDgzMzMwICswMDAwCgpEbyBub3QgY2xlYW51cCBhcmdzLmduIGltcG9ydHMgbG9jYXRlZCBpbiB0aGUgb3V0cHV0IGRpcmVjdG9yeS4KCmduIGNsZWFudXAgc2hvdWxkIGtlZXAgZmlsZXMgdGhhdCBhcmUgaW1wb3J0ZWQgYnkgYXJncy5nbiBhbmQgbG9jYXRlZAppbiB0aGUgb3V0cHV0IGRpcmVjdG9yeS4KCkNoYW5nZS1JZDogSTk4MTE2ZGQzZjU3NzY1YTVjMTYwZDdiODJiZDgxMDRhNzQ3ZGQ0NjkKUmV2aWV3ZWQtb246IGh0dHBzOi8vZ24tcmV2aWV3Lmdvb2dsZXNvdXJjZS5jb20vYy9nbi8rLzE3MzYwCkNvbW1pdC1RdWV1ZTogVGFrdXRvIElrdXRhIDx0aWt1dGFAZ29vZ2xlLmNvbT4KUmV2aWV3ZWQtYnk6IERpcmsgUHJhbmtlIDxkcHJhbmtlQGdvb2dsZS5jb20+ClJldmlld2VkLWJ5OiBUYWt1dG8gSWt1dGEgPHRpa3V0YUBnb29nbGUuY29tPgo="
+        },
+        "cachePath": "var/renderer-hermetic-build-v1/download-cache/gn-b2afae122eeb6ce09c52d63f67dc53fc517dbdc8.tar",
+        "archiveConfig": {
+          "coreAutocrlf": true
+        }
+      }
+    },
+    {
+      "id": "gn-linux-amd64-cipd",
+      "category": "build-tools",
+      "bundlePath": "inputs/build-tools/gn-linux-amd64-ajv8U9gl.zip",
+      "sha256": "sha256:6a3bfc53d825bccac5e5b4b7bdcc10ce9396a04a689ac684ec3308ca5c7f3d9c",
+      "byteLength": 3230296,
+      "source": {
+        "kind": "url-file",
+        "urls": [
+          "https://chrome-infra-packages.appspot.com/dl/gn/gn/linux-amd64/+/ajv8U9glvMrF5bS3vcwQzpOWoEpomsaE7DMIylx_PZwC"
+        ],
+        "allowedRedirectOrigins": [
+          "https://storage.googleapis.com"
+        ],
+        "cachePath": "var/renderer-hermetic-build-v1/download-cache/gn-linux-amd64-ajv8U9gl.zip"
+      }
+    },
+    {
+      "id": "harfbuzz-9cb1fee-source",
+      "category": "shaping-unicode",
+      "bundlePath": "inputs/shaping-unicode/harfbuzz-9cb1fee51069b206effb4736e443b038d230789d.tar",
+      "sha256": "sha256:553a73bae6658c6a9e10fd91546d2f08febf3a0502a299478c956e4d882a3185",
+      "byteLength": 100945920,
+      "source": {
+        "kind": "git-archive",
+        "remote": "https://chromium.googlesource.com/external/github.com/harfbuzz/harfbuzz.git",
+        "commit": "9cb1fee51069b206effb4736e443b038d230789d",
+        "tree": "240735f4b549d13fbe8bbb4bc143549e0cd8d3f1",
+        "prefix": "harfbuzz-9cb1fee51069b206effb4736e443b038d230789d/",
+        "gitVersion": "git version 2.45.1.windows.1",
+        "commitObject": {
+          "encoding": "base64",
+          "byteLength": 237,
+          "sha256": "sha256:7a52869bbdbf5fc80fe22a4bb1b13a5e1a99839df54958560235542133f26a12",
+          "bytes": "dHJlZSAyNDA3MzVmNGI1NDlkMTNmYmU4YmJiNGJjMTQzNTQ5ZTBjZDhkM2YxCnBhcmVudCA2ZTI2NzAwMGExY2IwZGQ2ZDI5ZmExZDc0MTdjZmQ4OTljOTU4MDY3CmF1dGhvciBLaGFsZWQgSG9zbnkgPGtoYWxlZEBhbGlmdHlwZS5jb20+IDE3NzMzMjg1NzAgKzAyMDAKY29tbWl0dGVyIEtoYWxlZCBIb3NueSA8a2hhbGVkQGFsaWZ0eXBlLmNvbT4gMTc3MzMyOTc5OSArMDIwMAoKW21lc29uXSBVcGRhdGUgd3JhcHMK"
+        },
+        "cachePath": "var/renderer-hermetic-build-v1/download-cache/harfbuzz-9cb1fee51069b206effb4736e443b038d230789d.tar",
+        "archiveConfig": {
+          "coreAutocrlf": true
+        }
+      }
+    },
+    {
+      "id": "icu-d578f2e-source",
+      "category": "shaping-unicode",
+      "bundlePath": "inputs/shaping-unicode/icu-d578f2e8b7bd5938e21cfb6bf15c079e0aa5b738.tar",
+      "sha256": "sha256:43ffe956b8242e9258e3f230cac92c0428f7d9057c56464a3be9a790c951eddf",
+      "byteLength": 240680960,
+      "source": {
+        "kind": "git-archive",
+        "remote": "https://chromium.googlesource.com/chromium/deps/icu.git",
+        "commit": "d578f2e8b7bd5938e21cfb6bf15c079e0aa5b738",
+        "tree": "1a597ddb83a0d67c5138b9ef1554a45d5d152ec7",
+        "prefix": "icu-d578f2e8b7bd5938e21cfb6bf15c079e0aa5b738/",
+        "gitVersion": "git version 2.45.1.windows.1",
+        "commitObject": {
+          "encoding": "base64",
+          "byteLength": 697,
+          "sha256": "sha256:affb708eda38c422ddd7ba27b1cd9589d0199b1543fd49328fde6137dbe31f4c",
+          "bytes": "dHJlZSAxYTU5N2RkYjgzYTBkNjdjNTEzOGI5ZWYxNTU0YTQ1ZDVkMTUyZWM3CnBhcmVudCAzNTJmNWE0OTlhYmY5OTYyNDQwMTg3Mjk1YWI2OGViMzhiMzM5YzQzCmF1dGhvciBFZGdhciBBZ3VpbGFyIDxlbGVkZ2FyQGdvb2dsZS5jb20+IDE3NzkyMTY2MjcgKzAwMDAKY29tbWl0dGVyIEZyYW5rIFRhbmcgPGZ0YW5nQGNocm9taXVtLm9yZz4gMTc4MDUxNjAxOCAtMDcwMAoKW0Z1enppbmddIEZpeCBJQ1UgaW5pdGlhbGl6YXRpb24uCgpNb3ZlIGVudmlyb25tZW50IGluaXRpYWxpemF0aW9uIHNvIGl0IGlzIGhhbmRsZWQgY29ycmVjdGx5IGZyb20KYW4gQVBLIGV4ZWN1dGlvbi4gRHVlIHRvIGhvdyB0aGUgSlZNIGluaXRpYWxpemVzIHZhcmlhYmxlcyBpZgp0aGUgZW52aXJvbm1lbnQgaXMgZGVmaW5lZCBvdXRzaWRlIExMVk1GdXp6ZXIgaW5pdGlhbGl6YXRpb24KaXQgY3Jhc2hlcy4KCkJ1ZzogNTAwNTI1MTYyCkNoYW5nZS1JZDogSTBhMWRhZTc3NjBkNDg4ZjU5MDNhNjYwNDhlNWIzYzdmMDkwMTFkMmUKUmV2aWV3ZWQtb246IGh0dHBzOi8vY2hyb21pdW0tcmV2aWV3Lmdvb2dsZXNvdXJjZS5jb20vYy9jaHJvbWl1bS9kZXBzL2ljdS8rLzc3OTc4ODMKUmV2aWV3ZWQtYnk6IEZyYW5rIFRhbmcgPGZ0YW5nQGNocm9taXVtLm9yZz4KUmV2aWV3ZWQtYnk6IFRpdG91YW4gUmlnb3VkeSA8dGl0b3VhbkBjaHJvbWl1bS5vcmc+Cg=="
+        },
+        "cachePath": "var/renderer-hermetic-build-v1/download-cache/icu-d578f2e8b7bd5938e21cfb6bf15c079e0aa5b738.tar",
+        "archiveConfig": {
+          "coreAutocrlf": true
+        }
+      }
+    },
+    {
+      "id": "libgrapheme-c0cab63-source",
+      "category": "shaping-unicode",
+      "bundlePath": "inputs/shaping-unicode/libgrapheme-c0cab63c5300fa12284194fbef57aa2ed62a94c0.tar",
+      "sha256": "sha256:fcd91adb3d4cdd2ce238cce730a900721ef3ecc7be74885fee8202f69b4d2ec6",
+      "byteLength": 21616640,
+      "source": {
+        "kind": "git-archive",
+        "remote": "https://skia.googlesource.com/external/github.com/FRIGN/libgrapheme/",
+        "commit": "c0cab63c5300fa12284194fbef57aa2ed62a94c0",
+        "tree": "f19067d7ebdca4a82f621f3815ddbb5189c0b37f",
+        "prefix": "libgrapheme-c0cab63c5300fa12284194fbef57aa2ed62a94c0/",
+        "gitVersion": "git version 2.45.1.windows.1",
+        "commitObject": {
+          "encoding": "base64",
+          "byteLength": 1134,
+          "sha256": "sha256:c9bc69df1369562c4ec37eeb5d74b17f97b33b216046f36474fb3a7ff9ce6f93",
+          "bytes": "dHJlZSBmMTkwNjdkN2ViZGNhNGE4MmY2MjFmMzgxNWRkYmI1MTg5YzBiMzdmCnBhcmVudCBjMGQyOGMzY2FkNWM5ZTAyZGZhOTNiM2ZmM2U2OTUzYWQwZjIyZDc1CmF1dGhvciBMYXNsbyBIdW5ob2xkIDxkZXZAZnJpZ24uZGU+IDE2NzcyNTk1ODIgKzAxMDAKY29tbWl0dGVyIExhc2xvIEh1bmhvbGQgPGRldkBmcmlnbi5kZT4gMTY3NzI1OTU4MiArMDEwMApncGdzaWcgLS0tLS1CRUdJTiBQR1AgU0lHTkFUVVJFLS0tLS0KIAogaVFJekJBQUJDQUFkRmlFRVo3S0dKaFgxWEp0L21rZm5hVmRyMGt6OHVZQUZBbVJlVGVJQUNna1FhVmRyMGt6OAogdVlBWjB3Ly9TMHpUeWVxWVhFZ2M3R0x5U1EvdGhwMDBocVg4dWl2S2k1MHh4R0dJeFNvL2QyVGhoeTBOeXh4YgogZjNsOHNreFlrUmVOSjBOZm5ydVFqNElhZHAvaFJBVXlLWGpUNE10RCtIazU4MkJ2T1oyQWFaL0NxcWM2S1pJbQogWXZrNUdjY3lSM3FhQThVM0xIb0lXa25id1lmYUp3Zkh6RnZJWWY3dGptenBDZHI4OXJUenhQeU1lWm1OZlJsTAogVS9xOSt1a1hpNjhiRFFMdUtMenB5cUhVeHloR0QybUpyY2dCTG9FQ1NHRnovOU1JNmxqMEpjZ3VHVTltREtNQwogek9sWlB4Z0dBUDdicTNLNkw5MVVVeVdwNEJlV0p4K3dySDZmVVlnUkgxWVVIeUVMSDNqZXpzbTNpMnM5VzhsSAogajhaQTZ0QS9Wa040TkIxcHNLZEdONk5aeW05aThWNWNtbUg2VlVBeGFCUHR1Q3Y3aVE0YXBSK1paMGhXcnNkSQogYTIrS0x3K1Baem5tVEJXb1EySm12ZDdRVlVWNXF0dXRieGN0ZWVReWMxbnUyenAzZTA1UXRMQURVbUNudzI2dAogQ2VVM0xXT2VUR2hlQVJseVJBaVZhRVFIdVMwTWNxVjI5WDFPMlcySldWZlZpTitlNmd4ZEtlWHpUc2J4RWNjdQogSGtDMytNeFhYVHBhQzhWV0NQUGZLczdieWlaZWNUbUk2a0cxd0JudHk5Z2pEd3Vudng3dVpHdVVIQTlUcUovbgogR2JaR0VhdVR2anhWUkpSR051bEdPakEvVms5RmhHNXNycXlrZFZjeElHRkppWXpaZ1JBeDVOMm4xYmpWdS9vUQogei96YWFqRkJHekNwNEVtOGNpcklxVHA1K21PL0ZLZnB3eHlGN0c3T2R4YUZ5TWQwQXJRPQogPURnN04KIC0tLS0tRU5EIFBHUCBTSUdOQVRVUkUtLS0tLQoKRml4IGEgc21hbGwgdHlwbyBpbiBjb25maWd1cmUKClNpZ25lZC1vZmYtYnk6IExhc2xvIEh1bmhvbGQgPGRldkBmcmlnbi5kZT4K"
+        },
+        "cachePath": "var/renderer-hermetic-build-v1/download-cache/libgrapheme-c0cab63c5300fa12284194fbef57aa2ed62a94c0.tar",
+        "archiveConfig": {
+          "coreAutocrlf": true
+        }
+      }
+    },
+    {
+      "id": "libjpeg-turbo-3.2.0-source",
+      "category": "jpeg-output",
+      "bundlePath": "inputs/jpeg-output/libjpeg-turbo-3.2.0.tar.gz",
+      "sha256": "sha256:6f30092cef9fb839779646608f4ee14ae3cbac989c47fa05e841b0841f09878e",
+      "byteLength": 2537858,
+      "source": {
+        "kind": "url-file",
+        "urls": [
+          "https://github.com/libjpeg-turbo/libjpeg-turbo/releases/download/3.2.0/libjpeg-turbo-3.2.0.tar.gz"
+        ],
+        "allowedRedirectOrigins": [
+          "https://release-assets.githubusercontent.com"
+        ],
+        "cachePath": "var/renderer-hermetic-build-v1/download-cache/libjpeg-turbo-3.2.0.tar.gz"
+      }
+    },
+    {
+      "id": "llvm-22.1.8-binary",
+      "category": "toolchain-sysroot",
+      "bundlePath": "inputs/toolchain-sysroot/LLVM-22.1.8-Linux-X64.tar.xz",
+      "sha256": "sha256:df0e1ecf16caf3489a272a5eea4eec9b0d82878f6477fa309504f918a0006384",
+      "byteLength": 1938859476,
+      "source": {
+        "kind": "url-file",
+        "urls": [
+          "https://github.com/llvm/llvm-project/releases/download/llvmorg-22.1.8/LLVM-22.1.8-Linux-X64.tar.xz"
+        ],
+        "allowedRedirectOrigins": [
+          "https://release-assets.githubusercontent.com"
+        ],
+        "cachePath": "var/renderer-hermetic-build-v1/download-cache/LLVM-22.1.8-Linux-X64.tar.xz"
+      }
+    },
+    {
+      "id": "llvm-22.1.8-source",
+      "category": "toolchain-sysroot",
+      "bundlePath": "inputs/toolchain-sysroot/llvm-project-22.1.8.src.tar.xz",
+      "sha256": "sha256:922f1817a0df7b1489272d18134ee0087a8b068828f87ac63b9861b1a9965888",
+      "byteLength": 167061596,
+      "source": {
+        "kind": "url-file",
+        "urls": [
+          "https://github.com/llvm/llvm-project/releases/download/llvmorg-22.1.8/llvm-project-22.1.8.src.tar.xz"
+        ],
+        "allowedRedirectOrigins": [
+          "https://release-assets.githubusercontent.com"
+        ],
+        "cachePath": "var/renderer-hermetic-build-v1/download-cache/llvm-project-22.1.8.src.tar.xz"
+      }
+    },
+    {
+      "id": "ninja-1.12.1.chromium.4-cipd",
+      "category": "build-tools",
+      "bundlePath": "inputs/build-tools/ninja-linux-amd64-Px8cwPaa.zip",
+      "sha256": "sha256:3f1f1cc0f69a1bcfdf67fb6c2bc7419b1dd812bb8d0e79afa9bfa8a3553b5082",
+      "byteLength": 182403,
+      "source": {
+        "kind": "url-file",
+        "urls": [
+          "https://chrome-infra-packages.appspot.com/dl/infra/3pp/tools/ninja/linux-amd64/+/Px8cwPaaG8_fZ_tsK8dBmx3YEruNDnmvqb-oo1U7UIIC"
+        ],
+        "allowedRedirectOrigins": [
+          "https://storage.googleapis.com"
+        ],
+        "cachePath": "var/renderer-hermetic-build-v1/download-cache/ninja-linux-amd64-Px8cwPaa-exact.zip"
+      }
+    },
+    {
+      "id": "python-3.13.7-bookworm-oci",
+      "category": "oci",
+      "bundlePath": "inputs/oci/python-3.13.7-bookworm-oci-layout.tar",
+      "sha256": "sha256:f7855a98ff6d1db3620a6c09973d8e82f857d49c595c256d05cdccc560a04a9e",
+      "byteLength": 381952000,
+      "source": {
+        "kind": "oci-image",
+        "registry": "https://registry-1.docker.io",
+        "repository": "library/python",
+        "authorization": {
+          "kind": "anonymous-bearer",
+          "realm": "https://auth.docker.io/token",
+          "service": "registry.docker.io",
+          "scope": "repository:library/python:pull"
+        },
+        "allowedRedirectOrigins": [
+          "https://production.cloudflare.docker.com",
+          "https://production.cloudfront.docker.com"
+        ],
+        "manifest": {
+          "mediaType": "application/vnd.oci.image.manifest.v1+json",
+          "digest": "sha256:dff7bf7639ce459600e6e042228480eb9b6c627ce590e282c9b1d7c03fcad30b",
+          "size": 2324
+        },
+        "config": {
+          "mediaType": "application/vnd.oci.image.config.v1+json",
+          "digest": "sha256:c4b55b146501ea68d911e42a5417551a5324b821ac09a14735a6979d0c0d1c26",
+          "size": 6316
+        },
+        "layers": [
+          {
+            "mediaType": "application/vnd.oci.image.layer.v1.tar+gzip",
+            "digest": "sha256:c6b11972fd12973831818babf60f1ffc1c4047507943d132dffc612884022858",
+            "size": 48480557
+          },
+          {
+            "mediaType": "application/vnd.oci.image.layer.v1.tar+gzip",
+            "digest": "sha256:db3dba6026a3c551d6b8e98308c073fff4fd569fd2fc61f21384cb996da82c9e",
+            "size": 24025876
+          },
+          {
+            "mediaType": "application/vnd.oci.image.layer.v1.tar+gzip",
+            "digest": "sha256:5fb1b35a6fc14463ada297f3f0605409cbfe29368b38fd5d1e41f7dcf29bb6fb",
+            "size": 64397411
+          },
+          {
+            "mediaType": "application/vnd.oci.image.layer.v1.tar+gzip",
+            "digest": "sha256:d6ecbfb3e7f8ccd5b04dc161a13218fd7aade8b0235603a879606a4e6887da6a",
+            "size": 211450463
+          },
+          {
+            "mediaType": "application/vnd.oci.image.layer.v1.tar+gzip",
+            "digest": "sha256:51298883c36b9528661069628cd9777d6f0deb6ebbe8ec92e13253ff2103deef",
+            "size": 6162064
+          },
+          {
+            "mediaType": "application/vnd.oci.image.layer.v1.tar+gzip",
+            "digest": "sha256:8942bf77632258be0949f12d792322e1b09b742ab2851c72fa7b5051402d5c56",
+            "size": 27408662
+          },
+          {
+            "mediaType": "application/vnd.oci.image.layer.v1.tar+gzip",
+            "digest": "sha256:8d63e066a3088c2abc3d0519b18b78513c82d76fae1277cbe6a63e3e703bbce8",
+            "size": 249
+          }
+        ],
+        "platform": {
+          "os": "linux",
+          "architecture": "amd64"
+        },
+        "packageDatabase": {
+          "path": "var/lib/dpkg/status",
+          "sha256": "sha256:2c25ff0a3caa00922534ca77b1eda2d8537601d6e79f0e54d68877eda78a2458",
+          "byteLength": 395659,
+          "installedPackageCount": 429
+        },
+        "archiveFormat": "oci-layout-tar-gnu-normalized/1.0",
+        "cachePath": "var/renderer-hermetic-build-v1/download-cache/oci-python-3.13.7-bookworm"
+      }
+    },
+    {
+      "id": "renderer-cargo-lock",
+      "category": "rust-vendor",
+      "bundlePath": "inputs/rust-vendor/Cargo.lock",
+      "sha256": "sha256:4d25500fb52cf97899d0bcc8fac75fb9a7e9ec9528595f2aff3e5dae88111d3a",
+      "byteLength": 17861,
+      "source": {
+        "kind": "repository-file",
+        "path": "renderer/Cargo.lock"
+      }
+    },
+    {
+      "id": "renderer-crates-source",
+      "category": "downstream-policy",
+      "bundlePath": "inputs/downstream-policy/renderer-crates-normalized.tar",
+      "sha256": "sha256:a31a3f13f2f89dfa6126a9989b85edd982298315c30d268babd37887bdaca841",
+      "byteLength": 860160,
+      "source": {
+        "kind": "repository-tree",
+        "path": "renderer/crates",
+        "treeSha256": "sha256:a70cad1ddc62ee916aa879ec39133405e6e2ef126b174dab54f742e398f91ec1",
+        "fileCount": 34,
+        "prefix": "crates/",
+        "archiveFormat": "python-tar-gnu-normalized/1.0"
+      }
+    },
+    {
+      "id": "renderer-root-inputs",
+      "category": "downstream-policy",
+      "bundlePath": "inputs/downstream-policy/renderer-root-normalized.tar",
+      "sha256": "sha256:bdbc4e27317e1accdc4269010c3301900813010423086ed71d0a11091779458c",
+      "byteLength": 1075200,
+      "source": {
+        "kind": "repository-tree",
+        "path": "renderer",
+        "treeSha256": "sha256:53c1476010a22e1bb52afd8c880e4b15422a51eca31d532dc22861332d42548f",
+        "fileCount": 23,
+        "prefix": "renderer-root/",
+        "excludePaths": [
+          "crates",
+          "target",
+          "vendor"
+        ],
+        "archiveFormat": "python-tar-gnu-normalized/1.0"
+      }
+    },
+    {
+      "id": "renderer-spike-policy",
+      "category": "downstream-policy",
+      "bundlePath": "inputs/downstream-policy/renderer-spike-policy-normalized.tar",
+      "sha256": "sha256:0812b3365ba6298721d957a22d04a448f8396f678f2774c8ffbb625aa138b87f",
+      "byteLength": 61440,
+      "source": {
+        "kind": "repository-tree",
+        "path": ".scratch/renderweave-template-v1/renderer-spike",
+        "treeSha256": "sha256:96e3305c924edf26b651c07a27570e8b7f58834664e7bec32d70861a0229c398",
+        "fileCount": 20,
+        "prefix": "renderer-spike/",
+        "excludePaths": [
+          "hermetic-build-lock-v1.json"
+        ],
+        "archiveFormat": "python-tar-gnu-normalized/1.0"
+      }
+    },
+    {
+      "id": "renderer-vendor-source",
+      "category": "image-codecs",
+      "bundlePath": "inputs/image-codecs/renderer-vendor-normalized.tar",
+      "sha256": "sha256:2271053938840ce6fa5738a471d963cfd99e9e1b95db888ac4f74fddd3adeff0",
+      "byteLength": 110643200,
+      "source": {
+        "kind": "repository-tree",
+        "path": "renderer/vendor",
+        "treeSha256": "sha256:d850e13ae472704cb3065b3add62cb7e60b3d123dae0e1d62ec89a2be3dbefef",
+        "fileCount": 3067,
+        "prefix": "vendor/",
+        "archiveFormat": "python-tar-gnu-normalized/1.0"
+      }
+    },
+    {
+      "id": "rust-1.89.0-channel-manifest",
+      "category": "toolchain-sysroot",
+      "bundlePath": "inputs/toolchain-sysroot/channel-rust-1.89.0.toml",
+      "sha256": "sha256:fbd1662e100e7b305908ece23b441cb7534eadfa6336c5f173ff08d1cec174a1",
+      "byteLength": 949694,
+      "source": {
+        "kind": "url-file",
+        "urls": [
+          "https://static.rust-lang.org/dist/2025-08-07/channel-rust-1.89.0.toml"
+        ],
+        "allowedRedirectOrigins": [],
+        "cachePath": "var/renderer-hermetic-build-v1/download-cache/channel-rust-1.89.0.toml"
+      }
+    },
+    {
+      "id": "rust-1.89.0-linux-amd64",
+      "category": "toolchain-sysroot",
+      "bundlePath": "inputs/toolchain-sysroot/rust-1.89.0-x86_64-unknown-linux-gnu.tar.xz",
+      "sha256": "sha256:c4f2796b10ee886001f0799bc40caea38746403a33c379d77878c4f4683f9b51",
+      "byteLength": 201436760,
+      "source": {
+        "kind": "url-file",
+        "urls": [
+          "https://static.rust-lang.org/dist/2025-08-07/rust-1.89.0-x86_64-unknown-linux-gnu.tar.xz"
+        ],
+        "allowedRedirectOrigins": [],
+        "cachePath": "var/renderer-hermetic-build-v1/download-cache/rust-1.89.0-x86_64-unknown-linux-gnu.tar.xz"
+      }
+    },
+    {
+      "id": "skia-m151-source",
+      "category": "skia",
+      "bundlePath": "inputs/skia/skia-93458b5faf9cd8befbe6c93158d4d8ee7c8424ee.tar",
+      "sha256": "sha256:9dfc76b78fc6363e77f96b4faca566cfa0c28d06ad478f809f241e98966652af",
+      "byteLength": 187033600,
+      "source": {
+        "kind": "git-archive",
+        "remote": "https://skia.googlesource.com/skia.git",
+        "commit": "93458b5faf9cd8befbe6c93158d4d8ee7c8424ee",
+        "tree": "e3eaee9c6a83beffdf115a267c3d9a4bd7d9348e",
+        "prefix": "skia-93458b5faf9cd8befbe6c93158d4d8ee7c8424ee/",
+        "gitVersion": "git version 2.55.0.windows.2",
+        "commitObject": {
+          "encoding": "base64",
+          "byteLength": 1329,
+          "sha256": "sha256:41d31bb225533021e47c7ae61dda6885445d4df7bf2ad6187ad4b643af287147",
+          "bytes": "dHJlZSBlM2VhZWU5YzZhODNiZWZmZGYxMTVhMjY3YzNkOWE0YmQ3ZDkzNDhlCnBhcmVudCA2NmNjYTA1YWIzNDVmYjg5NGNjODBlZDQxMmUyZmE3OWY2ODdmNWQ5CmF1dGhvciBNaWNoYWVsIEx1ZHdpZyA8bWljaGFlbGx1ZHdpZ0Bnb29nbGUuY29tPiAxNzg1ODY4NzUwIC0wNDAwCmNvbW1pdHRlciBza2NxLWJlQHNraWEtY29ycC5nb29nbGUuY29tLmlhbS5nc2VydmljZWFjY291bnQuY29tIDxza2NxLWJlQHNraWEtY29ycC5nb29nbGUuY29tLmlhbS5nc2VydmljZWFjY291bnQuY29tPiAxNzg2NzIyMTM4IC0wNzAwCgpbTTE1MV0gW2dhbmVzaF0gQ2hlY2sgcmVzdWx0IGluc2lkZSBHclJlc291cmNlUHJvdmlkZXI6OndyaXRlUGl4ZWxzCgpPcmlnaW5hbCBjaGFuZ2UncyBkZXNjcmlwdGlvbjoKPiBbZ2FuZXNoXSBDaGVjayByZXN1bHQgaW5zaWRlIEdyUmVzb3VyY2VQcm92aWRlcjo6d3JpdGVQaXhlbHMKPgo+IEJ1ZzogNTQwMDI3MzQxCj4gRml4ZWQ6IDU0MDAyNzM0MQo+IENoYW5nZS1JZDogSWNkZTlkMDc3ZGZiM2VjM2NkYjdhNmU3NzVjNjQ3MjQ0M2RiYTg3ODEKPiBSZXZpZXdlZC1vbjogaHR0cHM6Ly9za2lhLXJldmlldy5nb29nbGVzb3VyY2UuY29tL2Mvc2tpYS8rLzEzMTUzMzYKPiBBdXRvLVN1Ym1pdDogTWljaGFlbCBMdWR3aWcgPG1pY2hhZWxsdWR3aWdAZ29vZ2xlLmNvbT4KPiBSZXZpZXdlZC1ieTogUm9iZXJ0IFBoaWxsaXBzIDxyb2JlcnRwaGlsbGlwc0Bnb29nbGUuY29tPgo+IENvbW1pdC1RdWV1ZTogUm9iZXJ0IFBoaWxsaXBzIDxyb2JlcnRwaGlsbGlwc0Bnb29nbGUuY29tPgoKKGNoZXJyeSBwaWNrZWQgZnJvbSBjb21taXQgNWU0ZjMyMTdjMTdhOGQ4ODE5NWQ0YzI5MjQ2MTM0MjBhMjU2NDU3YikKCkJ1ZzogNTQ2MjE1NTkzLDU0MDAyNzM0MSw1NDAwMjczNDEKQ2hhbmdlLUlkOiBJY2RlOWQwNzdkZmIzZWMzY2RiN2E2ZTc3NWM2NDcyNDQzZGJhODc4MQpSZXZpZXdlZC1vbjogaHR0cHM6Ly9za2lhLXJldmlldy5nb29nbGVzb3VyY2UuY29tL2Mvc2tpYS8rLzEzMjU4NzYKQXV0by1TdWJtaXQ6IENocm9tZSBDaGVycnkgUGlja2VyIDxjaHJvbWUtY2hlcnJ5LXBpY2tlckBjaG9wcy1zZXJ2aWNlLWFjY291bnRzLmlhbS5nc2VydmljZWFjY291bnQuY29tPgpCb3QtQ29tbWl0OiBydWJiZXItc3RhbXBlckBhcHBzcG90LmdzZXJ2aWNlYWNjb3VudC5jb20gPHJ1YmJlci1zdGFtcGVyQGFwcHNwb3QuZ3NlcnZpY2VhY2NvdW50LmNvbT4KQ29tbWl0LVF1ZXVlOiBydWJiZXItc3RhbXBlckBhcHBzcG90LmdzZXJ2aWNlYWNjb3VudC5jb20gPHJ1YmJlci1zdGFtcGVyQGFwcHNwb3QuZ3NlcnZpY2VhY2NvdW50LmNvbT4K"
+        },
+        "cachePath": "var/renderer-hermetic-build-v1/download-cache/skia-93458b5faf9cd8befbe6c93158d4d8ee7c8424ee.tar",
+        "archiveConfig": {
+          "coreAutocrlf": true
+        }
+      }
+    }
+  ]
+}
