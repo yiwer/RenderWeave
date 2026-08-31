@@ -3,7 +3,6 @@ package cn.hbads.renderweave.app.rendering;
 import cn.hbads.renderweave.asset.api.AssetResolver;
 import cn.hbads.renderweave.asset.spi.AssetOwnerScopeAuthority;
 import cn.hbads.renderweave.rendering.api.CapabilityDerivation;
-import cn.hbads.renderweave.rendering.api.EvaluationStage;
 import cn.hbads.renderweave.rendering.api.Evaluator;
 import cn.hbads.renderweave.rendering.api.RenderingApplication;
 import cn.hbads.renderweave.rendering.api.RenderingProblem;
@@ -193,9 +192,10 @@ class RenderingApplicationConfiguration {
         var availableEngine = engines.getIfAvailable();
         if (availableEngine == null) {
             RenderEngine unavailableEngine = command ->
-                    new RenderEngine.EngineOutcome.TerminalProblem(RenderingProblem.of(
+                    new RenderEngine.EngineOutcome.TerminalProblem(
+                            RenderEngine.EngineProblem.of(
                             RenderingProblem.ProblemCode.RENDER_INTERNAL_ERROR,
-                            EvaluationStage.ENGINE));
+                            RenderEngine.EngineProblemStage.COMMAND_ADMISSION));
             RendererProfileAuthority unavailableProfiles = output ->
                     new RendererProfileAuthority.Unavailable();
             return RenderingModule.application(

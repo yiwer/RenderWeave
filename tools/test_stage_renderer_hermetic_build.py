@@ -20,6 +20,7 @@ ROOT = Path(__file__).resolve().parents[1]
 STAGER = ROOT / "tools" / "stage-renderer-hermetic-build.py"
 CANDIDATE_ID = "rw-renderer-spike-linux-x86_64-v2-000002"
 CANDIDATE_V3_ID = "rw-renderer-spike-linux-x86_64-v2-000003"
+PRODUCTION_TEXT_CANDIDATE_ID = "rw-renderer-production-text-linux-x86_64-v2-000001"
 REQUIRED_CATEGORIES = [
     "build-tools",
     "canonical-icc",
@@ -213,6 +214,71 @@ class RendererHermeticBuildStagerTest(unittest.TestCase):
                 / "minimal-cff.otf"
             ).read_bytes(),
             b"cff",
+        )
+
+        verified = self.run_cli("verify")
+        self.assertEqual(verified.returncode, 0, verified.stderr)
+        self.assertEqual(json.loads(verified.stdout), report)
+
+    def test_nested_successor_composes_the_production_text_closure(self) -> None:
+        self.write_successor_lock()
+        predecessor_bytes = self.lock.read_bytes()
+        predecessor = self.repo / "successor-v2.json"
+        predecessor.write_bytes(predecessor_bytes)
+        (self.repo / "production.bin").write_bytes(b"production")
+        (self.repo / "harness.sh").write_bytes(b"#!/bin/sh\n")
+        production_lock = {
+            "lockVersion": "renderweave-renderer-hermetic-build-lock/3.0",
+            "candidateId": PRODUCTION_TEXT_CANDIDATE_ID,
+            "baseLock": {
+                "path": predecessor.name,
+                "sha256": "sha256:" + hashlib.sha256(predecessor_bytes).hexdigest(),
+                "byteLength": len(predecessor_bytes),
+            },
+            "inputOverrides": [
+                {
+                    "id": "skia",
+                    "category": "skia",
+                    "bundlePath": "inputs/skia/production.bin",
+                    "sha256": "sha256:" + hashlib.sha256(b"production").hexdigest(),
+                    "byteLength": 10,
+                    "source": {"kind": "repository-file", "path": "production.bin"},
+                }
+            ],
+            "inputAdditions": [
+                {
+                    "id": "production-text-harness",
+                    "category": "downstream-policy",
+                    "bundlePath": "inputs/downstream-policy/harness.sh",
+                    "sha256": "sha256:" + hashlib.sha256(b"#!/bin/sh\n").hexdigest(),
+                    "byteLength": 10,
+                    "source": {"kind": "repository-file", "path": "harness.sh"},
+                }
+            ],
+        }
+        self.lock.write_text(
+            json.dumps(production_lock, indent=2) + "\n",
+            encoding="utf-8",
+            newline="\n",
+        )
+
+        staged = self.run_cli("stage")
+        self.assertEqual(staged.returncode, 0, staged.stderr)
+        report = json.loads(staged.stdout)
+        self.assertEqual(report["candidateId"], PRODUCTION_TEXT_CANDIDATE_ID)
+        self.assertEqual(report["inputCount"], len(REQUIRED_CATEGORIES) + 2)
+        self.assertEqual(
+            (self.bundle / "inputs" / "skia" / "production.bin").read_bytes(),
+            b"production",
+        )
+        self.assertEqual(
+            (
+                self.bundle
+                / "inputs"
+                / "downstream-policy"
+                / "harness.sh"
+            ).read_bytes(),
+            b"#!/bin/sh\n",
         )
 
         verified = self.run_cli("verify")

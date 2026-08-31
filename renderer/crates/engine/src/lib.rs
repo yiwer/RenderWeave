@@ -13,7 +13,8 @@ use renderweave_renderer_layout::{
     layout_definite_with_prepared_resources,
 };
 use renderweave_renderer_output_png::{
-    BleedPt, OutputPngError, SurfaceSpec, encode_straight_rgba8, preflight_surface,
+    BleedPt, OutputPngError, PngEncodeControl, PngEncodeInterruption, SurfaceDimensions,
+    SurfaceSpec, encode_straight_rgba8_controlled, preflight_surface,
 };
 use renderweave_renderer_resource::{PreparedRenderResource, PreparedResourceManifest};
 use serde_json::{Map, Value};
@@ -21,6 +22,82 @@ use sha2::{Digest, Sha256};
 
 const OUTPUT_PROFILE: &str = "renderweave-output-png/1.0";
 const MEDIA_TYPE: &str = "image/png";
+
+#[cfg(feature = "native-text-skia")]
+mod native_text {
+    unsafe extern "C" {
+        fn renderweave_skia_raster_text(
+            font_bytes: *const u8,
+            font_length: usize,
+            codepoint: u32,
+            font_size_px: f32,
+            red: u8,
+            green: u8,
+            blue: u8,
+            alpha: u8,
+            width: u32,
+            height: u32,
+            output: *mut u8,
+            output_length: usize,
+        ) -> i32;
+    }
+
+    pub(super) enum NativeTextError {
+        InvalidArgument,
+        FontDecode,
+        GlyphMissing,
+        Shaping,
+        Raster,
+    }
+
+    pub(super) struct NativeTextRequest<'a> {
+        pub font_bytes: &'a [u8],
+        pub codepoint: u32,
+        pub font_size_px: f32,
+        pub color: [u8; 4],
+        pub width: u32,
+        pub height: u32,
+    }
+
+    pub(super) fn rasterize(request: NativeTextRequest<'_>) -> Result<Vec<u8>, NativeTextError> {
+        let output_length = usize::try_from(request.width)
+            .ok()
+            .and_then(|width| width.checked_mul(usize::try_from(request.height).ok()?))
+            .and_then(|pixels| pixels.checked_mul(4))
+            .ok_or(NativeTextError::Raster)?;
+        let mut output = Vec::new();
+        output
+            .try_reserve_exact(output_length)
+            .map_err(|_| NativeTextError::Raster)?;
+        output.resize(output_length, 0);
+        // SAFETY: every pointer comes from a live immutable/mutable slice for the exact length
+        // supplied to the C adapter; the adapter never retains pointers and writes only output.
+        let result = unsafe {
+            renderweave_skia_raster_text(
+                request.font_bytes.as_ptr(),
+                request.font_bytes.len(),
+                request.codepoint,
+                request.font_size_px,
+                request.color[0],
+                request.color[1],
+                request.color[2],
+                request.color[3],
+                request.width,
+                request.height,
+                output.as_mut_ptr(),
+                output.len(),
+            )
+        };
+        match result {
+            0 => Ok(output),
+            1 => Err(NativeTextError::InvalidArgument),
+            2 => Err(NativeTextError::FontDecode),
+            3 => Err(NativeTextError::GlyphMissing),
+            4 => Err(NativeTextError::Shaping),
+            _ => Err(NativeTextError::Raster),
+        }
+    }
+}
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum EnginePngUnsupported {
@@ -35,7 +112,9 @@ pub enum EnginePngUnsupported {
     NonPixelAlignedClip,
     NonPixelAlignedImage,
     NonPixelAlignedRect,
+    NonPixelAlignedText,
     PartialBackgroundAlpha,
+    TextPaint,
 }
 
 impl EnginePngUnsupported {
@@ -52,18 +131,127 @@ impl EnginePngUnsupported {
             Self::NonPixelAlignedClip => "NON_PIXEL_ALIGNED_CLIP",
             Self::NonPixelAlignedImage => "NON_PIXEL_ALIGNED_IMAGE",
             Self::NonPixelAlignedRect => "NON_PIXEL_ALIGNED_RECT",
+            Self::NonPixelAlignedText => "NON_PIXEL_ALIGNED_TEXT",
             Self::PartialBackgroundAlpha => "PARTIAL_BACKGROUND_ALPHA",
+            Self::TextPaint => "TEXT_PAINT",
         }
     }
 }
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum EngineProblemCode {
+    RenderInternalError,
+    FontGlyphMissing,
+    RasterBudgetExceeded,
+    OutputBudgetExceeded,
+    RenderCancelled,
+    RenderDeadlineExceeded,
+}
+
+impl EngineProblemCode {
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::RenderInternalError => "RENDER_INTERNAL_ERROR",
+            Self::FontGlyphMissing => "FONT_GLYPH_MISSING",
+            Self::RasterBudgetExceeded => "RASTER_BUDGET_EXCEEDED",
+            Self::OutputBudgetExceeded => "OUTPUT_BUDGET_EXCEEDED",
+            Self::RenderCancelled => "RENDER_CANCELLED",
+            Self::RenderDeadlineExceeded => "RENDER_DEADLINE_EXCEEDED",
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum EngineProblemStage {
+    DocumentAdmission,
+    OutputPreflight,
+    Layout,
+    Shaping,
+    Rasterization,
+    Encoding,
+    OutputSeal,
+}
+
+impl EngineProblemStage {
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::DocumentAdmission => "DOCUMENT_ADMISSION",
+            Self::OutputPreflight => "OUTPUT_PREFLIGHT",
+            Self::Layout => "LAYOUT",
+            Self::Shaping => "SHAPING",
+            Self::Rasterization => "RASTERIZATION",
+            Self::Encoding => "ENCODING",
+            Self::OutputSeal => "OUTPUT_SEAL",
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum EngineCheckpoint {
+    Layout,
+    Shaping,
+    Rasterization,
+    Encoding,
+    OutputSeal,
+}
+
+impl EngineCheckpoint {
+    const fn problem_stage(self) -> EngineProblemStage {
+        match self {
+            Self::Layout => EngineProblemStage::Layout,
+            Self::Shaping => EngineProblemStage::Shaping,
+            Self::Rasterization => EngineProblemStage::Rasterization,
+            Self::Encoding => EngineProblemStage::Encoding,
+            Self::OutputSeal => EngineProblemStage::OutputSeal,
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum EngineInterruption {
+    Cancelled,
+    DeadlineExceeded,
+}
+
+/// Request-scoped cooperative control. Implementations must be deterministic for one checkpoint
+/// observation and must not expose request data to the Engine.
+pub trait EngineExecutionControl: Sync {
+    fn checkpoint(&self, checkpoint: EngineCheckpoint) -> Result<(), EngineInterruption>;
+}
+
+struct UnrestrictedExecutionControl;
+
+impl EngineExecutionControl for UnrestrictedExecutionControl {
+    fn checkpoint(&self, _checkpoint: EngineCheckpoint) -> Result<(), EngineInterruption> {
+        Ok(())
+    }
+}
+
+static UNRESTRICTED_EXECUTION: UnrestrictedExecutionControl = UnrestrictedExecutionControl;
 
 #[derive(Debug, Eq, PartialEq)]
 pub enum EnginePngError {
     Contract(&'static str),
     Unsupported(EnginePngUnsupported),
+    FontGlyphMissing {
+        occurrence_id: Box<str>,
+        resource_id: Box<str>,
+    },
+    TextShaping {
+        occurrence_id: Box<str>,
+        resource_id: Box<str>,
+    },
+    TextRaster {
+        occurrence_id: Box<str>,
+        resource_id: Box<str>,
+    },
     Layout,
     RasterAllocation,
     Output(OutputPngError),
+    Interrupted {
+        interruption: EngineInterruption,
+        checkpoint: EngineCheckpoint,
+    },
 }
 
 impl EnginePngError {
@@ -74,23 +262,70 @@ impl EnginePngError {
         }
     }
 
-    pub fn code(&self) -> Option<&'static str> {
+    pub fn problem_code(&self) -> EngineProblemCode {
         match self {
-            Self::Output(error) => error.code(),
-            _ => None,
+            Self::Output(error) => match error.code() {
+                Some("RASTER_BUDGET_EXCEEDED") => EngineProblemCode::RasterBudgetExceeded,
+                Some("OUTPUT_BUDGET_EXCEEDED") => EngineProblemCode::OutputBudgetExceeded,
+                _ => EngineProblemCode::RenderInternalError,
+            },
+            Self::FontGlyphMissing { .. } => EngineProblemCode::FontGlyphMissing,
+            Self::Interrupted { interruption, .. } => match interruption {
+                EngineInterruption::Cancelled => EngineProblemCode::RenderCancelled,
+                EngineInterruption::DeadlineExceeded => EngineProblemCode::RenderDeadlineExceeded,
+            },
+            Self::TextShaping { .. } | Self::TextRaster { .. } => {
+                EngineProblemCode::RenderInternalError
+            }
+            Self::Contract(_) | Self::Unsupported(_) | Self::Layout | Self::RasterAllocation => {
+                EngineProblemCode::RenderInternalError
+            }
         }
     }
 
-    pub fn stage(&self) -> Option<&'static str> {
+    pub fn problem_stage(&self) -> EngineProblemStage {
         match self {
-            Self::Output(error) => error.stage(),
-            _ => None,
+            Self::Output(error) => match error.stage() {
+                Some("OUTPUT_PREFLIGHT") => EngineProblemStage::OutputPreflight,
+                _ => EngineProblemStage::Encoding,
+            },
+            Self::FontGlyphMissing { .. } | Self::TextShaping { .. } => EngineProblemStage::Shaping,
+            Self::TextRaster { .. } | Self::RasterAllocation => EngineProblemStage::Rasterization,
+            Self::Layout => EngineProblemStage::Layout,
+            Self::Contract(_) | Self::Unsupported(_) => EngineProblemStage::DocumentAdmission,
+            Self::Interrupted { checkpoint, .. } => checkpoint.problem_stage(),
         }
+    }
+
+    pub fn code(&self) -> &'static str {
+        self.problem_code().as_str()
+    }
+
+    pub fn stage(&self) -> &'static str {
+        self.problem_stage().as_str()
     }
 
     pub fn limit_id(&self) -> Option<&'static str> {
         match self {
             Self::Output(error) => error.limit_id(),
+            _ => None,
+        }
+    }
+
+    pub fn occurrence_id(&self) -> Option<&str> {
+        match self {
+            Self::FontGlyphMissing { occurrence_id, .. }
+            | Self::TextShaping { occurrence_id, .. }
+            | Self::TextRaster { occurrence_id, .. } => Some(occurrence_id),
+            _ => None,
+        }
+    }
+
+    pub fn resource_id(&self) -> Option<&str> {
+        match self {
+            Self::FontGlyphMissing { resource_id, .. }
+            | Self::TextShaping { resource_id, .. }
+            | Self::TextRaster { resource_id, .. } => Some(resource_id),
             _ => None,
         }
     }
@@ -107,9 +342,19 @@ impl Display for EnginePngError {
                     feature.as_str()
                 )
             }
+            Self::FontGlyphMissing { .. } => formatter.write_str("required font glyph is absent"),
+            Self::TextShaping { .. } => formatter.write_str("native Text shaping failed"),
+            Self::TextRaster { .. } => formatter.write_str("native Text rasterization failed"),
             Self::Layout => formatter.write_str("Engine PNG layout failed"),
             Self::RasterAllocation => formatter.write_str("Engine PNG raster allocation failed"),
             Self::Output(error) => write!(formatter, "Engine PNG output failed: {error}"),
+            Self::Interrupted {
+                interruption,
+                checkpoint,
+            } => write!(
+                formatter,
+                "Engine PNG execution was {interruption:?} at {checkpoint:?}"
+            ),
         }
     }
 }
@@ -119,6 +364,15 @@ impl std::error::Error for EnginePngError {}
 impl From<OutputPngError> for EnginePngError {
     fn from(error: OutputPngError) -> Self {
         Self::Output(error)
+    }
+}
+
+impl From<(EngineInterruption, EngineCheckpoint)> for EnginePngError {
+    fn from((interruption, checkpoint): (EngineInterruption, EngineCheckpoint)) -> Self {
+        Self::Interrupted {
+            interruption,
+            checkpoint,
+        }
     }
 }
 
@@ -322,13 +576,29 @@ struct PixelImage<'resource> {
     straight_rgba8: &'resource [u8],
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[cfg(feature = "native-text-skia")]
+#[derive(Debug, Eq, PartialEq)]
+struct PixelText {
+    left: u32,
+    top: u32,
+    right: u32,
+    bottom: u32,
+    source_x_offset: u32,
+    source_y_offset: u32,
+    source_width: u32,
+    source_height: u32,
+    premultiplied_rgba8: Vec<u8>,
+}
+
+#[derive(Debug, Eq, PartialEq)]
 enum PixelPaint<'resource> {
     Rect(PixelRect),
     Image(PixelImage<'resource>),
+    #[cfg(feature = "native-text-skia")]
+    Text(PixelText),
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Debug, Eq, PartialEq)]
 enum PaintCommand<'resource> {
     BeginOpacity,
     Paint(PixelPaint<'resource>),
@@ -470,12 +740,20 @@ pub fn render_png(
     document: &AdmittedRenderDocument,
     dpi: u32,
 ) -> Result<EnginePngOutput, EnginePngError> {
+    render_png_controlled(document, dpi, &UNRESTRICTED_EXECUTION)
+}
+
+pub fn render_png_controlled(
+    document: &AdmittedRenderDocument,
+    dpi: u32,
+    control: &dyn EngineExecutionControl,
+) -> Result<EnginePngOutput, EnginePngError> {
     if document.resource_count() != 0 {
         return Err(EnginePngError::Unsupported(
             EnginePngUnsupported::ResourceManifest,
         ));
     }
-    render_png_internal(document, None, dpi)
+    render_png_internal(document, None, dpi, control)
 }
 
 pub fn render_png_with_prepared_resources(
@@ -483,13 +761,43 @@ pub fn render_png_with_prepared_resources(
     prepared_resources: &PreparedResourceManifest,
     dpi: u32,
 ) -> Result<EnginePngOutput, EnginePngError> {
-    render_png_internal(document, Some(prepared_resources), dpi)
+    render_png_with_prepared_resources_controlled(
+        document,
+        prepared_resources,
+        dpi,
+        &UNRESTRICTED_EXECUTION,
+    )
+}
+
+pub fn render_png_with_prepared_resources_controlled(
+    document: &AdmittedRenderDocument,
+    prepared_resources: &PreparedResourceManifest,
+    dpi: u32,
+    control: &dyn EngineExecutionControl,
+) -> Result<EnginePngOutput, EnginePngError> {
+    render_png_internal(document, Some(prepared_resources), dpi, control)
+}
+
+/// Performs the observable output-dimension and capacity step without touching resources.
+///
+/// The process adapter invokes this after strict document admission and before the first
+/// manifest resource. The full Engine reruns the same pure check so direct callers cannot bypass
+/// it and no mutable preflight token becomes part of the interface.
+pub fn preflight_png_output(
+    document: &AdmittedRenderDocument,
+    dpi: u32,
+) -> Result<(), EnginePngError> {
+    let root: Value = serde_json::from_str(document.canonical_document())
+        .map_err(|_| EnginePngError::Contract("admitted RenderDocument could not be parsed"))?;
+    let canvas = object_member(root.as_object(), "canvas")?;
+    preflight_canvas_surface(canvas, dpi).map(|_| ())
 }
 
 fn render_png_internal(
     document: &AdmittedRenderDocument,
     prepared_resources: Option<&PreparedResourceManifest>,
     dpi: u32,
+    control: &dyn EngineExecutionControl,
 ) -> Result<EnginePngOutput, EnginePngError> {
     let root: Value = serde_json::from_str(document.canonical_document())
         .map_err(|_| EnginePngError::Contract("admitted RenderDocument could not be parsed"))?;
@@ -500,32 +808,18 @@ fn render_png_internal(
     let background = color_member(canvas, "backgroundColor")?;
     let pixel = premultiply_straight_rgba8(background);
 
-    let width_pt = decimal_member(canvas, "widthPt")?;
-    let height_pt = decimal_member(canvas, "heightPt")?;
+    let surface = preflight_canvas_surface(canvas, dpi)?;
     let bleed = object_member(Some(canvas), "bleed")?;
     let bleed_top = decimal_member(bleed, "topPt")?;
-    let bleed_right = decimal_member(bleed, "rightPt")?;
-    let bleed_bottom = decimal_member(bleed, "bottomPt")?;
     let bleed_left = decimal_member(bleed, "leftPt")?;
-    let surface = preflight_surface(
-        SurfaceSpec {
-            width_pt: &width_pt,
-            height_pt: &height_pt,
-            bleed_pt: BleedPt {
-                top: &bleed_top,
-                right: &bleed_right,
-                bottom: &bleed_bottom,
-                left: &bleed_left,
-            },
-        },
-        dpi,
-    )?;
 
+    execution_checkpoint(control, EngineCheckpoint::Layout)?;
     let layout = match prepared_resources {
         Some(resources) => layout_definite_with_prepared_resources(document, resources),
         None => layout_definite_resource_free(document),
     }
     .map_err(|_| EnginePngError::Layout)?;
+    execution_checkpoint(control, EngineCheckpoint::Layout)?;
     if layout.entries().len() != document.occurrence_count()
         || layout.entries()[0].kind() != "canvas"
     {
@@ -560,6 +854,7 @@ fn render_png_internal(
         surface.height_px(),
         prepared_resources,
         &mut commands,
+        control,
     )?;
     if layout_cursor != layout.entries().len() {
         return Err(EnginePngError::Contract(
@@ -567,6 +862,7 @@ fn render_png_internal(
         ));
     }
 
+    execution_checkpoint(control, EngineCheckpoint::Rasterization)?;
     let raster_length =
         usize::try_from(surface.rgba8_bytes()).map_err(|_| EnginePngError::RasterAllocation)?;
     let mut pixels = Vec::new();
@@ -574,7 +870,10 @@ fn render_png_internal(
         .try_reserve_exact(raster_length)
         .map_err(|_| EnginePngError::RasterAllocation)?;
     pixels.resize(raster_length, 0);
-    for target in pixels.chunks_exact_mut(4) {
+    for (index, target) in pixels.chunks_exact_mut(4).enumerate() {
+        if index % 4096 == 0 {
+            execution_checkpoint(control, EngineCheckpoint::Rasterization)?;
+        }
         target.copy_from_slice(&pixel);
     }
     rasterize_commands(
@@ -582,11 +881,33 @@ fn render_png_internal(
         surface.width_px(),
         surface.height_px(),
         &commands,
+        control,
     )?;
-    unpremultiply_rgba8_surface(&mut pixels)?;
+    execution_checkpoint(control, EngineCheckpoint::Rasterization)?;
+    unpremultiply_rgba8_surface(&mut pixels, control)?;
+    execution_checkpoint(control, EngineCheckpoint::Encoding)?;
     let pixel_sha256 = raw_sha256_prefixed(&pixels);
-    let bytes = encode_straight_rgba8(surface.width_px(), surface.height_px(), dpi, &pixels)?;
+    let encode_control = EnginePngEncodeControl(control);
+    let bytes = encode_straight_rgba8_controlled(
+        surface.width_px(),
+        surface.height_px(),
+        dpi,
+        &pixels,
+        &encode_control,
+    )
+    .map_err(|error| match error {
+        OutputPngError::Interrupted(interruption) => EnginePngError::Interrupted {
+            interruption: match interruption {
+                PngEncodeInterruption::Cancelled => EngineInterruption::Cancelled,
+                PngEncodeInterruption::DeadlineExceeded => EngineInterruption::DeadlineExceeded,
+            },
+            checkpoint: EngineCheckpoint::Encoding,
+        },
+        other => EnginePngError::Output(other),
+    })?;
+    execution_checkpoint(control, EngineCheckpoint::Encoding)?;
     let content_sha256 = raw_sha256_prefixed(&bytes);
+    execution_checkpoint(control, EngineCheckpoint::OutputSeal)?;
 
     Ok(EnginePngOutput {
         width_px: surface.width_px(),
@@ -598,20 +919,69 @@ fn render_png_internal(
     })
 }
 
-fn require_scene_kinds(nodes: &[Value], prepared_images: bool) -> Result<(), EnginePngError> {
+fn execution_checkpoint(
+    control: &dyn EngineExecutionControl,
+    checkpoint: EngineCheckpoint,
+) -> Result<(), EnginePngError> {
+    control
+        .checkpoint(checkpoint)
+        .map_err(|interruption| EnginePngError::from((interruption, checkpoint)))
+}
+
+struct EnginePngEncodeControl<'control>(&'control dyn EngineExecutionControl);
+
+impl PngEncodeControl for EnginePngEncodeControl<'_> {
+    fn checkpoint(&self) -> Result<(), PngEncodeInterruption> {
+        self.0
+            .checkpoint(EngineCheckpoint::Encoding)
+            .map_err(|interruption| match interruption {
+                EngineInterruption::Cancelled => PngEncodeInterruption::Cancelled,
+                EngineInterruption::DeadlineExceeded => PngEncodeInterruption::DeadlineExceeded,
+            })
+    }
+}
+
+fn preflight_canvas_surface(
+    canvas: &Map<String, Value>,
+    dpi: u32,
+) -> Result<SurfaceDimensions, EnginePngError> {
+    let width_pt = decimal_member(canvas, "widthPt")?;
+    let height_pt = decimal_member(canvas, "heightPt")?;
+    let bleed = object_member(Some(canvas), "bleed")?;
+    let bleed_top = decimal_member(bleed, "topPt")?;
+    let bleed_right = decimal_member(bleed, "rightPt")?;
+    let bleed_bottom = decimal_member(bleed, "bottomPt")?;
+    let bleed_left = decimal_member(bleed, "leftPt")?;
+    Ok(preflight_surface(
+        SurfaceSpec {
+            width_pt: &width_pt,
+            height_pt: &height_pt,
+            bleed_pt: BleedPt {
+                top: &bleed_top,
+                right: &bleed_right,
+                bottom: &bleed_bottom,
+                left: &bleed_left,
+            },
+        },
+        dpi,
+    )?)
+}
+
+fn require_scene_kinds(nodes: &[Value], prepared_resources: bool) -> Result<(), EnginePngError> {
     for node in nodes {
         let node = node
             .as_object()
             .ok_or(EnginePngError::Contract("Scene child is not an object"))?;
         match text_member(node, "kind")? {
             "rect" => {}
-            "image" if prepared_images => {}
+            "image" if prepared_resources => {}
+            "text" if prepared_resources && cfg!(feature = "native-text-skia") => {}
             "compositionViewport" => {
                 let source = object_member(Some(node), "sourceCanvas")?;
-                require_scene_kinds(array_member(source, "children")?, prepared_images)?
+                require_scene_kinds(array_member(source, "children")?, prepared_resources)?
             }
             "group" | "frame" | "stack" | "grid" => {
-                require_scene_kinds(array_member(node, "children")?, prepared_images)?
+                require_scene_kinds(array_member(node, "children")?, prepared_resources)?
             }
             _ => {
                 return Err(EnginePngError::Unsupported(
@@ -637,8 +1007,10 @@ fn prepare_scene<'resource>(
     surface_height: u32,
     prepared_resources: Option<&'resource PreparedResourceManifest>,
     commands: &mut Vec<PaintCommand<'resource>>,
+    control: &dyn EngineExecutionControl,
 ) -> Result<(), EnginePngError> {
     for node in nodes {
+        execution_checkpoint(control, EngineCheckpoint::Rasterization)?;
         let node = node
             .as_object()
             .ok_or(EnginePngError::Contract("Scene child is not an object"))?;
@@ -693,6 +1065,27 @@ fn prepare_scene<'resource>(
                     commands.push(PaintCommand::Paint(PixelPaint::Image(paint)));
                 }
             }
+            #[cfg(feature = "native-text-skia")]
+            "text" => {
+                let resources = prepared_resources.ok_or(EnginePngError::Unsupported(
+                    EnginePngUnsupported::SceneStructure,
+                ))?;
+                if let Some(paint) = prepare_text_paint(
+                    node,
+                    layout,
+                    resources,
+                    draw_state.enabled(),
+                    active_clip,
+                    bleed_left,
+                    bleed_top,
+                    dpi,
+                    surface_width,
+                    surface_height,
+                    control,
+                )? {
+                    commands.push(PaintCommand::Paint(PixelPaint::Text(paint)));
+                }
+            }
             "compositionViewport" => {
                 let source = object_member(Some(node), "sourceCanvas")?;
                 let source_layout =
@@ -735,6 +1128,7 @@ fn prepare_scene<'resource>(
                     surface_height,
                     prepared_resources,
                     commands,
+                    control,
                 )?;
             }
             "group" => {
@@ -752,6 +1146,7 @@ fn prepare_scene<'resource>(
                     surface_height,
                     prepared_resources,
                     commands,
+                    control,
                 )?;
             }
             "frame" | "stack" | "grid" => {
@@ -782,6 +1177,7 @@ fn prepare_scene<'resource>(
                     surface_height,
                     prepared_resources,
                     commands,
+                    control,
                 )?;
             }
             _ => {
@@ -1099,6 +1495,226 @@ fn prepare_image_paint<'resource>(
         quarter_turn,
         straight_rgba8: source,
     }))
+}
+
+#[cfg(feature = "native-text-skia")]
+#[allow(clippy::too_many_arguments)]
+fn prepare_text_paint(
+    node: &Map<String, Value>,
+    layout: &DefiniteLayoutEntry,
+    prepared_resources: &PreparedResourceManifest,
+    draw_enabled: bool,
+    active_clip: PixelClip,
+    bleed_left: i128,
+    bleed_top: i128,
+    dpi: u32,
+    surface_width: u32,
+    surface_height: u32,
+    control: &dyn EngineExecutionControl,
+) -> Result<Option<PixelText>, EnginePngError> {
+    if text_member(node, "kind")? != "text" {
+        return Err(EnginePngError::Unsupported(
+            EnginePngUnsupported::SceneStructure,
+        ));
+    }
+    require_layout_entry(node, layout, "text", false)?;
+    if !supported_text_contract(node)? {
+        return Err(EnginePngError::Unsupported(EnginePngUnsupported::TextPaint));
+    }
+
+    let runs = array_member(node, "runs")?;
+    let run = runs[0]
+        .as_object()
+        .ok_or(EnginePngError::Contract("Text run is not an object"))?;
+    let occurrence_id = text_member(node, "occurrenceId")?;
+    let resource_id = text_member(run, "fontResourceId")?;
+    let Some(PreparedRenderResource::Font { font, .. }) = prepared_resources.get(resource_id)
+    else {
+        return Err(EnginePngError::Contract(
+            "prepared FONT resource identity diverged from the admitted scene",
+        ));
+    };
+    if font.resource_id() != resource_id {
+        return Err(EnginePngError::Contract(
+            "prepared FONT resource identity diverged from the admitted scene",
+        ));
+    }
+
+    let text = text_member(run, "text")?;
+    let mut scalars = text.chars();
+    let Some(scalar) = scalars.next() else {
+        return Err(EnginePngError::Unsupported(EnginePngUnsupported::TextPaint));
+    };
+    let codepoint = u32::from(scalar);
+    if scalars.next().is_some()
+        || !((u32::from(b'A')..=u32::from(b'Z')).contains(&codepoint)
+            || (u32::from(b'a')..=u32::from(b'z')).contains(&codepoint))
+    {
+        return Err(EnginePngError::Unsupported(EnginePngUnsupported::TextPaint));
+    }
+
+    let layout_box = layout.layout_box();
+    require_valid_layout_box(layout_box)?;
+    let right = layout_box.x() + layout_box.width();
+    let bottom = layout_box.y() + layout_box.height();
+    if !right.is_finite()
+        || !bottom.is_finite()
+        || right < layout_box.x()
+        || bottom < layout_box.y()
+    {
+        return Err(EnginePngError::Contract(
+            "Text layout box is not finite and monotonic",
+        ));
+    }
+    let device_left = exact_layout_device_edge(
+        layout_box.x(),
+        bleed_left,
+        dpi,
+        EnginePngUnsupported::NonPixelAlignedText,
+    )?;
+    let device_top = exact_layout_device_edge(
+        layout_box.y(),
+        bleed_top,
+        dpi,
+        EnginePngUnsupported::NonPixelAlignedText,
+    )?;
+    let device_right = exact_layout_device_edge(
+        right,
+        bleed_left,
+        dpi,
+        EnginePngUnsupported::NonPixelAlignedText,
+    )?;
+    let device_bottom = exact_layout_device_edge(
+        bottom,
+        bleed_top,
+        dpi,
+        EnginePngUnsupported::NonPixelAlignedText,
+    )?;
+    if device_left < 0
+        || device_top < 0
+        || device_right > i128::from(surface_width)
+        || device_bottom > i128::from(surface_height)
+        || device_right <= device_left
+        || device_bottom <= device_top
+    {
+        return Err(EnginePngError::Unsupported(EnginePngUnsupported::TextPaint));
+    }
+    let source_width =
+        u32::try_from(device_right - device_left).map_err(|_| EnginePngError::RasterAllocation)?;
+    let source_height =
+        u32::try_from(device_bottom - device_top).map_err(|_| EnginePngError::RasterAllocation)?;
+    let source_clip = PixelClip {
+        left: u32::try_from(device_left).map_err(|_| EnginePngError::RasterAllocation)?,
+        top: u32::try_from(device_top).map_err(|_| EnginePngError::RasterAllocation)?,
+        right: u32::try_from(device_right).map_err(|_| EnginePngError::RasterAllocation)?,
+        bottom: u32::try_from(device_bottom).map_err(|_| EnginePngError::RasterAllocation)?,
+    };
+    let destination = active_clip.intersect(source_clip);
+
+    let font_size_pt = number_member(run, "fontSizePt")?;
+    let font_size_px = (font_size_pt * f64::from(dpi) / 72.0) as f32;
+    if !font_size_px.is_finite() || font_size_px <= 0.0 {
+        return Err(EnginePngError::Contract(
+            "Text device typography is invalid",
+        ));
+    }
+    let color = color_member(run, "color")?;
+    execution_checkpoint(control, EngineCheckpoint::Shaping)?;
+    execution_checkpoint(control, EngineCheckpoint::Rasterization)?;
+    let premultiplied_rgba8 = native_text::rasterize(native_text::NativeTextRequest {
+        font_bytes: font.exact_bytes(),
+        codepoint,
+        font_size_px,
+        color,
+        width: source_width,
+        height: source_height,
+    })
+    .map_err(|error| match error {
+        native_text::NativeTextError::GlyphMissing => EnginePngError::FontGlyphMissing {
+            occurrence_id: occurrence_id.into(),
+            resource_id: resource_id.into(),
+        },
+        native_text::NativeTextError::InvalidArgument
+        | native_text::NativeTextError::FontDecode
+        | native_text::NativeTextError::Shaping => EnginePngError::TextShaping {
+            occurrence_id: occurrence_id.into(),
+            resource_id: resource_id.into(),
+        },
+        native_text::NativeTextError::Raster => EnginePngError::TextRaster {
+            occurrence_id: occurrence_id.into(),
+            resource_id: resource_id.into(),
+        },
+    })?;
+    execution_checkpoint(control, EngineCheckpoint::Rasterization)?;
+    execution_checkpoint(control, EngineCheckpoint::Shaping)?;
+    if !draw_enabled
+        || destination.left == destination.right
+        || destination.top == destination.bottom
+    {
+        return Ok(None);
+    }
+    let source_x_offset = destination.left - source_clip.left;
+    let source_y_offset = destination.top - source_clip.top;
+    Ok(Some(PixelText {
+        left: destination.left,
+        top: destination.top,
+        right: destination.right,
+        bottom: destination.bottom,
+        source_x_offset,
+        source_y_offset,
+        source_width,
+        source_height,
+        premultiplied_rgba8,
+    }))
+}
+
+#[cfg(feature = "native-text-skia")]
+fn supported_text_contract(node: &Map<String, Value>) -> Result<bool, EnginePngError> {
+    if node.contains_key("maxLines")
+        || node.contains_key("minScale")
+        || node.contains_key("stroke")
+        || !identity_transform(node)?
+        || text_member(node, "writingMode")? != "HORIZONTAL_TB"
+        || text_member(node, "horizontalAlign")? != "LEFT"
+        || text_member(node, "verticalAlign")? != "TOP"
+        || text_member(node, "lineBreak")? != "WORD"
+        || text_member(node, "overflow")? != "CLIP"
+        || text_member(node, "fitMode")? != "NONE"
+    {
+        return Ok(false);
+    }
+    let padding = object_member(Some(node), "padding")?;
+    for member in ["topPt", "rightPt", "bottomPt", "leftPt"] {
+        if !number_equals(padding, member, 0.0)? {
+            return Ok(false);
+        }
+    }
+    let line_height = object_member(Some(node), "lineHeight")?;
+    if !has_exact_members(line_height, &["type", "factor"])
+        || text_member(line_height, "type")? != "FACTOR"
+        || !number_equals(line_height, "factor", 1.2)?
+    {
+        return Ok(false);
+    }
+    let runs = array_member(node, "runs")?;
+    if runs.len() != 1 {
+        return Ok(false);
+    }
+    let Some(run) = runs[0].as_object() else {
+        return Ok(false);
+    };
+    Ok(has_exact_members(
+        run,
+        &[
+            "text",
+            "fontResourceId",
+            "fontSizePt",
+            "color",
+            "letterSpacingPt",
+            "decoration",
+        ],
+    ) && text_member(run, "decoration")? == "NONE"
+        && number_equals(run, "letterSpacingPt", 0.0)?)
 }
 
 fn prepare_group(
@@ -1510,6 +2126,7 @@ fn rasterize_commands(
     surface_width: u32,
     surface_height: u32,
     commands: &[PaintCommand<'_>],
+    control: &dyn EngineExecutionControl,
 ) -> Result<(), EnginePngError> {
     let row_bytes = usize::try_from(surface_width)
         .ok()
@@ -1540,6 +2157,7 @@ fn rasterize_commands(
     layer_dirty.resize(maximum_depth, None);
 
     for row_index in 0..surface_height {
+        execution_checkpoint(control, EngineCheckpoint::Rasterization)?;
         let row_start = usize::try_from(row_index)
             .ok()
             .and_then(|row| row.checked_mul(row_bytes))
@@ -1550,7 +2168,7 @@ fn rasterize_commands(
         let mut active_depth = 0_usize;
 
         for command in commands {
-            match *command {
+            match command {
                 PaintCommand::BeginOpacity => {
                     if active_depth >= maximum_depth {
                         return Err(EnginePngError::Contract(
@@ -1613,7 +2231,7 @@ fn rasterize_commands(
                         let source = layer_pixels
                             .get(source_start..source_start + row_bytes)
                             .ok_or(EnginePngError::RasterAllocation)?;
-                        composite_opacity_row(surface_row, source, range, opacity)?;
+                        composite_opacity_row(surface_row, source, range, *opacity)?;
                     } else {
                         let destination_index = active_depth - 1;
                         let destination_start = destination_index
@@ -1627,7 +2245,7 @@ fn rasterize_commands(
                         let source = source_layers
                             .get(..row_bytes)
                             .ok_or(EnginePngError::RasterAllocation)?;
-                        composite_opacity_row(destination, source, range, opacity)?;
+                        composite_opacity_row(destination, source, range, *opacity)?;
                         layer_dirty[destination_index] =
                             union_dirty_range(layer_dirty[destination_index], range);
                     }
@@ -1684,12 +2302,78 @@ fn paint_command_row(
     row: &mut [u8],
     surface_width: u32,
     row_index: u32,
-    paint: PixelPaint<'_>,
+    paint: &PixelPaint<'_>,
 ) -> Result<Option<(u32, u32)>, EnginePngError> {
     match paint {
-        PixelPaint::Rect(rect) => paint_rect_row(row, row_index, rect),
-        PixelPaint::Image(image) => paint_image_row(row, surface_width, row_index, image),
+        PixelPaint::Rect(rect) => paint_rect_row(row, row_index, *rect),
+        PixelPaint::Image(image) => paint_image_row(row, surface_width, row_index, *image),
+        #[cfg(feature = "native-text-skia")]
+        PixelPaint::Text(text) => paint_text_row(row, row_index, text),
     }
+}
+
+#[cfg(feature = "native-text-skia")]
+fn paint_text_row(
+    row: &mut [u8],
+    row_index: u32,
+    text: &PixelText,
+) -> Result<Option<(u32, u32)>, EnginePngError> {
+    if row_index < text.top || row_index >= text.bottom || text.left >= text.right {
+        return Ok(None);
+    }
+    let source_y = text
+        .source_y_offset
+        .checked_add(row_index - text.top)
+        .ok_or(EnginePngError::RasterAllocation)?;
+    if source_y >= text.source_height {
+        return Err(EnginePngError::Contract(
+            "Text source row exceeds prepared pixels",
+        ));
+    }
+    let copied_width = text.right - text.left;
+    if text
+        .source_x_offset
+        .checked_add(copied_width)
+        .is_none_or(|right| right > text.source_width)
+    {
+        return Err(EnginePngError::Contract(
+            "Text source columns exceed prepared pixels",
+        ));
+    }
+    let source_start = (u64::from(source_y) * u64::from(text.source_width)
+        + u64::from(text.source_x_offset))
+    .checked_mul(4)
+    .and_then(|value| usize::try_from(value).ok())
+    .ok_or(EnginePngError::RasterAllocation)?;
+    let source_end = source_start
+        .checked_add(
+            usize::try_from(copied_width)
+                .ok()
+                .and_then(|width| width.checked_mul(4))
+                .ok_or(EnginePngError::RasterAllocation)?,
+        )
+        .ok_or(EnginePngError::RasterAllocation)?;
+    let destination_start = usize::try_from(text.left)
+        .ok()
+        .and_then(|value| value.checked_mul(4))
+        .ok_or(EnginePngError::RasterAllocation)?;
+    let destination_end = usize::try_from(text.right)
+        .ok()
+        .and_then(|value| value.checked_mul(4))
+        .ok_or(EnginePngError::RasterAllocation)?;
+    let source = text
+        .premultiplied_rgba8
+        .get(source_start..source_end)
+        .ok_or(EnginePngError::RasterAllocation)?;
+    let destination = row
+        .get_mut(destination_start..destination_end)
+        .ok_or(EnginePngError::RasterAllocation)?;
+    for (source_pixel, destination_pixel) in
+        source.chunks_exact(4).zip(destination.chunks_exact_mut(4))
+    {
+        source_over_premultiplied_rgba8(destination_pixel, source_pixel)?;
+    }
+    Ok(Some((text.left, text.right)))
 }
 
 fn paint_rect_row(
@@ -1948,13 +2632,19 @@ fn source_over_premultiplied_rgba8(
     Ok(())
 }
 
-fn unpremultiply_rgba8_surface(pixels: &mut [u8]) -> Result<(), EnginePngError> {
+fn unpremultiply_rgba8_surface(
+    pixels: &mut [u8],
+    control: &dyn EngineExecutionControl,
+) -> Result<(), EnginePngError> {
     if pixels.len() % 4 != 0 {
         return Err(EnginePngError::Contract(
             "Raster surface length is not RGBA8 aligned",
         ));
     }
-    for pixel in pixels.chunks_exact_mut(4) {
+    for (index, pixel) in pixels.chunks_exact_mut(4).enumerate() {
+        if index % 4096 == 0 {
+            execution_checkpoint(control, EngineCheckpoint::Rasterization)?;
+        }
         let alpha = pixel[3];
         if alpha == 0 {
             pixel.copy_from_slice(&[0, 0, 0, 0]);

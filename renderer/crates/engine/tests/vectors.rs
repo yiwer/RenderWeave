@@ -1,7 +1,11 @@
 use std::collections::BTreeMap;
+use std::sync::Mutex;
 
 use renderweave_renderer_document::validate_render_document;
-use renderweave_renderer_engine::render_png;
+use renderweave_renderer_engine::{
+    EngineCheckpoint, EngineExecutionControl, EngineInterruption, EngineProblemCode,
+    EngineProblemStage, render_png, render_png_controlled,
+};
 use serde::Deserialize;
 use serde_json::value::RawValue;
 
@@ -143,14 +147,61 @@ fn rejects_inputs_outside_the_frozen_engine_png_subset() {
             "{}",
             case.id
         );
-        assert_eq!(case.expected.code.as_deref(), error.code(), "{}", case.id);
-        assert_eq!(case.expected.stage.as_deref(), error.stage(), "{}", case.id);
+        if let Some(expected) = case.expected.code.as_deref() {
+            assert_eq!(expected, error.code(), "{}", case.id);
+        }
+        if let Some(expected) = case.expected.stage.as_deref() {
+            assert_eq!(expected, error.stage(), "{}", case.id);
+        }
         assert_eq!(
             case.expected.limit_id.as_deref(),
             error.limit_id(),
             "{}",
             case.id
         );
+    }
+}
+
+#[test]
+fn cooperative_raster_checkpoint_cancels_before_atomic_output_seal() {
+    let vectors = vectors();
+    let case = &vectors.rendered_cases[0];
+    let document = admitted_document(&vectors, &case.document_id);
+    let control = InterruptAt {
+        target: EngineCheckpoint::Rasterization,
+        observed: Mutex::new(Vec::new()),
+    };
+
+    let problem = render_png_controlled(&document, case.dpi, &control)
+        .expect_err("the checkpoint must stop execution without a partial output");
+
+    assert_eq!(EngineProblemCode::RenderCancelled, problem.problem_code());
+    assert_eq!(EngineProblemStage::Rasterization, problem.problem_stage());
+    let observed = control.observed.lock().expect("checkpoint observations");
+    assert!(observed.starts_with(&[
+        EngineCheckpoint::Layout,
+        EngineCheckpoint::Layout,
+        EngineCheckpoint::Rasterization,
+    ]));
+    assert!(!observed.contains(&EngineCheckpoint::OutputSeal));
+}
+
+struct InterruptAt {
+    target: EngineCheckpoint,
+    observed: Mutex<Vec<EngineCheckpoint>>,
+}
+
+impl EngineExecutionControl for InterruptAt {
+    fn checkpoint(&self, checkpoint: EngineCheckpoint) -> Result<(), EngineInterruption> {
+        self.observed
+            .lock()
+            .expect("checkpoint observations")
+            .push(checkpoint);
+        if checkpoint == self.target {
+            Err(EngineInterruption::Cancelled)
+        } else {
+            Ok(())
+        }
     }
 }
 

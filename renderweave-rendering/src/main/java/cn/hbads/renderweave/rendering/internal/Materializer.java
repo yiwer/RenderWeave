@@ -87,6 +87,17 @@ final class Materializer {
     ) {
     }
 
+    record DiagnosticProvenance(String bindingId, String definitionId) {
+        DiagnosticProvenance {
+            if (bindingId == null || bindingId.isBlank()) {
+                throw new IllegalArgumentException("bindingId must not be blank");
+            }
+            if (definitionId != null && definitionId.isBlank()) {
+                throw new IllegalArgumentException("definitionId must not be blank");
+            }
+        }
+    }
+
     record ResourceEntry(
             String resourceId,
             String kind,
@@ -100,8 +111,29 @@ final class Materializer {
             String contentVersion,
             OccurrencePath occurrencePath,
             ConsumerPropertyRef consumerPropertyRef,
-            cn.hbads.renderweave.asset.api.AssetAcceptanceAuthority.TechnicalDescriptor technicalDescriptor
+            cn.hbads.renderweave.asset.api.AssetAcceptanceAuthority.TechnicalDescriptor technicalDescriptor,
+            DiagnosticProvenance diagnosticProvenance
     ) {
+        ResourceEntry(
+                String resourceId,
+                String kind,
+                String fetchUrl,
+                long leaseExpiresAtEpochSecond,
+                String sha256,
+                String mediaType,
+                long byteLength,
+                String acceptanceProfileId,
+                String assetId,
+                String contentVersion,
+                OccurrencePath occurrencePath,
+                ConsumerPropertyRef consumerPropertyRef,
+                cn.hbads.renderweave.asset.api.AssetAcceptanceAuthority.TechnicalDescriptor technicalDescriptor
+        ) {
+            this(resourceId, kind, fetchUrl, leaseExpiresAtEpochSecond, sha256, mediaType,
+                    byteLength, acceptanceProfileId, assetId, contentVersion, occurrencePath,
+                    consumerPropertyRef, technicalDescriptor, null);
+        }
+
         ResourceEntry(
                 String resourceId,
                 String kind,
@@ -121,7 +153,7 @@ final class Materializer {
                     byteLength, acceptanceProfileId, assetId, contentVersion,
                     OccurrencePath.testing(testPath, "image"),
                     ConsumerPropertyRef.root(consumerPropertyRef),
-                    technicalDescriptor);
+                    technicalDescriptor, null);
         }
     }
 
@@ -387,7 +419,8 @@ final class Materializer {
         if (overlay instanceof OverlayFailed overlayFailed) {
             return overlayFailed.failure();
         }
-        var evaluatedNode = ((Overlaid) overlay).node();
+        var overlaid = (Overlaid) overlay;
+        var evaluatedNode = overlaid.node();
         if (evaluatedNode.members().get("render") instanceof Bool render && !render.value()) {
             return null;
         }
@@ -402,7 +435,8 @@ final class Materializer {
                     evaluatedNode, snapshot, scope, output);
             default -> materializeNode(
                     evaluatedNode, snapshot, scope,
-                    occurrencePath(node, kind, scope), output, kind);
+                    occurrencePath(node, kind, scope), output, kind,
+                    overlaid.diagnosticProvenance());
         };
     }
 
@@ -911,12 +945,13 @@ final class Materializer {
 
     private MaterializationOutcome materializeNode(
             ObjectNode node, TemplateSnapshot snapshot, InvocationScope scope,
-            OccurrencePath path, List<MaterializedNode> output, String kind) {
+            OccurrencePath path, List<MaterializedNode> output, String kind,
+            Map<ConsumerPropertyRef, DiagnosticProvenance> diagnosticProvenance) {
         var capacityFailure = reserveMaterializedNode();
         if (capacityFailure != null) {
             return capacityFailure;
         }
-        var resolvedMembers = resolveAssetsIn(node, path);
+        var resolvedMembers = resolveAssetsIn(node, path, diagnosticProvenance);
         if (resolvedMembers instanceof MaterializationFailed resolveFailure) {
             return resolveFailure;
         }
@@ -1002,7 +1037,10 @@ final class Materializer {
     private sealed interface OverlayOutcome permits Overlaid, OverlayFailed {
     }
 
-    private record Overlaid(ObjectNode node) implements OverlayOutcome {
+    private record Overlaid(
+            ObjectNode node,
+            Map<ConsumerPropertyRef, DiagnosticProvenance> diagnosticProvenance
+    ) implements OverlayOutcome {
     }
 
     private record OverlayFailed(MaterializationFailed failure) implements OverlayOutcome {
@@ -1012,9 +1050,10 @@ final class Materializer {
             ObjectNode node, TemplateSnapshot snapshot, InvocationScope scope) {
         var bindings = node.members().get("bindings");
         if (!(bindings instanceof ArrayNode bindingList) || bindingList.items().isEmpty()) {
-            return new Overlaid(node);
+            return new Overlaid(node, Map.of());
         }
         var members = new LinkedHashMap<>(node.members());
+        var provenanceByProperty = new HashMap<ConsumerPropertyRef, DiagnosticProvenance>();
         for (var binding : bindingList.items()) {
             stageControl.checkpoint();
             if (!(binding instanceof ObjectNode bindingObject)) {
@@ -1041,6 +1080,13 @@ final class Materializer {
                 return new OverlayFailed(failed(
                         EvaluationStage.MATERIALIZATION, ProblemCode.EVALUATION_FAILED, null));
             }
+            var target = consumerPropertyRef(ref);
+            var provenance = diagnosticProvenance(bindingObject, sourceWire);
+            if (target == null || provenance == null
+                    || provenanceByProperty.putIfAbsent(target, provenance) != null) {
+                return new OverlayFailed(failed(
+                        EvaluationStage.MATERIALIZATION, ProblemCode.EVALUATION_FAILED, null));
+            }
             var applied = applyOverlay(
                     members, rootProperty.value(), ref, toWireValue(evalValue.value()));
             if (applied == null) {
@@ -1054,7 +1100,67 @@ final class Materializer {
             return new OverlayFailed(failed(
                     EvaluationStage.MATERIALIZATION, ProblemCode.EVALUATION_FAILED, null));
         }
-        return new Overlaid(overlaid);
+        return new Overlaid(overlaid, Map.copyOf(provenanceByProperty));
+    }
+
+    private static DiagnosticProvenance diagnosticProvenance(
+            ObjectNode binding,
+            DesignNodeValue sourceWire
+    ) {
+        if (!(binding.members().get("bindingId") instanceof Text bindingId)) {
+            return null;
+        }
+        String definitionId = null;
+        if (sourceWire instanceof ObjectNode source
+                && source.members().get("kind") instanceof Text kind
+                && "definition".equals(kind.value())) {
+            if (!(source.members().get("definitionId") instanceof Text definition)) {
+                return null;
+            }
+            definitionId = definition.value();
+        }
+        return new DiagnosticProvenance(bindingId.value(), definitionId);
+    }
+
+    private static ConsumerPropertyRef consumerPropertyRef(ObjectNode targetRef) {
+        if (!(targetRef.members().get("rootPropertyId") instanceof Text root)
+                || !(targetRef.members().get("selectors") instanceof ArrayNode selectors)) {
+            return null;
+        }
+        var result = new ArrayList<ConsumerPropertyRef.Selector>(selectors.items().size());
+        for (var value : selectors.items()) {
+            if (!(value instanceof ObjectNode selector)
+                    || !(selector.members().get("kind") instanceof Text kind)) {
+                return null;
+            }
+            switch (kind.value()) {
+                case "member" -> {
+                    if (!(selector.members().get("name") instanceof Text name)) {
+                        return null;
+                    }
+                    result.add(new ConsumerPropertyRef.MemberSelector(name.value()));
+                }
+                case "index" -> {
+                    if (!(selector.members().get("index") instanceof NumberToken index)) {
+                        return null;
+                    }
+                    try {
+                        result.add(new ConsumerPropertyRef.IndexSelector(
+                                new java.math.BigDecimal(index.rawToken()).intValueExact()));
+                    } catch (NumberFormatException | ArithmeticException invalid) {
+                        return null;
+                    }
+                }
+                default -> {
+                    return null;
+                }
+            }
+        }
+        try {
+            return ConsumerPropertyRef.of(root.value(), result);
+        } catch (IllegalArgumentException invalid) {
+            return null;
+        }
     }
 
     private LinkedHashMap<String, DesignNodeValue> applyOverlay(
@@ -1103,7 +1209,7 @@ final class Materializer {
         }
         if ("index".equals(selectorKind.value())) {
             if (!(current instanceof ArrayNode array)
-                    || !(selector.members().get("value") instanceof NumberToken indexToken)) {
+                    || !(selector.members().get("index") instanceof NumberToken indexToken)) {
                 return null;
             }
             var position = new java.math.BigDecimal(indexToken.rawToken()).intValueExact();
@@ -1194,7 +1300,11 @@ final class Materializer {
     private record ResolvedMembers(ObjectNode members) implements AssetResolutionStep {
     }
 
-    private AssetResolutionStep resolveAssetsIn(ObjectNode members, OccurrencePath path) {
+    private AssetResolutionStep resolveAssetsIn(
+            ObjectNode members,
+            OccurrencePath path,
+            Map<ConsumerPropertyRef, DiagnosticProvenance> diagnosticProvenance
+    ) {
         stageControl.checkpoint();
         var updated = new LinkedHashMap<String, DesignNodeValue>();
         for (var entry : members.members().entrySet()) {
@@ -1205,7 +1315,7 @@ final class Materializer {
                 continue;
             }
             var step = resolveValueAssets(entry.getKey(), entry.getValue(), path,
-                    ConsumerPropertyCursor.root(entry.getKey()));
+                    ConsumerPropertyCursor.root(entry.getKey()), diagnosticProvenance);
             if (step instanceof MaterializationFailed failure) {
                 return failure;
             }
@@ -1258,13 +1368,20 @@ final class Materializer {
             String memberName,
             DesignNodeValue value,
             OccurrencePath path,
-            ConsumerPropertyCursor consumerProperty
+            ConsumerPropertyCursor consumerProperty,
+            Map<ConsumerPropertyRef, DiagnosticProvenance> diagnosticProvenance
     ) {
         stageControl.checkpoint();
         if (value instanceof ObjectNode object) {
             if (isAssetRefShape(object)
                     && ("imageRef".equals(memberName) || "fontRef".equals(memberName))) {
-                return resolveAtom(memberName, consumerProperty.close(), object, path);
+                var closedProperty = consumerProperty.close();
+                return resolveAtom(
+                        memberName,
+                        closedProperty,
+                        object,
+                        path,
+                        diagnosticProvenanceFor(closedProperty, diagnosticProvenance));
             }
             var updated = new LinkedHashMap<String, DesignNodeValue>();
             for (var entry : object.members().entrySet()) {
@@ -1273,7 +1390,8 @@ final class Materializer {
                         entry.getKey(),
                         entry.getValue(),
                         path,
-                        consumerProperty.member(entry.getKey()));
+                        consumerProperty.member(entry.getKey()),
+                        diagnosticProvenance);
                 if (step instanceof MaterializationFailed failure) {
                     return failure;
                 }
@@ -1289,7 +1407,8 @@ final class Materializer {
                         memberName,
                         array.items().get(index),
                         path,
-                        consumerProperty.index(index));
+                        consumerProperty.index(index),
+                        diagnosticProvenance);
                 if (step instanceof MaterializationFailed failure) {
                     return failure;
                 }
@@ -1300,11 +1419,33 @@ final class Materializer {
         return new ResolvedValue(value);
     }
 
+    private static DiagnosticProvenance diagnosticProvenanceFor(
+            ConsumerPropertyRef consumer,
+            Map<ConsumerPropertyRef, DiagnosticProvenance> provenanceByProperty
+    ) {
+        DiagnosticProvenance matched = null;
+        for (var entry : provenanceByProperty.entrySet()) {
+            var target = entry.getKey();
+            if (!target.rootPropertyId().equals(consumer.rootPropertyId())
+                    || target.selectors().size() > consumer.selectors().size()
+                    || !consumer.selectors().subList(0, target.selectors().size())
+                    .equals(target.selectors())) {
+                continue;
+            }
+            if (matched != null) {
+                throw new IllegalStateException("overlapping diagnostic Binding provenance");
+            }
+            matched = entry.getValue();
+        }
+        return matched;
+    }
+
     private ValueStep resolveAtom(
             String memberName,
             ConsumerPropertyRef consumerPropertyRef,
             ObjectNode atom,
-            OccurrencePath path
+            OccurrencePath path,
+            DiagnosticProvenance diagnosticProvenance
     ) {
         stageControl.checkpoint();
         var capacityFailure = capacityFailure(requestCapacity.reserve(
@@ -1400,7 +1541,8 @@ final class Materializer {
                 fact.contentVersion(),
                 path,
                 consumerPropertyRef,
-                fact.technicalDescriptor());
+                fact.technicalDescriptor(),
+                diagnosticProvenance);
         var manifestByteFailure = reserveResourceManifestBytes(Math.addExact(
                 resources.isEmpty() ? 0 : 1,
                 RenderResourceCanonicalizer.canonicalUtf8Length(resource)));

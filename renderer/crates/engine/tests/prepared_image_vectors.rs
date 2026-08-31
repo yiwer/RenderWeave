@@ -324,6 +324,7 @@ impl ResourceFetcher for FixtureFetcher {
         target: &AdmittedFetchTarget<'_>,
         _deadline_epoch_millis: i64,
         state: &mut RequestResourceFetchState,
+        _control: &dyn renderweave_renderer_resource::ResourcePreparationControl,
     ) -> Result<renderweave_renderer_resource::FetchedResource, ResourceFetchProblem> {
         state.verify_owned_body(
             target,

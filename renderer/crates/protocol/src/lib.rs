@@ -547,7 +547,7 @@ pub fn problem_bytes(
 ) -> Result<Vec<u8>, ProtocolError> {
     require_uuid_v4(request_id)?;
     require_problem_code(code)?;
-    serialize_problem(request_id, code, engine_stage, None, BTreeMap::new())
+    serialize_problem(request_id, code, engine_stage, None, None, BTreeMap::new())
 }
 
 pub fn resource_problem_bytes(
@@ -563,8 +563,57 @@ pub fn resource_problem_bytes(
         request_id,
         code,
         engine_stage,
+        None,
         Some(resource_id),
         BTreeMap::new(),
+    )
+}
+
+pub fn occurrence_resource_problem_bytes(
+    request_id: &str,
+    code: &str,
+    engine_stage: EngineStage,
+    occurrence_id: &str,
+    resource_id: &str,
+) -> Result<Vec<u8>, ProtocolError> {
+    require_uuid_v4(request_id)?;
+    require_problem_code(code)?;
+    require_occurrence_id(occurrence_id)?;
+    require_resource_id(resource_id)?;
+    serialize_problem(
+        request_id,
+        code,
+        engine_stage,
+        Some(occurrence_id),
+        Some(resource_id),
+        BTreeMap::new(),
+    )
+}
+
+pub fn limit_problem_bytes(
+    request_id: &str,
+    code: &str,
+    engine_stage: EngineStage,
+    limit_id: &str,
+) -> Result<Vec<u8>, ProtocolError> {
+    require_uuid_v4(request_id)?;
+    require_problem_code(code)?;
+    if !matches!(
+        code,
+        "RASTER_BUDGET_EXCEEDED" | "OUTPUT_BUDGET_EXCEEDED" | "RENDER_LAYOUT_TRACE_LIMIT_EXCEEDED"
+    ) || !is_canonical_limit_id(limit_id)
+    {
+        return Err(ProtocolError::Invalid(
+            "renderer capacity problem shape is invalid",
+        ));
+    }
+    serialize_problem(
+        request_id,
+        code,
+        engine_stage,
+        None,
+        None,
+        BTreeMap::from([("limitId".to_owned(), limit_id.to_owned())]),
     )
 }
 
@@ -587,6 +636,7 @@ pub fn resource_limit_problem_bytes(
         request_id,
         code,
         engine_stage,
+        None,
         Some(resource_id),
         BTreeMap::from([("limitId".to_owned(), limit_id.to_owned())]),
     )
@@ -596,6 +646,7 @@ fn serialize_problem(
     request_id: &str,
     code: &str,
     engine_stage: EngineStage,
+    occurrence_id: Option<&str>,
     resource_id: Option<&str>,
     parameters: BTreeMap<String, String>,
 ) -> Result<Vec<u8>, ProtocolError> {
@@ -604,7 +655,7 @@ fn serialize_problem(
         request_id: request_id.to_owned(),
         code: code.to_owned(),
         engine_stage,
-        occurrence_id: None,
+        occurrence_id: occurrence_id.map(str::to_owned),
         resource_id: resource_id.map(str::to_owned),
         parameters,
     })?)
@@ -853,6 +904,9 @@ fn require_problem_code(code: &str) -> Result<(), ProtocolError> {
         | "HASH_MISMATCH"
         | "MEDIA_MISMATCH"
         | "DECODE_FAILED"
+        | "FONT_GLYPH_MISSING"
+        | "RASTER_BUDGET_EXCEEDED"
+        | "OUTPUT_BUDGET_EXCEEDED"
         | "RENDER_LAYOUT_TRACE_LIMIT_EXCEEDED" => Ok(()),
         _ => Err(ProtocolError::Invalid(
             "problem code is not in the closed catalog",
@@ -879,6 +933,21 @@ fn require_resource_id(resource_id: &str) -> Result<(), ProtocolError> {
     {
         return Err(ProtocolError::Invalid(
             "problem resourceId is not a canonical RenderResource identity",
+        ));
+    }
+    Ok(())
+}
+
+fn require_occurrence_id(occurrence_id: &str) -> Result<(), ProtocolError> {
+    let bytes = occurrence_id.as_bytes();
+    if bytes.len() != 22
+        || !bytes.starts_with(b"rwocc_")
+        || !bytes[6..]
+            .iter()
+            .all(|byte| matches!(byte, b'0'..=b'9' | b'a'..=b'f'))
+    {
+        return Err(ProtocolError::Invalid(
+            "occurrence id must be rwocc_ plus 16 lowercase hex chars",
         ));
     }
     Ok(())
@@ -1554,6 +1623,59 @@ mod tests {
                 EngineStage::ResourcePreparation,
                 resource_id,
                 "assetsAndFetch.physicalFetchBytesIncludingRetries",
+            )
+            .is_err()
+        );
+    }
+
+    #[test]
+    fn glyph_and_output_capacity_problems_have_closed_canonical_shapes() {
+        let request_id = "123e4567-e89b-42d3-a456-426614174000";
+        let occurrence_id = "rwocc_0000000000000001";
+        let resource_id = "rwres_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+        assert_eq!(
+            occurrence_resource_problem_bytes(
+                request_id,
+                "FONT_GLYPH_MISSING",
+                EngineStage::Shaping,
+                occurrence_id,
+                resource_id,
+            )
+            .unwrap(),
+            format!(
+                "{{\"contractVersion\":\"renderweave-render-problem/1.0\",\"requestId\":\"{request_id}\",\"code\":\"FONT_GLYPH_MISSING\",\"engineStage\":\"SHAPING\",\"occurrenceId\":\"{occurrence_id}\",\"resourceId\":\"{resource_id}\",\"parameters\":{{}}}}"
+            )
+            .as_bytes()
+        );
+        assert_eq!(
+            limit_problem_bytes(
+                request_id,
+                "RASTER_BUDGET_EXCEEDED",
+                EngineStage::OutputPreflight,
+                "rendererSurfaceAndOutput.surfacePixels",
+            )
+            .unwrap(),
+            format!(
+                "{{\"contractVersion\":\"renderweave-render-problem/1.0\",\"requestId\":\"{request_id}\",\"code\":\"RASTER_BUDGET_EXCEEDED\",\"engineStage\":\"OUTPUT_PREFLIGHT\",\"parameters\":{{\"limitId\":\"rendererSurfaceAndOutput.surfacePixels\"}}}}"
+            )
+            .as_bytes()
+        );
+        assert!(
+            occurrence_resource_problem_bytes(
+                request_id,
+                "FONT_GLYPH_MISSING",
+                EngineStage::Shaping,
+                "rwocc_000000000000000A",
+                resource_id,
+            )
+            .is_err()
+        );
+        assert!(
+            limit_problem_bytes(
+                request_id,
+                "FETCH_FAILED",
+                EngineStage::OutputPreflight,
+                "rendererSurfaceAndOutput.surfacePixels",
             )
             .is_err()
         );

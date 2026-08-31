@@ -2522,7 +2522,7 @@ fn definite_node_role_with_prepared(
     occurrence: &str,
     prepared_resources: Option<&PreparedResourceManifest>,
 ) -> Result<NodeRole, DefiniteLayoutError> {
-    if kind == "image" && prepared_resources.is_some() {
+    if matches!(kind, "image" | "text") && prepared_resources.is_some() {
         Ok(NodeRole::Leaf)
     } else {
         definite_node_role(kind, occurrence)

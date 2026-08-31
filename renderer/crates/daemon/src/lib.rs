@@ -1,16 +1,20 @@
 //! Constant Linux UDS daemon for the RenderWeave renderer process seam.
 //!
-//! The process intentionally has no registered raster profile. A structurally admitted command is
-//! passed through command-bound resource lease coverage, static Layout Profile preflight, and the
-//! complete manifest-order resource preparation pipeline, then recorded in the in-memory registry
-//! with one stable terminal problem. A separate typed kernel can compose already-admitted inputs
-//! into a sealed PNG result for a future registered Profile; the current registry never calls it.
+//! The shipped default process intentionally has no registered raster profile and remains
+//! fail-closed after resource preparation. The exact Linux `native-text-skia` candidate feature
+//! routes its deliberately narrow Text subset through the same request registry into atomic PNG
+//! sealing for offline rehearsal; enabling that build feature does not register availability.
 
 use renderweave_renderer_document::AdmittedRenderDocument;
 #[cfg(any(unix, test))]
 use renderweave_renderer_document::{validate_render_document, validate_resource_lease_coverage};
-use renderweave_renderer_engine::{EnginePngError, render_png_with_prepared_resources};
+use renderweave_renderer_engine::{
+    EngineCheckpoint, EngineExecutionControl, EnginePngError, render_png_with_prepared_resources,
+    render_png_with_prepared_resources_controlled,
+};
 #[cfg(any(unix, test))]
+use renderweave_renderer_engine::{EngineInterruption, EngineProblemStage, preflight_png_output};
+#[cfg(all(any(unix, test), not(feature = "native-text-skia")))]
 use renderweave_renderer_layout::preflight_layout;
 use renderweave_renderer_protocol::{
     AdmittedCommand, Frame, FrameType, OutputSelection, ProtocolError, ResultOutputSelection,
@@ -22,6 +26,8 @@ use renderweave_renderer_protocol::{
     read_frame, resource_limit_problem_bytes, resource_problem_bytes, server_hello_bytes,
     validate_process_manifest, write_frame,
 };
+#[cfg(any(unix, test))]
+use renderweave_renderer_protocol::{limit_problem_bytes, occurrence_resource_problem_bytes};
 #[cfg(target_os = "linux")]
 use renderweave_renderer_resource::HttpsResourceFetcher;
 use renderweave_renderer_resource::{
@@ -31,7 +37,8 @@ use renderweave_renderer_resource::{
 use renderweave_renderer_resource::{FetchedResource, ResourceFetchProblem};
 #[cfg(any(unix, test))]
 use renderweave_renderer_resource::{
-    ManifestResourcePreparer, ResourceFetcher, ResourcePipelineProblem, ResourcePreparationProfile,
+    ManifestResourcePreparer, ResourceFetcher, ResourcePipelineProblem, ResourcePreparationControl,
+    ResourcePreparationInterruption, ResourcePreparationProfile,
 };
 #[cfg(any(unix, test))]
 use std::collections::BTreeMap;
@@ -43,12 +50,14 @@ use std::io;
 use std::path::{Path, PathBuf};
 #[cfg(any(unix, test))]
 use std::sync::Arc;
+#[cfg(any(unix, test))]
+use std::sync::atomic::{AtomicBool, Ordering};
 #[cfg(target_os = "linux")]
 use std::sync::{Mutex, mpsc};
 #[cfg(target_os = "linux")]
 use std::time::Duration;
 #[cfg(any(unix, test))]
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::time::{Instant, SystemTime, UNIX_EPOCH};
 
 #[cfg(any(unix, test))]
 const TERMINAL_REGISTRY_AND_OUTPUT_RETENTION_MILLIS: i64 = 300_000;
@@ -140,13 +149,31 @@ impl From<ProtocolError> for PreparedPngResultError {
 
 /// Composes already-admitted and fully prepared inputs into one immutable PNG result.
 ///
-/// This function does not establish Profile availability. The caller must first pass the process
-/// manifest/Profile gate; the currently shipped daemon manifest cannot do so and therefore the
-/// network request registry deliberately does not call this kernel.
+/// This function does not establish Profile availability. The default daemon build never invokes
+/// it; the exact candidate feature invokes it only after command, document, lease, target, layout,
+/// and resource preparation admission have succeeded.
 pub fn seal_prepared_png_result(
     command: &AdmittedCommand,
     document: &AdmittedRenderDocument,
     prepared_resources: &PreparedResourceManifest,
+) -> Result<SealedResult, PreparedPngResultError> {
+    seal_prepared_png_result_internal(command, document, prepared_resources, None)
+}
+
+pub fn seal_prepared_png_result_controlled(
+    command: &AdmittedCommand,
+    document: &AdmittedRenderDocument,
+    prepared_resources: &PreparedResourceManifest,
+    control: &dyn EngineExecutionControl,
+) -> Result<SealedResult, PreparedPngResultError> {
+    seal_prepared_png_result_internal(command, document, prepared_resources, Some(control))
+}
+
+fn seal_prepared_png_result_internal(
+    command: &AdmittedCommand,
+    document: &AdmittedRenderDocument,
+    prepared_resources: &PreparedResourceManifest,
+    control: Option<&dyn EngineExecutionControl>,
 ) -> Result<SealedResult, PreparedPngResultError> {
     if command.command.renderer_profile != "renderweave-renderer/1.0" {
         return Err(PreparedPngResultError::Contract(
@@ -172,7 +199,15 @@ pub fn seal_prepared_png_result(
         }
     };
 
-    let output = render_png_with_prepared_resources(document, prepared_resources, dpi)?;
+    let output = match control {
+        Some(control) => render_png_with_prepared_resources_controlled(
+            document,
+            prepared_resources,
+            dpi,
+            control,
+        )?,
+        None => render_png_with_prepared_resources(document, prepared_resources, dpi)?,
+    };
     if output.dpi() != dpi
         || output.output_profile() != "renderweave-output-png/1.0"
         || output.media_type() != "image/png"
@@ -187,6 +222,9 @@ pub fn seal_prepared_png_result(
         PreparedPngResultError::Contract("prepared PNG Engine byte length exceeds uint64")
     })?;
     let content_sha256 = output.content_sha256().to_owned();
+    if let Some(control) = control {
+        prepared_checkpoint(control, EngineCheckpoint::OutputSeal)?;
+    }
     let sealed = seal_result(ResultSealInput {
         request_id: &command.command.request_id,
         renderer_profile: &command.command.renderer_profile,
@@ -197,6 +235,9 @@ pub fn seal_prepared_png_result(
         output: ResultOutputSelection::Png { dpi },
         image_bytes: output.into_bytes(),
     })?;
+    if let Some(control) = control {
+        prepared_checkpoint(control, EngineCheckpoint::OutputSeal)?;
+    }
     if sealed.byte_length() != byte_length
         || format!("sha256:{}", sealed.content_sha256()) != content_sha256
     {
@@ -205,6 +246,18 @@ pub fn seal_prepared_png_result(
         ));
     }
     Ok(sealed)
+}
+
+fn prepared_checkpoint(
+    control: &dyn EngineExecutionControl,
+    checkpoint: EngineCheckpoint,
+) -> Result<(), PreparedPngResultError> {
+    control.checkpoint(checkpoint).map_err(|interruption| {
+        PreparedPngResultError::Engine(EnginePngError::Interrupted {
+            interruption,
+            checkpoint,
+        })
+    })
 }
 
 #[derive(Clone, Debug)]
@@ -640,8 +693,24 @@ impl RequestRegistry {
             )?));
         }
 
-        let terminal_response = self.executor.execute(&admitted, now_epoch_millis)?;
+        let control = RequestExecutionControl::fixed(
+            admitted.deadline_epoch_millis,
+            now_epoch_millis,
+            Arc::new(AtomicBool::new(false)),
+        );
+        let terminal_response = self
+            .executor
+            .execute(&admitted, now_epoch_millis, &control)?;
         let sealed_at_epoch_millis = clock().max(now_epoch_millis);
+        let terminal_response = if admitted.deadline_epoch_millis <= sealed_at_epoch_millis {
+            TerminalResponse::problem(problem_bytes(
+                &request_id,
+                "RENDER_DEADLINE_EXCEEDED",
+                EngineStage::OutputSeal,
+            )?)
+        } else {
+            terminal_response
+        };
         let retain_until_epoch_millis = admitted
             .deadline_epoch_millis
             .max(sealed_at_epoch_millis)
@@ -708,6 +777,83 @@ impl RequestRegistry {
 
 #[cfg(any(unix, test))]
 #[derive(Clone)]
+struct RequestExecutionControl {
+    deadline_epoch_millis: i64,
+    fixed_now_epoch_millis: Option<i64>,
+    monotonic_deadline: Option<Instant>,
+    cancellation: Arc<AtomicBool>,
+}
+
+#[cfg(any(unix, test))]
+impl RequestExecutionControl {
+    #[cfg(test)]
+    fn fixed(
+        deadline_epoch_millis: i64,
+        now_epoch_millis: i64,
+        cancellation: Arc<AtomicBool>,
+    ) -> Self {
+        Self {
+            deadline_epoch_millis,
+            fixed_now_epoch_millis: Some(now_epoch_millis),
+            monotonic_deadline: None,
+            cancellation,
+        }
+    }
+
+    #[cfg(target_os = "linux")]
+    fn live(deadline_epoch_millis: i64, cancellation: Arc<AtomicBool>) -> Self {
+        let converted_at = Instant::now();
+        let remaining_millis = deadline_epoch_millis.saturating_sub(crate::now_epoch_millis());
+        let monotonic_deadline = u64::try_from(remaining_millis)
+            .ok()
+            .and_then(|remaining| converted_at.checked_add(Duration::from_millis(remaining)))
+            .unwrap_or(converted_at);
+        Self {
+            deadline_epoch_millis,
+            fixed_now_epoch_millis: None,
+            monotonic_deadline: Some(monotonic_deadline),
+            cancellation,
+        }
+    }
+
+    fn interruption(&self) -> Option<EngineInterruption> {
+        if self.cancellation.load(Ordering::SeqCst) {
+            return Some(EngineInterruption::Cancelled);
+        }
+        let expired = match (self.fixed_now_epoch_millis, self.monotonic_deadline) {
+            (Some(now_epoch_millis), None) => self.deadline_epoch_millis <= now_epoch_millis,
+            (None, Some(monotonic_deadline)) => Instant::now() >= monotonic_deadline,
+            _ => true,
+        };
+        expired.then_some(EngineInterruption::DeadlineExceeded)
+    }
+}
+
+#[cfg(any(unix, test))]
+impl EngineExecutionControl for RequestExecutionControl {
+    fn checkpoint(&self, _checkpoint: EngineCheckpoint) -> Result<(), EngineInterruption> {
+        match self.interruption() {
+            Some(interruption) => Err(interruption),
+            None => Ok(()),
+        }
+    }
+}
+
+#[cfg(any(unix, test))]
+impl ResourcePreparationControl for RequestExecutionControl {
+    fn checkpoint(&self) -> Result<(), ResourcePreparationInterruption> {
+        match self.interruption() {
+            Some(EngineInterruption::Cancelled) => Err(ResourcePreparationInterruption::Cancelled),
+            Some(EngineInterruption::DeadlineExceeded) => {
+                Err(ResourcePreparationInterruption::DeadlineExceeded)
+            }
+            None => Ok(()),
+        }
+    }
+}
+
+#[cfg(any(unix, test))]
+#[derive(Clone)]
 struct RequestExecutor {
     fetch_target_policy: FetchTargetPolicy,
     resource_fetcher: Arc<dyn ResourceFetcher>,
@@ -719,80 +865,106 @@ impl RequestExecutor {
         &self,
         admitted: &AdmittedCommand,
         now_epoch_millis: i64,
+        control: &RequestExecutionControl,
     ) -> Result<TerminalResponse, ProtocolError> {
         let request_id = &admitted.command.request_id;
-        let problem_payload = if admitted.deadline_epoch_millis <= now_epoch_millis {
-            problem_bytes(
+        if admitted.deadline_epoch_millis <= now_epoch_millis {
+            return terminal_problem(problem_bytes(
                 request_id,
                 "RENDER_DEADLINE_EXCEEDED",
                 EngineStage::RequestControl,
-            )?
-        } else {
-            match validate_render_document(admitted.command.document.get()) {
-                Err(_) => problem_bytes(
+            ));
+        }
+        let document = match validate_render_document(admitted.command.document.get()) {
+            Ok(document) => document,
+            Err(_) => {
+                return terminal_problem(problem_bytes(
                     request_id,
                     "RENDER_INTERNAL_ERROR",
                     EngineStage::DocumentAdmission,
-                )?,
-                Ok(document) => {
-                    if let Err(violation) =
-                        validate_resource_lease_coverage(&document, admitted.deadline_epoch_millis)
-                    {
-                        resource_problem_bytes(
-                            request_id,
-                            "RESOURCE_LEASE_EXPIRED",
-                            EngineStage::CommandAdmission,
-                            violation.resource_id(),
-                        )?
-                    } else if document
-                        .resources()
-                        .iter()
-                        .any(|resource| self.fetch_target_policy.admit(resource).is_err())
-                    {
-                        // A sealed URL outside the exact deployment target policy is an internal
-                        // handoff violation. Never expose its URL, origin, path, token, or cause.
-                        problem_bytes(
-                            request_id,
-                            "RENDER_INTERNAL_ERROR",
-                            EngineStage::ResourcePreparation,
-                        )?
-                    } else if preflight_layout(&document).is_err() {
-                        // Static layout violations contradict the Java sealing authority. Until a
-                        // Profile is registered, keep that invariant breach inside document
-                        // admission and never expose internal property paths or a partial scene.
-                        problem_bytes(
-                            request_id,
-                            "RENDER_INTERNAL_ERROR",
-                            EngineStage::DocumentAdmission,
-                        )?
-                    } else {
-                        let preparer = ManifestResourcePreparer::new(
-                            &self.fetch_target_policy,
-                            self.resource_fetcher.as_ref(),
-                            ResourcePreparationProfile::RendererV1,
-                        );
-                        match preparer.prepare(
-                            document.resources(),
-                            admitted.deadline_epoch_millis,
-                            now_epoch_millis,
-                        ) {
-                            Err(problem) => resource_pipeline_problem_bytes(request_id, &problem)?,
-                            Ok(_prepared_manifest) => {
-                                // The exact process manifest has no registered raster profile.
-                                // Keep this as a stable fail-closed terminal until one is certified.
-                                problem_bytes(
-                                    request_id,
-                                    "RENDER_INTERNAL_ERROR",
-                                    EngineStage::CommandAdmission,
-                                )?
-                            }
-                        }
-                    }
-                }
+                ));
             }
         };
-        Ok(TerminalResponse::problem(problem_payload))
+        if let Err(violation) =
+            validate_resource_lease_coverage(&document, admitted.deadline_epoch_millis)
+        {
+            return terminal_problem(resource_problem_bytes(
+                request_id,
+                "RESOURCE_LEASE_EXPIRED",
+                EngineStage::CommandAdmission,
+                violation.resource_id(),
+            ));
+        }
+        let dpi = match &admitted.command.output {
+            OutputSelection::Png(output) => output.dpi,
+            OutputSelection::Jpeg(_) => {
+                return terminal_problem(problem_bytes(
+                    request_id,
+                    "RENDER_INTERNAL_ERROR",
+                    EngineStage::CommandAdmission,
+                ));
+            }
+        };
+        if let Err(error) = preflight_png_output(&document, dpi) {
+            return terminal_problem(engine_png_problem_bytes(request_id, &error));
+        }
+
+        let preparer = ManifestResourcePreparer::new(
+            &self.fetch_target_policy,
+            self.resource_fetcher.as_ref(),
+            ResourcePreparationProfile::RendererV1,
+        );
+        let prepared_manifest = match preparer.prepare_controlled(
+            document.resources(),
+            admitted.deadline_epoch_millis,
+            now_epoch_millis,
+            control,
+        ) {
+            Ok(prepared_manifest) => prepared_manifest,
+            Err(problem) => {
+                return terminal_problem(resource_pipeline_problem_bytes(request_id, &problem));
+            }
+        };
+        #[cfg(not(feature = "native-text-skia"))]
+        if preflight_layout(&document).is_err() {
+            return terminal_problem(problem_bytes(
+                request_id,
+                "RENDER_INTERNAL_ERROR",
+                EngineStage::DocumentAdmission,
+            ));
+        }
+
+        #[cfg(feature = "native-text-skia")]
+        {
+            match seal_prepared_png_result_controlled(
+                admitted,
+                &document,
+                &prepared_manifest,
+                control,
+            ) {
+                Ok(result) => Ok(TerminalResponse::sealed_result(result)),
+                Err(error) => terminal_problem(prepared_png_problem_bytes(request_id, &error)),
+            }
+        }
+        #[cfg(not(feature = "native-text-skia"))]
+        {
+            let _ = prepared_manifest;
+            // The shipped default build still has no registered raster profile. Only the exact
+            // T214 candidate feature executes the new path; availability remains fail-closed.
+            terminal_problem(problem_bytes(
+                request_id,
+                "RENDER_INTERNAL_ERROR",
+                EngineStage::CommandAdmission,
+            ))
+        }
     }
+}
+
+#[cfg(any(unix, test))]
+fn terminal_problem(
+    payload: Result<Vec<u8>, ProtocolError>,
+) -> Result<TerminalResponse, ProtocolError> {
+    Ok(TerminalResponse::problem(payload?))
 }
 
 #[cfg(target_os = "linux")]
@@ -800,7 +972,7 @@ struct ActiveRequest {
     request_id: String,
     command_digest: String,
     deadline_epoch_millis: i64,
-    cancelled: bool,
+    cancellation: Arc<AtomicBool>,
 }
 
 #[cfg(target_os = "linux")]
@@ -897,22 +1069,22 @@ impl ConcurrentRequestRegistry {
             let _ = response_sender.send(response);
             return Ok(());
         }
-        if let Some(active) = state.active.as_ref() {
-            if active.request_id == request_id {
-                if active.command_digest == admitted.command_digest
-                    && active.deadline_epoch_millis == admitted.deadline_epoch_millis
-                {
-                    return Ok(());
-                }
-                let response = TerminalResponse::problem(problem_bytes(
-                    &request_id,
-                    "RENDER_REQUEST_CONFLICT",
-                    EngineStage::RequestControl,
-                )?);
-                drop(state);
-                let _ = response_sender.send(response);
+        if let Some(active) = state.active.as_ref()
+            && active.request_id == request_id
+        {
+            if active.command_digest == admitted.command_digest
+                && active.deadline_epoch_millis == admitted.deadline_epoch_millis
+            {
                 return Ok(());
             }
+            let response = TerminalResponse::problem(problem_bytes(
+                &request_id,
+                "RENDER_REQUEST_CONFLICT",
+                EngineStage::RequestControl,
+            )?);
+            drop(state);
+            let _ = response_sender.send(response);
+            return Ok(());
         }
         if let Some(waiting) = state
             .waiting
@@ -933,19 +1105,18 @@ impl ConcurrentRequestRegistry {
             let _ = response_sender.send(response);
             return Ok(());
         }
-        if let Some(reservation) = state.busy_reservations.get(&request_id) {
-            if reservation.command_digest != admitted.command_digest
-                || reservation.deadline_epoch_millis != admitted.deadline_epoch_millis
-            {
-                let response = TerminalResponse::problem(problem_bytes(
-                    &request_id,
-                    "RENDER_REQUEST_CONFLICT",
-                    EngineStage::RequestControl,
-                )?);
-                drop(state);
-                let _ = response_sender.send(response);
-                return Ok(());
-            }
+        if let Some(reservation) = state.busy_reservations.get(&request_id)
+            && (reservation.command_digest != admitted.command_digest
+                || reservation.deadline_epoch_millis != admitted.deadline_epoch_millis)
+        {
+            let response = TerminalResponse::problem(problem_bytes(
+                &request_id,
+                "RENDER_REQUEST_CONFLICT",
+                EngineStage::RequestControl,
+            )?);
+            drop(state);
+            let _ = response_sender.send(response);
+            return Ok(());
         }
         if admitted.deadline_epoch_millis <= now_epoch_millis {
             state.busy_reservations.remove(&request_id);
@@ -1007,15 +1178,21 @@ impl ConcurrentRequestRegistry {
             return Ok(());
         }
         state.busy_reservations.remove(&request_id);
+        let cancellation = Arc::new(AtomicBool::new(false));
         state.active = Some(ActiveRequest {
             request_id: request_id.clone(),
             command_digest: admitted.command_digest.clone(),
             deadline_epoch_millis: admitted.deadline_epoch_millis,
-            cancelled: false,
+            cancellation: Arc::clone(&cancellation),
         });
         drop(state);
 
-        self.spawn_execution(admitted, now_epoch_millis, response_sender.clone());
+        self.spawn_execution(
+            admitted,
+            now_epoch_millis,
+            response_sender.clone(),
+            cancellation,
+        );
         Ok(())
     }
 
@@ -1024,13 +1201,16 @@ impl ConcurrentRequestRegistry {
         admitted: AdmittedCommand,
         started_at_epoch_millis: i64,
         response_sender: mpsc::Sender<TerminalResponse>,
+        cancellation: Arc<AtomicBool>,
     ) {
         let registry = self.clone();
         let request_id = admitted.command.request_id.clone();
         std::thread::spawn(move || {
+            let control =
+                RequestExecutionControl::live(admitted.deadline_epoch_millis, cancellation);
             let response = registry
                 .executor
-                .execute(&admitted, started_at_epoch_millis)
+                .execute(&admitted, started_at_epoch_millis, &control)
                 .unwrap_or_else(|_| {
                     TerminalResponse::problem(
                         problem_bytes(
@@ -1148,51 +1328,52 @@ impl ConcurrentRequestRegistry {
             return Ok(());
         }
 
-        if let Some(active) = state.active.as_ref() {
-            if active.request_id == request_id {
-                if active.command_digest != cancel.cancel.renderer_command_digest
-                    || active.deadline_epoch_millis != cancel.deadline_epoch_millis
-                {
-                    let response = TerminalResponse::problem(problem_bytes(
-                        &request_id,
-                        "RENDER_REQUEST_CONFLICT",
-                        EngineStage::RequestControl,
-                    )?);
-                    drop(state);
-                    let _ = response_sender.send(response);
-                    return Ok(());
-                }
-                let code = if cancel.deadline_epoch_millis <= now_epoch_millis {
-                    "RENDER_DEADLINE_EXCEEDED"
-                } else {
-                    "RENDER_CANCELLED"
-                };
+        if let Some(active) = state.active.as_ref()
+            && active.request_id == request_id
+        {
+            if active.command_digest != cancel.cancel.renderer_command_digest
+                || active.deadline_epoch_millis != cancel.deadline_epoch_millis
+            {
                 let response = TerminalResponse::problem(problem_bytes(
                     &request_id,
-                    code,
+                    "RENDER_REQUEST_CONFLICT",
                     EngineStage::RequestControl,
                 )?);
-                state
-                    .active
-                    .as_mut()
-                    .expect("active request must still exist")
-                    .cancelled = true;
-                state.entries.insert(
-                    request_id,
-                    RegistryEntry {
-                        command_digest: cancel.cancel.renderer_command_digest,
-                        deadline_epoch_millis: cancel.deadline_epoch_millis,
-                        retain_until_epoch_millis: cancel
-                            .deadline_epoch_millis
-                            .max(now_epoch_millis)
-                            .saturating_add(TERMINAL_REGISTRY_AND_OUTPUT_RETENTION_MILLIS),
-                        terminal_response: response.clone(),
-                    },
-                );
                 drop(state);
                 let _ = response_sender.send(response);
                 return Ok(());
             }
+            let code = if cancel.deadline_epoch_millis <= now_epoch_millis {
+                "RENDER_DEADLINE_EXCEEDED"
+            } else {
+                "RENDER_CANCELLED"
+            };
+            let response = TerminalResponse::problem(problem_bytes(
+                &request_id,
+                code,
+                EngineStage::RequestControl,
+            )?);
+            state
+                .active
+                .as_mut()
+                .expect("active request must still exist")
+                .cancellation
+                .store(true, Ordering::SeqCst);
+            state.entries.insert(
+                request_id,
+                RegistryEntry {
+                    command_digest: cancel.cancel.renderer_command_digest,
+                    deadline_epoch_millis: cancel.deadline_epoch_millis,
+                    retain_until_epoch_millis: cancel
+                        .deadline_epoch_millis
+                        .max(now_epoch_millis)
+                        .saturating_add(TERMINAL_REGISTRY_AND_OUTPUT_RETENTION_MILLIS),
+                    terminal_response: response.clone(),
+                },
+            );
+            drop(state);
+            let _ = response_sender.send(response);
+            return Ok(());
         }
 
         if let Some(position) = state
@@ -1288,7 +1469,7 @@ impl ConcurrentRequestRegistry {
         {
             return;
         }
-        let cancelled = active.cancelled;
+        let cancelled = active.cancellation.load(Ordering::SeqCst);
         state.active = None;
         let completed_response = if cancelled {
             None
@@ -1298,7 +1479,7 @@ impl ConcurrentRequestRegistry {
                     problem_bytes(
                         request_id,
                         "RENDER_DEADLINE_EXCEEDED",
-                        EngineStage::RequestControl,
+                        EngineStage::OutputSeal,
                     )
                     .expect("admitted request id must produce a canonical problem"),
                 )
@@ -1319,12 +1500,17 @@ impl ConcurrentRequestRegistry {
             Some(response)
         };
         let next = state.waiting.pop_front();
+        let next_cancellation = next.as_ref().map(|_| Arc::new(AtomicBool::new(false)));
         if let Some(next) = next.as_ref() {
             state.active = Some(ActiveRequest {
                 request_id: next.admitted.command.request_id.clone(),
                 command_digest: next.admitted.command_digest.clone(),
                 deadline_epoch_millis: next.admitted.deadline_epoch_millis,
-                cancelled: false,
+                cancellation: Arc::clone(
+                    next_cancellation
+                        .as_ref()
+                        .expect("next execution cancellation must exist"),
+                ),
             });
         }
         drop(state);
@@ -1336,6 +1522,7 @@ impl ConcurrentRequestRegistry {
                 next.admitted,
                 sealed_at_epoch_millis.max(next.accepted_at_epoch_millis),
                 next.response_sender,
+                next_cancellation.expect("next execution cancellation must exist"),
             );
         }
     }
@@ -1388,6 +1575,9 @@ fn resource_pipeline_problem_bytes(
     request_id: &str,
     problem: &ResourcePipelineProblem,
 ) -> Result<Vec<u8>, ProtocolError> {
+    if problem.code() == "RENDER_CANCELLED" {
+        return problem_bytes(request_id, problem.code(), EngineStage::RequestControl);
+    }
     if matches!(
         problem.code(),
         "RENDER_DEADLINE_EXCEEDED" | "RENDER_INTERNAL_ERROR"
@@ -1425,6 +1615,58 @@ fn resource_pipeline_problem_bytes(
     )
 }
 
+#[cfg(all(any(unix, test), feature = "native-text-skia"))]
+fn prepared_png_problem_bytes(
+    request_id: &str,
+    problem: &PreparedPngResultError,
+) -> Result<Vec<u8>, ProtocolError> {
+    match problem {
+        PreparedPngResultError::Contract(_) => problem_bytes(
+            request_id,
+            "RENDER_INTERNAL_ERROR",
+            EngineStage::CommandAdmission,
+        ),
+        PreparedPngResultError::Seal(_) => {
+            problem_bytes(request_id, "RENDER_INTERNAL_ERROR", EngineStage::OutputSeal)
+        }
+        PreparedPngResultError::Engine(error) => engine_png_problem_bytes(request_id, error),
+    }
+}
+
+#[cfg(any(unix, test))]
+fn engine_png_problem_bytes(
+    request_id: &str,
+    error: &EnginePngError,
+) -> Result<Vec<u8>, ProtocolError> {
+    let code = error.code();
+    let stage = protocol_engine_stage(error.problem_stage());
+    match (error.occurrence_id(), error.resource_id(), error.limit_id()) {
+        (Some(occurrence_id), Some(resource_id), None) => {
+            occurrence_resource_problem_bytes(request_id, code, stage, occurrence_id, resource_id)
+        }
+        (None, None, Some(limit_id)) => limit_problem_bytes(request_id, code, stage, limit_id),
+        (None, None, None) => problem_bytes(request_id, code, stage),
+        _ => problem_bytes(
+            request_id,
+            "RENDER_INTERNAL_ERROR",
+            EngineStage::DocumentAdmission,
+        ),
+    }
+}
+
+#[cfg(any(unix, test))]
+fn protocol_engine_stage(stage: EngineProblemStage) -> EngineStage {
+    match stage {
+        EngineProblemStage::DocumentAdmission => EngineStage::DocumentAdmission,
+        EngineProblemStage::OutputPreflight => EngineStage::OutputPreflight,
+        EngineProblemStage::Layout => EngineStage::Layout,
+        EngineProblemStage::Shaping => EngineStage::Shaping,
+        EngineProblemStage::Rasterization => EngineStage::Rasterization,
+        EngineProblemStage::Encoding => EngineStage::Encoding,
+        EngineProblemStage::OutputSeal => EngineStage::OutputSeal,
+    }
+}
+
 #[cfg(any(unix, test))]
 fn now_epoch_millis() -> i64 {
     match SystemTime::now().duration_since(UNIX_EPOCH) {
@@ -1436,6 +1678,7 @@ fn now_epoch_millis() -> i64 {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use renderweave_renderer_layout::preflight_layout;
     #[cfg(target_os = "linux")]
     use renderweave_renderer_protocol::client_hello_bytes;
     use renderweave_renderer_protocol::encode_frame;
@@ -1456,10 +1699,278 @@ mod tests {
     );
     const ASSET_FETCH_ORIGIN: &str = "https://render.internal.example";
     const ASSET_FETCH_ALLOWED_IPS: [&str; 1] = ["127.0.0.1"];
+    #[cfg(all(target_os = "linux", feature = "native-text-skia"))]
+    const PRODUCTION_TEXT_COMMAND: &[u8] =
+        include_bytes!("../../../production-text-command-v1.json");
+    #[cfg(all(target_os = "linux", feature = "native-text-skia"))]
+    const PRODUCTION_TEXT_FONT: &[u8] = include_bytes!(
+        "../../../../renderweave-asset/src/test/resources/asset-fixtures/minimal-ttf.ttf"
+    );
 
     fn only_frame(response: &TerminalResponse) -> &Frame {
         assert_eq!(response.frames().len(), 1);
         &response.frames()[0]
+    }
+
+    #[test]
+    fn output_surface_preflight_precedes_manifest_resource_fetch() {
+        let (document, bodies) = renderable_resource_fixture();
+        let mut document: Value = serde_json::from_str(&document).unwrap();
+        document["canvas"]["widthPt"] = serde_json::json!(1_000_000);
+        document["resources"][0]["fetchUrl"] =
+            serde_json::json!("https://forbidden.example/internal/render-assets/token");
+        let document = serde_json::to_string(&document).unwrap();
+        let observations = Arc::new(Mutex::new(Vec::new()));
+        let mut registry = request_registry_with(Arc::new(RecordingResourceFetcher {
+            observations: Arc::clone(&observations),
+            bodies,
+            fail_first: false,
+        }));
+
+        let response = registry
+            .handle(
+                Frame {
+                    frame_type: FrameType::Command,
+                    payload: command_with_document(&document).into_bytes(),
+                },
+                1_700_000_000_000,
+            )
+            .expect("output preflight rejection must be one terminal problem");
+
+        assert!(observations.lock().unwrap().is_empty());
+        let problem: Value = serde_json::from_slice(&only_frame(&response).payload).unwrap();
+        assert_eq!("OUTPUT_BUDGET_EXCEEDED", problem["code"]);
+        assert_eq!("OUTPUT_PREFLIGHT", problem["engineStage"]);
+        assert_eq!(
+            "rendererSurfaceAndOutput.surfaceEdgePixels",
+            problem["parameters"]["limitId"]
+        );
+    }
+
+    #[test]
+    fn cancellation_after_an_uninterruptible_fetch_discards_it_before_decode_or_layout() {
+        let (document, bodies) = renderable_resource_fixture();
+        let admitted = parse_command(command_with_document(&document).as_bytes()).unwrap();
+        let cancellation = Arc::new(std::sync::atomic::AtomicBool::new(false));
+        let executor = RequestExecutor {
+            fetch_target_policy: FetchTargetPolicy::new(
+                ASSET_FETCH_ORIGIN,
+                ASSET_FETCH_PATH_PREFIX,
+            )
+            .unwrap(),
+            resource_fetcher: Arc::new(CancellingResourceFetcher {
+                cancellation: Arc::clone(&cancellation),
+                bodies,
+            }),
+        };
+        let control = RequestExecutionControl::fixed(
+            admitted.deadline_epoch_millis,
+            1_900_000_000_000,
+            cancellation,
+        );
+
+        let response = executor
+            .execute(&admitted, 1_900_000_000_000, &control)
+            .expect("cancelled execution must return one terminal problem");
+
+        let problem: Value = serde_json::from_slice(&only_frame(&response).payload).unwrap();
+        assert_eq!("RENDER_CANCELLED", problem["code"]);
+        assert_eq!("REQUEST_CONTROL", problem["engineStage"]);
+    }
+
+    #[cfg(all(target_os = "linux", feature = "native-text-skia"))]
+    #[test]
+    fn production_text_command_runs_through_the_concurrent_process_executor() {
+        let payload = PRODUCTION_TEXT_COMMAND
+            .strip_suffix(b"\n")
+            .expect("shared Java command fixture must end in one LF")
+            .to_vec();
+        let resource_id = "rwres_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+        let observations = Arc::new(Mutex::new(Vec::new()));
+        let registry = concurrent_request_registry_with(Arc::new(RecordingResourceFetcher {
+            observations: Arc::clone(&observations),
+            bodies: BTreeMap::from([(resource_id.to_owned(), PRODUCTION_TEXT_FONT.to_vec())]),
+            fail_first: false,
+        }));
+        let (response_sender, response_receiver) = mpsc::channel();
+        let command = Frame {
+            frame_type: FrameType::Command,
+            payload,
+        };
+
+        registry
+            .handle(command.clone(), 1_900_000_000_000, &response_sender)
+            .expect("production process must accept the exact command frame");
+        let first = response_receiver
+            .recv_timeout(Duration::from_secs(30))
+            .expect("production process must seal one terminal");
+        registry
+            .handle(command, 1_900_000_000_001, &response_sender)
+            .expect("same command must replay its terminal");
+        let second = response_receiver
+            .recv_timeout(Duration::from_secs(30))
+            .expect("production process replay must return one terminal");
+
+        assert_eq!(vec![resource_id], *observations.lock().unwrap());
+        assert_eq!(2, first.frames().len());
+        assert_eq!(FrameType::ResultMetadata, first.frames()[0].frame_type);
+        assert_eq!(FrameType::ResultImage, first.frames()[1].frame_type);
+        let metadata: Value = serde_json::from_slice(&first.frames()[0].payload)
+            .expect("production process metadata must be closed JSON");
+        assert_eq!(18_582, metadata["byteLength"]);
+        assert_eq!(
+            "77c3a0195d424998a55595a52b305344c86efe5f770884f7d1cd639c63be936b",
+            metadata["contentSha256"]
+        );
+        assert_eq!(&first.frames()[1].payload[16..24], b"\x89PNG\r\n\x1a\n");
+        assert_eq!(first.frames(), second.frames());
+        assert_eq!(18_582 + 16, first.frames()[1].payload.len());
+    }
+
+    #[cfg(all(target_os = "linux", feature = "native-text-skia"))]
+    #[test]
+    fn production_deadline_at_output_seal_discards_the_complete_image() {
+        let payload = PRODUCTION_TEXT_COMMAND
+            .strip_suffix(b"\n")
+            .expect("shared Java command fixture must end in one LF")
+            .to_vec();
+        let resource_id = "rwres_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+        let observations = Arc::new(Mutex::new(Vec::new()));
+        let mut registry = RequestRegistry::new(
+            FetchTargetPolicy::new(ASSET_FETCH_ORIGIN, ASSET_FETCH_PATH_PREFIX)
+                .expect("fixed internal fetch target"),
+            Arc::new(RecordingResourceFetcher {
+                observations: Arc::clone(&observations),
+                bodies: BTreeMap::from([(resource_id.to_owned(), PRODUCTION_TEXT_FONT.to_vec())]),
+                fail_first: false,
+            }),
+        );
+        let mut times = VecDeque::from([1_900_000_000_000_i64, 2_000_000_000_000_i64]);
+
+        let response = registry
+            .handle_with_clock(
+                Frame {
+                    frame_type: FrameType::Command,
+                    payload,
+                },
+                &mut || times.pop_front().expect("exactly two clock reads"),
+            )
+            .expect("elapsed output seal must produce one terminal problem");
+
+        assert_eq!(vec![resource_id], *observations.lock().unwrap());
+        let problem: Value = serde_json::from_slice(&only_frame(&response).payload)
+            .expect("deadline problem must be closed JSON");
+        assert_eq!(FrameType::Problem, only_frame(&response).frame_type);
+        assert_eq!("RENDER_DEADLINE_EXCEEDED", problem["code"]);
+        assert_eq!("OUTPUT_SEAL", problem["engineStage"]);
+    }
+
+    #[cfg(all(target_os = "linux", feature = "native-text-skia"))]
+    #[test]
+    fn production_engine_failures_map_to_closed_problem_codes_and_stages() {
+        use renderweave_renderer_engine::EnginePngUnsupported;
+
+        let request_id = "123e4567-e89b-42d3-a456-426614174000";
+        let occurrence_id = "rwocc_0000000000000001";
+        let resource_id = "rwres_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+        let cases = [
+            (
+                EnginePngError::Contract("sealed document invariant"),
+                "RENDER_INTERNAL_ERROR",
+                "DOCUMENT_ADMISSION",
+                false,
+            ),
+            (
+                EnginePngError::Unsupported(EnginePngUnsupported::TextPaint),
+                "RENDER_INTERNAL_ERROR",
+                "DOCUMENT_ADMISSION",
+                false,
+            ),
+            (
+                EnginePngError::Layout,
+                "RENDER_INTERNAL_ERROR",
+                "LAYOUT",
+                false,
+            ),
+            (
+                EnginePngError::RasterAllocation,
+                "RENDER_INTERNAL_ERROR",
+                "RASTERIZATION",
+                false,
+            ),
+            (
+                EnginePngError::FontGlyphMissing {
+                    occurrence_id: occurrence_id.into(),
+                    resource_id: resource_id.into(),
+                },
+                "FONT_GLYPH_MISSING",
+                "SHAPING",
+                true,
+            ),
+            (
+                EnginePngError::TextShaping {
+                    occurrence_id: occurrence_id.into(),
+                    resource_id: resource_id.into(),
+                },
+                "RENDER_INTERNAL_ERROR",
+                "SHAPING",
+                true,
+            ),
+            (
+                EnginePngError::TextRaster {
+                    occurrence_id: occurrence_id.into(),
+                    resource_id: resource_id.into(),
+                },
+                "RENDER_INTERNAL_ERROR",
+                "RASTERIZATION",
+                true,
+            ),
+            (
+                EnginePngError::Interrupted {
+                    interruption: EngineInterruption::Cancelled,
+                    checkpoint: EngineCheckpoint::Shaping,
+                },
+                "RENDER_CANCELLED",
+                "SHAPING",
+                false,
+            ),
+            (
+                EnginePngError::Interrupted {
+                    interruption: EngineInterruption::DeadlineExceeded,
+                    checkpoint: EngineCheckpoint::Encoding,
+                },
+                "RENDER_DEADLINE_EXCEEDED",
+                "ENCODING",
+                false,
+            ),
+        ];
+
+        for (error, code, stage, has_locators) in cases {
+            let payload = engine_png_problem_bytes(request_id, &error)
+                .expect("typed Engine failure must project to one closed problem");
+            let problem: Value = serde_json::from_slice(&payload).expect("closed problem JSON");
+            assert_eq!(code, problem["code"]);
+            assert_eq!(stage, problem["engineStage"]);
+            assert_eq!(has_locators, problem.get("occurrenceId").is_some());
+            assert_eq!(has_locators, problem.get("resourceId").is_some());
+        }
+
+        for (error, stage) in [
+            (
+                PreparedPngResultError::Contract("command invariant"),
+                "COMMAND_ADMISSION",
+            ),
+            (
+                PreparedPngResultError::Seal(ProtocolError::Invalid("seal invariant")),
+                "OUTPUT_SEAL",
+            ),
+        ] {
+            let payload = prepared_png_problem_bytes(request_id, &error)
+                .expect("prepared result failure must project to one closed problem");
+            let problem: Value = serde_json::from_slice(&payload).expect("closed problem JSON");
+            assert_eq!("RENDER_INTERNAL_ERROR", problem["code"]);
+            assert_eq!(stage, problem["engineStage"]);
+        }
     }
 
     #[test]
@@ -1709,13 +2220,22 @@ mod tests {
     }
 
     #[test]
-    fn registry_rejects_admitted_but_layout_invalid_document_before_profile_lookup() {
-        let layout_invalid_document = all_kinds_with_expiries([4_090_912_502; 2]);
+    fn registry_rejects_admitted_but_layout_invalid_document_after_manifest_resources() {
+        let (resource_document, bodies) = renderable_resource_fixture();
+        let resource_document: Value = serde_json::from_str(&resource_document).unwrap();
+        let mut layout_invalid: Value = serde_json::from_str(ALL_KINDS).unwrap();
+        layout_invalid["resources"] = resource_document["resources"].clone();
+        let layout_invalid_document = serde_json::to_string(&layout_invalid).unwrap();
         let admitted = validate_render_document(&layout_invalid_document).unwrap();
         assert!(preflight_layout(&admitted).is_err());
         let invalid_command = command_with_document(&layout_invalid_document);
+        let observations = Arc::new(Mutex::new(Vec::new()));
 
-        let mut registry = request_registry();
+        let mut registry = request_registry_with(Arc::new(RecordingResourceFetcher {
+            observations: Arc::clone(&observations),
+            bodies,
+            fail_first: false,
+        }));
         let response = registry
             .handle(
                 Frame {
@@ -1726,6 +2246,7 @@ mod tests {
             )
             .unwrap();
         let problem: Value = serde_json::from_slice(&only_frame(&response).payload).unwrap();
+        assert_eq!(2, observations.lock().unwrap().len());
         assert_eq!(problem["code"], "RENDER_INTERNAL_ERROR");
         assert_eq!(problem["engineStage"], "DOCUMENT_ADMISSION");
     }
@@ -2876,6 +3397,7 @@ mod tests {
             _target: &renderweave_renderer_resource::AdmittedFetchTarget<'_>,
             _deadline_epoch_millis: i64,
             _state: &mut renderweave_renderer_resource::RequestResourceFetchState,
+            _control: &dyn renderweave_renderer_resource::ResourcePreparationControl,
         ) -> Result<FetchedResource, ResourceFetchProblem> {
             panic!("the fixture command must not fetch a resource")
         }
@@ -2885,6 +3407,11 @@ mod tests {
         observations: Arc<Mutex<Vec<String>>>,
         bodies: BTreeMap<String, Vec<u8>>,
         fail_first: bool,
+    }
+
+    struct CancellingResourceFetcher {
+        cancellation: Arc<std::sync::atomic::AtomicBool>,
+        bodies: BTreeMap<String, Vec<u8>>,
     }
 
     #[cfg(target_os = "linux")]
@@ -2907,6 +3434,7 @@ mod tests {
             target: &renderweave_renderer_resource::AdmittedFetchTarget<'_>,
             _deadline_epoch_millis: i64,
             _state: &mut renderweave_renderer_resource::RequestResourceFetchState,
+            _control: &dyn renderweave_renderer_resource::ResourcePreparationControl,
         ) -> Result<FetchedResource, ResourceFetchProblem> {
             self.started_sender
                 .lock()
@@ -2933,6 +3461,7 @@ mod tests {
             target: &renderweave_renderer_resource::AdmittedFetchTarget<'_>,
             _deadline_epoch_millis: i64,
             state: &mut renderweave_renderer_resource::RequestResourceFetchState,
+            _control: &dyn renderweave_renderer_resource::ResourcePreparationControl,
         ) -> Result<FetchedResource, ResourceFetchProblem> {
             if let Some(started_sender) = self.started_sender.lock().unwrap().take() {
                 started_sender.send(()).unwrap();
@@ -2961,6 +3490,7 @@ mod tests {
             target: &renderweave_renderer_resource::AdmittedFetchTarget<'_>,
             _deadline_epoch_millis: i64,
             state: &mut renderweave_renderer_resource::RequestResourceFetchState,
+            _control: &dyn renderweave_renderer_resource::ResourcePreparationControl,
         ) -> Result<FetchedResource, ResourceFetchProblem> {
             let mut observations = self.observations.lock().unwrap();
             let is_first = observations.is_empty();
@@ -2977,6 +3507,26 @@ mod tests {
                     .clone()
                     .into_boxed_slice(),
             )
+        }
+    }
+
+    impl ResourceFetcher for CancellingResourceFetcher {
+        fn fetch_resource(
+            &self,
+            target: &renderweave_renderer_resource::AdmittedFetchTarget<'_>,
+            _deadline_epoch_millis: i64,
+            state: &mut renderweave_renderer_resource::RequestResourceFetchState,
+            _control: &dyn renderweave_renderer_resource::ResourcePreparationControl,
+        ) -> Result<FetchedResource, ResourceFetchProblem> {
+            let body = self
+                .bodies
+                .get(target.resource_id())
+                .expect("fixture body must exist")
+                .clone()
+                .into_boxed_slice();
+            self.cancellation
+                .store(true, std::sync::atomic::Ordering::SeqCst);
+            state.verify_owned_body(target, body)
         }
     }
 

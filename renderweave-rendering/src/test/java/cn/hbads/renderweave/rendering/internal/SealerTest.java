@@ -27,6 +27,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class SealerTest {
 
+    private static final String ASSET_ID = "00000000-0000-4000-8000-0000000000a1";
+    private static final String BINDING_ID = "00000000-0000-4000-8000-0000000000b1";
+    private static final String DEFINITION_ID = "00000000-0000-4000-8000-0000000000d1";
     private static final StaticSchemaRef SCHEMA = new StaticSchemaRef(
             SchemaKey.systemProvided("system-empty"), VersionTag.of("v1"));
     private static final String MINIMAL_RENDER_DOCUMENT =
@@ -289,9 +292,15 @@ class SealerTest {
         assertTrue(sidecar.contains("source-node"));
         assertTrue(sidecar.contains("\"consumerPropertyRef\":"
                 + "{\"rootPropertyId\":\"imageRef\",\"selectors\":[]}"));
+        assertTrue(sidecar.contains("\"assetId\":\"" + ASSET_ID + "\""));
+        assertTrue(sidecar.contains("\"bindingId\":\"" + BINDING_ID + "\""));
+        assertTrue(sidecar.contains("\"definitionId\":\"" + DEFINITION_ID + "\""));
         assertTrue(!document.contains("sidecarVersion"));
         assertTrue(!document.contains("renderweave-occurrence-path/1.0"));
         assertTrue(!document.contains("source-node"));
+        assertTrue(!document.contains(ASSET_ID));
+        assertTrue(!document.contains(BINDING_ID));
+        assertTrue(!document.contains(DEFINITION_ID));
     }
 
     @Test
@@ -531,6 +540,14 @@ class SealerTest {
     // ------------------------------------------------------------------
 
     private static Materializer.ResourceEntry entry(String resourceId, String assetId) {
+        return entry(resourceId, assetId, null);
+    }
+
+    private static Materializer.ResourceEntry entry(
+            String resourceId,
+            String assetId,
+            Materializer.DiagnosticProvenance diagnosticProvenance
+    ) {
         return new Materializer.ResourceEntry(
                 resourceId,
                 "IMAGE",
@@ -542,13 +559,14 @@ class SealerTest {
                 "renderweave-asset-acceptance/1.0",
                 assetId,
                 "content-version-1",
-                "/path",
-                "imageRef",
+                OccurrencePath.testing("/path", "image"),
+                ConsumerPropertyRef.root("imageRef"),
                 new cn.hbads.renderweave.asset.api.AssetAcceptanceAuthority.ImageDescriptor(
                         10, 10,
                         cn.hbads.renderweave.asset.api.AssetAcceptanceAuthority.Orientation.IDENTITY,
                         10, 10, 1,
-                        cn.hbads.renderweave.asset.api.AssetAcceptanceAuthority.ColorEncoding.SRGB_8BIT));
+                        cn.hbads.renderweave.asset.api.AssetAcceptanceAuthority.ColorEncoding.SRGB_8BIT),
+                diagnosticProvenance);
     }
 
     private static Materializer.MaterializedTree minimalTree() {
@@ -604,7 +622,11 @@ class SealerTest {
                 List.of(image),
                 "");
         return new Materializer.MaterializedTree(
-                root, List.of(entry(resourceId, "asset-a")), List.of());
+                root, List.of(entry(
+                        resourceId,
+                        ASSET_ID,
+                        new Materializer.DiagnosticProvenance(BINDING_ID, DEFINITION_ID))),
+                List.of());
     }
 
     private static Materializer.MaterializedTree viewportTree() {

@@ -1,0 +1,125 @@
+{
+  "lockVersion": "renderweave-renderer-hermetic-build-lock/3.0",
+  "candidateId": "rw-renderer-production-text-linux-x86_64-v2-000001",
+  "baseLock": {
+    "path": "hermetic-build-lock-v2.json",
+    "sha256": "sha256:60cf61e0ea16529e84c8c84c20dd915284cbad16a5431fcc3861649e9c0f6150",
+    "byteLength": 2261
+  },
+  "inputOverrides": [
+    {
+      "id": "renderer-crates-source",
+      "category": "downstream-policy",
+      "bundlePath": "inputs/downstream-policy/renderer-crates-normalized.tar",
+      "sha256": "sha256:ec0baae67820ea8ddbd0d8352032d1088b3a117e4ba4e717ba9581b9fd55222b",
+      "byteLength": 942080,
+      "source": {
+        "kind": "repository-tree",
+        "path": "renderer/crates",
+        "treeSha256": "sha256:88d1beca9dff3dfdcfcc37445e11850edc373f7ae0704e0602dd4c70ea2272ea",
+        "fileCount": 37,
+        "prefix": "crates/",
+        "archiveFormat": "python-tar-gnu-normalized/1.0"
+      }
+    },
+    {
+      "id": "renderer-root-inputs",
+      "category": "downstream-policy",
+      "bundlePath": "inputs/downstream-policy/renderer-root-normalized.tar",
+      "sha256": "sha256:04dc5cb06d3f0aca600afbec8ebb51b556018c549fe24c427e9d1de9eb89cd26",
+      "byteLength": 1126400,
+      "source": {
+        "kind": "repository-tree",
+        "path": "renderer",
+        "treeSha256": "sha256:f85bee03c08f131c031a2fc99df092353873529317129dff5c4329d1860bb68f",
+        "fileCount": 31,
+        "prefix": "renderer-root/",
+        "excludePaths": [
+          "crates",
+          "probes/t213/__pycache__",
+          "probes/t213/rehearsal-result-v2.json",
+          "target",
+          "vendor"
+        ],
+        "archiveFormat": "python-tar-gnu-normalized/1.0"
+      }
+    },
+    {
+      "id": "renderer-spike-policy",
+      "category": "downstream-policy",
+      "bundlePath": "inputs/downstream-policy/renderer-spike-policy-normalized.tar",
+      "sha256": "sha256:52178785eee689fcbbc42bf92db0d26665ea325b41003eaf73bd1930eee4a578",
+      "byteLength": 92160,
+      "source": {
+        "kind": "repository-tree",
+        "path": ".scratch/renderweave-template-v1/renderer-spike",
+        "treeSha256": "sha256:42ff959fdd16dee77d293891bb58c00e21971e106882cbf26088eb290c4b776c",
+        "fileCount": 28,
+        "prefix": "renderer-spike/",
+        "excludePaths": [
+          "hermetic-build-lock-v1.json",
+          "hermetic-build-lock-v2.json",
+          "hermetic-build-lock-v3.json"
+        ],
+        "archiveFormat": "python-tar-gnu-normalized/1.0"
+      }
+    }
+  ],
+  "inputAdditions": [
+    {
+      "id": "asset-acceptance-vectors",
+      "category": "downstream-policy",
+      "bundlePath": "inputs/downstream-policy/asset-acceptance-kernel-v1-vectors.json",
+      "sha256": "sha256:0f44fdef29d989049e77bcf3659fca4b7958b7009053c82d74c46f9f1984e4ca",
+      "byteLength": 46110,
+      "source": {
+        "kind": "repository-file",
+        "path": "renderweave-asset/src/test/resources/cn/hbads/renderweave/asset/acceptance-kernel-v1/vectors.json"
+      }
+    },
+    {
+      "id": "minimal-ttf-fixture",
+      "category": "downstream-policy",
+      "bundlePath": "inputs/downstream-policy/minimal-ttf.ttf",
+      "sha256": "sha256:563f77993d3eaf2f74734c13f768afd178383cbf180d33e69b7c35df35779ceb",
+      "byteLength": 660,
+      "source": {
+        "kind": "repository-file",
+        "path": "renderweave-asset/src/test/resources/asset-fixtures/minimal-ttf.ttf"
+      }
+    },
+    {
+      "id": "render-node-contract-authority",
+      "category": "downstream-policy",
+      "bundlePath": "inputs/downstream-policy/render-node-contract-v1.json",
+      "sha256": "sha256:55e9062e2b988c1bc878d216c850e3ada7e6584b19ae2aca7ce2765d2a3b9752",
+      "byteLength": 8922,
+      "source": {
+        "kind": "repository-file",
+        "path": "renderweave-rendering/src/main/resources/cn/hbads/renderweave/rendering/render-node-contract-v1.json"
+      }
+    },
+    {
+      "id": "renderer-exact-build-rehearsal-harness",
+      "category": "downstream-policy",
+      "bundlePath": "inputs/downstream-policy/repo-seam/tools/renderer-exact-build-rehearsal.sh",
+      "sha256": "sha256:7e18cd31815cb8651726a97d17aaed589ee7aae4f63356af32100e229207e418",
+      "byteLength": 12569,
+      "source": {
+        "kind": "repository-file",
+        "path": "tools/renderer-exact-build-rehearsal.sh"
+      }
+    },
+    {
+      "id": "renderer-production-text-rehearsal-harness",
+      "category": "downstream-policy",
+      "bundlePath": "inputs/downstream-policy/repo-seam/tools/renderer-production-text-rehearsal.sh",
+      "sha256": "sha256:37d3d6f70835a254937f9fe21d0f7ac018076f6f7304e153e5793745ed8b0e37",
+      "byteLength": 14343,
+      "source": {
+        "kind": "repository-file",
+        "path": "tools/renderer-production-text-rehearsal.sh"
+      }
+    }
+  ]
+}

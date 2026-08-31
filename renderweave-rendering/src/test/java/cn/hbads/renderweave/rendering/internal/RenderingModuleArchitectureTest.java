@@ -2,10 +2,16 @@ package cn.hbads.renderweave.rendering.internal;
 
 import com.tngtech.archunit.core.importer.ClassFileImporter;
 import com.tngtech.archunit.core.importer.ImportOption;
+import cn.hbads.renderweave.rendering.api.Evaluator.EvaluationOutcome.SealedDocument;
 import org.junit.jupiter.api.Test;
+
+import java.util.Arrays;
+
+import static com.tngtech.archunit.core.domain.JavaModifier.SYNTHETIC;
 
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 class RenderingModuleArchitectureTest {
 
@@ -30,9 +36,18 @@ class RenderingModuleArchitectureTest {
     }
 
     @Test
+    void requestLocalDiagnosticSidecarDoesNotCrossThePublicEvaluatorOutcome() {
+        assertFalse(Arrays.stream(SealedDocument.class.getRecordComponents())
+                .anyMatch(component -> component.getName().contains("diagnosticSidecar")));
+        assertFalse(Arrays.stream(SealedDocument.class.getMethods())
+                .anyMatch(method -> method.getName().contains("diagnosticSidecar")));
+    }
+
+    @Test
     void outboundSpiAnchorIsRealAndCannotReachInternalImplementation() {
         classes()
                 .that().resideInAPackage(SPI)
+                .and().doNotHaveModifier(SYNTHETIC)
                 .should().bePublic()
                 .allowEmptyShould(false)
                 .check(production);

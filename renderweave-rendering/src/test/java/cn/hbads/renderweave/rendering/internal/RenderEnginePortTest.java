@@ -6,6 +6,8 @@ import cn.hbads.renderweave.rendering.api.Evaluator.RenderRequestId;
 import cn.hbads.renderweave.rendering.api.RenderOutput;
 import cn.hbads.renderweave.rendering.api.RenderingProblem;
 import cn.hbads.renderweave.rendering.spi.RenderEngine;
+import cn.hbads.renderweave.rendering.spi.RenderEngine.EngineProblem;
+import cn.hbads.renderweave.rendering.spi.RenderEngine.EngineProblemStage;
 import cn.hbads.renderweave.rendering.spi.RenderEngine.EngineOutcome;
 import cn.hbads.renderweave.rendering.spi.RenderEngine.RendererCommand;
 import org.junit.jupiter.api.Test;
@@ -16,6 +18,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.HexFormat;
 import java.util.List;
+import java.util.Optional;
 import java.util.OptionalInt;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -75,8 +78,9 @@ class RenderEnginePortTest {
         var sealed = new EngineOutcome.SealedOutput(output());
         var joined = new EngineOutcome.Joined(output());
         var replayed = new EngineOutcome.Replayed(output());
-        var terminal = new EngineOutcome.TerminalProblem(RenderingProblem.of(
-                RenderingProblem.ProblemCode.RENDER_DEADLINE_EXCEEDED, EvaluationStage.ENGINE));
+        var terminal = new EngineOutcome.TerminalProblem(EngineProblem.of(
+                RenderingProblem.ProblemCode.RENDER_DEADLINE_EXCEEDED,
+                EngineProblemStage.REQUEST_CONTROL));
         var unknown = new EngineOutcome.Unknown();
 
         assertInstanceOf(EngineOutcome.class, sealed);
@@ -87,11 +91,26 @@ class RenderEnginePortTest {
     }
 
     @Test
-    void terminalProblemMustCarryEngineStage() {
+    void terminalProblemRejectsCodesOutsideTheEngineCatalog() {
         assertThrows(IllegalArgumentException.class, () -> new EngineOutcome.TerminalProblem(
-                RenderingProblem.of(
-                        RenderingProblem.ProblemCode.RENDER_INTERNAL_ERROR,
-                        EvaluationStage.MATERIALIZATION)));
+                EngineProblem.of(
+                        RenderingProblem.ProblemCode.EVALUATION_FAILED,
+                        EngineProblemStage.SHAPING)));
+    }
+
+    @Test
+    void engineProblemRetainsBothOpaqueLocators() {
+        var problem = new EngineProblem(
+                RenderingProblem.ProblemCode.FONT_GLYPH_MISSING,
+                EngineProblemStage.SHAPING,
+                Optional.of("rwocc_0000000000000001"),
+                Optional.of("rwres_" + "a".repeat(64)),
+                Optional.empty());
+
+        var terminal = new EngineOutcome.TerminalProblem(problem);
+
+        assertEquals(problem.occurrenceId(), terminal.problem().occurrenceId());
+        assertEquals(problem.resourceId(), terminal.problem().resourceId());
     }
 
     @Test

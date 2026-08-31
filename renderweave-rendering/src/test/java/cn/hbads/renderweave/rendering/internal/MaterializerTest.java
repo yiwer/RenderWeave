@@ -532,6 +532,19 @@ class MaterializerTest {
     }
 
     @Test
+    void definitionBackedFontBindingRetainsRequestLocalDiagnosticProvenance() {
+        var tree = materializeOk(
+                textDocumentWithFontDefinitionBinding(),
+                Map.of(DEFINITION_ID, new DesignValue.FontRef(ASSET_ID)),
+                new ScriptedAssetPort(true));
+
+        assertEquals(1, tree.resources().size());
+        var provenance = tree.resources().getFirst().diagnosticProvenance();
+        assertEquals("00000000-0000-4000-8000-0000000000e1", provenance.bindingId());
+        assertEquals(DEFINITION_ID, provenance.definitionId());
+    }
+
+    @Test
     void typeMismatchedBindingFailsMaterialization() {
         var document = textDocumentWithDefinitionBinding("decimal", "42");
         var outcome = materialize(document,
@@ -1283,6 +1296,30 @@ class MaterializerTest {
                 + "\"fontRef\":{\"assetId\":\"" + ASSET_ID + "\"},"
                 + "\"fontSizePt\":12,\"color\":\"#FF000000\",\"decoration\":\"NONE\","
                 + "\"letterSpacingPt\":0}]}]}}";
+    }
+
+    private static String textDocumentWithFontDefinitionBinding() {
+        return "{\"dslVersion\":\"renderweave-design/1.0\","
+                + "\"expressionProfile\":\"renderweave-expression/1.0\","
+                + "\"displayName\":\"R\",\"definitions\":["
+                + "{\"definitionId\":\"" + DEFINITION_ID + "\",\"kind\":\"custom\","
+                + "\"displayName\":\"Font\",\"exposure\":\"PRIVATE\","
+                + "\"valueType\":\"fontRef\",\"defaultValue\":{\"assetId\":\""
+                + ASSET_ID + "\"}}],"
+                + "\"designRoot\":{\"nodeId\":\"00000000-0000-4000-8000-000000000001\","
+                + "\"kind\":\"canvas\",\"widthMm\":210,\"heightMm\":297,\"bindings\":[],"
+                + "\"children\":[{\"nodeId\":\"00000000-0000-4000-8000-000000000071\","
+                + "\"kind\":\"text\",\"bindings\":[{\"bindingId\":"
+                + "\"00000000-0000-4000-8000-0000000000e1\","
+                + "\"targetPropertyRef\":{\"rootPropertyId\":\"runs\",\"selectors\":["
+                + "{\"kind\":\"index\",\"index\":0},"
+                + "{\"kind\":\"member\",\"name\":\"fontRef\"}]},"
+                + "\"source\":{\"kind\":\"definition\",\"definitionId\":\""
+                + DEFINITION_ID + "\"}}],\"placement\":" + absolute() + ","
+                + "\"horizontalAlign\":\"LEFT\",\"runs\":[{\"text\":\"Hi\","
+                + "\"fontRef\":{\"assetId\":\"" + ASSET_ID + "\"},"
+                + "\"fontSizePt\":12,\"color\":\"#FF000000\","
+                + "\"decoration\":\"NONE\",\"letterSpacingPt\":0}]}]}}";
     }
 
     private static String decimalExpressionBindingDocument() {

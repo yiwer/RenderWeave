@@ -3,7 +3,7 @@ set -eu
 
 readonly RW_BUNDLE="${RW_BUNDLE:-/bundle}"
 readonly RW_WORK="${RW_WORK:-/work}"
-readonly RW_REPO="${RW_REPO:-/repo}"
+readonly RW_HARNESS="$RW_BUNDLE/inputs/downstream-policy/repo-seam/tools/renderer-exact-build-rehearsal.sh"
 readonly RW_SKIA_COMMIT="93458b5faf9cd8befbe6c93158d4d8ee7c8424ee"
 readonly RW_FREETYPE_COMMIT="0a0221a1347e2f1e07c395263540026e9a0aa7c7"
 readonly RW_OUT="$RW_WORK/src/skia/out/T213"
@@ -69,7 +69,7 @@ prepare() {
     require_sha256 9dfc76b78fc6363e77f96b4faca566cfa0c28d06ad478f809f241e98966652af "$skia_archive"
     require_sha256 96b87b165f22e65edbba96409e3853fcbdccc290721a1ad54baa56ba710115cc "$freetype_archive"
     require_sha256 52178785eee689fcbbc42bf92db0d26665ea325b41003eaf73bd1930eee4a578 "$policy_archive"
-    require_sha256 894c8a617d730fdcba4da9d2c2f28a0dc10e952191f7d3a11ea64b3ae8bb679c "$renderer_archive"
+    require_sha256 04dc5cb06d3f0aca600afbec8ebb51b556018c549fe24c427e9d1de9eb89cd26 "$renderer_archive"
     require_sha256 eeef766ac75aecac694bbd82fbb3cd2b9a315075db14d91ff0cbe1bdec20f77f "$cff_source"
     require_sha256 df0e1ecf16caf3489a272a5eea4eec9b0d82878f6477fa309504f918a0006384 "$llvm_archive"
     require_sha256 6a3bfc53d825bccac5e5b4b7bdcc10ce9396a04a689ac684ec3308ca5c7f3d9c "$gn_archive"
@@ -234,7 +234,7 @@ audit() {
         --ftoption "$RW_WORK/policy/renderer-spike/rw-freetype-ftoption-v3.h" \
         --ftmodule "$RW_WORK/policy/renderer-spike/rw-freetype-ftmodule-v3.h" \
         --bundle-inventory "$RW_BUNDLE/inventory.json" \
-        --harness "$RW_REPO/tools/renderer-exact-build-rehearsal.sh" \
+        --harness "$RW_HARNESS" \
         --output "$RW_EVIDENCE/manifest.json"
     printf '%s\n' "T213_AUDIT_PASSED"
 }

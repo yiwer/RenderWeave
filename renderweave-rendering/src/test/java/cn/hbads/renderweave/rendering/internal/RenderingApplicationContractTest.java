@@ -1,10 +1,10 @@
 package cn.hbads.renderweave.rendering.internal;
 
 import cn.hbads.renderweave.rendering.api.EvaluationStage;
-import cn.hbads.renderweave.rendering.api.Evaluator;
 import cn.hbads.renderweave.rendering.api.Evaluator.EvaluationCommand;
 import cn.hbads.renderweave.rendering.api.Evaluator.EvaluationOutcome;
 import cn.hbads.renderweave.rendering.api.Evaluator.ExternalAssetReadAuthorization;
+import cn.hbads.renderweave.rendering.api.Evaluator.OwnerScope;
 import cn.hbads.renderweave.rendering.api.Evaluator.OutputSelection;
 import cn.hbads.renderweave.rendering.api.RenderOutput;
 import cn.hbads.renderweave.rendering.api.RenderingApplication;
@@ -14,6 +14,8 @@ import cn.hbads.renderweave.rendering.api.RenderingApplication.RenderOutcome;
 import cn.hbads.renderweave.rendering.api.RenderingApplication.RenderPurpose;
 import cn.hbads.renderweave.rendering.api.RenderingProblem;
 import cn.hbads.renderweave.rendering.spi.RenderEngine;
+import cn.hbads.renderweave.rendering.spi.RenderEngine.EngineProblem;
+import cn.hbads.renderweave.rendering.spi.RenderEngine.EngineProblemStage;
 import cn.hbads.renderweave.rendering.spi.RenderEngine.EngineOutcome;
 import cn.hbads.renderweave.rendering.spi.RenderEngine.RendererCommand;
 import cn.hbads.renderweave.rendering.spi.RendererProfileAuthority;
@@ -33,6 +35,7 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.HexFormat;
 import java.util.List;
+import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.function.LongSupplier;
 
@@ -140,9 +143,9 @@ class RenderingApplicationContractTest {
     @Test
     void unknownAndBusyResendTheSameCommandWithoutReevaluation() {
         var evaluator = new ScriptedEvaluator();
-        var busy = new EngineOutcome.TerminalProblem(RenderingProblem.of(
+        var busy = new EngineOutcome.TerminalProblem(EngineProblem.of(
                 RenderingProblem.ProblemCode.RENDER_ENGINE_BUSY,
-                EvaluationStage.ENGINE));
+                EngineProblemStage.REQUEST_CONTROL));
         var engine = new ScriptedEngine(
                 new EngineOutcome.Unknown(),
                 busy,
@@ -200,9 +203,9 @@ class RenderingApplicationContractTest {
 
     @Test
     void engineTerminalProblemAndEvaluationProblemRemainClosed() {
-        var problem = RenderingProblem.of(
+        var problem = EngineProblem.of(
                 RenderingProblem.ProblemCode.RENDER_DEADLINE_EXCEEDED,
-                EvaluationStage.ENGINE);
+                EngineProblemStage.REQUEST_CONTROL);
         var application = application(
                 new ScriptedEvaluator(),
                 new ScriptedEngine(new EngineOutcome.TerminalProblem(problem)),
@@ -212,7 +215,101 @@ class RenderingApplicationContractTest {
         var outcome = application.render(INVOCATION, command(RenderPurpose.FORMAL_OUTPUT));
 
         var rejected = assertInstanceOf(RenderOutcome.Rejected.class, outcome);
-        assertEquals(problem, rejected.problem());
+        assertEquals(problem.code(), rejected.problem().code());
+        assertEquals(EvaluationStage.ENGINE, rejected.problem().stage());
+        assertTrue(rejected.problem().safeLocation().isEmpty());
+    }
+
+    @Test
+    void readableEngineProblemProjectsBothOpaqueLocatorsThroughTheRequestSidecar() {
+        var evaluator = new ScriptedEvaluator();
+        evaluator.diagnosticSidecarBytes = diagnosticSidecarWithProvenance();
+        var engineProblem = new EngineProblem(
+                RenderingProblem.ProblemCode.FONT_GLYPH_MISSING,
+                EngineProblemStage.SHAPING,
+                Optional.of("rwocc_0000000000000001"),
+                Optional.of("rwres_" + "a".repeat(64)),
+                Optional.empty());
+        var application = application(
+                evaluator,
+                new ScriptedEngine(new EngineOutcome.TerminalProblem(engineProblem)),
+                grantedAuthority(RenderPurpose.AUTHORITATIVE_PREVIEW),
+                availableProfiles());
+
+        var outcome = application.render(
+                INVOCATION,
+                command(RenderPurpose.AUTHORITATIVE_PREVIEW));
+
+        var rejected = assertInstanceOf(RenderOutcome.Rejected.class, outcome);
+        assertEquals(RenderingProblem.ProblemCode.FONT_GLYPH_MISSING,
+                rejected.problem().code());
+        assertEquals("/templates/00000000-0000-4000-8000-0000000000a1/revisions/1"
+                        + "/nodes/text~1node~01"
+                        + "/bindings/00000000-0000-4000-8000-0000000000b1"
+                        + "/definitions/00000000-0000-4000-8000-0000000000d1"
+                        + "/properties/runs/0/fontRef"
+                        + "/assets/00000000-0000-4000-8000-0000000000a2",
+                rejected.problem().safeLocation().orElseThrow());
+    }
+
+    @Test
+    void readableEngineProblemRedactsAssetIdentityWithoutAssetRead() {
+        var evaluator = new ScriptedEvaluator();
+        evaluator.diagnosticSidecarBytes = diagnosticSidecarWithProvenance();
+        var engineProblem = new EngineProblem(
+                RenderingProblem.ProblemCode.FONT_GLYPH_MISSING,
+                EngineProblemStage.SHAPING,
+                Optional.of("rwocc_0000000000000001"),
+                Optional.of("rwres_" + "a".repeat(64)),
+                Optional.empty());
+        var authority = new ScriptedAuthority(
+                granted(
+                        RenderPurpose.AUTHORITATIVE_PREVIEW,
+                        ExternalAssetReadAuthorization.DENIED),
+                new RenderingAuthority.RecheckGranted(
+                        RenderingAuthority.Disclosure.READABLE));
+        var application = application(
+                evaluator,
+                new ScriptedEngine(new EngineOutcome.TerminalProblem(engineProblem)),
+                authority,
+                availableProfiles());
+
+        var outcome = application.render(
+                INVOCATION,
+                command(RenderPurpose.AUTHORITATIVE_PREVIEW));
+
+        var rejected = assertInstanceOf(RenderOutcome.Rejected.class, outcome);
+        assertEquals("/templates/00000000-0000-4000-8000-0000000000a1/revisions/1"
+                        + "/nodes/text~1node~01"
+                        + "/bindings/00000000-0000-4000-8000-0000000000b1"
+                        + "/definitions/00000000-0000-4000-8000-0000000000d1"
+                        + "/properties/runs/0/fontRef",
+                rejected.problem().safeLocation().orElseThrow());
+    }
+
+    @Test
+    void unmappedEngineLocatorFailsClosedInsteadOfInventingAnAuthorLocation() {
+        var engineProblem = new EngineProblem(
+                RenderingProblem.ProblemCode.FONT_GLYPH_MISSING,
+                EngineProblemStage.SHAPING,
+                Optional.of("rwocc_0000000000000001"),
+                Optional.of("rwres_" + "a".repeat(64)),
+                Optional.empty());
+        var application = application(
+                new ScriptedEvaluator(),
+                new ScriptedEngine(new EngineOutcome.TerminalProblem(engineProblem)),
+                grantedAuthority(RenderPurpose.AUTHORITATIVE_PREVIEW),
+                availableProfiles());
+
+        var outcome = application.render(
+                INVOCATION,
+                command(RenderPurpose.AUTHORITATIVE_PREVIEW));
+
+        var rejected = assertInstanceOf(RenderOutcome.Rejected.class, outcome);
+        assertEquals(RenderingProblem.ProblemCode.RENDER_INTERNAL_ERROR,
+                rejected.problem().code());
+        assertEquals(EvaluationStage.ENGINE, rejected.problem().stage());
+        assertTrue(rejected.problem().safeLocation().isEmpty());
     }
 
     @Test
@@ -481,10 +578,17 @@ class RenderingApplicationContractTest {
     }
 
     private static RenderingAuthority.Authorized granted(RenderPurpose purpose) {
+        return granted(purpose, ExternalAssetReadAuthorization.GRANTED);
+    }
+
+    private static RenderingAuthority.Authorized granted(
+            RenderPurpose purpose,
+            ExternalAssetReadAuthorization assetReadAuthorization
+    ) {
         return new RenderingAuthority.Authorized(
-                new Evaluator.OwnerScope("owner-a"),
+                new OwnerScope("owner-a"),
                 "sha256:" + "5".repeat(64),
-                ExternalAssetReadAuthorization.GRANTED,
+                assetReadAuthorization,
                 new RenderingAuthority.RecheckIdentity("recheck-1"),
                 purpose == RenderPurpose.AUTHORITATIVE_PREVIEW
                         ? RenderingAuthority.Disclosure.READABLE
@@ -536,19 +640,26 @@ class RenderingApplicationContractTest {
         }
     }
 
-    private static final class ScriptedEvaluator implements Evaluator {
+    private static final class ScriptedEvaluator implements DiagnosticEvaluator {
         private final List<EvaluationCommand> seen = new ArrayList<>();
         private final byte[] sealedDocumentBytes = "{\"canvas\":{}}"
+                .getBytes(StandardCharsets.UTF_8);
+        private byte[] diagnosticSidecarBytes = ("{\"occurrences\":[],\"resources\":[],"
+                + "\"sidecarVersion\":\"renderweave-diagnostic-sidecar/1.0\"}")
                 .getBytes(StandardCharsets.UTF_8);
         private EvaluationOutcome outcome;
         private String layoutProfile = "renderweave-layout/1.0";
 
         @Override
-        public EvaluationOutcome evaluate(EvaluationCommand command) {
+        public EvaluationOutcome evaluate(
+                EvaluationCommand command,
+                SidecarSink sidecarSink
+        ) {
             seen.add(command);
             if (outcome != null) {
                 return outcome;
             }
+            sidecarSink.accept(diagnosticSidecarBytes);
             return new EvaluationOutcome.SealedDocument(
                     command.renderRequestId(),
                     sealedDocumentBytes,
@@ -621,6 +732,35 @@ class RenderingApplicationContractTest {
             recheckCalls++;
             return recheck;
         }
+
+        @Override
+        public DiagnosticSegmentDisclosure discloseDiagnosticSegment(
+                RecheckIdentity identity,
+                TemplateId templateId
+        ) {
+            return DiagnosticSegmentDisclosure.READABLE;
+        }
+    }
+
+    private static byte[] diagnosticSidecarWithProvenance() {
+        return ("{\"occurrences\":[{\"occurrenceId\":"
+                + "\"rwocc_0000000000000001\",\"occurrencePath\":{"
+                + "\"pathVersion\":\"renderweave-occurrence-path/1.0\","
+                + "\"segments\":[{\"kind\":\"ROOT\",\"revision\":1,"
+                + "\"templateId\":\"00000000-0000-4000-8000-0000000000a1\"},"
+                + "{\"kind\":\"NODE\",\"nodeId\":\"text/node~1\","
+                + "\"role\":\"source-node\"}]},"
+                + "\"sourceNodeId\":\"text/node~1\"}],\"resources\":[{"
+                + "\"assetId\":\"00000000-0000-4000-8000-0000000000a2\","
+                + "\"bindingId\":\"00000000-0000-4000-8000-0000000000b1\","
+                + "\"consumerPropertyRef\":{\"rootPropertyId\":\"runs\","
+                + "\"selectors\":[{\"index\":0,\"kind\":\"INDEX\"},{"
+                + "\"kind\":\"MEMBER\",\"memberId\":\"fontRef\"}]},"
+                + "\"definitionId\":\"00000000-0000-4000-8000-0000000000d1\","
+                + "\"occurrenceId\":\"rwocc_0000000000000001\","
+                + "\"resourceId\":\"rwres_" + "a".repeat(64) + "\"}],"
+                + "\"sidecarVersion\":\"renderweave-diagnostic-sidecar/1.0\"}")
+                .getBytes(StandardCharsets.UTF_8);
     }
 
     private static final class ScriptedProfiles implements RendererProfileAuthority {

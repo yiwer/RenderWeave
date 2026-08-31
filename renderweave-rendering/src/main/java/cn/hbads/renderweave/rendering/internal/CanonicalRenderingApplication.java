@@ -15,9 +15,11 @@ import cn.hbads.renderweave.rendering.spi.RenderEngine.EngineOutcome;
 import cn.hbads.renderweave.rendering.spi.RenderEngine.RendererCommand;
 import cn.hbads.renderweave.rendering.spi.RendererProfileAuthority;
 import cn.hbads.renderweave.rendering.spi.RenderingAuthority;
+import cn.hbads.renderweave.template.api.TemplateApplication.TemplateId;
 
 import java.time.Clock;
 import java.time.Duration;
+import java.util.Arrays;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.locks.LockSupport;
@@ -39,7 +41,7 @@ final class CanonicalRenderingApplication implements RenderingApplication {
     private static final String COMMAND_CONTRACT = "renderweave-render-command/1.0";
     private static final Pattern SHA256 = Pattern.compile("sha256:[0-9a-f]{64}");
 
-    private final Evaluator evaluator;
+    private final DiagnosticEvaluator evaluator;
     private final RenderEngine engine;
     private final RenderingAuthority authority;
     private final RendererProfileAuthority profiles;
@@ -48,7 +50,7 @@ final class CanonicalRenderingApplication implements RenderingApplication {
     private final LongSupplier monotonicNanos;
 
     CanonicalRenderingApplication(
-            Evaluator evaluator,
+            DiagnosticEvaluator evaluator,
             RenderEngine engine,
             RenderingAuthority authority,
             RendererProfileAuthority profiles,
@@ -59,7 +61,7 @@ final class CanonicalRenderingApplication implements RenderingApplication {
     }
 
     CanonicalRenderingApplication(
-            Evaluator evaluator,
+            DiagnosticEvaluator evaluator,
             RenderEngine engine,
             RenderingAuthority authority,
             RendererProfileAuthority profiles,
@@ -130,69 +132,76 @@ final class CanonicalRenderingApplication implements RenderingApplication {
         }
 
         var requestId = distinctRequestId(operationId);
-        var evaluation = evaluator.evaluate(new EvaluationCommand(
-                requestId,
-                authorized.ownerScope(),
-                authorized.authorizationContextDigest(),
-                authorized.externalAssetReadAuthorization(),
-                command.rootTemplateId(),
-                command.rawRenderInputUtf8(),
-                command.outputSelection(),
-                available.rendererProfile(),
-                deadline.deadlineAtEpochMilli(),
-                deadline.monotonicDeadlineNanos(),
-                deadline.admissionAndClosureDeadlineAtMonotonicNanos()));
-        if (evaluation instanceof EvaluationOutcome.Rejected rejected) {
-            return release(authorized, new RenderOutcome.Rejected(
-                    operationId,
-                    rejected.problem()));
-        }
-        var sealed = (EvaluationOutcome.SealedDocument) evaluation;
-        if (!sealed.renderRequestId().equals(requestId)
-                || !sealed.outputSelection().equals(command.outputSelection())
-                || !sealed.layoutProfile().equals(available.layoutProfile())
-                || !SHA256.matcher(sealed.renderDocumentDigest()).matches()) {
-            return release(authorized, rejected(
-                    operationId,
-                    EvaluationStage.DOCUMENT_SEAL,
-                    RenderingProblem.ProblemCode.RENDER_INTERNAL_ERROR));
-        }
-
-        var rendererCommand = new RendererCommand(
-                COMMAND_CONTRACT,
-                requestId,
-                available.rendererProfile(),
-                deadline.deadlineAtEpochMilli(),
-                sealed.renderDocumentDigest(),
-                sealed.renderDocumentCanonicalUtf8(),
-                command.outputSelection(),
-                false);
-
-        while (!deadline.expired(monotonicNanos)) {
-            var engineOutcome = engine.execute(rendererCommand);
-            if (engineOutcome instanceof EngineOutcome.Unknown
-                    || isBusy(engineOutcome)) {
-                waitBeforeRetry(deadline);
-                continue;
-            }
-            if (engineOutcome instanceof EngineOutcome.TerminalProblem terminal) {
+        var sidecar = new SidecarCapture();
+        try {
+            var evaluation = evaluator.evaluate(new EvaluationCommand(
+                    requestId,
+                    authorized.ownerScope(),
+                    authorized.authorizationContextDigest(),
+                    authorized.externalAssetReadAuthorization(),
+                    command.rootTemplateId(),
+                    command.rawRenderInputUtf8(),
+                    command.outputSelection(),
+                    available.rendererProfile(),
+                    deadline.deadlineAtEpochMilli(),
+                    deadline.monotonicDeadlineNanos(),
+                    deadline.admissionAndClosureDeadlineAtMonotonicNanos()), sidecar::capture);
+            if (evaluation instanceof EvaluationOutcome.Rejected rejected) {
                 return release(authorized, new RenderOutcome.Rejected(
                         operationId,
-                        terminal.problem()));
+                        rejected.problem()));
             }
-            var output = outputOf(engineOutcome);
-            if (output == null
-                    || !output.outputSelection().equals(command.outputSelection())
-                    || !output.rendererProfile().equals(available.rendererProfile())
-                    || !output.layoutProfile().equals(available.layoutProfile())) {
+            var sealed = (EvaluationOutcome.SealedDocument) evaluation;
+            if (!sealed.renderRequestId().equals(requestId)
+                    || !sealed.outputSelection().equals(command.outputSelection())
+                    || !sealed.layoutProfile().equals(available.layoutProfile())
+                    || !SHA256.matcher(sealed.renderDocumentDigest()).matches()) {
                 return release(authorized, rejected(
                         operationId,
-                        EvaluationStage.ENGINE,
+                        EvaluationStage.DOCUMENT_SEAL,
                         RenderingProblem.ProblemCode.RENDER_INTERNAL_ERROR));
             }
-            return release(authorized, new RenderOutcome.Rendered(operationId, output));
+
+            var rendererCommand = new RendererCommand(
+                    COMMAND_CONTRACT,
+                    requestId,
+                    available.rendererProfile(),
+                    deadline.deadlineAtEpochMilli(),
+                    sealed.renderDocumentDigest(),
+                    sealed.renderDocumentCanonicalUtf8(),
+                    command.outputSelection(),
+                    false);
+
+            while (!deadline.expired(monotonicNanos)) {
+                var engineOutcome = engine.execute(rendererCommand);
+                if (engineOutcome instanceof EngineOutcome.Unknown
+                        || isBusy(engineOutcome)) {
+                    waitBeforeRetry(deadline);
+                    continue;
+                }
+                if (engineOutcome instanceof EngineOutcome.TerminalProblem terminal) {
+                    var projected = projectEngineProblem(
+                            sidecar.canonicalUtf8(), terminal.problem(), authorized);
+                    return release(authorized, new RenderOutcome.Rejected(
+                            operationId,
+                            projected));
+                }
+                var output = outputOf(engineOutcome);
+                if (output == null
+                        || !output.outputSelection().equals(command.outputSelection())
+                        || !output.rendererProfile().equals(available.rendererProfile())
+                        || !output.layoutProfile().equals(available.layoutProfile())) {
+                    return release(authorized, rejected(
+                            operationId,
+                            EvaluationStage.ENGINE,
+                            RenderingProblem.ProblemCode.RENDER_INTERNAL_ERROR));
+                }
+                return release(authorized, new RenderOutcome.Rendered(operationId, output));
+            }
+            return release(authorized, deadlineExceeded(operationId));
+        } finally {
+            sidecar.destroy();
         }
-        return release(authorized, deadlineExceeded(operationId));
     }
 
     private RenderOutcome release(
@@ -261,6 +270,44 @@ final class CanonicalRenderingApplication implements RenderingApplication {
                 == RenderingProblem.ProblemCode.RENDER_ENGINE_BUSY;
     }
 
+    private RenderingProblem projectEngineProblem(
+            byte[] diagnosticSidecarCanonicalUtf8,
+            RenderEngine.EngineProblem engineProblem,
+            RenderingAuthority.Authorized authorized
+    ) {
+        final DiagnosticSidecar.Projection projection;
+        try {
+            projection = DiagnosticSidecar.project(
+                    diagnosticSidecarCanonicalUtf8,
+                    engineProblem.occurrenceId(),
+                    engineProblem.resourceId(),
+                    templateId -> switch (authority.discloseDiagnosticSegment(
+                            authorized.recheckIdentity(), TemplateId.of(templateId))) {
+                        case READABLE -> DiagnosticSidecar.TemplateSegmentDisclosure.READABLE;
+                        case REDACTED -> DiagnosticSidecar.TemplateSegmentDisclosure.REDACTED;
+                    },
+                    authorized.externalAssetReadAuthorization()
+                            == Evaluator.ExternalAssetReadAuthorization.GRANTED
+                            ? DiagnosticSidecar.AssetIdentityDisclosure.READABLE
+                            : DiagnosticSidecar.AssetIdentityDisclosure.REDACTED);
+        } catch (RuntimeException unavailableOrInvalid) {
+            return RenderingProblem.of(
+                    RenderingProblem.ProblemCode.RENDER_INTERNAL_ERROR,
+                    EvaluationStage.ENGINE);
+        }
+        if (projection instanceof DiagnosticSidecar.InvalidProjection) {
+            return RenderingProblem.of(
+                    RenderingProblem.ProblemCode.RENDER_INTERNAL_ERROR,
+                    EvaluationStage.ENGINE);
+        }
+        var safeLocation = ((DiagnosticSidecar.Projected) projection).safeLocation();
+        return new RenderingProblem(
+                engineProblem.code(),
+                EvaluationStage.ENGINE,
+                safeLocation,
+                engineProblem.limitId());
+    }
+
     private static RenderOutput outputOf(EngineOutcome outcome) {
         if (outcome instanceof EngineOutcome.SealedOutput sealed) {
             return sealed.output();
@@ -280,6 +327,31 @@ final class CanonicalRenderingApplication implements RenderingApplication {
             value = UUID.randomUUID().toString();
         } while (value.equals(operationId.value()));
         return new RenderRequestId(value);
+    }
+
+    private static final class SidecarCapture {
+        private byte[] canonicalUtf8;
+
+        private void capture(byte[] value) {
+            if (canonicalUtf8 != null) {
+                throw new IllegalStateException("diagnostic sidecar was produced more than once");
+            }
+            canonicalUtf8 = DiagnosticEvaluator.SidecarSink.retainedCopy(value);
+        }
+
+        private byte[] canonicalUtf8() {
+            if (canonicalUtf8 == null) {
+                throw new IllegalStateException("sealed evaluation omitted its diagnostic sidecar");
+            }
+            return canonicalUtf8;
+        }
+
+        private void destroy() {
+            if (canonicalUtf8 != null) {
+                Arrays.fill(canonicalUtf8, (byte) 0);
+                canonicalUtf8 = null;
+            }
+        }
     }
 
     private static RenderOutcome.Rejected rejected(

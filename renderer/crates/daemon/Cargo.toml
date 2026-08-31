@@ -6,6 +6,9 @@ rust-version.workspace = true
 license.workspace = true
 publish = false
 
+[features]
+native-text-skia = ["renderweave-renderer-engine/native-text-skia"]
+
 [dependencies]
 renderweave-renderer-document = { path = "../document" }
 renderweave-renderer-engine = { path = "../engine" }

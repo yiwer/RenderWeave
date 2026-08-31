@@ -20,4 +20,12 @@ final class FailClosedRenderingAuthority implements RenderingAuthority {
     public RecheckDecision recheck(RecheckIdentity identity) {
         return new RecheckUnavailable();
     }
+
+    @Override
+    public DiagnosticSegmentDisclosure discloseDiagnosticSegment(
+            RecheckIdentity identity,
+            TemplateId templateId
+    ) {
+        return DiagnosticSegmentDisclosure.REDACTED;
+    }
 }

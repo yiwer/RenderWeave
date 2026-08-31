@@ -239,6 +239,7 @@ impl ResourceFetcher for NoFetch {
         _target: &AdmittedFetchTarget<'_>,
         _deadline_epoch_millis: i64,
         _state: &mut RequestResourceFetchState,
+        _control: &dyn renderweave_renderer_resource::ResourcePreparationControl,
     ) -> Result<FetchedResource, ResourceFetchProblem> {
         panic!("resource-free fixture must not fetch")
     }
@@ -254,6 +255,7 @@ impl ResourceFetcher for StaticFetch {
         target: &AdmittedFetchTarget<'_>,
         _deadline_epoch_millis: i64,
         state: &mut RequestResourceFetchState,
+        _control: &dyn renderweave_renderer_resource::ResourcePreparationControl,
     ) -> Result<FetchedResource, ResourceFetchProblem> {
         state.verify_owned_body(target, self.body.clone().into_boxed_slice())
     }

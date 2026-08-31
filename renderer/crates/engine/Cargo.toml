@@ -6,6 +6,9 @@ rust-version.workspace = true
 license.workspace = true
 publish = false
 
+[features]
+native-text-skia = []
+
 [dependencies]
 hex.workspace = true
 renderweave-renderer-document = { path = "../document" }

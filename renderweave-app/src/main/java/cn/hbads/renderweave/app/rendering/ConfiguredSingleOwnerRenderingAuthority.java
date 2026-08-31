@@ -161,6 +161,21 @@ final class ConfiguredSingleOwnerRenderingAuthority implements RenderingAuthorit
                 : new RecheckHidden();
     }
 
+    @Override
+    public DiagnosticSegmentDisclosure discloseDiagnosticSegment(
+            RecheckIdentity identity,
+            TemplateId templateId
+    ) {
+        Objects.requireNonNull(identity, "identity");
+        Objects.requireNonNull(templateId, "templateId");
+        if (!issuedRechecks.containsKey(identity.value()) || !capabilities.contains(READ)) {
+            return DiagnosticSegmentDisclosure.REDACTED;
+        }
+        return locate(templateId) == TargetState.VISIBLE
+                ? DiagnosticSegmentDisclosure.READABLE
+                : DiagnosticSegmentDisclosure.REDACTED;
+    }
+
     private boolean permitted(RenderPurpose purpose) {
         return capabilities.contains(RENDER)
                 && (purpose == RenderPurpose.FORMAL_OUTPUT || capabilities.contains(READ));

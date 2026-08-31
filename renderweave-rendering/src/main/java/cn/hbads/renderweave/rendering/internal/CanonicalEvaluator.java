@@ -28,7 +28,7 @@ import java.util.function.LongSupplier;
  * 原子封存。失败无 partial output；内部违约折叠 RENDER_INTERNAL_ERROR。Engine 执行（stage 9）
  * 由 RenderingApplication 接线，本 evaluate 终止于 SealedDocument。
  */
-final class CanonicalEvaluator implements Evaluator {
+final class CanonicalEvaluator implements DiagnosticEvaluator {
 
     private static final RenderingPipelineCapacityGuard CAPACITY_GUARD =
             new RenderingPipelineCapacityGuard();
@@ -106,8 +106,9 @@ final class CanonicalEvaluator implements Evaluator {
     }
 
     @Override
-    public EvaluationOutcome evaluate(EvaluationCommand command) {
+    public EvaluationOutcome evaluate(EvaluationCommand command, SidecarSink sidecarSink) {
         Objects.requireNonNull(command, "command");
+        Objects.requireNonNull(sidecarSink, "sidecarSink");
 
         if (deadlineExpired(command.admissionAndClosureDeadlineAtMonotonicNanos())) {
             return deadlineRejected(ADMISSION_AND_CLOSURE_DEADLINE_LIMIT);
@@ -324,6 +325,7 @@ final class CanonicalEvaluator implements Evaluator {
         if (evaluationControl.deadlineExceeded()) {
             return deadlineRejected(EVALUATION_AND_DOCUMENT_SEAL_DEADLINE_LIMIT);
         }
+        sidecarSink.accept(sealed.diagnosticSidecarCanonicalUtf8());
         return new EvaluationOutcome.SealedDocument(
                 command.renderRequestId(),
                 sealed.renderDocumentCanonicalUtf8(),

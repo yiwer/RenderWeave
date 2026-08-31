@@ -84,6 +84,7 @@ impl SurfaceDimensions {
 #[derive(Debug, Eq, PartialEq)]
 pub enum OutputPngError {
     Contract(&'static str),
+    Interrupted(PngEncodeInterruption),
     Budget {
         code: &'static str,
         stage: &'static str,
@@ -95,6 +96,10 @@ impl OutputPngError {
     pub fn code(&self) -> Option<&'static str> {
         match self {
             Self::Contract(_) => None,
+            Self::Interrupted(PngEncodeInterruption::Cancelled) => Some("RENDER_CANCELLED"),
+            Self::Interrupted(PngEncodeInterruption::DeadlineExceeded) => {
+                Some("RENDER_DEADLINE_EXCEEDED")
+            }
             Self::Budget { code, .. } => Some(code),
         }
     }
@@ -102,13 +107,14 @@ impl OutputPngError {
     pub fn stage(&self) -> Option<&'static str> {
         match self {
             Self::Contract(_) => None,
+            Self::Interrupted(_) => Some(ENCODING),
             Self::Budget { stage, .. } => Some(stage),
         }
     }
 
     pub fn limit_id(&self) -> Option<&'static str> {
         match self {
-            Self::Contract(_) => None,
+            Self::Contract(_) | Self::Interrupted(_) => None,
             Self::Budget { limit_id, .. } => Some(limit_id),
         }
     }
@@ -118,6 +124,9 @@ impl Display for OutputPngError {
     fn fmt(&self, formatter: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::Contract(message) => formatter.write_str(message),
+            Self::Interrupted(interruption) => {
+                write!(formatter, "PNG encoding was {interruption:?}")
+            }
             Self::Budget {
                 code,
                 stage,
@@ -128,6 +137,26 @@ impl Display for OutputPngError {
 }
 
 impl std::error::Error for OutputPngError {}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum PngEncodeInterruption {
+    Cancelled,
+    DeadlineExceeded,
+}
+
+pub trait PngEncodeControl: Sync {
+    fn checkpoint(&self) -> Result<(), PngEncodeInterruption>;
+}
+
+struct UnrestrictedPngEncode;
+
+impl PngEncodeControl for UnrestrictedPngEncode {
+    fn checkpoint(&self) -> Result<(), PngEncodeInterruption> {
+        Ok(())
+    }
+}
+
+static UNRESTRICTED_PNG_ENCODE: UnrestrictedPngEncode = UnrestrictedPngEncode;
 
 pub fn preflight_surface(
     spec: SurfaceSpec<'_>,
@@ -163,6 +192,17 @@ pub fn encode_straight_rgba8(
     dpi: u32,
     pixels: &[u8],
 ) -> Result<Vec<u8>, OutputPngError> {
+    encode_straight_rgba8_controlled(width_px, height_px, dpi, pixels, &UNRESTRICTED_PNG_ENCODE)
+}
+
+pub fn encode_straight_rgba8_controlled(
+    width_px: u32,
+    height_px: u32,
+    dpi: u32,
+    pixels: &[u8],
+    control: &dyn PngEncodeControl,
+) -> Result<Vec<u8>, OutputPngError> {
+    encode_checkpoint(control)?;
     let surface = preflight_pixel_dimensions(u64::from(width_px), u64::from(height_px), dpi)?;
     let expected_length =
         usize::try_from(surface.rgba8_bytes).map_err(|_| output_budget(EPHEMERAL_LIMIT))?;
@@ -202,6 +242,7 @@ pub fn encode_straight_rgba8(
     physical[4..8].copy_from_slice(&pixels_per_meter.to_be_bytes());
     physical[8] = 1;
     write_chunk(&mut encoded, b"pHYs", &physical);
+    encode_checkpoint(control)?;
 
     {
         let mut idat = IdatWriter::new(&mut encoded, zlib_bytes)?;
@@ -218,6 +259,7 @@ pub fn encode_straight_rgba8(
                 &mut block_remaining,
                 &mut idat,
                 &mut adler,
+                control,
             )?;
             let start = row * row_bytes;
             write_stored_bytes(
@@ -226,6 +268,7 @@ pub fn encode_straight_rgba8(
                 &mut block_remaining,
                 &mut idat,
                 &mut adler,
+                control,
             )?;
         }
         if remaining_raw != 0 || block_remaining != 0 {
@@ -236,6 +279,7 @@ pub fn encode_straight_rgba8(
         idat.write(&adler.finish().to_be_bytes())?;
         idat.finish()?;
     }
+    encode_checkpoint(control)?;
     write_chunk(&mut encoded, b"IEND", &[]);
     if encoded.len() != capacity {
         return Err(OutputPngError::Contract(
@@ -446,9 +490,11 @@ fn write_stored_bytes(
     block_remaining: &mut usize,
     idat: &mut IdatWriter<'_>,
     adler: &mut Adler32,
+    control: &dyn PngEncodeControl,
 ) -> Result<(), OutputPngError> {
     while !source.is_empty() {
         if *block_remaining == 0 {
+            encode_checkpoint(control)?;
             let length = (*remaining_raw).min(STORED_DEFLATE_BLOCK_BYTES as u64) as u16;
             if length == 0 {
                 return Err(OutputPngError::Contract(
@@ -476,6 +522,10 @@ fn write_stored_bytes(
         *remaining_raw -= amount as u64;
     }
     Ok(())
+}
+
+fn encode_checkpoint(control: &dyn PngEncodeControl) -> Result<(), OutputPngError> {
+    control.checkpoint().map_err(OutputPngError::Interrupted)
 }
 
 struct IdatWriter<'a> {
@@ -600,9 +650,13 @@ impl Crc32 {
 
 #[cfg(test)]
 mod tests {
-    use super::{BleedPt, OutputPngError, SurfaceSpec, encode_straight_rgba8, preflight_surface};
+    use super::{
+        BleedPt, OutputPngError, PngEncodeControl, PngEncodeInterruption, SurfaceSpec,
+        encode_straight_rgba8, encode_straight_rgba8_controlled, preflight_surface,
+    };
     use serde::Deserialize;
     use sha2::{Digest, Sha256};
+    use std::sync::atomic::{AtomicUsize, Ordering};
 
     const VECTORS: &str = include_str!("../../../output-png-vectors-v1.json");
 
@@ -796,6 +850,25 @@ mod tests {
     }
 
     #[test]
+    fn controlled_encoder_observes_cancellation_inside_the_deflate_chunk_loop() {
+        let control = CancelAfterCheckpoints {
+            checkpoints: AtomicUsize::new(0),
+            cancel_at: 3,
+        };
+        let pixels = vec![255_u8; 256 * 256 * 4];
+
+        let result = encode_straight_rgba8_controlled(256, 256, 96, &pixels, &control);
+
+        assert_eq!(
+            result,
+            Err(OutputPngError::Interrupted(
+                PngEncodeInterruption::Cancelled
+            ))
+        );
+        assert_eq!(control.checkpoints.load(Ordering::SeqCst), 3);
+    }
+
+    #[test]
     fn malformed_decimal_and_pixel_contracts_fail_closed() {
         for decimal in ["", "+1", "01", "1.", ".1", "1.0", "1e0", "-1", "0.0000001"] {
             let result = preflight_surface(
@@ -819,6 +892,22 @@ mod tests {
             encode_straight_rgba8(1, 1, 96, &[1, 0, 0, 0]),
             Err(OutputPngError::Contract(_))
         ));
+    }
+
+    struct CancelAfterCheckpoints {
+        checkpoints: AtomicUsize,
+        cancel_at: usize,
+    }
+
+    impl PngEncodeControl for CancelAfterCheckpoints {
+        fn checkpoint(&self) -> Result<(), PngEncodeInterruption> {
+            let observed = self.checkpoints.fetch_add(1, Ordering::SeqCst) + 1;
+            if observed >= self.cancel_at {
+                Err(PngEncodeInterruption::Cancelled)
+            } else {
+                Ok(())
+            }
+        }
     }
 
     fn vectors() -> Vectors {

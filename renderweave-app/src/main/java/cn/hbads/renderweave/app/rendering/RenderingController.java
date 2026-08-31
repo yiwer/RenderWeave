@@ -234,7 +234,38 @@ final class RenderingController {
             case RENDER_DEADLINE_EXCEEDED, CAPABILITY_DEADLINE_EXCEEDED ->
                     HttpStatus.GATEWAY_TIMEOUT;
             case RENDER_INTERNAL_ERROR -> HttpStatus.INTERNAL_SERVER_ERROR;
-            default -> HttpStatus.UNPROCESSABLE_ENTITY;
+            case RENDER_INPUT_LIMIT_EXCEEDED,
+                    TEMPLATE_NOT_FOUND,
+                    TEMPLATE_DELETED,
+                    TEMPLATE_DEPENDENCY_ERROR,
+                    TEMPLATE_AUTHORITY_UNAVAILABLE,
+                    TEMPLATE_CLOSURE_LIMIT_EXCEEDED,
+                    TEMPLATE_CLOSURE_UNSTABLE,
+                    DESIGN_DSL_LIMIT_EXCEEDED,
+                    ASSET_BUDGET_EXCEEDED,
+                    ASSET_NOT_FOUND,
+                    ASSET_RESOLVE_NOT_FOUND,
+                    ASSET_RESOLVE_DELETED,
+                    ASSET_RESOLVE_KIND_MISMATCH,
+                    CAPABILITY_BUDGET_EXCEEDED,
+                    CAPABILITY_STATE_CONFLICT,
+                    CAPABILITY_RESULT_INVALID,
+                    CAPABILITY_CANCELLED,
+                    EXPRESSION_LIMIT_EXCEEDED,
+                    EVALUATION_BUDGET_EXCEEDED,
+                    EVALUATION_FAILED,
+                    RENDER_DOCUMENT_LIMIT_EXCEEDED,
+                    RENDER_DIAGNOSTIC_LIMIT_EXCEEDED,
+                    RESOURCE_BUDGET_EXCEEDED,
+                    RESOURCE_LEASE_EXPIRED,
+                    LENGTH_MISMATCH,
+                    HASH_MISMATCH,
+                    MEDIA_MISMATCH,
+                    DECODE_FAILED,
+                    FONT_GLYPH_MISSING,
+                    RASTER_BUDGET_EXCEEDED,
+                    OUTPUT_BUDGET_EXCEEDED,
+                    RENDER_LAYOUT_TRACE_LIMIT_EXCEEDED -> HttpStatus.UNPROCESSABLE_ENTITY;
         };
     }
 

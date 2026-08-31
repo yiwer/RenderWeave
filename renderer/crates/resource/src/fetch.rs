@@ -28,6 +28,16 @@ const FETCH_CHECKPOINT_MILLIS: u64 = 50;
 const TRANSPORT_IDENTITY: &str = "ureq/3.4.0+rustls-webpki";
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum ResourcePreparationInterruption {
+    Cancelled,
+    DeadlineExceeded,
+}
+
+pub trait ResourcePreparationControl: Sync {
+    fn checkpoint(&self) -> Result<(), ResourcePreparationInterruption>;
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct FetchEgressPolicyError;
 
 #[derive(Clone, Eq, PartialEq)]
@@ -88,6 +98,7 @@ pub enum ResourceFetchProblemCode {
     FetchFailed,
     ResourceLeaseExpired,
     RenderDeadlineExceeded,
+    RenderCancelled,
     ResourceBudgetExceeded,
     LengthMismatch,
     HashMismatch,
@@ -99,6 +110,7 @@ impl ResourceFetchProblemCode {
             Self::FetchFailed => "FETCH_FAILED",
             Self::ResourceLeaseExpired => "RESOURCE_LEASE_EXPIRED",
             Self::RenderDeadlineExceeded => "RENDER_DEADLINE_EXCEEDED",
+            Self::RenderCancelled => "RENDER_CANCELLED",
             Self::ResourceBudgetExceeded => "RESOURCE_BUDGET_EXCEEDED",
             Self::LengthMismatch => "LENGTH_MISMATCH",
             Self::HashMismatch => "HASH_MISMATCH",
@@ -164,6 +176,14 @@ impl ResourceFetchProblem {
     fn deadline() -> Self {
         Self {
             code: ResourceFetchProblemCode::RenderDeadlineExceeded,
+            resource_id: None,
+            limit_id: None,
+        }
+    }
+
+    fn cancelled() -> Self {
+        Self {
+            code: ResourceFetchProblemCode::RenderCancelled,
             resource_id: None,
             limit_id: None,
         }
@@ -280,6 +300,7 @@ pub trait ResourceFetcher: Send + Sync {
         target: &AdmittedFetchTarget<'_>,
         deadline_epoch_millis: i64,
         state: &mut RequestResourceFetchState,
+        control: &dyn ResourcePreparationControl,
     ) -> Result<FetchedResource, ResourceFetchProblem>;
 }
 
@@ -359,21 +380,23 @@ impl HttpsResourceFetcher {
         deadline_epoch_millis: i64,
         phase_started: Instant,
         budget: &mut PhysicalFetchBudget,
+        control: &dyn ResourcePreparationControl,
     ) -> Result<FetchedResource, ResourceFetchProblem> {
         for attempt_index in 0..FETCH_ATTEMPT_LIMIT {
-            checkpoint(target, deadline_epoch_millis, phase_started)?;
-            let timeout = attempt_timeout(target, deadline_epoch_millis, phase_started)?;
+            checkpoint(target, deadline_epoch_millis, phase_started, control)?;
+            let timeout = attempt_timeout(target, deadline_epoch_millis, phase_started, control)?;
             match self.fetch_attempt(
                 target,
                 timeout,
                 deadline_epoch_millis,
                 phase_started,
                 budget,
+                control,
             ) {
                 Ok(resource) => return Ok(resource),
                 Err(AttemptFailure::Terminal(problem)) => return Err(problem),
                 Err(AttemptFailure::Retryable) if attempt_index + 1 < FETCH_ATTEMPT_LIMIT => {
-                    wait_before_retry(target, deadline_epoch_millis, phase_started)?;
+                    wait_before_retry(target, deadline_epoch_millis, phase_started, control)?;
                 }
                 Err(AttemptFailure::Retryable) => {
                     return Err(ResourceFetchProblem::for_resource(
@@ -393,6 +416,7 @@ impl HttpsResourceFetcher {
         deadline_epoch_millis: i64,
         phase_started: Instant,
         budget: &mut PhysicalFetchBudget,
+        control: &dyn ResourcePreparationControl,
     ) -> Result<FetchedResource, AttemptFailure> {
         let response = self
             .agent(timeout)
@@ -414,6 +438,7 @@ impl HttpsResourceFetcher {
                 deadline_epoch_millis,
                 phase_started,
                 budget,
+                control,
             ),
             ResponseDisposition::RetryableStatus => {
                 drain_body(
@@ -422,6 +447,7 @@ impl HttpsResourceFetcher {
                     deadline_epoch_millis,
                     phase_started,
                     budget,
+                    control,
                 )?;
                 Err(AttemptFailure::Retryable)
             }
@@ -436,12 +462,14 @@ impl ResourceFetcher for HttpsResourceFetcher {
         target: &AdmittedFetchTarget<'_>,
         deadline_epoch_millis: i64,
         state: &mut RequestResourceFetchState,
+        control: &dyn ResourcePreparationControl,
     ) -> Result<FetchedResource, ResourceFetchProblem> {
         self.fetch_one(
             target,
             deadline_epoch_millis,
             state.phase_started,
             &mut state.physical_budget,
+            control,
         )
     }
 }
@@ -553,6 +581,7 @@ fn read_verified_body(
     deadline_epoch_millis: i64,
     phase_started: Instant,
     budget: &mut PhysicalFetchBudget,
+    control: &dyn ResourcePreparationControl,
 ) -> Result<FetchedResource, AttemptFailure> {
     let capacity = usize::try_from(target.resource().byte_length()).map_err(|_| {
         AttemptFailure::Terminal(ResourceFetchProblem::for_resource(
@@ -570,12 +599,12 @@ fn read_verified_body(
     let mut verifier = ResourceBodyVerifier::new(target.resource(), budget);
     let mut chunk = vec![0_u8; FETCH_STREAM_CHUNK_BYTES];
     loop {
-        checkpoint(target, deadline_epoch_millis, phase_started)
+        checkpoint(target, deadline_epoch_millis, phase_started, control)
             .map_err(AttemptFailure::Terminal)?;
         let read = match reader.read(&mut chunk) {
             Ok(read) => read,
             Err(_) => {
-                return match checkpoint(target, deadline_epoch_millis, phase_started) {
+                return match checkpoint(target, deadline_epoch_millis, phase_started, control) {
                     Ok(()) => Err(AttemptFailure::Retryable),
                     Err(problem) => Err(AttemptFailure::Terminal(problem)),
                 };
@@ -590,7 +619,8 @@ fn read_verified_body(
             .map_err(AttemptFailure::Terminal)?;
         bytes.extend_from_slice(&chunk[..read]);
     }
-    checkpoint(target, deadline_epoch_millis, phase_started).map_err(AttemptFailure::Terminal)?;
+    checkpoint(target, deadline_epoch_millis, phase_started, control)
+        .map_err(AttemptFailure::Terminal)?;
     let verified_body = verifier
         .finish()
         .map_err(ResourceFetchProblem::from_body)
@@ -607,10 +637,11 @@ fn drain_body(
     deadline_epoch_millis: i64,
     phase_started: Instant,
     budget: &mut PhysicalFetchBudget,
+    control: &dyn ResourcePreparationControl,
 ) -> Result<(), AttemptFailure> {
     let mut chunk = vec![0_u8; FETCH_STREAM_CHUNK_BYTES];
     loop {
-        checkpoint(target, deadline_epoch_millis, phase_started)
+        checkpoint(target, deadline_epoch_millis, phase_started, control)
             .map_err(AttemptFailure::Terminal)?;
         let read = match reader.read(&mut chunk) {
             Ok(read) => read,
@@ -650,7 +681,14 @@ fn checkpoint(
     target: &AdmittedFetchTarget<'_>,
     deadline_epoch_millis: i64,
     phase_started: Instant,
+    control: &dyn ResourcePreparationControl,
 ) -> Result<(), ResourceFetchProblem> {
+    control
+        .checkpoint()
+        .map_err(|interruption| match interruption {
+            ResourcePreparationInterruption::Cancelled => ResourceFetchProblem::cancelled(),
+            ResourcePreparationInterruption::DeadlineExceeded => ResourceFetchProblem::deadline(),
+        })?;
     let now = now_epoch_millis();
     if now >= deadline_epoch_millis
         || phase_started.elapsed() >= Duration::from_millis(RESOURCE_PHASE_MILLIS)
@@ -671,8 +709,9 @@ fn attempt_timeout(
     target: &AdmittedFetchTarget<'_>,
     deadline_epoch_millis: i64,
     phase_started: Instant,
+    control: &dyn ResourcePreparationControl,
 ) -> Result<Duration, ResourceFetchProblem> {
-    checkpoint(target, deadline_epoch_millis, phase_started)?;
+    checkpoint(target, deadline_epoch_millis, phase_started, control)?;
     let now = now_epoch_millis();
     let deadline_remaining = u64::try_from(deadline_epoch_millis - now).unwrap_or(0);
     let lease_expiry = i128::from(target.resource().expires_at_epoch_second()) * 1_000;
@@ -684,7 +723,7 @@ fn attempt_timeout(
         .min(lease_remaining)
         .min(phase_remaining);
     if millis == 0 {
-        checkpoint(target, deadline_epoch_millis, phase_started)?;
+        checkpoint(target, deadline_epoch_millis, phase_started, control)?;
         return Err(ResourceFetchProblem::deadline());
     }
     Ok(Duration::from_millis(millis))
@@ -694,15 +733,16 @@ fn wait_before_retry(
     target: &AdmittedFetchTarget<'_>,
     deadline_epoch_millis: i64,
     phase_started: Instant,
+    control: &dyn ResourcePreparationControl,
 ) -> Result<(), ResourceFetchProblem> {
     let mut remaining = FETCH_BACKOFF_MILLIS;
     while remaining > 0 {
-        checkpoint(target, deadline_epoch_millis, phase_started)?;
+        checkpoint(target, deadline_epoch_millis, phase_started, control)?;
         let slice = remaining.min(FETCH_CHECKPOINT_MILLIS);
         thread::sleep(Duration::from_millis(slice));
         remaining -= slice;
     }
-    checkpoint(target, deadline_epoch_millis, phase_started)
+    checkpoint(target, deadline_epoch_millis, phase_started, control)
 }
 
 fn now_epoch_millis() -> i64 {
@@ -723,6 +763,7 @@ mod tests {
     use sha2::Digest as _;
     use std::io::Write as _;
     use std::net::{TcpListener, TcpStream};
+    use std::sync::atomic::{AtomicUsize, Ordering};
     use std::sync::{Arc, Mutex};
 
     const VECTORS: &str = include_str!("../../../resource-fetch-transport-vectors-v1.json");
@@ -863,7 +904,12 @@ mod tests {
         );
         let mut state = RequestResourceFetchState::new();
         let fetched = fetcher
-            .fetch_resource(&targets[0], now_epoch_millis() + 10_000, &mut state)
+            .fetch_resource(
+                &targets[0],
+                now_epoch_millis() + 10_000,
+                &mut state,
+                &ContinueFetch,
+            )
             .unwrap();
         assert_eq!(fetched.bytes(), body);
         assert_eq!(fetched.verified_body().byte_length(), 11);
@@ -881,6 +927,69 @@ mod tests {
             assert!(!lowercase.contains("\r\nauthorization:"));
             assert!(!lowercase.contains("\r\nuser-agent:"));
             assert!(!lowercase.contains("\r\naccept:"));
+        }
+    }
+
+    #[test]
+    fn retry_backoff_observes_request_cancellation_before_a_second_attempt() {
+        let fixture = tls_fixture();
+        let requests = Arc::new(Mutex::new(Vec::new()));
+        let server = spawn_tls_server(
+            fixture.server_config,
+            vec![response(503, b"")],
+            requests.clone(),
+        );
+        let origin = format!("https://localhost:{}", server.port);
+        let document = document_for(&origin, b"hello world");
+        let policy =
+            super::super::FetchTargetPolicy::new(&origin, super::super::ASSET_FETCH_PATH_PREFIX)
+                .unwrap();
+        let target = policy.admit(&document.resources()[0]).unwrap();
+        let fetcher = HttpsResourceFetcher::with_root_certs(
+            FetchEgressPolicy::new(["127.0.0.1"]).unwrap(),
+            RootCerts::new_with_certs(&[ureq::tls::Certificate::from_der(
+                fixture.root_der.as_ref(),
+            )
+            .to_owned()]),
+        );
+        let control = CancelFetchAtCheckpoint {
+            checkpoints: AtomicUsize::new(0),
+            cancel_at: 4,
+        };
+        let mut state = RequestResourceFetchState::new();
+
+        let problem = fetcher
+            .fetch_resource(&target, now_epoch_millis() + 10_000, &mut state, &control)
+            .unwrap_err();
+
+        server.thread.join().unwrap();
+        assert_eq!(problem.code(), ResourceFetchProblemCode::RenderCancelled);
+        assert_eq!(problem.resource_id(), None);
+        assert_eq!(requests.lock().unwrap().len(), 1);
+        assert_eq!(control.checkpoints.load(Ordering::SeqCst), 4);
+    }
+
+    struct CancelFetchAtCheckpoint {
+        checkpoints: AtomicUsize,
+        cancel_at: usize,
+    }
+
+    struct ContinueFetch;
+
+    impl ResourcePreparationControl for ContinueFetch {
+        fn checkpoint(&self) -> Result<(), ResourcePreparationInterruption> {
+            Ok(())
+        }
+    }
+
+    impl ResourcePreparationControl for CancelFetchAtCheckpoint {
+        fn checkpoint(&self) -> Result<(), ResourcePreparationInterruption> {
+            let observed = self.checkpoints.fetch_add(1, Ordering::SeqCst) + 1;
+            if observed >= self.cancel_at {
+                Err(ResourcePreparationInterruption::Cancelled)
+            } else {
+                Ok(())
+            }
         }
     }
 

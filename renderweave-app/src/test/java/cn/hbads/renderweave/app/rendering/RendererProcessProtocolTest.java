@@ -2,6 +2,7 @@ package cn.hbads.renderweave.app.rendering;
 
 import cn.hbads.renderweave.rendering.api.Evaluator.OutputSelection;
 import cn.hbads.renderweave.rendering.api.Evaluator.RenderRequestId;
+import cn.hbads.renderweave.rendering.spi.RenderEngine.EngineProblemStage;
 import cn.hbads.renderweave.rendering.spi.RenderEngine.RendererCommand;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
@@ -19,6 +20,7 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /** Primary Java replay for the frozen renderer process wire vectors (TV1-T22). */
 class RendererProcessProtocolTest {
@@ -169,9 +171,30 @@ class RendererProcessProtocolTest {
                     .getBytes(StandardCharsets.UTF_8);
             var parsed = RendererProcessProtocol.parseProblem(payload);
             assertEquals(code, parsed.code().name());
-            assertEquals("RESOURCE_PREPARATION", parsed.engineStage());
-            assertEquals(resourceId, parsed.safeLocation().orElseThrow());
+            assertEquals(EngineProblemStage.RESOURCE_PREPARATION, parsed.engineStage());
+            assertEquals(resourceId, parsed.resourceId().orElseThrow());
+            assertTrue(parsed.occurrenceId().isEmpty());
         }
+    }
+
+    @Test
+    void shapingProblemCarriesBothOpaqueLocators() throws Exception {
+        var occurrenceId = "rwocc_0000000000000001";
+        var resourceId =
+                "rwres_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+        var payload = ("{\"contractVersion\":\"renderweave-render-problem/1.0\","
+                + "\"requestId\":\"123e4567-e89b-42d3-a456-426614174000\","
+                + "\"code\":\"FONT_GLYPH_MISSING\",\"engineStage\":\"SHAPING\","
+                + "\"occurrenceId\":\"" + occurrenceId + "\","
+                + "\"resourceId\":\"" + resourceId + "\",\"parameters\":{}}")
+                .getBytes(StandardCharsets.UTF_8);
+
+        var parsed = RendererProcessProtocol.parseProblem(payload);
+
+        assertEquals("FONT_GLYPH_MISSING", parsed.code().name());
+        assertEquals(EngineProblemStage.SHAPING, parsed.engineStage());
+        assertEquals(occurrenceId, parsed.occurrenceId().orElseThrow());
+        assertEquals(resourceId, parsed.resourceId().orElseThrow());
     }
 
     @Test

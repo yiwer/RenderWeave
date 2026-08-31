@@ -12,6 +12,7 @@ pub use fetch::{
     FETCH_RESPONSE_HEADER_BYTES, FETCH_STREAM_CHUNK_BYTES, FetchEgressPolicy,
     FetchEgressPolicyError, FetchedResource, HttpsResourceFetcher, RESOURCE_PHASE_MILLIS,
     RequestResourceFetchState, ResourceFetchProblem, ResourceFetchProblemCode, ResourceFetcher,
+    ResourcePreparationControl, ResourcePreparationInterruption,
 };
 pub use font::{
     FONT_TABLES_PER_CONTENT_LIMIT_ID, MAX_FONT_TABLES_PER_CONTENT, MAX_REQUEST_FONT_TABLES,

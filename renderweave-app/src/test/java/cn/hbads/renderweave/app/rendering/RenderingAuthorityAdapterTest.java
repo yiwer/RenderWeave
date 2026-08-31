@@ -32,6 +32,8 @@ class RenderingAuthorityAdapterTest {
             RenderInvocationRef.serverCreated("render-authority-test");
     private static final TemplateId TEMPLATE =
             TemplateId.of("00000000-0000-4000-8000-0000000000a1");
+    private static final TemplateId CHILD_TEMPLATE =
+            TemplateId.of("00000000-0000-4000-8000-0000000000a2");
     private static final StaticSchemaRef SCHEMA = new StaticSchemaRef(
             SchemaKey.systemProvided("system-empty"),
             VersionTag.of("v1"));
@@ -47,6 +49,9 @@ class RenderingAuthorityAdapterTest {
                 .isInstanceOf(RenderingAuthority.Unavailable.class);
         assertThat(authority.recheck(new RenderingAuthority.RecheckIdentity("missing")))
                 .isInstanceOf(RenderingAuthority.RecheckUnavailable.class);
+        assertThat(authority.discloseDiagnosticSegment(
+                new RenderingAuthority.RecheckIdentity("missing"), TEMPLATE))
+                .isEqualTo(RenderingAuthority.DiagnosticSegmentDisclosure.REDACTED);
         assertThat(new FailClosedRendererProfileAuthority().select(
                 OutputSelection.defaultPng()))
                 .isInstanceOf(RendererProfileAuthority.Unavailable.class);
@@ -67,8 +72,12 @@ class RenderingAuthorityAdapterTest {
         assertThat(formal.disclosure()).isEqualTo(RenderingAuthority.Disclosure.OPAQUE);
         assertThat(formal.externalAssetReadAuthorization())
                 .isEqualTo(ExternalAssetReadAuthorization.DENIED);
+        assertThat(renderOnly.discloseDiagnosticSegment(formal.recheckIdentity(), TEMPLATE))
+                .isEqualTo(RenderingAuthority.DiagnosticSegmentDisclosure.REDACTED);
         assertThat(renderOnly.recheck(formal.recheckIdentity()))
                 .isInstanceOf(RenderingAuthority.RecheckGranted.class);
+        assertThat(renderOnly.discloseDiagnosticSegment(formal.recheckIdentity(), TEMPLATE))
+                .isEqualTo(RenderingAuthority.DiagnosticSegmentDisclosure.REDACTED);
         assertThat(renderOnly.recheck(formal.recheckIdentity()))
                 .isInstanceOf(RenderingAuthority.RecheckUnavailable.class);
         assertThat(renderOnly.authorize(
@@ -103,6 +112,10 @@ class RenderingAuthorityAdapterTest {
                 TEMPLATE,
                 RenderPurpose.AUTHORITATIVE_PREVIEW);
         assertThat(granted.disclosure()).isEqualTo(RenderingAuthority.Disclosure.READABLE);
+        assertThat(preview.discloseDiagnosticSegment(granted.recheckIdentity(), TEMPLATE))
+                .isEqualTo(RenderingAuthority.DiagnosticSegmentDisclosure.READABLE);
+        assertThat(preview.discloseDiagnosticSegment(granted.recheckIdentity(), CHILD_TEMPLATE))
+                .isEqualTo(RenderingAuthority.DiagnosticSegmentDisclosure.REDACTED);
     }
 
     @Test

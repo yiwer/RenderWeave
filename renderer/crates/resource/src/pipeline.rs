@@ -1,8 +1,9 @@
 use crate::{
     FetchTargetPolicy, PreparedDecodedImage, PreparedFontResource, RESOURCE_PREPARATION_STAGE,
     RequestDecodedImageCache, RequestPreparedFontCache, RequestRawResourceCache,
-    RequestResourceFetchState, ResourceFetchProblem, ResourceFetcher, ResourcePreparationProblem,
-    ResourcePreparationProblemCode, ResourcePreparationProfile,
+    RequestResourceFetchState, ResourceFetchProblem, ResourceFetcher, ResourcePreparationControl,
+    ResourcePreparationInterruption, ResourcePreparationProblem, ResourcePreparationProblemCode,
+    ResourcePreparationProfile,
 };
 use renderweave_renderer_document::{AdmittedRenderResource, RenderResourceKind};
 use std::collections::{BTreeMap, BTreeSet};
@@ -161,8 +162,20 @@ enum PipelineFailure {
     Fetch(ResourceFetchProblem),
     Preparation(ResourcePreparationProblem),
     Deadline,
+    Cancelled,
     Internal,
 }
+
+struct UnrestrictedResourcePreparation;
+
+impl ResourcePreparationControl for UnrestrictedResourcePreparation {
+    fn checkpoint(&self) -> Result<(), ResourcePreparationInterruption> {
+        Ok(())
+    }
+}
+
+static UNRESTRICTED_RESOURCE_PREPARATION: UnrestrictedResourcePreparation =
+    UnrestrictedResourcePreparation;
 
 #[derive(Clone, Eq, PartialEq)]
 pub struct ResourcePipelineProblem {
@@ -175,6 +188,7 @@ impl ResourcePipelineProblem {
             PipelineFailure::Fetch(problem) => problem.code().as_str(),
             PipelineFailure::Preparation(problem) => problem.code().as_str(),
             PipelineFailure::Deadline => "RENDER_DEADLINE_EXCEEDED",
+            PipelineFailure::Cancelled => "RENDER_CANCELLED",
             PipelineFailure::Internal => "RENDER_INTERNAL_ERROR",
         }
     }
@@ -193,6 +207,7 @@ impl ResourcePipelineProblem {
             }
             PipelineFailure::Preparation(_)
             | PipelineFailure::Deadline
+            | PipelineFailure::Cancelled
             | PipelineFailure::Internal => None,
         }
     }
@@ -201,7 +216,9 @@ impl ResourcePipelineProblem {
         match &self.failure {
             PipelineFailure::Fetch(problem) => problem.limit_id(),
             PipelineFailure::Preparation(problem) => problem.limit_id(),
-            PipelineFailure::Deadline | PipelineFailure::Internal => None,
+            PipelineFailure::Deadline | PipelineFailure::Cancelled | PipelineFailure::Internal => {
+                None
+            }
         }
     }
 
@@ -214,6 +231,15 @@ impl ResourcePipelineProblem {
     fn internal() -> Self {
         Self {
             failure: PipelineFailure::Internal,
+        }
+    }
+
+    fn interrupted(interruption: ResourcePreparationInterruption) -> Self {
+        Self {
+            failure: match interruption {
+                ResourcePreparationInterruption::Cancelled => PipelineFailure::Cancelled,
+                ResourcePreparationInterruption::DeadlineExceeded => PipelineFailure::Deadline,
+            },
         }
     }
 }
@@ -270,6 +296,22 @@ impl<'dependency> ManifestResourcePreparer<'dependency> {
         deadline_epoch_millis: i64,
         request_started_epoch_millis: i64,
     ) -> Result<PreparedResourceManifest, ResourcePipelineProblem> {
+        self.prepare_controlled(
+            resources,
+            deadline_epoch_millis,
+            request_started_epoch_millis,
+            &UNRESTRICTED_RESOURCE_PREPARATION,
+        )
+    }
+
+    pub fn prepare_controlled(
+        &self,
+        resources: &[AdmittedRenderResource],
+        deadline_epoch_millis: i64,
+        request_started_epoch_millis: i64,
+        control: &dyn ResourcePreparationControl,
+    ) -> Result<PreparedResourceManifest, ResourcePipelineProblem> {
+        resource_checkpoint(control)?;
         require_unique_resource_ids(resources)?;
         let phase_started = Instant::now();
         ensure_deadline(
@@ -287,6 +329,7 @@ impl<'dependency> ManifestResourcePreparer<'dependency> {
             .map_err(|_| ResourcePipelineProblem::internal())?;
 
         for resource in resources {
+            resource_checkpoint(control)?;
             ensure_deadline(
                 deadline_epoch_millis,
                 wall_now(request_started_epoch_millis, phase_started),
@@ -295,12 +338,17 @@ impl<'dependency> ManifestResourcePreparer<'dependency> {
                 .target_policy
                 .admit(resource)
                 .map_err(|_| ResourcePipelineProblem::internal())?;
-            let fetched =
-                self.fetcher
-                    .fetch_resource(&target, deadline_epoch_millis, &mut fetch_state)?;
+            let fetched = self.fetcher.fetch_resource(
+                &target,
+                deadline_epoch_millis,
+                &mut fetch_state,
+                control,
+            )?;
+            resource_checkpoint(control)?;
             let after_fetch = wall_now(request_started_epoch_millis, phase_started);
             ensure_deadline(deadline_epoch_millis, after_fetch)?;
             let raw = raw_cache.insert_fetched(resource, self.profile, fetched, after_fetch)?;
+            resource_checkpoint(control)?;
             let raw_cache_hit = raw.cache_hit();
             let prepared_resource = match resource.kind() {
                 RenderResourceKind::Image => PreparedRenderResource::Image {
@@ -322,12 +370,15 @@ impl<'dependency> ManifestResourcePreparer<'dependency> {
                     )?,
                 },
             };
+            resource_checkpoint(control)?;
             ensure_deadline(
                 deadline_epoch_millis,
                 wall_now(request_started_epoch_millis, phase_started),
             )?;
             prepared.push(prepared_resource);
         }
+
+        resource_checkpoint(control)?;
 
         let mut index_by_resource_id = BTreeMap::new();
         for (index, resource) in prepared.iter().enumerate() {
@@ -354,6 +405,14 @@ impl<'dependency> ManifestResourcePreparer<'dependency> {
             stats,
         })
     }
+}
+
+fn resource_checkpoint(
+    control: &dyn ResourcePreparationControl,
+) -> Result<(), ResourcePipelineProblem> {
+    control
+        .checkpoint()
+        .map_err(ResourcePipelineProblem::interrupted)
 }
 
 impl Debug for ManifestResourcePreparer<'_> {
@@ -765,6 +824,7 @@ mod tests {
             target: &crate::AdmittedFetchTarget<'_>,
             _deadline_epoch_millis: i64,
             state: &mut RequestResourceFetchState,
+            _control: &dyn ResourcePreparationControl,
         ) -> Result<crate::FetchedResource, ResourceFetchProblem> {
             let mut observations = self.observations.lock().unwrap();
             let index = observations.len();

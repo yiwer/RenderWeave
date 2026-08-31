@@ -20,14 +20,33 @@ import urllib.parse
 import urllib.request
 import zipfile
 from pathlib import Path, PurePosixPath
-from typing import Any
+from typing import Any, NamedTuple
 
 
 LOCK_VERSION_V1 = "renderweave-renderer-hermetic-build-lock/1.0"
 LOCK_VERSION_V2 = "renderweave-renderer-hermetic-build-lock/2.0"
+LOCK_VERSION_V3 = "renderweave-renderer-hermetic-build-lock/3.0"
 REPORT_VERSION = "renderweave-renderer-hermetic-build-closure/1.0"
 CANDIDATE_V2_ID = "rw-renderer-spike-linux-x86_64-v2-000002"
 CANDIDATE_V3_ID = "rw-renderer-spike-linux-x86_64-v2-000003"
+PRODUCTION_TEXT_CANDIDATE_ID = "rw-renderer-production-text-linux-x86_64-v2-000001"
+
+
+class LockGeneration(NamedTuple):
+    candidate_id: str
+    predecessor_version: str | None
+    predecessor_candidate_id: str | None
+
+
+LOCK_GENERATIONS = {
+    LOCK_VERSION_V1: LockGeneration(CANDIDATE_V2_ID, None, None),
+    LOCK_VERSION_V2: LockGeneration(CANDIDATE_V3_ID, LOCK_VERSION_V1, CANDIDATE_V2_ID),
+    LOCK_VERSION_V3: LockGeneration(
+        PRODUCTION_TEXT_CANDIDATE_ID,
+        LOCK_VERSION_V2,
+        CANDIDATE_V3_ID,
+    ),
+}
 REQUIRED_CATEGORIES = {
     "build-tools",
     "canonical-icc",
@@ -271,7 +290,10 @@ def require_git_commit_object(
 def load_lock(verifier: Verifier, lock_path: Path) -> tuple[dict[str, Any], bytes]:
     lock_bytes = lock_path.read_bytes()
     decoded = decode_json(verifier, lock_bytes, lock_path)
-    if decoded.get("lockVersion") == LOCK_VERSION_V2:
+    decoded_version = decoded.get("lockVersion")
+    generation = LOCK_GENERATIONS.get(decoded_version)
+    if generation is not None and generation.predecessor_version is not None:
+        assert generation.predecessor_candidate_id is not None
         successor = require_members(
             verifier,
             decoded,
@@ -285,7 +307,7 @@ def load_lock(verifier: Verifier, lock_path: Path) -> tuple[dict[str, Any], byte
             "LOCK_MEMBERS",
         )
         verifier.require(
-            successor["candidateId"] == CANDIDATE_V3_ID,
+            successor["candidateId"] == generation.candidate_id,
             "CANDIDATE_ID",
             successor["candidateId"],
         )
@@ -321,12 +343,12 @@ def load_lock(verifier: Verifier, lock_path: Path) -> tuple[dict[str, Any], byte
         base_lock, admitted_base_bytes = load_lock(verifier, base_path)
         verifier.require(base_bytes == admitted_base_bytes, "BASE_LOCK_READ_STABILITY", base_path)
         verifier.require(
-            base_lock["lockVersion"] == LOCK_VERSION_V1,
+            base_lock["lockVersion"] == generation.predecessor_version,
             "BASE_LOCK_VERSION",
             base_lock["lockVersion"],
         )
         verifier.require(
-            base_lock["candidateId"] == CANDIDATE_V2_ID,
+            base_lock["candidateId"] == generation.predecessor_candidate_id,
             "BASE_LOCK_CANDIDATE_ID",
             base_lock["candidateId"],
         )
@@ -366,7 +388,7 @@ def load_lock(verifier: Verifier, lock_path: Path) -> tuple[dict[str, Any], byte
             addition_ids.add(input_id)
             effective_inputs[input_id] = raw
         lock = {
-            "lockVersion": LOCK_VERSION_V2,
+            "lockVersion": decoded_version,
             "candidateId": successor["candidateId"],
             "target": base_lock["target"],
             "environment": base_lock["environment"],
@@ -379,17 +401,18 @@ def load_lock(verifier: Verifier, lock_path: Path) -> tuple[dict[str, Any], byte
             {"lockVersion", "candidateId", "target", "environment", "inputs"},
             "LOCK_MEMBERS",
         )
-    expected_candidate = (
-        CANDIDATE_V3_ID
-        if lock["lockVersion"] == LOCK_VERSION_V2
-        else CANDIDATE_V2_ID
-    )
+    generation = LOCK_GENERATIONS.get(lock["lockVersion"])
     verifier.require(
-        lock["lockVersion"] in {LOCK_VERSION_V1, LOCK_VERSION_V2},
+        generation is not None,
         "LOCK_VERSION",
         lock["lockVersion"],
     )
-    verifier.require(lock["candidateId"] == expected_candidate, "CANDIDATE_ID", lock["candidateId"])
+    assert generation is not None
+    verifier.require(
+        lock["candidateId"] == generation.candidate_id,
+        "CANDIDATE_ID",
+        lock["candidateId"],
+    )
     target = require_members(
         verifier,
         lock["target"],

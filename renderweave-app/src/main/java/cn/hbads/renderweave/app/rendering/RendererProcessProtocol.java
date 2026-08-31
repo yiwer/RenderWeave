@@ -4,6 +4,7 @@ import cn.hbads.renderweave.rendering.api.Evaluator.OutputSelection;
 import cn.hbads.renderweave.rendering.api.RenderingProblem;
 import cn.hbads.renderweave.rendering.api.RenderingProblem.LimitId;
 import cn.hbads.renderweave.rendering.api.RenderingProblem.ProblemCode;
+import cn.hbads.renderweave.rendering.spi.RenderEngine.EngineProblemStage;
 import cn.hbads.renderweave.rendering.spi.RenderEngine.RendererCommand;
 import tools.jackson.core.StreamReadFeature;
 import tools.jackson.core.json.JsonFactory;
@@ -129,8 +130,9 @@ final class RendererProcessProtocol {
     record ParsedProblem(
             String requestId,
             ProblemCode code,
-            String engineStage,
-            Optional<String> safeLocation,
+            EngineProblemStage engineStage,
+            Optional<String> occurrenceId,
+            Optional<String> resourceId,
             Optional<LimitId> limitId
     ) {
     }
@@ -305,14 +307,12 @@ final class RendererProcessProtocol {
         var contractVersion = requiredText(node, "contractVersion");
         var requestId = requiredText(node, "requestId");
         var codeText = requiredText(node, "code");
-        var engineStage = requiredText(node, "engineStage");
+        var engineStageText = requiredText(node, "engineStage");
         if (!PROBLEM_CONTRACT_VERSION.equals(contractVersion)) {
             throw new ProtocolException("renderer PROBLEM contract mismatch");
         }
         requireUuidForProtocol(requestId, "problem requestId");
-        if (!isEngineStage(engineStage)) {
-            throw new ProtocolException("renderer PROBLEM engineStage is unknown");
-        }
+        var engineStage = parseEngineStage(engineStageText);
         ProblemCode code;
         try {
             code = ProblemCode.valueOf(codeText);
@@ -343,6 +343,8 @@ final class RendererProcessProtocol {
             throw new ProtocolException("renderer PROBLEM parameters member set mismatch");
         }
         var capacityProblem = code == ProblemCode.RESOURCE_BUDGET_EXCEEDED
+                || code == ProblemCode.RASTER_BUDGET_EXCEEDED
+                || code == ProblemCode.OUTPUT_BUDGET_EXCEEDED
                 || code == ProblemCode.RENDER_LAYOUT_TRACE_LIMIT_EXCEEDED;
         if (capacityProblem != limitId.isPresent()) {
             throw new ProtocolException("renderer PROBLEM capacity parameter shape mismatch");
@@ -351,15 +353,12 @@ final class RendererProcessProtocol {
                 .append(PROBLEM_CONTRACT_VERSION)
                 .append("\",\"requestId\":\"").append(requestId)
                 .append("\",\"code\":\"").append(codeText)
-                .append("\",\"engineStage\":\"").append(engineStage).append('"');
+                .append("\",\"engineStage\":\"").append(engineStageText).append('"');
         occurrence.ifPresent(value -> canonical.append(",\"occurrenceId\":").append(quote(value)));
         resource.ifPresent(value -> canonical.append(",\"resourceId\":").append(quote(value)));
         canonical.append(",\"parameters\":").append(parametersCanonical).append('}');
         requireCanonical(payload, canonical.toString(), "PROBLEM");
-        var safeLocation = occurrence.isPresent() && resource.isPresent()
-                ? Optional.<String>empty()
-                : occurrence.or(() -> resource);
-        return new ParsedProblem(requestId, code, engineStage, safeLocation, limitId);
+        return new ParsedProblem(requestId, code, engineStage, occurrence, resource, limitId);
     }
 
     static ParsedResult parseResult(byte[] payload) throws ProtocolException {
@@ -540,12 +539,20 @@ final class RendererProcessProtocol {
         return value.longValue();
     }
 
-    private static boolean isEngineStage(String value) {
+    private static EngineProblemStage parseEngineStage(String value) throws ProtocolException {
         return switch (value) {
-            case "COMMAND_ADMISSION", "REQUEST_CONTROL", "DOCUMENT_ADMISSION",
-                    "OUTPUT_PREFLIGHT", "RESOURCE_PREPARATION", "LAYOUT", "SHAPING",
-                    "RASTERIZATION", "ENCODING", "TRACE_PROJECTION", "OUTPUT_SEAL" -> true;
-            default -> false;
+            case "COMMAND_ADMISSION" -> EngineProblemStage.COMMAND_ADMISSION;
+            case "REQUEST_CONTROL" -> EngineProblemStage.REQUEST_CONTROL;
+            case "DOCUMENT_ADMISSION" -> EngineProblemStage.DOCUMENT_ADMISSION;
+            case "OUTPUT_PREFLIGHT" -> EngineProblemStage.OUTPUT_PREFLIGHT;
+            case "RESOURCE_PREPARATION" -> EngineProblemStage.RESOURCE_PREPARATION;
+            case "LAYOUT" -> EngineProblemStage.LAYOUT;
+            case "SHAPING" -> EngineProblemStage.SHAPING;
+            case "RASTERIZATION" -> EngineProblemStage.RASTERIZATION;
+            case "ENCODING" -> EngineProblemStage.ENCODING;
+            case "TRACE_PROJECTION" -> EngineProblemStage.TRACE_PROJECTION;
+            case "OUTPUT_SEAL" -> EngineProblemStage.OUTPUT_SEAL;
+            default -> throw new ProtocolException("renderer PROBLEM engineStage is unknown");
         };
     }
 
@@ -562,8 +569,42 @@ final class RendererProcessProtocol {
                     FETCH_FAILED,
                     LENGTH_MISMATCH,
                     HASH_MISMATCH,
+                    MEDIA_MISMATCH,
+                    DECODE_FAILED,
+                    FONT_GLYPH_MISSING,
+                    RASTER_BUDGET_EXCEEDED,
+                    OUTPUT_BUDGET_EXCEEDED,
                     RENDER_LAYOUT_TRACE_LIMIT_EXCEEDED -> true;
-            default -> false;
+            case RENDER_INPUT_LIMIT_EXCEEDED,
+                    RENDER_INPUT_CONTENT_ENCODING_UNSUPPORTED,
+                    TEMPLATE_NOT_FOUND,
+                    TEMPLATE_DELETED,
+                    TEMPLATE_DEPENDENCY_ERROR,
+                    TEMPLATE_AUTHORITY_UNAVAILABLE,
+                    TEMPLATE_CLOSURE_LIMIT_EXCEEDED,
+                    TEMPLATE_CLOSURE_UNSTABLE,
+                    DESIGN_DSL_LIMIT_EXCEEDED,
+                    ASSET_BUDGET_EXCEEDED,
+                    ASSET_NOT_FOUND,
+                    ASSET_RESOLVE_NOT_FOUND,
+                    ASSET_RESOLVE_DELETED,
+                    ASSET_RESOLVE_KIND_MISMATCH,
+                    ASSET_RESOLVE_UNAVAILABLE,
+                    ASSET_RESOLVE_TIMEOUT,
+                    CAPABILITY_BUDGET_EXCEEDED,
+                    CAPABILITY_STATE_CONFLICT,
+                    CAPABILITY_STATE_UNAVAILABLE,
+                    CAPABILITY_RESULT_INVALID,
+                    CAPABILITY_CLOCK_UNAVAILABLE,
+                    CAPABILITY_ENTROPY_UNAVAILABLE,
+                    CAPABILITY_PROFILE_UNAVAILABLE,
+                    CAPABILITY_DEADLINE_EXCEEDED,
+                    CAPABILITY_CANCELLED,
+                    EXPRESSION_LIMIT_EXCEEDED,
+                    EVALUATION_BUDGET_EXCEEDED,
+                    EVALUATION_FAILED,
+                    RENDER_DOCUMENT_LIMIT_EXCEEDED,
+                    RENDER_DIAGNOSTIC_LIMIT_EXCEEDED -> false;
         };
     }
 

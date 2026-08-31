@@ -153,6 +153,7 @@ impl ResourceFetcher for NoFetch {
         _target: &AdmittedFetchTarget<'_>,
         _deadline_epoch_millis: i64,
         _state: &mut RequestResourceFetchState,
+        _control: &dyn renderweave_renderer_resource::ResourcePreparationControl,
     ) -> Result<FetchedResource, ResourceFetchProblem> {
         panic!("resource-free Rendering Pipeline target must not fetch")
     }

@@ -19,6 +19,11 @@ public interface RenderingAuthority {
 
     RecheckDecision recheck(RecheckIdentity identity);
 
+    DiagnosticSegmentDisclosure discloseDiagnosticSegment(
+            RecheckIdentity identity,
+            TemplateId templateId
+    );
+
     sealed interface AuthorizationDecision permits Authorized, Hidden, Forbidden, Unavailable {
     }
 
@@ -86,5 +91,10 @@ public interface RenderingAuthority {
     enum Disclosure {
         READABLE,
         OPAQUE
+    }
+
+    enum DiagnosticSegmentDisclosure {
+        READABLE,
+        REDACTED
     }
 }

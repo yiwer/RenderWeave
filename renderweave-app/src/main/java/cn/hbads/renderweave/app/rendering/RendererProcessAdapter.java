@@ -1,10 +1,10 @@
 package cn.hbads.renderweave.app.rendering;
 
-import cn.hbads.renderweave.rendering.api.EvaluationStage;
 import cn.hbads.renderweave.rendering.api.RenderOutput;
-import cn.hbads.renderweave.rendering.api.RenderingProblem;
 import cn.hbads.renderweave.rendering.api.RenderingProblem.ProblemCode;
 import cn.hbads.renderweave.rendering.spi.RenderEngine;
+import cn.hbads.renderweave.rendering.spi.RenderEngine.EngineProblem;
+import cn.hbads.renderweave.rendering.spi.RenderEngine.EngineProblemStage;
 import cn.hbads.renderweave.rendering.spi.RenderEngine.EngineOutcome;
 import cn.hbads.renderweave.rendering.spi.RenderEngine.RendererCommand;
 
@@ -14,6 +14,7 @@ import java.io.OutputStream;
 import java.time.Clock;
 import java.time.Duration;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
@@ -60,7 +61,7 @@ final class RendererProcessAdapter implements RenderEngine, AutoCloseable {
         record Success(RenderOutput output) implements WireOutcome {
         }
 
-        record Problem(RenderingProblem problem) implements WireOutcome {
+        record Problem(EngineProblem problem) implements WireOutcome {
         }
 
         record Unknown() implements WireOutcome {
@@ -145,19 +146,25 @@ final class RendererProcessAdapter implements RenderEngine, AutoCloseable {
         try {
             encoded = RendererProcessProtocol.encodeCommand(command);
         } catch (RuntimeException e) {
-            return terminal(ProblemCode.RENDER_INTERNAL_ERROR);
+            return terminal(
+                    ProblemCode.RENDER_INTERNAL_ERROR,
+                    EngineProblemStage.COMMAND_ADMISSION);
         }
 
         var now = clock.millis();
         unknownAttempts.entrySet().removeIf(entry -> entry.getValue().deadlineEpochMilli() <= now);
         if (command.deadlineAtEpochMilli() <= now) {
-            return terminal(ProblemCode.RENDER_DEADLINE_EXCEEDED);
+            return terminal(
+                    ProblemCode.RENDER_DEADLINE_EXCEEDED,
+                    EngineProblemStage.REQUEST_CONTROL);
         }
         var requestId = command.renderRequestId().value();
         var priorUnknown = unknownAttempts.get(requestId);
         if (priorUnknown != null
                 && !priorUnknown.commandDigest().equals(encoded.commandDigest())) {
-            return terminal(ProblemCode.RENDER_REQUEST_CONFLICT);
+            return terminal(
+                    ProblemCode.RENDER_REQUEST_CONFLICT,
+                    EngineProblemStage.REQUEST_CONTROL);
         }
 
         var candidate = new PendingRequest(command, encoded);
@@ -166,7 +173,9 @@ final class RendererProcessAdapter implements RenderEngine, AutoCloseable {
         CallerDisposition disposition;
         if (existing != null) {
             if (!existing.encoded.commandDigest().equals(encoded.commandDigest())) {
-                return terminal(ProblemCode.RENDER_REQUEST_CONFLICT);
+                return terminal(
+                        ProblemCode.RENDER_REQUEST_CONFLICT,
+                        EngineProblemStage.REQUEST_CONTROL);
             }
             disposition = CallerDisposition.JOINED;
         } else {
@@ -320,10 +329,11 @@ final class RendererProcessAdapter implements RenderEngine, AutoCloseable {
             throw new RendererProcessProtocol.ProtocolException(
                     "renderer problem crossed connection generation");
         }
-        var problem = new RenderingProblem(
+        var problem = new EngineProblem(
                 parsed.code(),
-                EvaluationStage.ENGINE,
-                parsed.safeLocation(),
+                parsed.engineStage(),
+                parsed.occurrenceId(),
+                parsed.resourceId(),
                 parsed.limitId());
         complete(parsed.requestId(), request, new WireOutcome.Problem(problem));
     }
@@ -415,9 +425,17 @@ final class RendererProcessAdapter implements RenderEngine, AutoCloseable {
         });
     }
 
-    private static EngineOutcome terminal(ProblemCode code) {
+    private static EngineOutcome terminal(
+            ProblemCode code,
+            EngineProblemStage stage
+    ) {
         return new EngineOutcome.TerminalProblem(
-                RenderingProblem.of(code, EvaluationStage.ENGINE));
+                new EngineProblem(
+                        code,
+                        stage,
+                        Optional.empty(),
+                        Optional.empty(),
+                        Optional.empty()));
     }
 
     @Override

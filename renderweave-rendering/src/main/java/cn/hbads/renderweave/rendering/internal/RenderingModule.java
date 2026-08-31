@@ -69,8 +69,13 @@ public final class RenderingModule {
             RendererProfileAuthority profiles,
             Clock clock
     ) {
+        if (!(Objects.requireNonNull(evaluator, "evaluator")
+                instanceof DiagnosticEvaluator diagnosticEvaluator)) {
+            throw new IllegalArgumentException(
+                    "RenderingApplication requires the module-owned diagnostic evaluator");
+        }
         return new CanonicalRenderingApplication(
-                Objects.requireNonNull(evaluator, "evaluator"),
+                diagnosticEvaluator,
                 Objects.requireNonNull(engine, "engine"),
                 Objects.requireNonNull(authority, "authority"),
                 Objects.requireNonNull(profiles, "profiles"),

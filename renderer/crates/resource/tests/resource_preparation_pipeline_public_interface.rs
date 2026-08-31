@@ -12,6 +12,7 @@ impl ResourceFetcher for NeverFetch {
         _target: &AdmittedFetchTarget<'_>,
         _deadline_epoch_millis: i64,
         _state: &mut RequestResourceFetchState,
+        _control: &dyn renderweave_renderer_resource::ResourcePreparationControl,
     ) -> Result<FetchedResource, ResourceFetchProblem> {
         panic!("an empty manifest must not fetch")
     }
