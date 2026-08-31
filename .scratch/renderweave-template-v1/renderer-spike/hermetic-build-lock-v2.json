@@ -1,0 +1,64 @@
+{
+  "lockVersion": "renderweave-renderer-hermetic-build-lock/2.0",
+  "candidateId": "rw-renderer-spike-linux-x86_64-v2-000003",
+  "baseLock": {
+    "path": "hermetic-build-lock-v1.json",
+    "sha256": "sha256:96f076ccd36ddc89fe2fe38f5fb5da732757d1fd2138dc63cd4ffc052fc16b38",
+    "byteLength": 27130
+  },
+  "inputOverrides": [
+    {
+      "id": "renderer-root-inputs",
+      "category": "downstream-policy",
+      "bundlePath": "inputs/downstream-policy/renderer-root-normalized.tar",
+      "sha256": "sha256:894c8a617d730fdcba4da9d2c2f28a0dc10e952191f7d3a11ea64b3ae8bb679c",
+      "byteLength": 1167360,
+      "source": {
+        "kind": "repository-tree",
+        "path": "renderer",
+        "treeSha256": "sha256:a052c5237aeca78fea80a6fda310a57a0cc5bf5f365730748b5dc76460a2efd1",
+        "fileCount": 30,
+        "prefix": "renderer-root/",
+        "excludePaths": [
+          "crates",
+          "probes/t213/rehearsal-result-v2.json",
+          "target",
+          "vendor"
+        ],
+        "archiveFormat": "python-tar-gnu-normalized/1.0"
+      }
+    },
+    {
+      "id": "renderer-spike-policy",
+      "category": "downstream-policy",
+      "bundlePath": "inputs/downstream-policy/renderer-spike-policy-normalized.tar",
+      "sha256": "sha256:52178785eee689fcbbc42bf92db0d26665ea325b41003eaf73bd1930eee4a578",
+      "byteLength": 92160,
+      "source": {
+        "kind": "repository-tree",
+        "path": ".scratch/renderweave-template-v1/renderer-spike",
+        "treeSha256": "sha256:42ff959fdd16dee77d293891bb58c00e21971e106882cbf26088eb290c4b776c",
+        "fileCount": 28,
+        "prefix": "renderer-spike/",
+        "excludePaths": [
+          "hermetic-build-lock-v1.json",
+          "hermetic-build-lock-v2.json"
+        ],
+        "archiveFormat": "python-tar-gnu-normalized/1.0"
+      }
+    }
+  ],
+  "inputAdditions": [
+    {
+      "id": "minimal-cff-fixture",
+      "category": "downstream-policy",
+      "bundlePath": "inputs/downstream-policy/minimal-cff.otf",
+      "sha256": "sha256:eeef766ac75aecac694bbd82fbb3cd2b9a315075db14d91ff0cbe1bdec20f77f",
+      "byteLength": 668,
+      "source": {
+        "kind": "repository-file",
+        "path": "renderweave-asset/src/test/resources/asset-fixtures/minimal-otf.otf"
+      }
+    }
+  ]
+}

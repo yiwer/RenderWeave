@@ -12,8 +12,10 @@ from pathlib import Path
 from typing import Any
 
 
-CANDIDATE_ID = "rw-renderer-spike-linux-x86_64-v2-000002"
-REHEARSAL_CONFIGURATION_ID = "rw-renderer-t213-adapter-rehearsal-000001"
+CANDIDATE_ID = "rw-renderer-spike-linux-x86_64-v2-000003"
+REHEARSAL_CONFIGURATION_ID = "rw-renderer-t213-exact-rehearsal-000002"
+REQUIRED_LOAD_FLAGS = 0x0100800A
+FORBIDDEN_LOAD_FLAGS = 0x00100020
 EXPECTED_NEEDED = ["libc.so.6", "libgcc_s.so.1", "libm.so.6", "libstdc++.so.6"]
 REQUIRED_SYMBOLS = [
     "FT_Load_Glyph",
@@ -194,12 +196,12 @@ def verify_probe(path: Path) -> dict[str, Any]:
     if not isinstance(probe, dict):
         raise AuditError("probe result must be an object")
     exact_keys(probe, PROBE_KEYS, "probe")
-    if probe["artifactVersion"] != "renderweave-renderer-instrumented-probe/1.1":
+    if probe["artifactVersion"] != "renderweave-renderer-instrumented-probe/1.2":
         raise AuditError("unexpected probe artifactVersion")
     if (
         probe["candidateId"] != CANDIDATE_ID
         or probe["rehearsalConfigurationId"] != REHEARSAL_CONFIGURATION_ID
-        or probe["status"] != "PASS_ADAPTER_REHEARSAL"
+        or probe["status"] != "PASS_EXACT_CANDIDATE_REHEARSAL"
     ):
         raise AuditError("probe identity or status differs")
     for name in ["controlNoAutoHint", "controlRequired", "skiaTricky", "skiaCff"]:
@@ -213,12 +215,16 @@ def verify_probe(path: Path) -> dict[str, Any]:
         raise AuditError("NO_HINTING-only control did not execute TrueType bytecode")
     if probe["controlRequired"]["interpreterCallCount"] != 0:
         raise AuditError("required direct flags executed TrueType bytecode")
-    for name in ["skiaTricky", "skiaCff"]:
+    for name in ["controlRequired", "skiaTricky", "skiaCff"]:
         value = probe[name]
         if value["loadCount"] <= 0:
             raise AuditError(f"{name} observed no FT_Load_Glyph calls")
         if value["invalidLoadCount"] != 0:
             raise AuditError(f"{name} observed an invalid FT_Load_Glyph call")
+        if value["loadFlagsAnd"] & REQUIRED_LOAD_FLAGS != REQUIRED_LOAD_FLAGS:
+            raise AuditError(f"{name} omitted required load flags")
+        if value["loadFlagsOr"] & FORBIDDEN_LOAD_FLAGS:
+            raise AuditError(f"{name} observed forbidden load flags")
         if value["interpreterCallCount"] != 0:
             raise AuditError(f"{name} executed TrueType bytecode")
     return probe
@@ -435,7 +441,8 @@ def forbidden_isa_mnemonics(mnemonics: set[str]) -> tuple[list[str], list[str]]:
         for value in mnemonics
         if value.startswith("v") and value not in {"verr", "verw"}
     )
-    forbidden = sorted(mnemonics & FORBIDDEN_MNEMONICS)
+    opmask = {value for value in mnemonics if value.startswith("k")}
+    forbidden = sorted((mnemonics & FORBIDDEN_MNEMONICS) | opmask)
     return vex, forbidden
 
 
@@ -501,6 +508,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--ninja", type=Path, required=True)
     parser.add_argument("--tricky-font", type=Path, required=True)
     parser.add_argument("--cff-font", type=Path, required=True)
+    parser.add_argument("--args-gn", type=Path, required=True)
+    parser.add_argument("--patch", type=Path, required=True)
+    parser.add_argument("--ftoption", type=Path, required=True)
+    parser.add_argument("--ftmodule", type=Path, required=True)
+    parser.add_argument("--bundle-inventory", type=Path, required=True)
+    parser.add_argument("--harness", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     return parser.parse_args()
 
@@ -513,10 +526,10 @@ def main() -> int:
         source_root = args.source_root.resolve()
         toolchain = args.toolchain_bin.resolve()
         manifest = {
-            "artifactVersion": "renderweave-renderer-build-rehearsal/1.1",
+            "artifactVersion": "renderweave-renderer-build-rehearsal/1.2",
             "candidateId": CANDIDATE_ID,
             "rehearsalConfigurationId": REHEARSAL_CONFIGURATION_ID,
-            "status": "ADAPTER_REHEARSAL_PASSED_EXACT_CANDIDATE_BUILD_BLOCKED",
+            "status": "EXACT_CANDIDATE_REHEARSAL_PASSED",
             "target": {
                 "operatingSystem": "linux",
                 "architecture": "amd64",
@@ -524,18 +537,20 @@ def main() -> int:
                 "virtualized": True,
                 "networkDuringBuild": "DISABLED_BY_CONTAINER",
             },
-            "candidateV2BuildAdapters": [
-                {
-                    "id": "stock-ftoption-preinclude",
-                    "reason": "the frozen wrapper otherwise resolves its stock include back to itself",
-                    "certificationMeaning": "successor-source-correction-required",
-                },
-                {
-                    "id": "ftmodule-repeat-include-shim",
-                    "reason": "the frozen module header guard otherwise empties FreeType's second expansion",
-                    "certificationMeaning": "successor-source-correction-required",
-                },
-            ],
+            "inputClosure": {
+                "inventory": file_identity(args.bundle_inventory.resolve()),
+                "offlineBundleOnly": True,
+                "hostRepositoryBuildInputsUsed": False,
+            },
+            "candidateConfiguration": {
+                "adaptersUsed": [],
+                "applicationOrder": "native FreeType headers, exact candidate v3 headers, exact Skia patch, exact GN args",
+                "patch": file_identity(args.patch.resolve()),
+                "optionsHeader": file_identity(args.ftoption.resolve()),
+                "modulesHeader": file_identity(args.ftmodule.resolve()),
+                "gnArgs": file_identity(args.args_gn.resolve()),
+            },
+            "executor": file_identity(args.harness.resolve()),
             "sourceTree": source_tree_identity(source_root),
             "fixtures": [file_identity(args.tricky_font), file_identity(args.cff_font)],
             "tools": [

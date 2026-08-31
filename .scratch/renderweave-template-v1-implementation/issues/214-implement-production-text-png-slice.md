@@ -1,8 +1,8 @@
 # T214 — Implement production Text-to-PNG vertical slice
 
 Type: task
-Status: blocked
-Blocked by: T213
+Status: ready-for-agent
+Blocked by: T213 (done)
 
 ## What to build
 
@@ -35,4 +35,3 @@ Implement the first production glyph-rendering path through the Rust Engine: con
 - JPEG output and every Text overflow/writing-mode variant.
 - Other previously unsupported RenderNode kinds.
 - Renderer Profile certification or public readiness registration.
-

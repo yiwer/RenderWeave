@@ -1,0 +1,118 @@
+{
+  "artifactVersion": "renderweave-renderer-build-rehearsal-summary/1.2",
+  "candidateId": "rw-renderer-spike-linux-x86_64-v2-000003",
+  "rehearsalConfigurationId": "rw-renderer-t213-exact-rehearsal-000002",
+  "status": "EXACT_CANDIDATE_REHEARSAL_PASSED",
+  "execution": {
+    "cleanRunCount": 2,
+    "containerImageId": "sha256:dff7bf7639ce459600e6e042228480eb9b6c627ce590e282c9b1d7c03fcad30b",
+    "cpuLimit": 4,
+    "memoryLimitBytes": 8589934592,
+    "network": "NONE",
+    "operatingSystem": "linux",
+    "architecture": "amd64",
+    "minimumIsa": "x86-64-v2",
+    "reproducibleCommand": "powershell -ExecutionPolicy Bypass -File tools/run-renderer-exact-build-rehearsal.ps1 -Mode Rehearse -WorkVolume <empty-volume>"
+  },
+  "inputClosure": {
+    "logicalInputCount": 24,
+    "byteLength": 3458059257,
+    "lockSha256": "sha256:60cf61e0ea16529e84c8c84c20dd915284cbad16a5431fcc3861649e9c0f6150",
+    "lockByteLength": 2261,
+    "inventorySha256": "sha256:001ad36fbc1d4051556207fc455d4e0fc7e04d7518b14be155542c6493cc3981",
+    "inventoryByteLength": 27860,
+    "offlineVerified": true,
+    "sourceRepositoryAbsentDuringIndependentVerification": true,
+    "hostRepositoryBuildInputsUsed": false
+  },
+  "candidateConfiguration": {
+    "applicationOrder": "native FreeType headers, exact candidate v3 headers, exact Skia patch, exact GN args",
+    "patchSha256": "sha256:9fb58e637b9793149c108ac4cf97f04f71c29a22238a86ee6dd4b03cf0e7db52",
+    "optionsHeaderSha256": "sha256:0dda07ee01c94f99545488dca2e3de25f4af248ae13e65d11827573277b54171",
+    "modulesHeaderSha256": "sha256:ab9cde7d2723b3ace2173a27a6a162bec064ed32abc06f5bb0be0f16b0bfc4d8",
+    "gnArgsSha256": "sha256:5cc1b1db22c8baa2efafc3eafa1cbcce50252ad198ffb0bcaba3cc6cbf4ef331",
+    "adaptersUsed": []
+  },
+  "identities": {
+    "sourceTreeSha256": "sha256:52e48a9801f6688db0f9ad35ed754bb52038cb73a5b420bf9c71f2639d3eb6a6",
+    "probeBinarySha256": "sha256:4d1aba604c16cb1cd86030941b1d31740cc7ecc3e6bea285fe0858dacdb3a6ed",
+    "probeBinaryByteLength": 2729488,
+    "probeResultSha256": "sha256:c5697daf54942c7c4f83cbe1846a2cc72e9c21909c7755266efc199b9514d197",
+    "manifestSha256": "sha256:a4219706b7911d478f194b2513d184d8d3f4a1ebd474c1e0e84150d6a8fc038d",
+    "manifestByteIdenticalAcrossRuns": true,
+    "probeResultByteIdenticalAcrossRuns": true,
+    "probeBinaryByteIdenticalAcrossRuns": true
+  },
+  "probe": {
+    "status": "PASS_EXACT_CANDIDATE_REHEARSAL",
+    "controlNoAutoHint": {
+      "loadCount": 1,
+      "interpreterCallCount": 3
+    },
+    "controlRequired": {
+      "loadCount": 1,
+      "invalidLoadCount": 0,
+      "interpreterCallCount": 0
+    },
+    "skiaTricky": {
+      "openFaceCount": 4,
+      "trickyFaceCount": 2,
+      "loadCount": 2,
+      "invalidLoadCount": 0,
+      "interpreterCallCount": 0
+    },
+    "skiaCff": {
+      "openFaceCount": 4,
+      "trickyFaceCount": 0,
+      "loadCount": 2,
+      "invalidLoadCount": 0,
+      "interpreterCallCount": 0
+    }
+  },
+  "elfAudit": {
+    "binaryByteLength": 2729488,
+    "needed": [
+      "libc.so.6",
+      "libgcc_s.so.1",
+      "libm.so.6",
+      "libstdc++.so.6"
+    ],
+    "forbiddenSymbolsObserved": [],
+    "runtimeDispatchSymbolsObserved": [],
+    "dynamicExportCount": 3,
+    "dynamicSymbolTableSha256": "sha256:48fd6edb9eb08e54e0e615c5a1ce2eecd2b0c16024a2f18774116c28030e4cd3",
+    "vexOrEvexMnemonicsObserved": [],
+    "v3OrV4MnemonicsObserved": [],
+    "symbolTableSha256": "sha256:6804aaa7d519237fa65b4a74ca70b4a9cb952d3fd6c0926f33d7450f6ce8d104",
+    "disassemblySha256": "sha256:39bb91c0a0495e5fa5cba5c2b79b8989fa2b8a03e7fc70da76f4bfcae4b2615c"
+  },
+  "glyphLoadPathInventory": {
+    "coverage": "all-static-skia-freetype-direct-calls",
+    "sourceCallSiteCount": 10,
+    "allSourceCallSitesRegistered": true,
+    "runtimeInvalidLoadCount": 0
+  },
+  "negativeTests": {
+    "missingOfflineInputRejected": true,
+    "systemFreetypeFallbackConfigurationRejectedBeforeBuild": true
+  },
+  "evidence": {
+    "exactCandidateBuilt": true,
+    "adaptersAbsent": true,
+    "networkDisabled": true,
+    "closureVerifiedWithoutSourceRepository": true,
+    "patchAndHeadersMatched": true,
+    "trickyClassifierObserved": true,
+    "allGlyphLoadPathsRegistered": true,
+    "runtimeInvalidLoadCountZero": true,
+    "requiredPathsSkippedInterpreter": true,
+    "twoCleanRunsByteIdentical": true
+  },
+  "boundary": {
+    "certified": false,
+    "ready": false,
+    "physicalLinuxReplayComplete": false,
+    "rendererExactOutputRecordIssuanceAllowed": false,
+    "ticket19MayClose": false
+  }
+}

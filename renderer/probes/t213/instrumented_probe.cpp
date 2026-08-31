@@ -284,10 +284,10 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    std::cout << "{\"artifactVersion\":\"renderweave-renderer-instrumented-probe/1.1\",";
-    std::cout << "\"candidateId\":\"rw-renderer-spike-linux-x86_64-v2-000002\",";
-    std::cout << "\"rehearsalConfigurationId\":\"rw-renderer-t213-adapter-rehearsal-000001\",";
-    std::cout << "\"status\":\"PASS_ADAPTER_REHEARSAL\",";
+    std::cout << "{\"artifactVersion\":\"renderweave-renderer-instrumented-probe/1.2\",";
+    std::cout << "\"candidateId\":\"rw-renderer-spike-linux-x86_64-v2-000003\",";
+    std::cout << "\"rehearsalConfigurationId\":\"rw-renderer-t213-exact-rehearsal-000002\",";
+    std::cout << "\"status\":\"PASS_EXACT_CANDIDATE_REHEARSAL\",";
     writeObservation("controlNoAutoHint", noAutoHint);
     std::cout << ',';
     writeObservation("controlRequired", required);

@@ -1,11 +1,12 @@
 param(
     [switch]$RequireBundle,
-    [string]$Bundle = "var/renderer-hermetic-build-v1/bundle-v1"
+    [string]$Bundle = "var/renderer-hermetic-build-v2/bundle-v2",
+    [string]$Lock = ".scratch/renderweave-template-v1/renderer-spike/hermetic-build-lock-v2.json"
 )
 
 $ErrorActionPreference = "Stop"
 $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
-$lock = Join-Path $repoRoot ".scratch/renderweave-template-v1/renderer-spike/hermetic-build-lock-v1.json"
+$lock = Join-Path $repoRoot $Lock
 $bundlePath = Join-Path $repoRoot $Bundle
 
 Set-Location $repoRoot
@@ -23,7 +24,7 @@ if ($LASTEXITCODE -ne 0) {
 
 if (Test-Path -LiteralPath $bundlePath -PathType Container) {
     py -3.13 tools/stage-renderer-hermetic-build.py verify `
-        --repo (Join-Path $repoRoot "var/renderer-hermetic-build-v1/repository-unavailable") `
+        --repo (Join-Path $repoRoot "var/renderer-hermetic-build/repository-unavailable") `
         --lock $lock `
         --bundle $bundlePath
     if ($LASTEXITCODE -ne 0) {

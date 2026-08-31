@@ -23,9 +23,11 @@ from pathlib import Path, PurePosixPath
 from typing import Any
 
 
-LOCK_VERSION = "renderweave-renderer-hermetic-build-lock/1.0"
+LOCK_VERSION_V1 = "renderweave-renderer-hermetic-build-lock/1.0"
+LOCK_VERSION_V2 = "renderweave-renderer-hermetic-build-lock/2.0"
 REPORT_VERSION = "renderweave-renderer-hermetic-build-closure/1.0"
-CANDIDATE_ID = "rw-renderer-spike-linux-x86_64-v2-000002"
+CANDIDATE_V2_ID = "rw-renderer-spike-linux-x86_64-v2-000002"
+CANDIDATE_V3_ID = "rw-renderer-spike-linux-x86_64-v2-000003"
 REQUIRED_CATEGORIES = {
     "build-tools",
     "canonical-icc",
@@ -268,14 +270,126 @@ def require_git_commit_object(
 
 def load_lock(verifier: Verifier, lock_path: Path) -> tuple[dict[str, Any], bytes]:
     lock_bytes = lock_path.read_bytes()
-    lock = require_members(
-        verifier,
-        decode_json(verifier, lock_bytes, lock_path),
-        {"lockVersion", "candidateId", "target", "environment", "inputs"},
-        "LOCK_MEMBERS",
+    decoded = decode_json(verifier, lock_bytes, lock_path)
+    if decoded.get("lockVersion") == LOCK_VERSION_V2:
+        successor = require_members(
+            verifier,
+            decoded,
+            {
+                "lockVersion",
+                "candidateId",
+                "baseLock",
+                "inputOverrides",
+                "inputAdditions",
+            },
+            "LOCK_MEMBERS",
+        )
+        verifier.require(
+            successor["candidateId"] == CANDIDATE_V3_ID,
+            "CANDIDATE_ID",
+            successor["candidateId"],
+        )
+        base_descriptor = require_members(
+            verifier,
+            successor["baseLock"],
+            {"path", "sha256", "byteLength"},
+            "BASE_LOCK_MEMBERS",
+        )
+        base_relative = safe_relative(verifier, base_descriptor["path"], "BASE_LOCK_PATH")
+        base_path = resolved_child(verifier, lock_path.parent.resolve(), base_relative)
+        verifier.require(base_path != lock_path.resolve(), "BASE_LOCK_SELF_REFERENCE", base_path)
+        verifier.require(
+            isinstance(base_descriptor["sha256"], str)
+            and SHA256.fullmatch(base_descriptor["sha256"]) is not None,
+            "BASE_LOCK_SHA256",
+            base_descriptor["sha256"],
+        )
+        verifier.require(
+            isinstance(base_descriptor["byteLength"], int)
+            and not isinstance(base_descriptor["byteLength"], bool)
+            and base_descriptor["byteLength"] > 0,
+            "BASE_LOCK_BYTE_LENGTH",
+            base_descriptor["byteLength"],
+        )
+        base_bytes = read_exact_file(
+            verifier,
+            base_path,
+            base_descriptor["sha256"],
+            base_descriptor["byteLength"],
+            "BASE_LOCK",
+        )
+        base_lock, admitted_base_bytes = load_lock(verifier, base_path)
+        verifier.require(base_bytes == admitted_base_bytes, "BASE_LOCK_READ_STABILITY", base_path)
+        verifier.require(
+            base_lock["lockVersion"] == LOCK_VERSION_V1,
+            "BASE_LOCK_VERSION",
+            base_lock["lockVersion"],
+        )
+        verifier.require(
+            base_lock["candidateId"] == CANDIDATE_V2_ID,
+            "BASE_LOCK_CANDIDATE_ID",
+            base_lock["candidateId"],
+        )
+        verifier.require(
+            isinstance(successor["inputOverrides"], list)
+            and bool(successor["inputOverrides"]),
+            "INPUT_OVERRIDES",
+            successor["inputOverrides"],
+        )
+        verifier.require(
+            isinstance(successor["inputAdditions"], list)
+            and bool(successor["inputAdditions"]),
+            "INPUT_ADDITIONS",
+            successor["inputAdditions"],
+        )
+        effective_inputs = {item["id"]: item for item in base_lock["inputs"]}
+        override_ids: set[str] = set()
+        for raw in successor["inputOverrides"]:
+            verifier.require(isinstance(raw, dict), "INPUT_OVERRIDE_TYPE", raw)
+            assert isinstance(raw, dict)
+            input_id = raw.get("id")
+            verifier.require(isinstance(input_id, str), "INPUT_OVERRIDE_ID", input_id)
+            assert isinstance(input_id, str)
+            verifier.require(input_id in effective_inputs, "INPUT_OVERRIDE_UNKNOWN", input_id)
+            verifier.require(input_id not in override_ids, "INPUT_OVERRIDE_DUPLICATE", input_id)
+            override_ids.add(input_id)
+            effective_inputs[input_id] = raw
+        addition_ids: set[str] = set()
+        for raw in successor["inputAdditions"]:
+            verifier.require(isinstance(raw, dict), "INPUT_ADDITION_TYPE", raw)
+            assert isinstance(raw, dict)
+            input_id = raw.get("id")
+            verifier.require(isinstance(input_id, str), "INPUT_ADDITION_ID", input_id)
+            assert isinstance(input_id, str)
+            verifier.require(input_id not in effective_inputs, "INPUT_ADDITION_CONFLICT", input_id)
+            verifier.require(input_id not in addition_ids, "INPUT_ADDITION_DUPLICATE", input_id)
+            addition_ids.add(input_id)
+            effective_inputs[input_id] = raw
+        lock = {
+            "lockVersion": LOCK_VERSION_V2,
+            "candidateId": successor["candidateId"],
+            "target": base_lock["target"],
+            "environment": base_lock["environment"],
+            "inputs": list(effective_inputs.values()),
+        }
+    else:
+        lock = require_members(
+            verifier,
+            decoded,
+            {"lockVersion", "candidateId", "target", "environment", "inputs"},
+            "LOCK_MEMBERS",
+        )
+    expected_candidate = (
+        CANDIDATE_V3_ID
+        if lock["lockVersion"] == LOCK_VERSION_V2
+        else CANDIDATE_V2_ID
     )
-    verifier.require(lock["lockVersion"] == LOCK_VERSION, "LOCK_VERSION", lock["lockVersion"])
-    verifier.require(lock["candidateId"] == CANDIDATE_ID, "CANDIDATE_ID", lock["candidateId"])
+    verifier.require(
+        lock["lockVersion"] in {LOCK_VERSION_V1, LOCK_VERSION_V2},
+        "LOCK_VERSION",
+        lock["lockVersion"],
+    )
+    verifier.require(lock["candidateId"] == expected_candidate, "CANDIDATE_ID", lock["candidateId"])
     target = require_members(
         verifier,
         lock["target"],

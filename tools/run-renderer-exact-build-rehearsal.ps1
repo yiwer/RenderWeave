@@ -1,7 +1,7 @@
 param(
     [ValidateSet("Rehearse", "VerifyMissingInput", "VerifyHostFallback")]
     [string]$Mode = "Rehearse",
-    [string]$Bundle = "var/renderer-hermetic-build-v1/bundle-v1",
+    [string]$Bundle = "var/renderer-hermetic-build-v2/bundle-v2",
     [string]$WorkVolume
 )
 

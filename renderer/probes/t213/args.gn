@@ -7,10 +7,6 @@ cxx = "/work/toolchain/bin/clang++"
 ar = "/work/toolchain/bin/llvm-ar"
 extra_cflags = [
   "-I/work/src/skia/third_party/externals/freetype/include",
-  "-include",
-  "/work/src/skia/third_party/externals/freetype/include/freetype/config/ftoption.h",
-  "-UFT_CONFIG_MODULES_H",
-  "-DFT_CONFIG_MODULES_H=<renderweave-t213/freetype/config/ftmodule-replay.h>",
   "-march=x86-64-v2",
   "-mtune=generic",
   "-fno-fast-math",

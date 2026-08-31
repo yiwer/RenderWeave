@@ -13,6 +13,9 @@ from audit_rehearsal import (
     verify_probe,
 )
 
+REQUIRED_LOAD_FLAGS = 0x0100800A
+FORBIDDEN_LOAD_FLAGS = 0x00100020
+
 
 def observation(**overrides: int) -> dict[str, int]:
     value = {
@@ -21,8 +24,8 @@ def observation(**overrides: int) -> dict[str, int]:
         "loadCount": 1,
         "invalidLoadCount": 0,
         "interpreterCallCount": 0,
-        "loadFlagsOr": 0,
-        "loadFlagsAnd": 0,
+        "loadFlagsOr": REQUIRED_LOAD_FLAGS,
+        "loadFlagsAnd": REQUIRED_LOAD_FLAGS,
     }
     value.update(overrides)
     return value
@@ -30,10 +33,10 @@ def observation(**overrides: int) -> dict[str, int]:
 
 def passing_probe() -> dict[str, object]:
     return {
-        "artifactVersion": "renderweave-renderer-instrumented-probe/1.1",
-        "candidateId": "rw-renderer-spike-linux-x86_64-v2-000002",
-        "rehearsalConfigurationId": "rw-renderer-t213-adapter-rehearsal-000001",
-        "status": "PASS_ADAPTER_REHEARSAL",
+        "artifactVersion": "renderweave-renderer-instrumented-probe/1.2",
+        "candidateId": "rw-renderer-spike-linux-x86_64-v2-000003",
+        "rehearsalConfigurationId": "rw-renderer-t213-exact-rehearsal-000002",
+        "status": "PASS_EXACT_CANDIDATE_REHEARSAL",
         "controlNoAutoHint": observation(interpreterCallCount=1),
         "controlRequired": observation(),
         "skiaTricky": observation(),
@@ -47,8 +50,10 @@ class IsaAuditTest(unittest.TestCase):
 
     def test_rejects_vex_and_v3_or_v4_mnemonics(self) -> None:
         self.assertEqual(
-            (["vaddps"], ["cpuid", "tzcnt"]),
-            forbidden_isa_mnemonics({"mov", "vaddps", "tzcnt", "cpuid"}),
+            (["vaddps"], ["cpuid", "kandw", "kmovq", "tzcnt"]),
+            forbidden_isa_mnemonics(
+                {"mov", "vaddps", "tzcnt", "cpuid", "kandw", "kmovq"}
+            ),
         )
 
 
@@ -119,10 +124,28 @@ class ProbeContractTest(unittest.TestCase):
         with self.assertRaisesRegex(AuditError, "executed TrueType bytecode"):
             verify_probe(self.write_probe(probe))
 
+    def test_rejects_missing_required_load_flag_even_when_probe_counter_is_zero(self) -> None:
+        probe = passing_probe()
+        probe["skiaTricky"] = observation(
+            invalidLoadCount=0,
+            loadFlagsAnd=REQUIRED_LOAD_FLAGS & ~0x00008000,
+        )
+        with self.assertRaisesRegex(AuditError, "required load flags"):
+            verify_probe(self.write_probe(probe))
+
+    def test_rejects_forbidden_load_flag_even_when_probe_counter_is_zero(self) -> None:
+        probe = passing_probe()
+        probe["skiaCff"] = observation(
+            invalidLoadCount=0,
+            loadFlagsOr=REQUIRED_LOAD_FLAGS | 0x00000020,
+        )
+        with self.assertRaisesRegex(AuditError, "forbidden load flags"):
+            verify_probe(self.write_probe(probe))
+
 
 class RehearsalResultTest(unittest.TestCase):
     def test_result_is_reproducible_rehearsal_evidence_only(self) -> None:
-        path = Path(__file__).with_name("rehearsal-result-v1.json")
+        path = Path(__file__).with_name("rehearsal-result-v2.json")
         result = json.loads(path.read_text(encoding="utf-8"))
         self.assertEqual(
             {
@@ -132,36 +155,40 @@ class RehearsalResultTest(unittest.TestCase):
                 "status",
                 "execution",
                 "inputClosure",
+                "candidateConfiguration",
                 "identities",
                 "probe",
                 "elfAudit",
                 "glyphLoadPathInventory",
-                "candidateV2BuildAdapters",
                 "negativeTests",
+                "evidence",
                 "boundary",
             },
             set(result),
         )
         self.assertEqual(
-            "ADAPTER_REHEARSAL_PASSED_EXACT_CANDIDATE_BUILD_BLOCKED",
+            "EXACT_CANDIDATE_REHEARSAL_PASSED",
             result["status"],
+        )
+        self.assertEqual(
+            "rw-renderer-spike-linux-x86_64-v2-000003",
+            result["candidateId"],
+        )
+        self.assertEqual(
+            "rw-renderer-t213-exact-rehearsal-000002",
+            result["rehearsalConfigurationId"],
         )
         self.assertEqual(2, result["execution"]["cleanRunCount"])
         self.assertTrue(result["identities"]["manifestByteIdenticalAcrossRuns"])
         self.assertTrue(result["identities"]["probeResultByteIdenticalAcrossRuns"])
+        self.assertEqual([], result["candidateConfiguration"]["adaptersUsed"])
         self.assertEqual(
-            "sha256:5eff44eafb36e91aa3a73a853c3244db55efad13566f1dbe3736ec2dc5fbc4e0",
-            result["identities"]["manifestSha256"],
+            "sha256:9fb58e637b9793149c108ac4cf97f04f71c29a22238a86ee6dd4b03cf0e7db52",
+            result["candidateConfiguration"]["patchSha256"],
         )
         self.assertTrue(all(result["negativeTests"].values()))
+        self.assertTrue(all(result["evidence"].values()))
         self.assertFalse(any(result["boundary"].values()))
-        self.assertEqual(
-            {"successor-source-correction-required"},
-            {
-                adapter["certificationMeaning"]
-                for adapter in result["candidateV2BuildAdapters"]
-            },
-        )
 
 
 if __name__ == "__main__":

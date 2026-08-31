@@ -1,7 +1,7 @@
 # T213 — Build instrumented Skia/FreeType probe target
 
 Type: task
-Status: ready-for-agent
+Status: done
 Blocked by: T216 (done)
 
 ## What to build
@@ -49,4 +49,9 @@ Docker and WSL execution of this non-authenticated exact build rehearsal is auth
 - The positive control executed the TrueType interpreter three times. The required direct path and both actual Skia paths observed glyph loads with zero invalid loads and zero interpreter calls; the tricky path classified both opened faces as tricky and the CFF path classified none.
 - The manifest closes all ten direct Skia/FreeType `FT_Load_Glyph` source call sites, exact dynamic exports, allowed OCI runtime dependencies, required/forbidden modules and symbols, and full x86-64-v2 disassembly. No forbidden symbol, runtime dispatch symbol, VEX/EVEX instruction, or v3/v4 instruction was observed.
 - Focused gate: `powershell -ExecutionPolicy Bypass -File tools/run-renderer-exact-build-rehearsal-gate.ps1` passed 9 tests. Negative Docker modes rejected missing input and host fallback. T212 closure gate passed 23 inputs/2,248,288 checks; `run-gate.ps1 -Gate template` passed Template kernel/static replay and the 785-check tricky-font compatibility gate.
-- Compact evidence is `renderer/probes/t213/rehearsal-result-v1.json`; full manifests and binaries remain local build evidence. T213 and dependent T214/T215 remain blocked until an authorized immutable successor candidate corrects the two frozen source artifacts.
+- T216 issued immutable candidate `rw-renderer-spike-linux-x86_64-v2-000003`, correcting only the two mechanical source defects. T213 then removed both adapters and deleted the obsolete repeat-include shim instead of carrying it into the exact target.
+- Added compact successor lock `hermetic-build-lock-v2.json`: it binds the exact v1 lock, replaces only the renderer input and policy trees, and adds the previously ambient CFF fixture. The staged 24-input bundle independently verified with the source repository absent (`2,249,404` checks; inventory `sha256:001ad36fbc1d4051556207fc455d4e0fc7e04d7518b14be155542c6493cc3981`).
+- Two clean, network-disabled candidate-v3 rehearsals in independent Docker volumes completed without adapters. Their 2,729,488-byte binaries (`sha256:4d1aba604c16cb1cd86030941b1d31740cc7ecc3e6bea285fe0858dacdb3a6ed`), probe JSON (`sha256:c5697daf54942c7c4f83cbe1846a2cc72e9c21909c7755266efc199b9514d197`), manifests (`sha256:a4219706b7911d478f194b2513d184d8d3f4a1ebd474c1e0e84150d6a8fc038d`), and source-tree identities were byte-identical across runs.
+- The exact probe retained the positive bytecode-interpreter control, observed zero interpreter calls and zero invalid glyph loads on required direct, tricky Skia, and CFF Skia paths, and closed all ten static Skia/FreeType glyph-load call sites plus ELF dependency/export/symbol and full x86-64-v2 ISA audits.
+- The missing-input Docker negative failed closed, and a forbidden system-FreeType configuration was rejected before build by the exact GN-args identity guard. Focused gates passed 11/11 rehearsal tests and 14/14 hermetic-stager tests. Compact exact evidence is `renderer/probes/t213/rehearsal-result-v2.json`; full manifests and binaries remain local build evidence.
+- This remains a virtualized non-authenticated rehearsal: it does not certify a renderer, authorize READY or exact-output record issuance, complete a physical-machine replay, or close Ticket 19. T214 is now unblocked.

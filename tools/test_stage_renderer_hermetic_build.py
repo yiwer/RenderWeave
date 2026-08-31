@@ -19,6 +19,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 STAGER = ROOT / "tools" / "stage-renderer-hermetic-build.py"
 CANDIDATE_ID = "rw-renderer-spike-linux-x86_64-v2-000002"
+CANDIDATE_V3_ID = "rw-renderer-spike-linux-x86_64-v2-000003"
 REQUIRED_CATEGORIES = [
     "build-tools",
     "canonical-icc",
@@ -118,6 +119,62 @@ class RendererHermeticBuildStagerTest(unittest.TestCase):
             json.dumps(lock, indent=2) + "\n", encoding="utf-8", newline="\n"
         )
 
+    def write_successor_lock(self) -> dict[str, object]:
+        self.write_lock()
+        base_lock = self.repo / "base-lock.json"
+        base_bytes = self.lock.read_bytes()
+        base_lock.write_bytes(base_bytes)
+        (self.repo / "replacement.bin").write_bytes(b"v3")
+        (self.repo / "minimal-cff.otf").write_bytes(b"cff")
+
+        def repository_input(
+            input_id: str,
+            category: str,
+            bundle_path: str,
+            source_path: str,
+            payload: bytes,
+        ) -> dict[str, object]:
+            return {
+                "id": input_id,
+                "category": category,
+                "bundlePath": bundle_path,
+                "sha256": "sha256:" + hashlib.sha256(payload).hexdigest(),
+                "byteLength": len(payload),
+                "source": {"kind": "repository-file", "path": source_path},
+            }
+
+        successor: dict[str, object] = {
+            "lockVersion": "renderweave-renderer-hermetic-build-lock/2.0",
+            "candidateId": CANDIDATE_V3_ID,
+            "baseLock": {
+                "path": "base-lock.json",
+                "sha256": "sha256:" + hashlib.sha256(base_bytes).hexdigest(),
+                "byteLength": len(base_bytes),
+            },
+            "inputOverrides": [
+                repository_input(
+                    "skia",
+                    "skia",
+                    "inputs/skia/replacement.bin",
+                    "replacement.bin",
+                    b"v3",
+                )
+            ],
+            "inputAdditions": [
+                repository_input(
+                    "minimal-cff-fixture",
+                    "downstream-policy",
+                    "inputs/downstream-policy/minimal-cff.otf",
+                    "minimal-cff.otf",
+                    b"cff",
+                )
+            ],
+        }
+        self.lock.write_text(
+            json.dumps(successor, indent=2) + "\n", encoding="utf-8", newline="\n"
+        )
+        return successor
+
     def test_exact_repository_inputs_stage_and_verify_offline(self) -> None:
         self.write_lock()
 
@@ -135,6 +192,82 @@ class RendererHermeticBuildStagerTest(unittest.TestCase):
             (self.bundle / "inputs" / "skia" / "source.bin").read_bytes(), b"abc"
         )
         self.assertTrue((self.bundle / "inventory.json").is_file())
+
+    def test_successor_lock_composes_exact_base_overrides_and_additions(self) -> None:
+        self.write_successor_lock()
+
+        staged = self.run_cli("stage")
+        self.assertEqual(staged.returncode, 0, staged.stderr)
+        report = json.loads(staged.stdout)
+        self.assertEqual(report["candidateId"], CANDIDATE_V3_ID)
+        self.assertEqual(report["inputCount"], len(REQUIRED_CATEGORIES) + 1)
+        self.assertEqual(
+            (self.bundle / "inputs" / "skia" / "replacement.bin").read_bytes(),
+            b"v3",
+        )
+        self.assertEqual(
+            (
+                self.bundle
+                / "inputs"
+                / "downstream-policy"
+                / "minimal-cff.otf"
+            ).read_bytes(),
+            b"cff",
+        )
+
+        verified = self.run_cli("verify")
+        self.assertEqual(verified.returncode, 0, verified.stderr)
+        self.assertEqual(json.loads(verified.stdout), report)
+
+    def test_successor_lock_rejects_invalid_composition_authority(self) -> None:
+        def mutate_candidate(lock: dict[str, object]) -> None:
+            lock["candidateId"] = CANDIDATE_ID
+
+        def mutate_base_digest(lock: dict[str, object]) -> None:
+            descriptor = lock["baseLock"]
+            assert isinstance(descriptor, dict)
+            descriptor["sha256"] = "sha256:" + "0" * 64
+
+        def mutate_base_path(lock: dict[str, object]) -> None:
+            descriptor = lock["baseLock"]
+            assert isinstance(descriptor, dict)
+            descriptor["path"] = "../base-lock.json"
+
+        def mutate_unknown_override(lock: dict[str, object]) -> None:
+            overrides = lock["inputOverrides"]
+            assert isinstance(overrides, list) and isinstance(overrides[0], dict)
+            overrides[0]["id"] = "unknown-input"
+
+        def mutate_duplicate_override(lock: dict[str, object]) -> None:
+            overrides = lock["inputOverrides"]
+            assert isinstance(overrides, list)
+            overrides.append(dict(overrides[0]))
+
+        def mutate_addition_conflict(lock: dict[str, object]) -> None:
+            additions = lock["inputAdditions"]
+            assert isinstance(additions, list) and isinstance(additions[0], dict)
+            additions[0]["id"] = "skia"
+
+        cases = [
+            (mutate_candidate, "CANDIDATE_ID"),
+            (mutate_base_digest, "BASE_LOCK_DIGEST"),
+            (mutate_base_path, "BASE_LOCK_PATH_UNSAFE"),
+            (mutate_unknown_override, "INPUT_OVERRIDE_UNKNOWN"),
+            (mutate_duplicate_override, "INPUT_OVERRIDE_DUPLICATE"),
+            (mutate_addition_conflict, "INPUT_ADDITION_CONFLICT"),
+        ]
+        for mutate, expected in cases:
+            with self.subTest(expected=expected):
+                lock = self.write_successor_lock()
+                mutate(lock)
+                self.lock.write_text(
+                    json.dumps(lock, indent=2) + "\n",
+                    encoding="utf-8",
+                    newline="\n",
+                )
+                failed = self.run_cli("stage")
+                self.assertNotEqual(failed.returncode, 0)
+                self.assertIn(expected, failed.stderr)
 
     def test_verify_rejects_tampered_or_missing_bundle_input(self) -> None:
         self.write_lock()
