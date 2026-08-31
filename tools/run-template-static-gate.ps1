@@ -104,14 +104,17 @@ Invoke-Checked 'renderer-tricky-font-compatibility' {
 }
 $trickyFontReport = Get-Content -Raw -Encoding UTF8 -LiteralPath $trickyFontReportPath |
     ConvertFrom-Json
-if ($trickyFontReport.status -ne 'PASS_NEW_CANDIDATE_CLASSIFICATION_COMPATIBLE_FAIL_CLOSED' `
-        -or $trickyFontReport.decisionStatus -ne 'NEW_CANDIDATE_CLASSIFICATION_COMPILE_PATH_COMPATIBLE_BUILD_UNPROVEN' `
+if ($trickyFontReport.status -ne 'PASS_SUCCESSOR_MECHANICALLY_BUILDABLE_BUILD_PENDING' `
+        -or $trickyFontReport.decisionStatus -ne 'SUCCESSOR_MECHANICAL_CONFIGURATION_VALID_EXACT_BUILD_PENDING' `
         -or $trickyFontReport.failureCount -ne 0 `
-        -or -not $trickyFontReport.observedCompatibility.classificationImplementationCompiled `
-        -or -not $trickyFontReport.observedCompatibility.currentCandidateCanSatisfyPortableAuthority `
+        -or -not $trickyFontReport.observedCompatibility.stockOptionsReachable `
+        -or $trickyFontReport.observedCompatibility.optionsHeaderSelfShadowing `
+        -or -not $trickyFontReport.observedCompatibility.moduleListRepeatable `
+        -or $trickyFontReport.observedCompatibility.t213AdapterRequired `
+        -or -not $trickyFontReport.observedCompatibility.currentCandidateMechanicallyBuildable `
         -or $trickyFontReport.observedCompatibility.runtimeBytecodeNonExecutionProven `
         -or $trickyFontReport.observedCompatibility.exactBuiltTargetObserved `
-        -or $trickyFontReport.boundary.exactRendererTargetMayMaterialize `
+        -or $trickyFontReport.boundary.exactBuiltTargetObserved `
         -or $trickyFontReport.boundary.rendererExactOutputRecordIssuanceAllowed `
         -or $trickyFontReport.boundary.certified `
         -or $trickyFontReport.boundary.ready `
@@ -371,9 +374,10 @@ try {
             decisionStatus = $trickyFontReport.decisionStatus
             candidateId = $trickyFontReport.candidateId
             checkCount = $trickyFontReport.checkCount
-            classificationImplementationCompiled = [bool]$trickyFontReport.observedCompatibility.classificationImplementationCompiled
+            stockOptionsReachable = [bool]$trickyFontReport.observedCompatibility.stockOptionsReachable
+            moduleListRepeatable = [bool]$trickyFontReport.observedCompatibility.moduleListRepeatable
             runtimeBytecodeNonExecutionProven = [bool]$trickyFontReport.observedCompatibility.runtimeBytecodeNonExecutionProven
-            exactRendererTargetMayMaterialize = [bool]$trickyFontReport.boundary.exactRendererTargetMayMaterialize
+            exactBuiltTargetObserved = [bool]$trickyFontReport.boundary.exactBuiltTargetObserved
             recordIssuanceAllowed = [bool]$trickyFontReport.boundary.rendererExactOutputRecordIssuanceAllowed
             certified = [bool]$trickyFontReport.boundary.certified
             ready = [bool]$trickyFontReport.boundary.ready

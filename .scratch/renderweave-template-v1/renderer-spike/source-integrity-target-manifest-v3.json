@@ -1,0 +1,44 @@
+{
+  "artifactVersion": "renderweave-source-integrity-target-manifest/1.1",
+  "targetId": "rw-source-target-skia-m151-freetype-2.14.3-ninja-linux-amd64-000003",
+  "candidateId": "rw-renderer-spike-linux-x86_64-v2-000003",
+  "targetKind": "source identity and mechanically composable candidate configuration only",
+  "baseSourceTarget": {
+    "path": "renderer-spike/source-integrity-target-manifest-v2.json",
+    "sha256": "sha256:f37185ed98b8f28ec0b1306ae2008aa542a1c46223f11eb2d9be22c12c1011e6",
+    "compositionRule": "inherit exact Skia, FreeType and Ninja identities"
+  },
+  "upstream": {
+    "skiaCommit": "93458b5faf9cd8befbe6c93158d4d8ee7c8424ee",
+    "skiaTree": "e3eaee9c6a83beffdf115a267c3d9a4bd7d9348e",
+    "freetypeCommit": "0a0221a1347e2f1e07c395263540026e9a0aa7c7",
+    "freetypeTree": "589225074ab1eb876682820c482069693c251e88",
+    "stockOptionsPath": "third_party/externals/freetype/include/freetype/config/ftoption.h",
+    "stockOptionsBlob": "b857e0ebbd9a5fed2b088c28ce409d9fbdbfd64e"
+  },
+  "candidateArtifactSha256": {
+    "candidate": "189dd522a8ae62ddf8c29838f23c393a396dd6ae761298a0b84467b80d619f8d",
+    "patch": "9fb58e637b9793149c108ac4cf97f04f71c29a22238a86ee6dd4b03cf0e7db52",
+    "ftoption": "0dda07ee01c94f99545488dca2e3de25f4af248ae13e65d11827573277b54171",
+    "ftmodule": "ab9cde7d2723b3ace2173a27a6a162bec064ed32abc06f5bb0be0f16b0bfc4d8",
+    "applicationOrder": "da3733ae7e0e2031b69cdfaa76379407d3d189853608014ea025239d9fb3a42f",
+    "prerequisites": "5dfa90fb5a9eb402dda79d1170cd7819188b56888fc5c99c871cf891837a81d5"
+  },
+  "mechanicalCompatibility": {
+    "nativeFreetypeIncludeRoot": "third_party/externals/freetype/include",
+    "optionsHeaderInstallPath": "third_party/externals/freetype/include/renderweave/ftoption.h",
+    "optionsHeaderStockRelativeInclude": "../freetype/config/ftoption.h",
+    "resolvedStockOptionsPath": "third_party/externals/freetype/include/freetype/config/ftoption.h",
+    "optionsHeaderSelfShadowing": false,
+    "modulesHeaderInstallPath": "third_party/externals/freetype/include/renderweave/ftmodule.h",
+    "modulesHeaderIncludeGuard": false,
+    "moduleExpansionCountPerInclusion": 6,
+    "t213AdapterRequired": false
+  },
+  "classificationCompilePathCompatible": true,
+  "mechanicalConfigurationDefectsCorrected": true,
+  "runtimeBytecodeNonExecutionProven": false,
+  "exactBuiltTargetObserved": false,
+  "rendererTarget": false,
+  "ready": false
+}

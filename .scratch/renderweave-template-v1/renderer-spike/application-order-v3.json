@@ -1,0 +1,50 @@
+{
+  "artifactVersion": "renderweave-renderer-spike-application-order/1.1",
+  "candidateId": "rw-renderer-spike-linux-x86_64-v2-000003",
+  "supersedesCandidateId": "rw-renderer-spike-linux-x86_64-v2-000002",
+  "base": {
+    "skiaCommit": "93458b5faf9cd8befbe6c93158d4d8ee7c8424ee",
+    "skiaTree": "e3eaee9c6a83beffdf115a267c3d9a4bd7d9348e",
+    "freetypeCommit": "0a0221a1347e2f1e07c395263540026e9a0aa7c7",
+    "predecessorApplicationOrderPath": "renderer-spike/application-order-v2.json",
+    "predecessorApplicationOrderSha256": "sha256:6ccb8960ccee5162cb3b8a61f53f105932cc7f2669ad58ec9bd895c6bbf4752c"
+  },
+  "steps": [
+    {
+      "ordinal": 1,
+      "operation": "replace-directory",
+      "target": "third_party/externals/freetype",
+      "source": "exact FreeType commit from composed candidate manifest"
+    },
+    {
+      "ordinal": 2,
+      "operation": "copy-exact-bytes",
+      "source": "renderer-spike/rw-freetype-ftoption-v3.h",
+      "target": "third_party/externals/freetype/include/renderweave/ftoption.h"
+    },
+    {
+      "ordinal": 3,
+      "operation": "copy-exact-bytes",
+      "source": "renderer-spike/rw-freetype-ftmodule-v3.h",
+      "target": "third_party/externals/freetype/include/renderweave/ftmodule.h"
+    },
+    {
+      "ordinal": 4,
+      "operation": "git-apply",
+      "source": "renderer-spike/skia-m151-freetype-policy-v3.patch",
+      "target": "Skia source root"
+    },
+    {
+      "ordinal": 5,
+      "operation": "generate-with-exact-gn-args",
+      "source": "renderer-spike-candidate-v3.json composed candidateBuildContract",
+      "target": "out directory"
+    }
+  ],
+  "forbiddenAdapters": [
+    "force-include stock ftoption.h",
+    "undefine or replay a guarded module header",
+    "host FreeType or fontconfig fallback"
+  ],
+  "status": "SOURCE_APPLICATION_ORDER_FROZEN_EXACT_BUILD_PENDING"
+}

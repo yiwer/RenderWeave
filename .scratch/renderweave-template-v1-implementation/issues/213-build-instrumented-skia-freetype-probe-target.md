@@ -1,8 +1,8 @@
 # T213 — Build instrumented Skia/FreeType probe target
 
 Type: task
-Status: blocked
-Blocked by: successor Renderer candidate authority correcting candidate v2's two source defects (not yet authorized)
+Status: ready-for-agent
+Blocked by: T216 (done)
 
 ## What to build
 

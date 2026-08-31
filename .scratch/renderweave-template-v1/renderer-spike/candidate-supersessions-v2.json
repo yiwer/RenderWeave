@@ -1,0 +1,47 @@
+{
+  "artifactVersion": "renderweave-renderer-spike-candidate-supersessions/1.1",
+  "status": "APPEND_ONLY_SUCCESSOR",
+  "mutationAllowed": false,
+  "priorRegistry": {
+    "path": "renderer-spike/candidate-supersessions-v1.json",
+    "sha256": "sha256:1882d188ed8c689973d08b55a53b2d209ea28a1646879be26aebab026c178a49",
+    "byteLength": 1425
+  },
+  "records": [
+    {
+      "ordinal": 1,
+      "predecessorCandidateId": "rw-renderer-spike-linux-x86_64-v2-000001",
+      "predecessorPath": ".scratch/renderweave-template-v1/renderer-spike-candidate-v1.json",
+      "predecessorSha256": "sha256:c649e60e94bd56785074a8bbf514af856885e615d32ecd1ea680cb27fb0358f8",
+      "predecessorByteLength": 9619,
+      "predecessorDecisionPath": ".scratch/renderweave-template-v1/renderer-spike/tricky-font-compatibility-decision-v1.json",
+      "predecessorDecisionSha256": "sha256:8c2488ea27920b7762824f155f0db6a986216e65be2c35de609e3190d62ce5a5",
+      "successorCandidateId": "rw-renderer-spike-linux-x86_64-v2-000002",
+      "successorPath": ".scratch/renderweave-template-v1/renderer-spike-candidate-v2.json",
+      "successorSha256": "sha256:f245a597df86105ad6e5635e7b0041e0fbd2fe50f2f4499183842ebbe0351b71",
+      "successorByteLength": 11360,
+      "semanticAuthorityPath": "specs/changes/20260831-renderer-tricky-font-classification-candidate-v2.md",
+      "semanticAuthoritySha256": "sha256:39b2080ed39c43cf2bc7e7de40fb577f9966da4a7b1f706324a75f25af5590e1",
+      "approvedAt": "2026-08-31",
+      "reason": "retain FreeType tricky-face classification compile path while production glyph loads remain no-hinting and fail closed"
+    },
+    {
+      "ordinal": 2,
+      "predecessorCandidateId": "rw-renderer-spike-linux-x86_64-v2-000002",
+      "predecessorPath": ".scratch/renderweave-template-v1/renderer-spike-candidate-v2.json",
+      "predecessorSha256": "sha256:f245a597df86105ad6e5635e7b0041e0fbd2fe50f2f4499183842ebbe0351b71",
+      "predecessorByteLength": 11360,
+      "predecessorDecisionPath": ".scratch/renderweave-template-v1/renderer-spike/tricky-font-compatibility-decision-v2.json",
+      "predecessorDecisionSha256": "sha256:c7672cb5ec6627414521f29a342a6d8d4d71804a7cd147e1eb3564999e1a7e79",
+      "successorCandidateId": "rw-renderer-spike-linux-x86_64-v2-000003",
+      "successorPath": ".scratch/renderweave-template-v1/renderer-spike-candidate-v3.json",
+      "successorSha256": "sha256:189dd522a8ae62ddf8c29838f23c393a396dd6ae761298a0b84467b80d619f8d",
+      "successorByteLength": 4592,
+      "semanticAuthorityPath": "specs/changes/20260831-renderer-candidate-v3-mechanical-correction.md",
+      "semanticAuthoritySha256": "sha256:434abb81f49fc6c7cc99aaba55f084b582c7e14fff02134cf09b7f9ee3225c49",
+      "approvedAt": "2026-08-31",
+      "reason": "correct options-header self-shadowing and guarded FreeType module-list replay without changing Renderer semantics",
+      "diagnosedBy": "T213 d05ca309"
+    }
+  ]
+}

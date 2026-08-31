@@ -59,6 +59,16 @@ if ($LASTEXITCODE -ne 0 -or -not $pythonVersion.StartsWith('Python 3.13.')) {
 
 Push-Location $repoRoot
 try {
+    @(
+        'tools\test_verify_renderer_tricky_font_compatibility.py',
+        'tools\test_verify_renderer_tricky_font_candidate_v2.py',
+        'tools\test_verify_renderer_tricky_font_candidate_v3.py'
+    ) | ForEach-Object {
+        & py.exe -3.13 $_
+        if ($LASTEXITCODE -ne 0) {
+            throw "Renderer tricky-font candidate mutation tests failed for $_ with exit code $LASTEXITCODE."
+        }
+    }
     & py.exe -3.13 'tools\test_verify_renderer_tricky_font_fixture.py'
     if ($LASTEXITCODE -ne 0) {
         throw "Renderer tricky-font fixture mutation tests failed with exit code $LASTEXITCODE."
@@ -75,7 +85,7 @@ try {
     }
     & py.exe -3.13 'tools\verify-renderer-tricky-font-compatibility.py' `
         '--repo' $repoRoot `
-        '--decision' '.scratch/renderweave-template-v1/renderer-spike/tricky-font-compatibility-decision-v2.json' `
+        '--decision' '.scratch/renderweave-template-v1/renderer-spike/tricky-font-compatibility-decision-v3.json' `
         '--report' $report
     if ($LASTEXITCODE -ne 0) {
         throw "Renderer tricky-font compatibility verifier failed with exit code $LASTEXITCODE."
@@ -111,21 +121,26 @@ if ($fixtureResult.reportVersion -ne 'renderweave-renderer-tricky-font-fixture-g
 }
 
 $result = Get-Content -Raw -Encoding UTF8 -LiteralPath $report | ConvertFrom-Json
-if ($result.reportVersion -ne 'renderweave-renderer-tricky-font-compatibility-gate/1.1' `
-        -or $result.status -ne 'PASS_NEW_CANDIDATE_CLASSIFICATION_COMPATIBLE_FAIL_CLOSED' `
-        -or $result.decisionStatus -ne 'NEW_CANDIDATE_CLASSIFICATION_COMPILE_PATH_COMPATIBLE_BUILD_UNPROVEN' `
-        -or $result.candidateId -ne 'rw-renderer-spike-linux-x86_64-v2-000002' `
-        -or $result.predecessorCandidateId -ne 'rw-renderer-spike-linux-x86_64-v2-000001' `
-        -or $result.checkCount -lt 100 `
+if ($result.reportVersion -ne 'renderweave-renderer-tricky-font-compatibility-gate/1.2' `
+        -or $result.status -ne 'PASS_SUCCESSOR_MECHANICALLY_BUILDABLE_BUILD_PENDING' `
+        -or $result.decisionStatus -ne 'SUCCESSOR_MECHANICAL_CONFIGURATION_VALID_EXACT_BUILD_PENDING' `
+        -or $result.candidateId -ne 'rw-renderer-spike-linux-x86_64-v2-000003' `
+        -or $result.predecessorCandidateId -ne 'rw-renderer-spike-linux-x86_64-v2-000002' `
+        -or $result.checkCount -lt 150 `
         -or $result.failureCount -ne 0 `
-        -or -not $result.observedCompatibility.classificationImplementationCompiled `
-        -or -not $result.observedCompatibility.currentCandidateCanSatisfyPortableAuthority `
+        -or -not $result.observedCompatibility.stockOptionsReachable `
+        -or $result.observedCompatibility.optionsHeaderSelfShadowing `
+        -or -not $result.observedCompatibility.moduleListRepeatable `
+        -or $result.observedCompatibility.moduleExpansionCountPerInclusion -ne 6 `
+        -or $result.observedCompatibility.t213AdapterRequired `
+        -or -not $result.observedCompatibility.currentCandidateMechanicallyBuildable `
         -or $result.observedCompatibility.runtimeBytecodeNonExecutionProven `
         -or $result.observedCompatibility.exactBuiltTargetObserved `
-        -or $result.boundary.buildAuthorized `
-        -or $result.boundary.exactRendererTargetMayMaterialize `
+        -or $result.boundary.buildAttemptedByThisDecision `
+        -or $result.boundary.exactBuiltTargetObserved `
         -or $result.boundary.rendererExactOutputPreissuanceReady `
         -or $result.boundary.rendererExactOutputRecordIssuanceAllowed `
+        -or $result.boundary.physicalLinuxReplayComplete `
         -or $result.boundary.certified `
         -or $result.boundary.ready `
         -or $result.boundary.ticket19MayClose `

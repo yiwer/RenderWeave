@@ -1,0 +1,134 @@
+{
+  "artifactVersion": "renderweave-renderer-tricky-font-compatibility-decision/1.2",
+  "decisionId": "rw-renderer-tricky-font-compatibility-000003",
+  "status": "SUCCESSOR_MECHANICAL_CONFIGURATION_VALID_EXACT_BUILD_PENDING",
+  "candidateId": "rw-renderer-spike-linux-x86_64-v2-000003",
+  "supersedesDecisionId": "rw-renderer-tricky-font-compatibility-000002",
+  "diagnosis": {
+    "path": "renderer/probes/t213/rehearsal-result-v1.json",
+    "sha256": "sha256:2964a6ad9f34a0e22478cb50d332b4ff846427ee51f06b281a253a3445247ed1",
+    "status": "ADAPTER_REHEARSAL_PASSED_EXACT_CANDIDATE_BUILD_BLOCKED",
+    "candidateV2BuildAdapters": [
+      "stock-ftoption-preinclude",
+      "ftmodule-repeat-include-shim"
+    ]
+  },
+  "inputs": [
+    {
+      "path": "specs/changes/20260831-renderer-candidate-v3-mechanical-correction.md",
+      "sha256": "sha256:434abb81f49fc6c7cc99aaba55f084b582c7e14fff02134cf09b7f9ee3225c49",
+      "byteLength": 2554
+    },
+    {
+      "path": ".scratch/renderweave-template-v1/renderer-spike/tricky-font-compatibility-decision-v2.json",
+      "sha256": "sha256:c7672cb5ec6627414521f29a342a6d8d4d71804a7cd147e1eb3564999e1a7e79",
+      "byteLength": 5119
+    },
+    {
+      "path": ".scratch/renderweave-template-v1/renderer-spike-candidate-v2.json",
+      "sha256": "sha256:f245a597df86105ad6e5635e7b0041e0fbd2fe50f2f4499183842ebbe0351b71",
+      "byteLength": 11360
+    },
+    {
+      "path": ".scratch/renderweave-template-v1/renderer-spike/candidate-supersessions-v1.json",
+      "sha256": "sha256:1882d188ed8c689973d08b55a53b2d209ea28a1646879be26aebab026c178a49",
+      "byteLength": 1425
+    },
+    {
+      "path": ".scratch/renderweave-template-v1/renderer-spike/candidate-supersessions-v2.json",
+      "sha256": "sha256:1c6416113ac2c47e3d7241b237345f47953d7d76c6cc50168ff91a8a4b3ab163",
+      "byteLength": 2932
+    },
+    {
+      "path": ".scratch/renderweave-template-v1/renderer-spike-candidate-v3.json",
+      "sha256": "sha256:189dd522a8ae62ddf8c29838f23c393a396dd6ae761298a0b84467b80d619f8d",
+      "byteLength": 4592
+    },
+    {
+      "path": ".scratch/renderweave-template-v1/renderer-spike/source-integrity-target-manifest-v3.json",
+      "sha256": "sha256:ce78edb0f30a36f826e08a1de7734bd3cfbdeaf1a23d74a7600da187cbee684c",
+      "byteLength": 2424
+    },
+    {
+      "path": ".scratch/renderweave-template-v1/renderer-spike/rw-freetype-ftoption-v3.h",
+      "sha256": "sha256:0dda07ee01c94f99545488dca2e3de25f4af248ae13e65d11827573277b54171",
+      "byteLength": 1478
+    },
+    {
+      "path": ".scratch/renderweave-template-v1/renderer-spike/rw-freetype-ftmodule-v3.h",
+      "sha256": "sha256:ab9cde7d2723b3ace2173a27a6a162bec064ed32abc06f5bb0be0f16b0bfc4d8",
+      "byteLength": 470
+    },
+    {
+      "path": ".scratch/renderweave-template-v1/renderer-spike/skia-m151-freetype-policy.patch",
+      "sha256": "sha256:a573de549efe6deb7673aec7046f39731a9847ce9453a78b076b10eed338e28d",
+      "byteLength": 4908
+    },
+    {
+      "path": ".scratch/renderweave-template-v1/renderer-spike/skia-m151-freetype-policy-v3.patch",
+      "sha256": "sha256:9fb58e637b9793149c108ac4cf97f04f71c29a22238a86ee6dd4b03cf0e7db52",
+      "byteLength": 4795
+    },
+    {
+      "path": ".scratch/renderweave-template-v1/renderer-spike/hermetic-linux-build-prerequisites-v3.json",
+      "sha256": "sha256:5dfa90fb5a9eb402dda79d1170cd7819188b56888fc5c99c871cf891837a81d5",
+      "byteLength": 2192
+    },
+    {
+      "path": ".scratch/renderweave-template-v1/renderer-spike/application-order-v3.json",
+      "sha256": "sha256:da3733ae7e0e2031b69cdfaa76379407d3d189853608014ea025239d9fb3a42f",
+      "byteLength": 1844
+    },
+    {
+      "path": "renderer/probes/t213/rehearsal-result-v1.json",
+      "sha256": "sha256:2964a6ad9f34a0e22478cb50d332b4ff846427ee51f06b281a253a3445247ed1",
+      "byteLength": 3784
+    },
+    {
+      "path": "renderer/process-manifest.json",
+      "sha256": "sha256:f814c98e415e1bee96af198bb36a2eefd91726f3264f26909217e4270afbdeeb",
+      "byteLength": 1246
+    }
+  ],
+  "approvedMechanicalResolution": {
+    "authority": "product-semantics-owner",
+    "approvedAt": "2026-08-31",
+    "choice": "issue immutable candidate 000003 with non-shadowing stock options inclusion and repeatable guard-free module expansion",
+    "semanticBehaviorChanged": false,
+    "predecessorBytesMutated": false,
+    "t213ExactBuildRehearsalAuthorizedSeparately": true
+  },
+  "observedCompatibility": {
+    "portableAuthorityRequiresFtIsTricky": true,
+    "candidateRetainsTtConfigOptionBytecodeInterpreter": true,
+    "candidateRetainsTtUseBytecodeInterpreter": true,
+    "stockOptionsReachable": true,
+    "optionsHeaderSelfShadowing": false,
+    "moduleListRepeatable": true,
+    "moduleExpansionCountPerInclusion": 6,
+    "t213AdapterRequired": false,
+    "mandatoryNoHintingLoadFlagsDeclared": true,
+    "currentCandidateMechanicallyBuildable": true,
+    "runtimeBytecodeNonExecutionProven": false,
+    "exactBuiltTargetObserved": false
+  },
+  "enforcedBoundary": {
+    "buildAttemptedByThisDecision": false,
+    "exactBuiltTargetObserved": false,
+    "rendererExactOutputPreissuanceReady": false,
+    "rendererExactOutputRecordIssuanceAllowed": false,
+    "physicalLinuxReplayComplete": false,
+    "certified": false,
+    "ready": false,
+    "ticket19MayClose": false
+  },
+  "nextRequiredEvidence": {
+    "successorOfflineClosure": "T213",
+    "exactBuildWithoutAdapters": "T213",
+    "allGlyphLoadPathAudit": "T213",
+    "instrumentedRuntimeBytecodeNonExecution": "T213",
+    "twoCleanReproducibleRehearsals": "T213",
+    "physicalLinuxReplay": "T214",
+    "centralAcceptanceRebind": "T215"
+  }
+}

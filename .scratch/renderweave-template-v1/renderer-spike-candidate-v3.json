@@ -1,0 +1,106 @@
+{
+  "artifactVersion": "renderweave-renderer-spike-candidate/1.1",
+  "candidateId": "rw-renderer-spike-linux-x86_64-v2-000003",
+  "status": "SPIKE_CANDIDATE_SOURCE_CORRECTION_BUILD_PENDING",
+  "authority": "T216 owner-authorized immutable mechanical successor; not a Certified Renderer manifest and cannot authorize READY",
+  "supersedesCandidateId": "rw-renderer-spike-linux-x86_64-v2-000002",
+  "supersededBy": null,
+  "semanticAuthority": {
+    "path": "specs/changes/20260831-renderer-candidate-v3-mechanical-correction.md",
+    "sha256": "434abb81f49fc6c7cc99aaba55f084b582c7e14fff02134cf09b7f9ee3225c49",
+    "byteLength": 2554,
+    "approvedAt": "2026-08-31",
+    "approvalScope": "correct options-header self-shadowing and guarded module-list replay without changing Renderer semantics"
+  },
+  "baseCandidate": {
+    "path": ".scratch/renderweave-template-v1/renderer-spike-candidate-v2.json",
+    "candidateId": "rw-renderer-spike-linux-x86_64-v2-000002",
+    "sha256": "sha256:f245a597df86105ad6e5635e7b0041e0fbd2fe50f2f4499183842ebbe0351b71",
+    "byteLength": 11360,
+    "compositionRule": "inherit the complete immutable v2 contract and replace only the closed mechanicalCorrectionContract artifacts and paths"
+  },
+  "identityRules": {
+    "mutableInPlace": false,
+    "predecessorMutationAllowed": false,
+    "failureOrSourceChange": "issue a new candidateId and append a new supersession artifact",
+    "certificationUpgradeInPlace": false
+  },
+  "target": {
+    "operatingSystem": "linux",
+    "architecture": "amd64",
+    "minimumIsa": "x86-64-v2",
+    "executionPath": "single-cpu-only",
+    "runtimeIsaDispatch": false
+  },
+  "candidateBuildContract": {
+    "linkage": "static",
+    "mechanicalCorrectionContract": {
+      "nativeFreetypeIncludeRoot": "third_party/externals/freetype/include",
+      "customFreetypeHeaders": [
+        {
+          "macro": "FT_CONFIG_OPTIONS_H",
+          "macroValue": "<renderweave/ftoption.h>",
+          "sourcePath": "renderer-spike/rw-freetype-ftoption-v3.h",
+          "installPath": "third_party/externals/freetype/include/renderweave/ftoption.h",
+          "bytesSha256": "0dda07ee01c94f99545488dca2e3de25f4af248ae13e65d11827573277b54171",
+          "includeProtocol": "quoted relative include ../freetype/config/ftoption.h resolves to exact stock header and never to this file"
+        },
+        {
+          "macro": "FT_CONFIG_MODULES_H",
+          "macroValue": "<renderweave/ftmodule.h>",
+          "sourcePath": "renderer-spike/rw-freetype-ftmodule-v3.h",
+          "installPath": "third_party/externals/freetype/include/renderweave/ftmodule.h",
+          "bytesSha256": "ab9cde7d2723b3ace2173a27a6a162bec064ed32abc06f5bb0be0f16b0bfc4d8",
+          "includeProtocol": "guard-free repeatable FT_USE_MODULE expansion"
+        }
+      ],
+      "patch": {
+        "path": "renderer-spike/skia-m151-freetype-policy-v3.patch",
+        "sha256": "9fb58e637b9793149c108ac4cf97f04f71c29a22238a86ee6dd4b03cf0e7db52",
+        "semanticDeltaFromV2": "configuration header macro paths and include root only"
+      },
+      "applicationOrder": {
+        "path": "renderer-spike/application-order-v3.json",
+        "sha256": "da3733ae7e0e2031b69cdfaa76379407d3d189853608014ea025239d9fb3a42f"
+      },
+      "prerequisites": {
+        "path": "renderer-spike/hermetic-linux-build-prerequisites-v3.json",
+        "sha256": "5dfa90fb5a9eb402dda79d1170cd7819188b56888fc5c99c871cf891837a81d5"
+      },
+      "forbiddenAdapters": [
+        "force-include stock ftoption.h",
+        "undefine or replay a guarded module header",
+        "host FreeType or fontconfig fallback"
+      ]
+    },
+    "unchangedRuntimePolicy": {
+      "classificationCompileMacrosRequired": [
+        "TT_CONFIG_OPTION_BYTECODE_INTERPRETER",
+        "TT_USE_BYTECODE_INTERPRETER"
+      ],
+      "productionLoadFlagsRequired": [
+        "FT_LOAD_NO_HINTING",
+        "FT_LOAD_NO_AUTOHINT",
+        "FT_LOAD_NO_BITMAP",
+        "FT_LOAD_NO_SVG"
+      ],
+      "productionLoadFlagsForbidden": [
+        "FT_LOAD_FORCE_AUTOHINT",
+        "FT_LOAD_COLOR"
+      ],
+      "runtimeHintingAuthorized": false,
+      "instrumentedRuntimeBytecodeNonExecutionRequired": true,
+      "instrumentedRuntimeBytecodeNonExecutionCurrent": "PENDING"
+    }
+  },
+  "currentEvidence": {
+    "t213AdapterDiagnosis": "d05ca309",
+    "exactBuiltTargetObserved": false,
+    "rendererExactOutputPreissuanceReady": false,
+    "rendererExactOutputRecordIssuanceAllowed": false,
+    "physicalLinuxReplayComplete": false,
+    "ready": false,
+    "certified": false,
+    "ticket19MayClose": false
+  }
+}

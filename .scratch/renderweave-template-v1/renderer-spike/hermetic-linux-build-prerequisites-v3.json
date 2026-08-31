@@ -1,0 +1,52 @@
+{
+  "artifactVersion": "renderweave-hermetic-linux-build-prerequisites/1.2",
+  "candidateId": "rw-renderer-spike-linux-x86_64-v2-000003",
+  "supersedesCandidateId": "rw-renderer-spike-linux-x86_64-v2-000002",
+  "basePrerequisites": {
+    "path": "renderer-spike/hermetic-linux-build-prerequisites-v2.json",
+    "sha256": "sha256:c5b4d26713a685d646a1895cc8bce9d6de0ac261b938a52eb2373a1ed69128e7",
+    "compositionRule": "inherit every source, toolchain, audit and certification prerequisite, then replace only the corrected candidate source artifacts"
+  },
+  "mechanicalConfiguration": {
+    "nativeFreetypeIncludeRoot": "third_party/externals/freetype/include",
+    "optionsMacro": "FT_CONFIG_OPTIONS_H=<renderweave/ftoption.h>",
+    "modulesMacro": "FT_CONFIG_MODULES_H=<renderweave/ftmodule.h>",
+    "stockOptionsPath": "third_party/externals/freetype/include/freetype/config/ftoption.h",
+    "customOptionsPath": "third_party/externals/freetype/include/renderweave/ftoption.h",
+    "customModulesPath": "third_party/externals/freetype/include/renderweave/ftmodule.h",
+    "moduleHeaderMustBeRepeatable": true,
+    "adapterAllowed": false
+  },
+  "classificationAndRuntimeGate": {
+    "classificationCompileMacrosRequired": [
+      "TT_CONFIG_OPTION_BYTECODE_INTERPRETER",
+      "TT_USE_BYTECODE_INTERPRETER"
+    ],
+    "productionLoadFlagsRequired": [
+      "FT_LOAD_NO_HINTING",
+      "FT_LOAD_NO_AUTOHINT",
+      "FT_LOAD_NO_BITMAP",
+      "FT_LOAD_NO_SVG"
+    ],
+    "productionLoadFlagsForbidden": [
+      "FT_LOAD_FORCE_AUTOHINT",
+      "FT_LOAD_COLOR"
+    ],
+    "instrumentedRuntimeBytecodeNonExecutionRequired": true,
+    "instrumentedRuntimeBytecodeNonExecutionCurrent": "PENDING"
+  },
+  "t213BuildAuthorization": {
+    "authorized": true,
+    "authorizedAt": "2026-08-31",
+    "scope": "non-authenticated exact Docker/WSL build rehearsal only",
+    "exercisedByThisDecision": false
+  },
+  "successorOfflineClosure": "PENDING_T213",
+  "exactBuiltTargetObserved": false,
+  "rendererExactOutputPreissuanceReady": false,
+  "rendererExactOutputRecordIssuanceAllowed": false,
+  "physicalLinuxReplayComplete": false,
+  "certified": false,
+  "ready": false,
+  "ticket19MayClose": false
+}

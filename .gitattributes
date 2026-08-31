@@ -8,6 +8,7 @@ renderweave-inference/src/main/resources/visual-eval/r5p/*.json text eol=lf
 renderweave-inference/src/main/resources/visual-eval/r5p/raw/*.png binary
 renderweave-inference/src/test/resources/visual-eval/r5p/*.json text eol=lf
 specs/changes/20260815-r5-paired-product-view-successor.md text eol=lf
+specs/changes/20260831-renderer-candidate-v3-mechanical-correction.md text eol=lf
 renderweave-inference/src/main/resources/visual-eval/r5p2/*.json text eol=lf
 renderweave-inference/src/main/resources/visual-eval/r5p2/raw/*.png binary
 renderweave-inference/src/test/resources/visual-eval/r5p2/*.json text eol=lf
@@ -34,6 +35,7 @@ renderer/vendor/** -text -whitespace
 
 # Template v1 replay artifacts are byte-addressed and must survive Windows checkout unchanged.
 .scratch/renderweave-template-v1/** text eol=lf
+.scratch/renderweave-template-v1/renderer-spike/*.patch -whitespace
 .scratch/renderweave-template-v1/**/*.bin binary
 .scratch/renderweave-template-v1/renderer-spike/tricky-font-fixture-v1/*.ttf binary
 tools/generate-renderer-tricky-font-fixture.py text eol=lf
