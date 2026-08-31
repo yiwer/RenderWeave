@@ -25,6 +25,9 @@ renderer/rust-toolchain.toml text eol=lf
 renderer/.cargo/*.toml text eol=lf
 renderer/crates/**/Cargo.toml text eol=lf
 renderer/crates/**/*.rs text eol=lf
+renderer/probes/t213/** text eol=lf
+tools/renderer-exact-build-rehearsal.sh text eol=lf
+tools/run-renderer-exact-build-rehearsal*.ps1 text eol=lf
 
 # Cargo vendor bytes are checksum-addressed upstream artifacts; never normalize or lint them.
 renderer/vendor/** -text -whitespace

@@ -1,0 +1,63 @@
+is_debug = false
+is_official_build = true
+is_component_build = false
+target_cpu = "x64"
+cc = "/work/toolchain/bin/clang"
+cxx = "/work/toolchain/bin/clang++"
+ar = "/work/toolchain/bin/llvm-ar"
+extra_cflags = [
+  "-I/work/src/skia/third_party/externals/freetype/include",
+  "-include",
+  "/work/src/skia/third_party/externals/freetype/include/freetype/config/ftoption.h",
+  "-UFT_CONFIG_MODULES_H",
+  "-DFT_CONFIG_MODULES_H=<renderweave-t213/freetype/config/ftmodule-replay.h>",
+  "-march=x86-64-v2",
+  "-mtune=generic",
+  "-fno-fast-math",
+  "-ffp-contract=off",
+  "-DSK_DISABLE_AVX512_OPTS",
+  "-ffile-prefix-map=/work/src=/renderweave/src",
+  "-fdebug-prefix-map=/work/src=/renderweave/src",
+]
+extra_ldflags = [
+  "-fuse-ld=lld",
+  "-Wl,--build-id=sha1",
+]
+skia_enable_optimize_size = true
+skia_enable_ganesh = false
+skia_enable_graphite = false
+skia_use_gl = false
+skia_use_vulkan = false
+skia_use_dawn = false
+skia_use_partition_alloc = false
+skia_use_freetype = true
+skia_use_system_freetype2 = false
+skia_use_freetype_svg = false
+skia_use_freetype_zlib = false
+skia_use_fontconfig = false
+skia_enable_fontmgr_fontconfig = false
+skia_enable_fontmgr_FontConfigInterface = false
+skia_enable_fontmgr_custom_directory = false
+skia_enable_fontmgr_custom_embedded = true
+skia_enable_fontmgr_custom_empty = false
+skia_use_expat = false
+skia_use_icu = false
+skia_use_harfbuzz = false
+skia_use_libjpeg_turbo_decode = false
+skia_use_libjpeg_turbo_encode = false
+skia_use_libpng_decode = false
+skia_use_libpng_encode = false
+skia_use_libwebp_decode = false
+skia_use_libwebp_encode = false
+skia_use_zlib = false
+skia_use_wuffs = false
+skia_enable_pdf = false
+skia_enable_skottie = false
+skia_enable_svg = false
+skia_enable_skshaper = false
+skia_enable_skunicode = false
+skia_enable_tools = false
+skia_use_x11 = false
+skia_use_egl = false
+skia_use_dng_sdk = false
+skia_enable_gpu_debug_layers = false

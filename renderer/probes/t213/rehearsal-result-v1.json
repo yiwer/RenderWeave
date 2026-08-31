@@ -1,0 +1,104 @@
+{
+  "artifactVersion": "renderweave-renderer-build-rehearsal-summary/1.1",
+  "candidateId": "rw-renderer-spike-linux-x86_64-v2-000002",
+  "rehearsalConfigurationId": "rw-renderer-t213-adapter-rehearsal-000001",
+  "status": "ADAPTER_REHEARSAL_PASSED_EXACT_CANDIDATE_BUILD_BLOCKED",
+  "execution": {
+    "cleanRunCount": 2,
+    "containerImageId": "sha256:dff7bf7639ce459600e6e042228480eb9b6c627ce590e282c9b1d7c03fcad30b",
+    "cpuLimit": 4,
+    "memoryLimitBytes": 8589934592,
+    "network": "NONE",
+    "operatingSystem": "linux",
+    "architecture": "amd64",
+    "minimumIsa": "x86-64-v2",
+    "reproducibleCommand": "powershell -ExecutionPolicy Bypass -File tools/run-renderer-exact-build-rehearsal.ps1 -Mode Rehearse -WorkVolume <empty-volume>"
+  },
+  "inputClosure": {
+    "logicalInputCount": 23,
+    "byteLength": 3457935709,
+    "lockSha256": "sha256:96f076ccd36ddc89fe2fe38f5fb5da732757d1fd2138dc63cd4ffc052fc16b38",
+    "inventorySha256": "sha256:42a303e0ac81d37980fc8bc6ffc137b4ac36680ee5eeba06b85fb9dd1f1d19a3"
+  },
+  "identities": {
+    "sourceTreeSha256": "sha256:125d2d782dd2c0b0898f89a4646fa09e0281faa63382a8475621e5ebf59143da",
+    "probeBinarySha256": "sha256:0508c755f90daf3cbdaa686cec4e619c5be851bcf4921a4137dc5c9992556c17",
+    "probeResultSha256": "sha256:f2b633ef467e85fd9b85955826f1fc20453ab5fcc210ffe71b4921b2b4029210",
+    "manifestSha256": "sha256:5eff44eafb36e91aa3a73a853c3244db55efad13566f1dbe3736ec2dc5fbc4e0",
+    "manifestByteIdenticalAcrossRuns": true,
+    "probeResultByteIdenticalAcrossRuns": true
+  },
+  "probe": {
+    "status": "PASS_ADAPTER_REHEARSAL",
+    "controlNoAutoHint": {
+      "loadCount": 1,
+      "interpreterCallCount": 3
+    },
+    "controlRequired": {
+      "loadCount": 1,
+      "invalidLoadCount": 0,
+      "interpreterCallCount": 0
+    },
+    "skiaTricky": {
+      "openFaceCount": 4,
+      "trickyFaceCount": 2,
+      "loadCount": 2,
+      "invalidLoadCount": 0,
+      "interpreterCallCount": 0
+    },
+    "skiaCff": {
+      "openFaceCount": 4,
+      "trickyFaceCount": 0,
+      "loadCount": 2,
+      "invalidLoadCount": 0,
+      "interpreterCallCount": 0
+    }
+  },
+  "elfAudit": {
+    "binaryByteLength": 2729472,
+    "needed": [
+      "libc.so.6",
+      "libgcc_s.so.1",
+      "libm.so.6",
+      "libstdc++.so.6"
+    ],
+    "forbiddenSymbolsObserved": [],
+    "runtimeDispatchSymbolsObserved": [],
+    "dynamicExportCount": 3,
+    "dynamicSymbolTableSha256": "sha256:dcafa90290d0bfffcf8f378b7f53aa7573ead31f939eee7961f82191f32b0437",
+    "vexOrEvexMnemonicsObserved": [],
+    "v3OrV4MnemonicsObserved": [],
+    "symbolTableSha256": "sha256:025a013adb8b0cc593d3e19dfedbfb14b83ff40e56df20dc6fedbfd4e65a83cc",
+    "disassemblySha256": "sha256:17064a40f8f1e095f74e6ce03be88b174d3bf04690f44ca832b19a000d847b14"
+  },
+  "glyphLoadPathInventory": {
+    "coverage": "all-static-skia-freetype-direct-calls",
+    "sourceCallSiteCount": 10,
+    "allSourceCallSitesRegistered": true,
+    "runtimeInvalidLoadCount": 0
+  },
+  "candidateV2BuildAdapters": [
+    {
+      "id": "stock-ftoption-preinclude",
+      "reason": "the frozen wrapper otherwise resolves its stock include back to itself",
+      "certificationMeaning": "successor-source-correction-required"
+    },
+    {
+      "id": "ftmodule-repeat-include-shim",
+      "reason": "the frozen module header guard otherwise empties FreeType's second expansion",
+      "certificationMeaning": "successor-source-correction-required"
+    }
+  ],
+  "negativeTests": {
+    "missingOfflineInputRejected": true,
+    "systemFreetypeFallbackRejected": true
+  },
+  "boundary": {
+    "exactCandidateBuildComplete": false,
+    "certified": false,
+    "ready": false,
+    "physicalLinuxReplayComplete": false,
+    "rendererExactOutputRecordIssuanceAllowed": false,
+    "ticket19MayClose": false
+  }
+}

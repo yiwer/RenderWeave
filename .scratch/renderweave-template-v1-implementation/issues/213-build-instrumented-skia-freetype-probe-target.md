@@ -2,7 +2,7 @@
 
 Type: task
 Status: blocked
-Blocked by: T212
+Blocked by: successor Renderer candidate authority correcting candidate v2's two source defects (not yet authorized)
 
 ## What to build
 
@@ -40,3 +40,13 @@ Docker and WSL execution of this non-authenticated exact build rehearsal is auth
 - Physical x86-64-v2 host certification.
 - Network access during configure, compile, link, or probe execution.
 
+## Resolution
+
+- The exact candidate v2 application order was attempted first and exposed two source-authority defects: its custom `ftoption.h` resolves the requested stock include back to itself, and its guarded `ftmodule.h` cannot satisfy FreeType's required second macro expansion. The frozen candidate therefore cannot meet this ticket's exact successful-build criterion.
+- Added a reusable `prepare | build | probe | audit | rehearse` Linux harness plus `tools/run-renderer-exact-build-rehearsal.ps1`, which binds the exact OCI image, T212 bundle, empty named volume, disabled network, 4 CPUs, 8 GiB memory, and PID limit. It also provides actual missing-input and host-FreeType-fallback negative build modes.
+- To isolate the defects, built `rw-renderer-t213-adapter-rehearsal-000001` with two explicit adapters while leaving every frozen candidate byte unchanged. The result is labelled `ADAPTER_REHEARSAL_PASSED_EXACT_CANDIDATE_BUILD_BLOCKED`; it is not candidate v2 build evidence, certification, physical replay, or READY evidence.
+- Two clean adapter rehearsals from independent volumes produced byte-identical manifests, probe JSON, and binaries. Source tree is `sha256:125d2d782dd2c0b0898f89a4646fa09e0281faa63382a8475621e5ebf59143da`; probe JSON is `sha256:f2b633ef467e85fd9b85955826f1fc20453ab5fcc210ffe71b4921b2b4029210`; 2,729,472-byte binary is `sha256:0508c755f90daf3cbdaa686cec4e619c5be851bcf4921a4137dc5c9992556c17`; manifest is `sha256:5eff44eafb36e91aa3a73a853c3244db55efad13566f1dbe3736ec2dc5fbc4e0`.
+- The positive control executed the TrueType interpreter three times. The required direct path and both actual Skia paths observed glyph loads with zero invalid loads and zero interpreter calls; the tricky path classified both opened faces as tricky and the CFF path classified none.
+- The manifest closes all ten direct Skia/FreeType `FT_Load_Glyph` source call sites, exact dynamic exports, allowed OCI runtime dependencies, required/forbidden modules and symbols, and full x86-64-v2 disassembly. No forbidden symbol, runtime dispatch symbol, VEX/EVEX instruction, or v3/v4 instruction was observed.
+- Focused gate: `powershell -ExecutionPolicy Bypass -File tools/run-renderer-exact-build-rehearsal-gate.ps1` passed 9 tests. Negative Docker modes rejected missing input and host fallback. T212 closure gate passed 23 inputs/2,248,288 checks; `run-gate.ps1 -Gate template` passed Template kernel/static replay and the 785-check tricky-font compatibility gate.
+- Compact evidence is `renderer/probes/t213/rehearsal-result-v1.json`; full manifests and binaries remain local build evidence. T213 and dependent T214/T215 remain blocked until an authorized immutable successor candidate corrects the two frozen source artifacts.
