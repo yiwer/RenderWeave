@@ -1,3 +1,5 @@
+#[cfg(feature = "native-jpeg-turbo")]
+use renderweave_renderer_daemon::seal_prepared_jpeg_result;
 use renderweave_renderer_daemon::{
     PreparedPngResultError, TerminalResponse, seal_prepared_png_result,
 };
@@ -14,6 +16,8 @@ use serde_json::Value;
 
 const PROTOCOL_VECTORS: &str = include_str!("../../../protocol-vectors-v1.json");
 const ENGINE_VECTORS: &str = include_str!("../../../engine-png-vectors-v1.json");
+#[cfg(feature = "native-jpeg-turbo")]
+const JPEG_VECTORS: &str = include_str!("../../../output-jpeg-vectors-v1.json");
 const PREPARED_IMAGE_VECTORS: &str =
     include_str!("../../../engine-prepared-image-png-vectors-v1.json");
 const FETCH_ORIGIN: &str = "https://render.internal.example";
@@ -38,6 +42,32 @@ fn seals_real_engine_png_into_exact_result_payloads_through_the_public_interface
         .find(|case| case["id"] == "transparent-empty-canvas-1x1")
         .unwrap();
     assert_sealed_png(sealed, &expected_case["expected"]);
+}
+
+#[cfg(feature = "native-jpeg-turbo")]
+#[test]
+fn seals_real_engine_jpeg_into_exact_result_payloads_through_the_public_interface() {
+    let engine_vectors: Value = serde_json::from_str(ENGINE_VECTORS).unwrap();
+    let jpeg_vectors: Value = serde_json::from_str(JPEG_VECTORS).unwrap();
+    let document_json = serde_json::to_string(&engine_vectors["documents"]["transparent1x1"])
+        .expect("engine document must serialize canonically");
+    let document = validate_render_document(&document_json).unwrap();
+    let command_json = command_with_document(&document_json).replace(
+        "\"output\":{\"profile\":\"renderweave-output-png/1.0\",\"dpi\":96}",
+        "\"output\":{\"profile\":\"renderweave-output-jpeg/1.0\",\"dpi\":96,\"quality\":90}",
+    );
+    let command = parse_command(command_json.as_bytes()).unwrap();
+    let fetcher = NoFetch;
+    let prepared = prepare_resources(&document, &command, &fetcher);
+
+    let sealed = seal_prepared_jpeg_result(&command, &document, &prepared).unwrap();
+    let expected = jpeg_vectors["jpegCases"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|case| case["id"] == "transparent-white-matte-1x1-q90")
+        .unwrap();
+    assert_sealed_jpeg(sealed, &expected["expected"]);
 }
 
 #[test]
@@ -168,6 +198,66 @@ fn assert_sealed_png(sealed: SealedResult, expected: &Value) {
         terminal.frames()[1].frame_type
     );
     assert_eq!(expected_image_payload, terminal.frames()[1].payload);
+}
+
+#[cfg(feature = "native-jpeg-turbo")]
+fn assert_sealed_jpeg(sealed: SealedResult, expected: &Value) {
+    let image_bytes = sealed.image_payload()[16..].to_vec();
+    assert_eq!(
+        expected["byteLength"].as_u64().unwrap(),
+        image_bytes.len() as u64
+    );
+    assert_eq!(
+        decode_hex(expected["entropyHex"].as_str().unwrap()),
+        entropy_bytes(&image_bytes)
+    );
+    let content_sha256 = expected["sha256"]
+        .as_str()
+        .unwrap()
+        .strip_prefix("sha256:")
+        .unwrap();
+    let expected_metadata = format!(
+        concat!(
+            "{{\"contractVersion\":\"renderweave-render-result/1.0\",",
+            "\"requestId\":\"123e4567-e89b-42d3-a456-426614174000\",",
+            "\"rendererProfile\":\"renderweave-renderer/1.0\",",
+            "\"dslVersion\":\"renderweave-render/1.0\",",
+            "\"layoutProfile\":\"renderweave-layout/1.0\",",
+            "\"outputProfile\":\"renderweave-output-jpeg/1.0\",",
+            "\"format\":\"JPEG\",\"mediaType\":\"image/jpeg\",",
+            "\"widthPx\":1,\"heightPx\":1,\"dpi\":96,",
+            "\"byteLength\":{},\"contentSha256\":\"{}\",\"quality\":90}}"
+        ),
+        image_bytes.len(),
+        content_sha256
+    );
+    assert_eq!(expected_metadata.as_bytes(), sealed.metadata_payload());
+
+    let mut expected_image_payload = decode_hex("123e4567e89b42d3a456426614174000");
+    expected_image_payload.extend_from_slice(&image_bytes);
+    assert_eq!(expected_image_payload, sealed.image_payload());
+    assert_eq!(image_bytes.len() as u64, sealed.byte_length());
+    assert_eq!(content_sha256, sealed.content_sha256());
+
+    let terminal = TerminalResponse::sealed_result(sealed);
+    assert_eq!(2, terminal.frames().len());
+    assert_eq!(expected_metadata.as_bytes(), terminal.frames()[0].payload);
+    assert_eq!(expected_image_payload, terminal.frames()[1].payload);
+}
+
+#[cfg(feature = "native-jpeg-turbo")]
+fn entropy_bytes(encoded: &[u8]) -> Vec<u8> {
+    let mut offset = 2_usize;
+    while offset + 4 <= encoded.len() {
+        assert_eq!(0xff, encoded[offset]);
+        let marker = encoded[offset + 1];
+        let length = u16::from_be_bytes([encoded[offset + 2], encoded[offset + 3]]) as usize;
+        if marker == 0xda {
+            return encoded[offset + 2 + length..encoded.len() - 2].to_vec();
+        }
+        offset += 2 + length;
+    }
+    panic!("JPEG SOS is absent")
 }
 
 fn prepare_resources(

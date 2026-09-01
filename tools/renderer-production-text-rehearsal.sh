@@ -13,7 +13,11 @@ readonly RW_SKIA_ROOT="$RW_WORK/src/skia"
 readonly RW_SKIA_OUT="$RW_SKIA_ROOT/out/T213"
 readonly RW_HARFBUZZ_ROOT="$RW_T214/harfbuzz"
 readonly RW_HARFBUZZ_OUT="$RW_HARFBUZZ_ROOT/out/T214"
+readonly RW_JPEG_ROOT="$RW_T214/libjpeg-turbo"
+readonly RW_JPEG_OUT="$RW_JPEG_ROOT/out/T217"
 readonly RW_HARFBUZZ_ARCHIVE="$RW_BUNDLE/inputs/shaping-unicode/harfbuzz-9cb1fee51069b206effb4736e443b038d230789d.tar"
+readonly RW_JPEG_ARCHIVE="$RW_BUNDLE/inputs/jpeg-output/libjpeg-turbo-3.2.0.tar.gz"
+readonly RW_CMAKE_ARCHIVE="$RW_BUNDLE/inputs/build-tools/cmake-4.4.2-linux-x86_64.tar.gz"
 readonly RW_RUST_ARCHIVE="$RW_BUNDLE/inputs/toolchain-sysroot/rust-1.89.0-x86_64-unknown-linux-gnu.tar.xz"
 readonly RW_RENDERER_ROOT_ARCHIVE="$RW_BUNDLE/inputs/downstream-policy/renderer-root-normalized.tar"
 readonly RW_RENDERER_CRATES_ARCHIVE="$RW_BUNDLE/inputs/downstream-policy/renderer-crates-normalized.tar"
@@ -111,9 +115,9 @@ prepare_source() {
     source_stage="$RW_T214/source-stage"
     [ ! -e "$source_stage" ] || fail "partial T214 source staging tree is present"
 
-    require_sha256 d1d577caff82a5df9a55e079098a84bf0decc6026112af50742f06c534694756 \
+    require_sha256 474b0038f4db3c9c98f1d4d49f6753fc23ca5ffcd90ba9da720bf9e48e69af78 \
         "$RW_RENDERER_ROOT_ARCHIVE"
-    require_sha256 2bcb208912fbef4ee82224ad81d61f3829fe4cf5c1a9f415f68f09b05b300605 \
+    require_sha256 335a4f17427cd20908b03407ea4c6d2f21da7893735e771beff67ba9ead661b1 \
         "$RW_RENDERER_CRATES_ARCHIVE"
     require_sha256 2271053938840ce6fa5738a471d963cfd99e9e1b95db888ac4f74fddd3adeff0 \
         "$RW_RENDERER_VENDOR_ARCHIVE"
@@ -149,7 +153,7 @@ prepare_source() {
         "$RW_REPO/renderweave-asset/src/main/resources/cn/hbads/renderweave/asset/acceptance/sRGB-IEC61966-2.1.icc"
     require_sha256 1257ba1f94eb6aefda075f74a6e9bf41efbe43373a5a5aae3fdb2b8b536a64ed \
         "$RW_REPO/renderer/production-text-command-v1.json"
-    require_sha256 4d25500fb52cf97899d0bcc8fac75fb9a7e9ec9528595f2aff3e5dae88111d3a \
+    require_sha256 c4f7135f4627feff332982603dbbee1e7a8a73a32c9ef926892ea00d7327ec47 \
         "$RW_REPO/renderer/Cargo.lock"
     printf '%s\n' "renderweave-t214-source/1" > "$source_marker"
     printf '%s\n' "T214_EXACT_SOURCE_PREPARED"
@@ -216,10 +220,91 @@ prepare_harfbuzz() {
     printf '%s\n' "T214_EXACT_HARFBUZZ_BUILT"
 }
 
+prepare_jpeg() {
+    require_native_inputs
+    require_sha256 6f30092cef9fb839779646608f4ee14ae3cbac989c47fa05e841b0841f09878e \
+        "$RW_JPEG_ARCHIVE"
+    require_sha256 3ada9a3f5d8a85413579bdd0ea6aa8e8da86efdd6d15c91a1afa517f2021956c \
+        "$RW_CMAKE_ARCHIVE"
+    cmake_root="$RW_T214/cmake"
+    if [ ! -x "$cmake_root/bin/cmake" ]; then
+        [ ! -e "$cmake_root" ] || fail "partial exact CMake installation is present"
+        mkdir -p "$cmake_root"
+        tar --no-same-owner --strip-components=1 -xf "$RW_CMAKE_ARCHIVE" -C "$cmake_root"
+    fi
+    "$cmake_root/bin/cmake" --version | grep -F 'cmake version 4.4.2' >/dev/null ||
+        fail "exact CMake identity drifted"
+    source_marker="$RW_JPEG_ROOT/.renderweave-libjpeg-turbo-3.2.0"
+    if [ ! -f "$source_marker" ]; then
+        [ ! -e "$RW_JPEG_ROOT" ] || fail "partial exact libjpeg-turbo source is present"
+        mkdir -p "$RW_JPEG_ROOT"
+        tar --no-same-owner --strip-components=1 -xf "$RW_JPEG_ARCHIVE" -C "$RW_JPEG_ROOT"
+        printf '%s\n' "libjpeg-turbo-3.2.0/sha256:6f30092cef9fb839779646608f4ee14ae3cbac989c47fa05e841b0841f09878e" \
+            > "$source_marker"
+    fi
+    grep -Fx 'libjpeg-turbo-3.2.0/sha256:6f30092cef9fb839779646608f4ee14ae3cbac989c47fa05e841b0841f09878e' \
+        "$source_marker" >/dev/null || fail "exact libjpeg-turbo source marker drifted"
+    if [ ! -f "$RW_JPEG_OUT/libjpeg.a" ]; then
+        mkdir -p "$RW_JPEG_OUT" "$RW_T214/home" "$RW_T214/tmp"
+        env -i \
+            HOME="$RW_T214/home" \
+            LANG=C.UTF-8 \
+            LC_ALL=C.UTF-8 \
+            PATH="$cmake_root/bin:$RW_WORK/toolchain/bin:$RW_WORK/tools/ninja:/usr/bin:/bin" \
+            SOURCE_DATE_EPOCH=0 \
+            TMPDIR="$RW_T214/tmp" \
+            TZ=UTC \
+            "$cmake_root/bin/cmake" \
+                -S "$RW_JPEG_ROOT" \
+                -B "$RW_JPEG_OUT" \
+                -G Ninja \
+                -DCMAKE_MAKE_PROGRAM="$RW_WORK/tools/ninja/ninja" \
+                -DCMAKE_C_COMPILER="$RW_WORK/toolchain/bin/clang" \
+                -DCMAKE_AR="$RW_WORK/toolchain/bin/llvm-ar" \
+                -DCMAKE_RANLIB="$RW_WORK/toolchain/bin/llvm-ranlib" \
+                -DCMAKE_BUILD_TYPE=Release \
+                -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
+                '-DCMAKE_C_FLAGS_RELEASE=-O2 -DNDEBUG -march=x86-64-v2 -mtune=generic -mno-avx -mno-avx2 -mno-fma -fno-fast-math -ffp-contract=off -ffile-prefix-map=/work=/renderweave/build' \
+                -DENABLE_SHARED=OFF \
+                -DENABLE_STATIC=ON \
+                -DREQUIRE_SIMD=OFF \
+                -DWITH_SIMD=OFF \
+                -DWITH_TURBOJPEG=OFF \
+                -DWITH_TOOLS=OFF \
+                -DWITH_TESTS=OFF \
+                -DWITH_ARITH_ENC=OFF \
+                -DWITH_ARITH_DEC=OFF \
+                -DWITH_JPEG7=OFF \
+                -DWITH_JPEG8=OFF
+        env -i \
+            HOME="$RW_T214/home" \
+            LANG=C.UTF-8 \
+            LC_ALL=C.UTF-8 \
+            PATH="$cmake_root/bin:$RW_WORK/toolchain/bin:$RW_WORK/tools/ninja:/usr/bin:/bin" \
+            SOURCE_DATE_EPOCH=0 \
+            TMPDIR="$RW_T214/tmp" \
+            TZ=UTC \
+            "$cmake_root/bin/cmake" --build "$RW_JPEG_OUT" --target jpeg-static --parallel 4
+    fi
+    [ -f "$RW_JPEG_OUT/libjpeg.a" ] || fail "exact static libjpeg archive is absent"
+    if find "$RW_JPEG_OUT" -maxdepth 2 -name 'libjpeg.so*' -print -quit | grep -q .
+    then
+        fail "shared libjpeg output is forbidden"
+    fi
+    grep -F 'WITH_SIMD:BOOL=OFF' "$RW_JPEG_OUT/CMakeCache.txt" >/dev/null ||
+        fail "libjpeg-turbo SIMD disablement drifted"
+    grep -F 'ENABLE_SHARED:BOOL=OFF' "$RW_JPEG_OUT/CMakeCache.txt" >/dev/null ||
+        fail "libjpeg-turbo shared build disablement drifted"
+    grep -F 'ENABLE_STATIC:BOOL=ON' "$RW_JPEG_OUT/CMakeCache.txt" >/dev/null ||
+        fail "libjpeg-turbo static build enablement drifted"
+    printf '%s\n' "T217_EXACT_LIBJPEG_TURBO_BUILT"
+}
+
 exact_cargo() {
     require_native_inputs
     prepare_source
     prepare_harfbuzz
+    prepare_jpeg
     [ -x "$RW_RUST/bin/cargo" ] || fail "exact Cargo is not installed"
     mkdir -p "$RW_CARGO_HOME" "$RW_TARGET" "$RW_T214/home" "$RW_T214/tmp"
     cd "$RW_REPO/renderer"
@@ -239,6 +324,10 @@ exact_cargo() {
         RENDERWEAVE_SKIA_OUT="$RW_SKIA_OUT" \
         RENDERWEAVE_HARFBUZZ_ROOT="$RW_HARFBUZZ_ROOT" \
         RENDERWEAVE_HARFBUZZ_OUT="$RW_HARFBUZZ_OUT" \
+        RENDERWEAVE_JPEG_TURBO_ROOT="$RW_JPEG_ROOT" \
+        RENDERWEAVE_JPEG_TURBO_OUT="$RW_JPEG_OUT" \
+        RENDERWEAVE_CANONICAL_SRGB_ICC="$RW_CANONICAL_SRGB_ICC" \
+        RENDERWEAVE_CLANG="$RW_WORK/toolchain/bin/clang" \
         RENDERWEAVE_CLANGXX="$RW_WORK/toolchain/bin/clang++" \
         RENDERWEAVE_LLVM_AR="$RW_WORK/toolchain/bin/llvm-ar" \
         "$RW_RUST/bin/cargo" "$@"
@@ -247,8 +336,16 @@ exact_cargo() {
 test_engine() {
     exact_cargo test \
         --manifest-path "$RW_REPO/renderer/Cargo.toml" \
+        -p renderweave-renderer-output-jpeg \
+        --features native-jpeg-turbo \
+        --release \
+        --locked \
+        --offline \
+        -- --nocapture
+    exact_cargo test \
+        --manifest-path "$RW_REPO/renderer/Cargo.toml" \
         -p renderweave-renderer-engine \
-        --features native-text-skia \
+        --features native-text-skia,native-jpeg-turbo \
         --lib \
         --release \
         --locked \
@@ -257,7 +354,16 @@ test_engine() {
     exact_cargo test \
         --manifest-path "$RW_REPO/renderer/Cargo.toml" \
         -p renderweave-renderer-engine \
-        --features native-text-skia \
+        --features native-text-skia,native-jpeg-turbo \
+        --test native_jpeg_vectors \
+        --release \
+        --locked \
+        --offline \
+        -- --nocapture
+    exact_cargo test \
+        --manifest-path "$RW_REPO/renderer/Cargo.toml" \
+        -p renderweave-renderer-engine \
+        --features native-text-skia,native-jpeg-turbo \
         --test native_text_vectors \
         --release \
         --locked \
@@ -320,8 +426,17 @@ test_daemon() {
     exact_cargo test \
         --manifest-path "$RW_REPO/renderer/Cargo.toml" \
         -p renderweave-renderer-daemon \
-        --features native-text-skia \
+        --features native-text-skia,native-jpeg-turbo \
         --lib production_ \
+        --release \
+        --locked \
+        --offline \
+        -- --nocapture
+    exact_cargo test \
+        --manifest-path "$RW_REPO/renderer/Cargo.toml" \
+        -p renderweave-renderer-daemon \
+        --features native-text-skia,native-jpeg-turbo \
+        --test prepared_png_result \
         --release \
         --locked \
         --offline \
@@ -329,12 +444,53 @@ test_daemon() {
     printf '%s\n' "T214_NATIVE_TEXT_DAEMON_TEST_PASSED"
 }
 
+audit_jpeg_policy() {
+    [ -x "$RW_WORK/toolchain/bin/llvm-nm" ] || fail "exact llvm-nm is absent"
+    [ -x "$RW_WORK/toolchain/bin/llvm-readelf" ] || fail "exact llvm-readelf is absent"
+    archives="$RW_T214/jpeg-policy-archives.txt"
+    find "$RW_TARGET/release/build" \
+        -path '*/out/librenderweave_native_jpeg.a' \
+        -type f -print | sort > "$archives"
+    [ -s "$archives" ] || fail "production native JPEG archive is absent"
+    archive_count=0
+    while IFS= read -r native_archive
+    do
+        [ -f "$native_archive" ] || fail "production native JPEG archive disappeared"
+        archive_count="$((archive_count + 1))"
+        symbols="$RW_T214/jpeg-policy-symbols-$archive_count.txt"
+        "$RW_WORK/toolchain/bin/llvm-nm" --defined-only "$native_archive" > "$symbols"
+        for symbol in \
+            renderweave_encode_jpeg \
+            renderweave_free_jpeg \
+            jpeg_CreateCompress \
+            jpeg_write_scanlines
+        do
+            grep -F "$symbol" "$symbols" >/dev/null ||
+                fail "production native JPEG symbol is absent: $symbol"
+        done
+    done < "$archives"
+    [ -x "$RW_TARGET/release/renderweave-renderer-daemon" ] ||
+        fail "production Renderer daemon binary is absent"
+    if "$RW_WORK/toolchain/bin/llvm-readelf" -d \
+        "$RW_TARGET/release/renderweave-renderer-daemon" | grep -Eiq 'NEEDED.*(jpeg|turbo)'
+    then
+        fail "production Renderer dynamically depends on an ambient JPEG codec"
+    fi
+    if grep -F 'jpeg_set_quality' \
+        "$RW_REPO/renderer/crates/output-jpeg/native/jpeg_encoder.c" >/dev/null
+    then
+        fail "JPEG quality helper is forbidden as output authority"
+    fi
+    printf '%s\n' "T217_PRODUCTION_JPEG_POLICY_AUDIT_PASSED"
+}
+
 clippy_candidate() {
     exact_cargo clippy \
         --manifest-path "$RW_REPO/renderer/Cargo.toml" \
         -p renderweave-renderer-engine \
         -p renderweave-renderer-daemon \
-        --features native-text-skia \
+        -p renderweave-renderer-output-jpeg \
+        --features native-text-skia,native-jpeg-turbo \
         --release \
         --locked \
         --offline \
@@ -346,7 +502,7 @@ build_daemon() {
     exact_cargo build \
         --manifest-path "$RW_REPO/renderer/Cargo.toml" \
         -p renderweave-renderer-daemon \
-        --features native-text-skia \
+        --features native-text-skia,native-jpeg-turbo \
         --release \
         --locked \
         --offline
@@ -378,11 +534,15 @@ case "${1:-}" in
         clippy_candidate
         build_daemon
         audit_glyph_policy
+        audit_jpeg_policy
         ;;
     audit-glyph-policy)
         audit_glyph_policy
         ;;
+    audit-jpeg-policy)
+        audit_jpeg_policy
+        ;;
     *)
-        fail "usage: $0 install-rust|test-engine|test-daemon|clippy|build-daemon|audit-glyph-policy|rehearse"
+        fail "usage: $0 install-rust|test-engine|test-daemon|clippy|build-daemon|audit-glyph-policy|audit-jpeg-policy|rehearse"
         ;;
 esac

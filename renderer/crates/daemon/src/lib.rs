@@ -3,17 +3,21 @@
 //! The shipped default process intentionally has no registered raster profile and remains
 //! fail-closed after resource preparation. The exact Linux `native-text-skia` candidate feature
 //! routes its deliberately narrow Text subset through the same request registry into atomic PNG
-//! sealing for offline rehearsal; enabling that build feature does not register availability.
+//! or JPEG sealing for offline rehearsal; enabling those build features does not register
+//! availability.
 
 use renderweave_renderer_document::AdmittedRenderDocument;
 #[cfg(any(unix, test))]
 use renderweave_renderer_document::{validate_render_document, validate_resource_lease_coverage};
 use renderweave_renderer_engine::{
-    EngineCheckpoint, EngineExecutionControl, EnginePngError, render_png_with_prepared_resources,
+    EngineCheckpoint, EngineExecutionControl, EnginePngError, render_jpeg_with_prepared_resources,
+    render_jpeg_with_prepared_resources_controlled, render_png_with_prepared_resources,
     render_png_with_prepared_resources_controlled,
 };
 #[cfg(any(unix, test))]
-use renderweave_renderer_engine::{EngineInterruption, EngineProblemStage, preflight_png_output};
+use renderweave_renderer_engine::{
+    EngineInterruption, EngineProblemStage, preflight_jpeg_output, preflight_png_output,
+};
 #[cfg(all(any(unix, test), not(feature = "native-text-skia")))]
 use renderweave_renderer_layout::preflight_layout;
 use renderweave_renderer_protocol::{
@@ -175,21 +179,7 @@ fn seal_prepared_png_result_internal(
     prepared_resources: &PreparedResourceManifest,
     control: Option<&dyn EngineExecutionControl>,
 ) -> Result<SealedResult, PreparedPngResultError> {
-    if command.command.renderer_profile != "renderweave-renderer/1.0" {
-        return Err(PreparedPngResultError::Contract(
-            "prepared PNG command renderer Profile is not exact",
-        ));
-    }
-    if command.command.document.get().as_bytes() != document.canonical_document().as_bytes() {
-        return Err(PreparedPngResultError::Contract(
-            "prepared PNG command and admitted document identities diverged",
-        ));
-    }
-    if command.command.diagnostics.layout_trace {
-        return Err(PreparedPngResultError::Contract(
-            "prepared PNG result kernel does not support layout trace",
-        ));
-    }
+    validate_prepared_identity(command, document)?;
     let dpi = match &command.command.output {
         OutputSelection::Png(output) => output.dpi,
         OutputSelection::Jpeg(_) => {
@@ -216,12 +206,122 @@ fn seal_prepared_png_result_internal(
             "prepared PNG Engine output identity diverged",
         ));
     }
-    let width_px = output.width_px();
-    let height_px = output.height_px();
-    let byte_length = u64::try_from(output.byte_length()).map_err(|_| {
-        PreparedPngResultError::Contract("prepared PNG Engine byte length exceeds uint64")
-    })?;
+    let byte_length = output.byte_length();
     let content_sha256 = output.content_sha256().to_owned();
+    seal_encoded_result(
+        command,
+        output.width_px(),
+        output.height_px(),
+        ResultOutputSelection::Png { dpi },
+        byte_length,
+        &content_sha256,
+        output.into_bytes(),
+        control,
+    )
+}
+
+pub fn seal_prepared_jpeg_result(
+    command: &AdmittedCommand,
+    document: &AdmittedRenderDocument,
+    prepared_resources: &PreparedResourceManifest,
+) -> Result<SealedResult, PreparedPngResultError> {
+    seal_prepared_jpeg_result_internal(command, document, prepared_resources, None)
+}
+
+pub fn seal_prepared_jpeg_result_controlled(
+    command: &AdmittedCommand,
+    document: &AdmittedRenderDocument,
+    prepared_resources: &PreparedResourceManifest,
+    control: &dyn EngineExecutionControl,
+) -> Result<SealedResult, PreparedPngResultError> {
+    seal_prepared_jpeg_result_internal(command, document, prepared_resources, Some(control))
+}
+
+fn seal_prepared_jpeg_result_internal(
+    command: &AdmittedCommand,
+    document: &AdmittedRenderDocument,
+    prepared_resources: &PreparedResourceManifest,
+    control: Option<&dyn EngineExecutionControl>,
+) -> Result<SealedResult, PreparedPngResultError> {
+    validate_prepared_identity(command, document)?;
+    let (dpi, quality) = match &command.command.output {
+        OutputSelection::Jpeg(output) => (output.dpi, output.quality),
+        OutputSelection::Png(_) => {
+            return Err(PreparedPngResultError::Contract(
+                "prepared JPEG result kernel requires JPEG",
+            ));
+        }
+    };
+    let output = match control {
+        Some(control) => render_jpeg_with_prepared_resources_controlled(
+            document,
+            prepared_resources,
+            dpi,
+            quality,
+            control,
+        )?,
+        None => render_jpeg_with_prepared_resources(document, prepared_resources, dpi, quality)?,
+    };
+    if output.dpi() != dpi
+        || output.quality() != quality
+        || output.output_profile() != "renderweave-output-jpeg/1.0"
+        || output.media_type() != "image/jpeg"
+    {
+        return Err(PreparedPngResultError::Contract(
+            "prepared JPEG Engine output identity diverged",
+        ));
+    }
+    let byte_length = output.byte_length();
+    let content_sha256 = output.content_sha256().to_owned();
+    seal_encoded_result(
+        command,
+        output.width_px(),
+        output.height_px(),
+        ResultOutputSelection::Jpeg { dpi, quality },
+        byte_length,
+        &content_sha256,
+        output.into_bytes(),
+        control,
+    )
+}
+
+fn validate_prepared_identity(
+    command: &AdmittedCommand,
+    document: &AdmittedRenderDocument,
+) -> Result<(), PreparedPngResultError> {
+    if command.command.renderer_profile != "renderweave-renderer/1.0" {
+        return Err(PreparedPngResultError::Contract(
+            "prepared command renderer Profile is not exact",
+        ));
+    }
+    if command.command.document.get().as_bytes() != document.canonical_document().as_bytes() {
+        return Err(PreparedPngResultError::Contract(
+            "prepared command and admitted document identities diverged",
+        ));
+    }
+    if command.command.diagnostics.layout_trace {
+        return Err(PreparedPngResultError::Contract(
+            "prepared result kernel does not support layout trace",
+        ));
+    }
+    Ok(())
+}
+
+#[allow(clippy::too_many_arguments)]
+fn seal_encoded_result(
+    command: &AdmittedCommand,
+    width_px: u32,
+    height_px: u32,
+    output_selection: ResultOutputSelection,
+    byte_length: usize,
+    content_sha256: &str,
+    image_bytes: Vec<u8>,
+    control: Option<&dyn EngineExecutionControl>,
+) -> Result<SealedResult, PreparedPngResultError> {
+    let byte_length = u64::try_from(byte_length).map_err(|_| {
+        PreparedPngResultError::Contract("prepared Engine byte length exceeds uint64")
+    })?;
+    let content_sha256 = content_sha256.to_owned();
     if let Some(control) = control {
         prepared_checkpoint(control, EngineCheckpoint::OutputSeal)?;
     }
@@ -232,8 +332,8 @@ fn seal_prepared_png_result_internal(
         layout_profile: "renderweave-layout/1.0",
         width_px,
         height_px,
-        output: ResultOutputSelection::Png { dpi },
-        image_bytes: output.into_bytes(),
+        output: output_selection,
+        image_bytes,
     })?;
     if let Some(control) = control {
         prepared_checkpoint(control, EngineCheckpoint::OutputSeal)?;
@@ -242,7 +342,7 @@ fn seal_prepared_png_result_internal(
         || format!("sha256:{}", sealed.content_sha256()) != content_sha256
     {
         return Err(PreparedPngResultError::Contract(
-            "prepared PNG Engine and sealed result identities diverged",
+            "prepared Engine and sealed result identities diverged",
         ));
     }
     Ok(sealed)
@@ -895,17 +995,13 @@ impl RequestExecutor {
                 violation.resource_id(),
             ));
         }
-        let dpi = match &admitted.command.output {
-            OutputSelection::Png(output) => output.dpi,
-            OutputSelection::Jpeg(_) => {
-                return terminal_problem(problem_bytes(
-                    request_id,
-                    "RENDER_INTERNAL_ERROR",
-                    EngineStage::CommandAdmission,
-                ));
+        let output_preflight = match &admitted.command.output {
+            OutputSelection::Png(output) => preflight_png_output(&document, output.dpi),
+            OutputSelection::Jpeg(output) => {
+                preflight_jpeg_output(&document, output.dpi, output.quality)
             }
         };
-        if let Err(error) = preflight_png_output(&document, dpi) {
+        if let Err(error) = output_preflight {
             return terminal_problem(engine_png_problem_bytes(request_id, &error));
         }
 
@@ -936,12 +1032,21 @@ impl RequestExecutor {
 
         #[cfg(feature = "native-text-skia")]
         {
-            match seal_prepared_png_result_controlled(
-                admitted,
-                &document,
-                &prepared_manifest,
-                control,
-            ) {
+            let result = match admitted.command.output {
+                OutputSelection::Png(_) => seal_prepared_png_result_controlled(
+                    admitted,
+                    &document,
+                    &prepared_manifest,
+                    control,
+                ),
+                OutputSelection::Jpeg(_) => seal_prepared_jpeg_result_controlled(
+                    admitted,
+                    &document,
+                    &prepared_manifest,
+                    control,
+                ),
+            };
+            match result {
                 Ok(result) => Ok(TerminalResponse::sealed_result(result)),
                 Err(error) => terminal_problem(prepared_png_problem_bytes(request_id, &error)),
             }
@@ -1825,6 +1930,83 @@ mod tests {
         assert_eq!(&first.frames()[1].payload[16..24], b"\x89PNG\r\n\x1a\n");
         assert_eq!(first.frames(), second.frames());
         assert_eq!(18_582 + 16, first.frames()[1].payload.len());
+    }
+
+    #[cfg(all(
+        target_os = "linux",
+        feature = "native-text-skia",
+        feature = "native-jpeg-turbo"
+    ))]
+    #[test]
+    fn production_text_jpeg_command_runs_through_the_concurrent_process_executor() {
+        let payload = String::from_utf8(
+            PRODUCTION_TEXT_COMMAND
+                .strip_suffix(b"\n")
+                .expect("shared Java command fixture must end in one LF")
+                .to_vec(),
+        )
+        .expect("shared Java command fixture must be UTF-8")
+        .replace(
+            "\"output\":{\"profile\":\"renderweave-output-png/1.0\",\"dpi\":96}",
+            "\"output\":{\"profile\":\"renderweave-output-jpeg/1.0\",\"dpi\":96,\"quality\":90}",
+        )
+        .into_bytes();
+        let resource_id = "rwres_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+        let observations = Arc::new(Mutex::new(Vec::new()));
+        let registry = concurrent_request_registry_with(Arc::new(RecordingResourceFetcher {
+            observations: Arc::clone(&observations),
+            bodies: BTreeMap::from([(resource_id.to_owned(), PRODUCTION_TEXT_FONT.to_vec())]),
+            fail_first: false,
+        }));
+        let (response_sender, response_receiver) = mpsc::channel();
+        let command = Frame {
+            frame_type: FrameType::Command,
+            payload,
+        };
+
+        registry
+            .handle(command.clone(), 1_900_000_000_000, &response_sender)
+            .expect("production process must accept the exact JPEG command frame");
+        let first = response_receiver
+            .recv_timeout(Duration::from_secs(30))
+            .expect("production process must seal one JPEG terminal");
+        registry
+            .handle(command, 1_900_000_000_001, &response_sender)
+            .expect("same JPEG command must replay its terminal");
+        let second = response_receiver
+            .recv_timeout(Duration::from_secs(30))
+            .expect("production process JPEG replay must return one terminal");
+
+        assert_eq!(vec![resource_id], *observations.lock().unwrap());
+        assert_eq!(2, first.frames().len());
+        assert_eq!(FrameType::ResultMetadata, first.frames()[0].frame_type);
+        assert_eq!(FrameType::ResultImage, first.frames()[1].frame_type);
+        let metadata: Value = serde_json::from_slice(&first.frames()[0].payload)
+            .expect("production process JPEG metadata must be closed JSON");
+        assert_eq!("renderweave-output-jpeg/1.0", metadata["outputProfile"]);
+        assert_eq!("JPEG", metadata["format"]);
+        assert_eq!("image/jpeg", metadata["mediaType"]);
+        assert_eq!(96, metadata["widthPx"]);
+        assert_eq!(48, metadata["heightPx"]);
+        assert_eq!(96, metadata["dpi"]);
+        assert_eq!(90, metadata["quality"]);
+        let byte_length = metadata["byteLength"]
+            .as_u64()
+            .expect("JPEG byte length must be uint64") as usize;
+        let content_sha256 = metadata["contentSha256"]
+            .as_str()
+            .expect("JPEG digest must be lowercase SHA-256");
+        assert_eq!(64, content_sha256.len());
+        assert!(
+            content_sha256
+                .bytes()
+                .all(|value| value.is_ascii_digit() || (b'a'..=b'f').contains(&value))
+        );
+        let image_payload = &first.frames()[1].payload;
+        assert_eq!(byte_length + 16, image_payload.len());
+        assert_eq!(&image_payload[16..18], b"\xff\xd8");
+        assert_eq!(&image_payload[image_payload.len() - 2..], b"\xff\xd9");
+        assert_eq!(first.frames(), second.frames());
     }
 
     #[cfg(all(target_os = "linux", feature = "native-text-skia"))]

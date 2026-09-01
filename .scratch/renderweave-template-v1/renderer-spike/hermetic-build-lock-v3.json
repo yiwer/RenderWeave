@@ -8,16 +8,27 @@
   },
   "inputOverrides": [
     {
+      "id": "renderer-cargo-lock",
+      "category": "rust-vendor",
+      "bundlePath": "inputs/rust-vendor/Cargo.lock",
+      "sha256": "sha256:c4f7135f4627feff332982603dbbee1e7a8a73a32c9ef926892ea00d7327ec47",
+      "byteLength": 18032,
+      "source": {
+        "kind": "repository-file",
+        "path": "renderer/Cargo.lock"
+      }
+    },
+    {
       "id": "renderer-crates-source",
       "category": "downstream-policy",
       "bundlePath": "inputs/downstream-policy/renderer-crates-normalized.tar",
-      "sha256": "sha256:2bcb208912fbef4ee82224ad81d61f3829fe4cf5c1a9f415f68f09b05b300605",
-      "byteLength": 952320,
+      "sha256": "sha256:335a4f17427cd20908b03407ea4c6d2f21da7893735e771beff67ba9ead661b1",
+      "byteLength": 1024000,
       "source": {
         "kind": "repository-tree",
         "path": "renderer/crates",
-        "treeSha256": "sha256:154a6668f07512e78fdea8f2df80df6b52cb998ef8eab33600fda5686990eb4c",
-        "fileCount": 37,
+        "treeSha256": "sha256:ac472e0664143f33dd9e3e3f3c640f5e91a9f5a7f074470436a42e41f1beca5d",
+        "fileCount": 42,
         "prefix": "crates/",
         "archiveFormat": "python-tar-gnu-normalized/1.0"
       }
@@ -26,13 +37,13 @@
       "id": "renderer-root-inputs",
       "category": "downstream-policy",
       "bundlePath": "inputs/downstream-policy/renderer-root-normalized.tar",
-      "sha256": "sha256:d1d577caff82a5df9a55e079098a84bf0decc6026112af50742f06c534694756",
+      "sha256": "sha256:474b0038f4db3c9c98f1d4d49f6753fc23ca5ffcd90ba9da720bf9e48e69af78",
       "byteLength": 1157120,
       "source": {
         "kind": "repository-tree",
         "path": "renderer",
-        "treeSha256": "sha256:18a0fd63765e44ba07b52f0d94195a79599fab21f3cc85edaa514d00ae1269f3",
-        "fileCount": 33,
+        "treeSha256": "sha256:560c55fdbbf055d84de95d5092dd6d58f6d910aca8582f7e12f22320434ddbcf",
+        "fileCount": 34,
         "prefix": "renderer-root/",
         "excludePaths": [
           "crates",
@@ -103,7 +114,7 @@
       "id": "renderer-exact-build-rehearsal-harness",
       "category": "downstream-policy",
       "bundlePath": "inputs/downstream-policy/repo-seam/tools/renderer-exact-build-rehearsal.sh",
-      "sha256": "sha256:569188f6e569f2c465cfa746ce8c6c58877c340ab1e4ac7e2271f5693d7ea8c8",
+      "sha256": "sha256:f9f88ad7ed089093c3b2a9e54ce5e4fb6880753e39ecee6b9d0b3ea8f1a7f61e",
       "byteLength": 14238,
       "source": {
         "kind": "repository-file",
@@ -114,8 +125,8 @@
       "id": "renderer-production-text-rehearsal-harness",
       "category": "downstream-policy",
       "bundlePath": "inputs/downstream-policy/repo-seam/tools/renderer-production-text-rehearsal.sh",
-      "sha256": "sha256:84e3f2ac5d383c3b6a3c5453a5e788222b8c918e3f7102d3e18ca72f35bc7765",
-      "byteLength": 18189,
+      "sha256": "sha256:72e5b64db85f9eea9742d49a5214e5c4ffef35279b36359f30ca9f14f75765a1",
+      "byteLength": 25506,
       "source": {
         "kind": "repository-file",
         "path": "tools/renderer-production-text-rehearsal.sh"

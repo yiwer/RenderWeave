@@ -321,6 +321,7 @@ dependencies = [
  "hex",
  "renderweave-renderer-document",
  "renderweave-renderer-layout",
+ "renderweave-renderer-output-jpeg",
  "renderweave-renderer-output-png",
  "renderweave-renderer-resource",
  "serde",
@@ -336,6 +337,16 @@ dependencies = [
  "renderweave-renderer-document",
  "renderweave-renderer-resource",
  "serde_json",
+]
+
+[[package]]
+name = "renderweave-renderer-output-jpeg"
+version = "0.1.0"
+dependencies = [
+ "hex",
+ "serde",
+ "serde_json",
+ "sha2",
 ]
 
 [[package]]

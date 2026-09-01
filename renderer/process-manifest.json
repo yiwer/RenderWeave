@@ -19,7 +19,7 @@
   ],
   "rustToolchain": "1.89.0",
   "rustEdition": "2024",
-  "cargoLockSha256": "sha256:4d25500fb52cf97899d0bcc8fac75fb9a7e9ec9528595f2aff3e5dae88111d3a",
+  "cargoLockSha256": "sha256:c4f7135f4627feff332982603dbbee1e7a8a73a32c9ef926892ea00d7327ec47",
   "vendorTreeSha256": "sha256:d850e13ae472704cb3065b3add62cb7e60b3d123dae0e1d62ec89a2be3dbefef",
   "vendorFileCount": 3067,
   "directDependencies": [

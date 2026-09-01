@@ -1,0 +1,50 @@
+{
+  "manifestVersion": "renderweave-output-jpeg-vectors/1.0",
+  "outputProfile": "renderweave-output-jpeg/1.0",
+  "inputContract": "canonical-straight-rgba8-row-major",
+  "codec": {
+    "sourceVersion": "libjpeg-turbo-3.2.0",
+    "sourceSha256": "sha256:6f30092cef9fb839779646608f4ee14ae3cbac989c47fa05e841b0841f09878e",
+    "cmakeArchiveSha256": "sha256:3ada9a3f5d8a85413579bdd0ea6aa8e8da86efdd6d15c91a1afa517f2021956c",
+    "simd": false,
+    "dctMethod": "JDCT_ISLOW",
+    "coding": "BASELINE_SOF0_NON_ARITHMETIC",
+    "scans": 1,
+    "subsampling": "4:4:4",
+    "optimizedHuffman": false,
+    "restartInterval": 0,
+    "smoothing": 0,
+    "adobeApp14": false,
+    "iccByteLength": 3144,
+    "iccSha256": "sha256:2b3aa1645779a9e634744faf9b01e9102b0c9b88fd6deced7934df86b949af7e",
+    "annexKTablesSha256": "sha256:03b304bf07da2b703d2b248ae9a6060062573d6ecc0e550db7f519a2226a4a60"
+  },
+  "quantizationBase": {
+    "luma": [16, 11, 10, 16, 24, 40, 51, 61, 12, 12, 14, 19, 26, 58, 60, 55, 14, 13, 16, 24, 40, 57, 69, 56, 14, 17, 22, 29, 51, 87, 80, 62, 18, 22, 37, 56, 68, 109, 103, 77, 24, 35, 55, 64, 81, 104, 113, 92, 49, 64, 78, 87, 103, 121, 120, 101, 72, 92, 95, 98, 112, 100, 103, 99],
+    "chroma": [17, 18, 24, 47, 99, 99, 99, 99, 18, 21, 26, 66, 99, 99, 99, 99, 24, 26, 56, 99, 99, 99, 99, 99, 47, 66, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99]
+  },
+  "limits": {
+    "dpi": 600,
+    "surfaceEdgePixels": 16384,
+    "surfacePixels": 50000000,
+    "rgba8SurfaceBytes": 200000000,
+    "encoderScratchBytes": 67108864,
+    "encodedImageBytes": 536870912
+  },
+  "jpegCases": [
+    {"id":"transparent-white-matte-1x1-q90","widthPx":1,"heightPx":1,"dpi":96,"quality":90,"pixels":{"kind":"EXACT_HEX","hex":"00000000"},"expected":{"byteLength":3791,"sha256":"sha256:4519661e6caa5c6fdc8497c36035e75656f4cac9241682514d7369f646da0b60","entropyHex":"fd53a00f"}},
+    {"id":"pattern-9x7-q1","widthPx":9,"heightPx":7,"dpi":300,"quality":1,"pixels":{"kind":"RGBA_PATTERN","hex":""},"expected":{"byteLength":3801,"sha256":"sha256:e576ae7c1ccebf39ab5f3aa9146f097258d214a735cf36f0dd680b3df763e405","entropyHex":"77f9fe7fe7bd002ff9ff003cd007"}},
+    {"id":"pattern-9x7-q24","widthPx":9,"heightPx":7,"dpi":300,"quality":24,"pixels":{"kind":"RGBA_PATTERN","hex":""},"expected":{"byteLength":3826,"sha256":"sha256:61aaf81820b36ccdef84618b96ece82f931cf78ce1201c4c1f82fd7045618f0f","entropyHex":"d06f2e3dfbb271f78fe78cfafebf8535ccd21aba572c6d6feebffdf5ff00d95569fd7fc311667f"}},
+    {"id":"pattern-9x7-q25","widthPx":9,"heightPx":7,"dpi":300,"quality":25,"pixels":{"kind":"RGBA_PATTERN","hex":""},"expected":{"byteLength":3826,"sha256":"sha256:f527d99228a56a4dc7cb07b9ae69b547c8d4e5d0e6f3ea0129385167beb7be0a","entropyHex":"d06f2e3dfbb271f78fe78cfafebf8535ccd21aba572ced7feebffdf5ff00d95569fd7fc311667f"}},
+    {"id":"pattern-9x7-q49","widthPx":9,"heightPx":7,"dpi":300,"quality":49,"pixels":{"kind":"RGBA_PATTERN","hex":""},"expected":{"byteLength":3848,"sha256":"sha256:144cac41bf22b64d040f5c7ea53fb689c600f717d1261c93c1107a38d5cd37ed","entropyHex":"e864fb35bf9e65cb6dc99491903efe376724f7fef63daaa2aa494579971738439feefe91a1b25ff9e53ffdf7ff00d9d6b75dd7f5f230e47dff003ff33f"}},
+    {"id":"pattern-9x7-q50","widthPx":9,"heightPx":7,"dpi":300,"quality":50,"pixels":{"kind":"RGBA_PATTERN","hex":""},"expected":{"byteLength":3848,"sha256":"sha256:113916b839008475f0c2b01a3095b0320265404eb7e296195667643cbe9eb0f1","entropyHex":"e864fb35bf9e65cb6dc99491903efe376724f7fef63daaa2aa494579971738439feefe91a1b25ff9e53ffdf7ff00d9d6b75dd7f5f230e47dff003ff33f"}},
+    {"id":"pattern-9x7-q99","widthPx":9,"heightPx":7,"dpi":300,"quality":99,"pixels":{"kind":"RGBA_PATTERN","hex":""},"expected":{"byteLength":4050,"sha256":"sha256:6920e120d7245100befd7dfc3df645d8c26c2c1a31ac125577939aadb7a73d60","entropyHex":"fe837c5f1fc08f83c7e36dcfc414d6b5b9bc24babeaff1db5ed4b4abdf11e97a3dbeb49fb596b5f0e2c7e2d4be30f11f89b5cf8a1a6dc5c6a9af5969116a53fc61b7d0a46b77d234ef01d9f95f60f6f87b07e2c714e47e1465585cbe796cf19c498dfaac6ae2a8d3ab15468d3c25654952cc31d470756afd672cc545d3ad5a9e2a345ac6a862e184af967d5f0e661c7fc05c059878915b1397e479ad3a58b7c3581ccb1598d1ab9a66584c660a6a8c31390e1f36a9945154ea60b118bc5ff69e13113c0bc47b1fac62a0b27c47e857fc231f11bfe89f7c7dff00c3a57fff00d1e75fabff006870dffd14dc3dff0086a5ff00d009f88ffaa1c49ff45550ff00c179ff00ff0044c7"}},
+    {"id":"pattern-9x7-q100","widthPx":9,"heightPx":7,"dpi":300,"quality":100,"pixels":{"kind":"RGBA_PATTERN","hex":""},"expected":{"byteLength":4074,"sha256":"sha256:b45ed38c638b9a8cfeac004336cbe2e563072bf1e3d269c1d4d4121209acfcd4","entropyHex":"fe837c5f1fc08f83c7e36dcfc414d6b5b9bc24babeaff1db5ed4b4abdf11e97a3dbeb49fb596b5f0e2c7e2d4be30f11fc4cf1cfc50d36fee354d7b44f095af896f7f6c2d3bc0970d613784bc3df01b4716a341f6f87b07e2c714e47e1465585cbeb65b3c6788f9d3cae9e2b35c161b134a184c1e1b29c5c70d1c2f10e7984c9b158bfed1e1acd29ce86331987cd29e11c73a8d1cde8e538de19fabe1ccc38ff80b80b30f122b62787b23cd69e1b369f86b91f1266bc4583c57147126519ce495e383a59970265fc5b89e10c142857c9730cdb35ff59b2ac7d6c8de3d60ff00b4733a11e10cc3f42bfe118f88dff44fbe3eff00e1d2bfff00e8f3afd5ff00b4386ffe8a6f0f7ff11587ff004843f11ff543893fe8aac17fe08e3eff00e9987f"}}
+  ],
+  "boundary": {
+    "profileAvailability": "NOT_REGISTERED",
+    "certificationStatus": "NOT_CERTIFIED",
+    "physicalHostCertification": false,
+    "providerAttempts": 0
+  }
+}

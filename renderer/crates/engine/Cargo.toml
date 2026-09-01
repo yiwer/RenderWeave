@@ -8,11 +8,13 @@ publish = false
 
 [features]
 native-text-skia = []
+native-jpeg-turbo = ["renderweave-renderer-output-jpeg/native-jpeg-turbo"]
 
 [dependencies]
 hex.workspace = true
 renderweave-renderer-document = { path = "../document" }
 renderweave-renderer-layout = { path = "../layout" }
+renderweave-renderer-output-jpeg = { path = "../output-jpeg" }
 renderweave-renderer-output-png = { path = "../output-png" }
 renderweave-renderer-resource = { path = "../resource" }
 serde_json.workspace = true

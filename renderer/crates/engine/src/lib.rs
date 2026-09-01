@@ -12,6 +12,10 @@ use renderweave_renderer_layout::{
     DefiniteLayoutEntry, LocalLayoutBox, layout_definite_resource_free,
     layout_definite_with_prepared_resources,
 };
+use renderweave_renderer_output_jpeg::{
+    JpegEncodeControl, JpegEncodeInterruption, OutputJpegError,
+    encode_straight_rgba8_controlled as encode_straight_rgba8_jpeg_controlled,
+};
 use renderweave_renderer_output_png::{
     BleedPt, OutputPngError, PngEncodeControl, PngEncodeInterruption, SurfaceDimensions,
     SurfaceSpec, encode_straight_rgba8_controlled, preflight_surface,
@@ -20,8 +24,10 @@ use renderweave_renderer_resource::{PreparedRenderResource, PreparedResourceMani
 use serde_json::{Map, Value};
 use sha2::{Digest, Sha256};
 
-const OUTPUT_PROFILE: &str = "renderweave-output-png/1.0";
-const MEDIA_TYPE: &str = "image/png";
+const PNG_OUTPUT_PROFILE: &str = "renderweave-output-png/1.0";
+const PNG_MEDIA_TYPE: &str = "image/png";
+const JPEG_OUTPUT_PROFILE: &str = "renderweave-output-jpeg/1.0";
+const JPEG_MEDIA_TYPE: &str = "image/jpeg";
 
 #[cfg(feature = "native-text-skia")]
 mod native_text {
@@ -273,6 +279,7 @@ pub enum EnginePngError {
     Layout,
     RasterAllocation,
     Output(OutputPngError),
+    JpegOutput(OutputJpegError),
     Interrupted {
         interruption: EngineInterruption,
         checkpoint: EngineCheckpoint,
@@ -290,6 +297,11 @@ impl EnginePngError {
     pub fn problem_code(&self) -> EngineProblemCode {
         match self {
             Self::Output(error) => match error.code() {
+                Some("RASTER_BUDGET_EXCEEDED") => EngineProblemCode::RasterBudgetExceeded,
+                Some("OUTPUT_BUDGET_EXCEEDED") => EngineProblemCode::OutputBudgetExceeded,
+                _ => EngineProblemCode::RenderInternalError,
+            },
+            Self::JpegOutput(error) => match error.code() {
                 Some("RASTER_BUDGET_EXCEEDED") => EngineProblemCode::RasterBudgetExceeded,
                 Some("OUTPUT_BUDGET_EXCEEDED") => EngineProblemCode::OutputBudgetExceeded,
                 _ => EngineProblemCode::RenderInternalError,
@@ -314,6 +326,10 @@ impl EnginePngError {
                 Some("OUTPUT_PREFLIGHT") => EngineProblemStage::OutputPreflight,
                 _ => EngineProblemStage::Encoding,
             },
+            Self::JpegOutput(error) => match error.stage() {
+                Some("OUTPUT_PREFLIGHT") => EngineProblemStage::OutputPreflight,
+                _ => EngineProblemStage::Encoding,
+            },
             Self::FontGlyphMissing { .. } | Self::TextShaping { .. } => EngineProblemStage::Shaping,
             Self::TextRaster { .. } | Self::RasterAllocation => EngineProblemStage::Rasterization,
             Self::Layout => EngineProblemStage::Layout,
@@ -333,6 +349,7 @@ impl EnginePngError {
     pub fn limit_id(&self) -> Option<&'static str> {
         match self {
             Self::Output(error) => error.limit_id(),
+            Self::JpegOutput(error) => error.limit_id(),
             _ => None,
         }
     }
@@ -373,6 +390,7 @@ impl Display for EnginePngError {
             Self::Layout => formatter.write_str("Engine PNG layout failed"),
             Self::RasterAllocation => formatter.write_str("Engine PNG raster allocation failed"),
             Self::Output(error) => write!(formatter, "Engine PNG output failed: {error}"),
+            Self::JpegOutput(error) => write!(formatter, "Engine JPEG output failed: {error}"),
             Self::Interrupted {
                 interruption,
                 checkpoint,
@@ -389,6 +407,12 @@ impl std::error::Error for EnginePngError {}
 impl From<OutputPngError> for EnginePngError {
     fn from(error: OutputPngError) -> Self {
         Self::Output(error)
+    }
+}
+
+impl From<OutputJpegError> for EnginePngError {
+    fn from(error: OutputJpegError) -> Self {
+        Self::JpegOutput(error)
     }
 }
 
@@ -409,6 +433,25 @@ pub struct EnginePngOutput {
     pixel_sha256: String,
     content_sha256: String,
     bytes: Vec<u8>,
+}
+
+#[derive(Debug, Eq, PartialEq)]
+pub struct EngineJpegOutput {
+    width_px: u32,
+    height_px: u32,
+    dpi: u32,
+    quality: u8,
+    pixel_sha256: String,
+    content_sha256: String,
+    bytes: Vec<u8>,
+}
+
+struct RasterizedSurface {
+    width_px: u32,
+    height_px: u32,
+    dpi: u32,
+    pixel_sha256: String,
+    pixels: Vec<u8>,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -733,11 +776,57 @@ impl EnginePngOutput {
     }
 
     pub const fn media_type(&self) -> &'static str {
-        MEDIA_TYPE
+        PNG_MEDIA_TYPE
     }
 
     pub const fn output_profile(&self) -> &'static str {
-        OUTPUT_PROFILE
+        PNG_OUTPUT_PROFILE
+    }
+
+    pub fn byte_length(&self) -> usize {
+        self.bytes.len()
+    }
+
+    pub fn pixel_sha256(&self) -> &str {
+        &self.pixel_sha256
+    }
+
+    pub fn content_sha256(&self) -> &str {
+        &self.content_sha256
+    }
+
+    pub fn bytes(&self) -> &[u8] {
+        &self.bytes
+    }
+
+    pub fn into_bytes(self) -> Vec<u8> {
+        self.bytes
+    }
+}
+
+impl EngineJpegOutput {
+    pub const fn width_px(&self) -> u32 {
+        self.width_px
+    }
+
+    pub const fn height_px(&self) -> u32 {
+        self.height_px
+    }
+
+    pub const fn dpi(&self) -> u32 {
+        self.dpi
+    }
+
+    pub const fn quality(&self) -> u8 {
+        self.quality
+    }
+
+    pub const fn media_type(&self) -> &'static str {
+        JPEG_MEDIA_TYPE
+    }
+
+    pub const fn output_profile(&self) -> &'static str {
+        JPEG_OUTPUT_PROFILE
     }
 
     pub fn byte_length(&self) -> usize {
@@ -803,6 +892,95 @@ pub fn render_png_with_prepared_resources_controlled(
     render_png_internal(document, Some(prepared_resources), dpi, control)
 }
 
+pub fn render_jpeg(
+    document: &AdmittedRenderDocument,
+    dpi: u32,
+    quality: u8,
+) -> Result<EngineJpegOutput, EnginePngError> {
+    render_jpeg_controlled(document, dpi, quality, &UNRESTRICTED_EXECUTION)
+}
+
+pub fn render_jpeg_controlled(
+    document: &AdmittedRenderDocument,
+    dpi: u32,
+    quality: u8,
+    control: &dyn EngineExecutionControl,
+) -> Result<EngineJpegOutput, EnginePngError> {
+    if document.resource_count() != 0 {
+        return Err(EnginePngError::Unsupported(
+            EnginePngUnsupported::ResourceManifest,
+        ));
+    }
+    render_jpeg_internal(document, None, dpi, quality, control)
+}
+
+pub fn render_jpeg_with_prepared_resources(
+    document: &AdmittedRenderDocument,
+    prepared_resources: &PreparedResourceManifest,
+    dpi: u32,
+    quality: u8,
+) -> Result<EngineJpegOutput, EnginePngError> {
+    render_jpeg_with_prepared_resources_controlled(
+        document,
+        prepared_resources,
+        dpi,
+        quality,
+        &UNRESTRICTED_EXECUTION,
+    )
+}
+
+pub fn render_jpeg_with_prepared_resources_controlled(
+    document: &AdmittedRenderDocument,
+    prepared_resources: &PreparedResourceManifest,
+    dpi: u32,
+    quality: u8,
+    control: &dyn EngineExecutionControl,
+) -> Result<EngineJpegOutput, EnginePngError> {
+    render_jpeg_internal(document, Some(prepared_resources), dpi, quality, control)
+}
+
+fn render_jpeg_internal(
+    document: &AdmittedRenderDocument,
+    prepared_resources: Option<&PreparedResourceManifest>,
+    dpi: u32,
+    quality: u8,
+    control: &dyn EngineExecutionControl,
+) -> Result<EngineJpegOutput, EnginePngError> {
+    let surface = render_surface_internal(document, prepared_resources, dpi, control)?;
+    execution_checkpoint(control, EngineCheckpoint::Encoding)?;
+    let encode_control = EngineJpegEncodeControl(control);
+    let bytes = encode_straight_rgba8_jpeg_controlled(
+        surface.width_px,
+        surface.height_px,
+        dpi,
+        quality,
+        &surface.pixels,
+        &encode_control,
+    )
+    .map_err(|error| match error {
+        OutputJpegError::Interrupted(interruption) => EnginePngError::Interrupted {
+            interruption: match interruption {
+                JpegEncodeInterruption::Cancelled => EngineInterruption::Cancelled,
+                JpegEncodeInterruption::DeadlineExceeded => EngineInterruption::DeadlineExceeded,
+            },
+            checkpoint: EngineCheckpoint::Encoding,
+        },
+        other => EnginePngError::JpegOutput(other),
+    })?;
+    execution_checkpoint(control, EngineCheckpoint::Encoding)?;
+    let content_sha256 = raw_sha256_prefixed(&bytes);
+    execution_checkpoint(control, EngineCheckpoint::OutputSeal)?;
+    Ok(EngineJpegOutput {
+        width_px: surface.width_px,
+        height_px: surface.height_px,
+        dpi: surface.dpi,
+        quality,
+        pixel_sha256: surface.pixel_sha256,
+        content_sha256,
+        bytes,
+    })
+}
+
 /// Performs the observable output-dimension and capacity step without touching resources.
 ///
 /// The process adapter invokes this after strict document admission and before the first
@@ -818,12 +996,64 @@ pub fn preflight_png_output(
     preflight_canvas_surface(canvas, dpi).map(|_| ())
 }
 
+pub fn preflight_jpeg_output(
+    document: &AdmittedRenderDocument,
+    dpi: u32,
+    quality: u8,
+) -> Result<(), EnginePngError> {
+    if !(1..=100).contains(&quality) {
+        return Err(EnginePngError::JpegOutput(OutputJpegError::Contract(
+            "JPEG quality must be an integer from 1 through 100",
+        )));
+    }
+    preflight_png_output(document, dpi)
+}
+
 fn render_png_internal(
     document: &AdmittedRenderDocument,
     prepared_resources: Option<&PreparedResourceManifest>,
     dpi: u32,
     control: &dyn EngineExecutionControl,
 ) -> Result<EnginePngOutput, EnginePngError> {
+    let surface = render_surface_internal(document, prepared_resources, dpi, control)?;
+    execution_checkpoint(control, EngineCheckpoint::Encoding)?;
+    let encode_control = EnginePngEncodeControl(control);
+    let bytes = encode_straight_rgba8_controlled(
+        surface.width_px,
+        surface.height_px,
+        dpi,
+        &surface.pixels,
+        &encode_control,
+    )
+    .map_err(|error| match error {
+        OutputPngError::Interrupted(interruption) => EnginePngError::Interrupted {
+            interruption: match interruption {
+                PngEncodeInterruption::Cancelled => EngineInterruption::Cancelled,
+                PngEncodeInterruption::DeadlineExceeded => EngineInterruption::DeadlineExceeded,
+            },
+            checkpoint: EngineCheckpoint::Encoding,
+        },
+        other => EnginePngError::Output(other),
+    })?;
+    execution_checkpoint(control, EngineCheckpoint::Encoding)?;
+    let content_sha256 = raw_sha256_prefixed(&bytes);
+    execution_checkpoint(control, EngineCheckpoint::OutputSeal)?;
+    Ok(EnginePngOutput {
+        width_px: surface.width_px,
+        height_px: surface.height_px,
+        dpi: surface.dpi,
+        pixel_sha256: surface.pixel_sha256,
+        content_sha256,
+        bytes,
+    })
+}
+
+fn render_surface_internal(
+    document: &AdmittedRenderDocument,
+    prepared_resources: Option<&PreparedResourceManifest>,
+    dpi: u32,
+    control: &dyn EngineExecutionControl,
+) -> Result<RasterizedSurface, EnginePngError> {
     let root: Value = serde_json::from_str(document.canonical_document())
         .map_err(|_| EnginePngError::Contract("admitted RenderDocument could not be parsed"))?;
     let canvas = object_member(root.as_object(), "canvas")?;
@@ -910,37 +1140,13 @@ fn render_png_internal(
     )?;
     execution_checkpoint(control, EngineCheckpoint::Rasterization)?;
     unpremultiply_rgba8_surface(&mut pixels, control)?;
-    execution_checkpoint(control, EngineCheckpoint::Encoding)?;
     let pixel_sha256 = raw_sha256_prefixed(&pixels);
-    let encode_control = EnginePngEncodeControl(control);
-    let bytes = encode_straight_rgba8_controlled(
-        surface.width_px(),
-        surface.height_px(),
-        dpi,
-        &pixels,
-        &encode_control,
-    )
-    .map_err(|error| match error {
-        OutputPngError::Interrupted(interruption) => EnginePngError::Interrupted {
-            interruption: match interruption {
-                PngEncodeInterruption::Cancelled => EngineInterruption::Cancelled,
-                PngEncodeInterruption::DeadlineExceeded => EngineInterruption::DeadlineExceeded,
-            },
-            checkpoint: EngineCheckpoint::Encoding,
-        },
-        other => EnginePngError::Output(other),
-    })?;
-    execution_checkpoint(control, EngineCheckpoint::Encoding)?;
-    let content_sha256 = raw_sha256_prefixed(&bytes);
-    execution_checkpoint(control, EngineCheckpoint::OutputSeal)?;
-
-    Ok(EnginePngOutput {
+    Ok(RasterizedSurface {
         width_px: surface.width_px(),
         height_px: surface.height_px(),
         dpi,
         pixel_sha256,
-        content_sha256,
-        bytes,
+        pixels,
     })
 }
 
@@ -962,6 +1168,19 @@ impl PngEncodeControl for EnginePngEncodeControl<'_> {
             .map_err(|interruption| match interruption {
                 EngineInterruption::Cancelled => PngEncodeInterruption::Cancelled,
                 EngineInterruption::DeadlineExceeded => PngEncodeInterruption::DeadlineExceeded,
+            })
+    }
+}
+
+struct EngineJpegEncodeControl<'control>(&'control dyn EngineExecutionControl);
+
+impl JpegEncodeControl for EngineJpegEncodeControl<'_> {
+    fn checkpoint(&self) -> Result<(), JpegEncodeInterruption> {
+        self.0
+            .checkpoint(EngineCheckpoint::Encoding)
+            .map_err(|interruption| match interruption {
+                EngineInterruption::Cancelled => JpegEncodeInterruption::Cancelled,
+                EngineInterruption::DeadlineExceeded => JpegEncodeInterruption::DeadlineExceeded,
             })
     }
 }

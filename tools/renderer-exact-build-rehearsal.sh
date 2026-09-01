@@ -108,7 +108,7 @@ prepare() {
     require_sha256 9dfc76b78fc6363e77f96b4faca566cfa0c28d06ad478f809f241e98966652af "$skia_archive"
     require_sha256 96b87b165f22e65edbba96409e3853fcbdccc290721a1ad54baa56ba710115cc "$freetype_archive"
     require_sha256 52178785eee689fcbbc42bf92db0d26665ea325b41003eaf73bd1930eee4a578 "$policy_archive"
-    require_sha256 d1d577caff82a5df9a55e079098a84bf0decc6026112af50742f06c534694756 "$renderer_archive"
+    require_sha256 474b0038f4db3c9c98f1d4d49f6753fc23ca5ffcd90ba9da720bf9e48e69af78 "$renderer_archive"
     require_sha256 eeef766ac75aecac694bbd82fbb3cd2b9a315075db14d91ff0cbe1bdec20f77f "$cff_source"
     require_sha256 df0e1ecf16caf3489a272a5eea4eec9b0d82878f6477fa309504f918a0006384 "$llvm_archive"
     require_sha256 6a3bfc53d825bccac5e5b4b7bdcc10ce9396a04a689ac684ec3308ca5c7f3d9c "$gn_archive"
