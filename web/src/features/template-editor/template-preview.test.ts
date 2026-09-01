@@ -2,8 +2,10 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import {
   defaultTemplatePreviewTransport,
+  localCandidateTemplatePreviewTransport,
   previewBasisMatchesSession,
   requestAuthoritativeTemplatePreview,
+  requestTemplatePreview,
   RENDER_INPUT_MEDIA_TYPE,
   RENDER_PROBLEM_MEDIA_TYPE,
   type TemplatePreviewHttpResponse,
@@ -47,6 +49,30 @@ describe('Authoritative Preview transport and integrity boundary', () => {
       `image/png, image/jpeg, ${RENDER_PROBLEM_MEDIA_TYPE}`,
     );
     expect(response).toMatchObject({ status: 422, body: responseBody });
+  });
+
+  it('uses a distinct internal route only for the explicit local candidate transport', async () => {
+    const responseBody = new Uint8Array([1, 2, 3]);
+    const fetchMock = vi.fn().mockResolvedValue({
+      status: 422,
+      headers: new Headers({
+        'Content-Type': RENDER_PROBLEM_MEDIA_TYPE,
+        'RenderWeave-Candidate-Status': 'NOT_CERTIFIED',
+      }),
+      arrayBuffer: vi.fn().mockResolvedValue(responseBody.buffer),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    await localCandidateTemplatePreviewTransport.postPreview('template/id', {
+      inputJson: RAW_INPUT,
+      format: 'PNG',
+      dpi: 96,
+    });
+
+    const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
+    expect(localCandidateTemplatePreviewTransport.assurance).toBe('candidate');
+    expect(url).toBe('/internal/candidate-preview/templates/template%2Fid?format=PNG&dpi=96');
+    expect(init).toMatchObject({ method: 'POST', body: RAW_INPUT });
   });
 
   it('sends the exact raw RenderInput bytes and only the public output selection', async () => {
@@ -190,6 +216,53 @@ describe('Authoritative Preview transport and integrity boundary', () => {
   });
 
   it.each([
+    ['PNG' as const, new Uint8Array([137, 80, 78, 71, 1]), {}],
+    ['JPEG' as const, new Uint8Array([255, 216, 255, 217]), {
+      'Content-Type': 'image/jpeg',
+      'RenderWeave-Output-Profile': 'renderweave-output-jpeg/1.0',
+      'RenderWeave-Format': 'JPEG',
+      'RenderWeave-Quality': '90',
+    }],
+  ])('accepts a %s candidate only with the exact non-certification header', async (
+    format,
+    body,
+    formatHeaders,
+  ) => {
+    const request = {
+      inputJson: '{"rootDocument":{}}',
+      format,
+      dpi: 96,
+      ...(format === 'JPEG' ? { quality: 90 } : {}),
+    };
+    const complete = await renderedResponse(body, {
+      ...formatHeaders,
+      'RenderWeave-Candidate-Status': 'NOT_CERTIFIED',
+    });
+    const accepted = await requestTemplatePreview(
+      cleanSession(),
+      request,
+      transport(vi.fn().mockResolvedValue(complete), 'candidate'),
+    );
+    expect(accepted).toMatchObject({
+      state: 'rendered',
+      basis: { assurance: 'candidate', format },
+    });
+
+    const missingDisclosure = await requestTemplatePreview(
+      cleanSession(),
+      request,
+      transport(
+        vi.fn().mockResolvedValue(await renderedResponse(body, formatHeaders)),
+        'candidate',
+      ),
+    );
+    expect(missingDisclosure).toMatchObject({
+      state: 'problem',
+      problem: { code: 'EDITOR_PREVIEW_RESPONSE_INTEGRITY_FAILURE' },
+    });
+  });
+
+  it.each([
     ['digest mismatch', async (body: Uint8Array) => renderedResponse(body, { 'Content-Digest': 'sha-256=:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=:' })],
     ['truncated body', async (body: Uint8Array) => renderedResponse(body, { 'Content-Length': String(body.byteLength + 1) })],
     ['profile metadata drift', async (body: Uint8Array) => renderedResponse(body, { 'RenderWeave-DPI': '300' })],
@@ -308,8 +381,9 @@ describe('Authoritative Preview transport and integrity boundary', () => {
 
 function transport(
   postPreview: TemplatePreviewTransport['postPreview'],
+  assurance?: TemplatePreviewTransport['assurance'],
 ): TemplatePreviewTransport {
-  return { postPreview };
+  return { postPreview, ...(assurance === undefined ? {} : { assurance }) };
 }
 
 function cleanSession(): StructuredEditorSession {

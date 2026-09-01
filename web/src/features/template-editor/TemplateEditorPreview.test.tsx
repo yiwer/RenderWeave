@@ -22,7 +22,72 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-describe('Template Editor E6 Authoritative Preview', () => {
+describe('Template Editor E6 Preview', () => {
+  it('keeps the candidate mode visibly non-certified through pending and verified result states', async () => {
+    let resolvePreview!: (value: TemplatePreviewHttpResponse) => void;
+    const postPreview = vi.fn(() => new Promise<TemplatePreviewHttpResponse>((resolve) => {
+      resolvePreview = resolve;
+    }));
+    render(<TemplateEditorShell
+      session={cleanSession()}
+      previewTransport={candidateTransport(postPreview)}
+      previewObjectUrls={objectUrlFactory()}
+    />);
+
+    fireEvent.click(screen.getByRole('button', { name: '打开候选预览（NOT_CERTIFIED）' }));
+    expect(screen.getByRole('heading', { name: '候选预览' })).toBeTruthy();
+    expect(screen.getByText('NOT_CERTIFIED', { selector: 'strong' })).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: '生成候选预览（NOT_CERTIFIED）' }));
+    expect(await screen.findByText('正在生成 NOT_CERTIFIED 候选预览')).toBeTruthy();
+
+    resolvePreview(await renderedResponse(true));
+    const image = await screen.findByRole('img', {
+      name: '门店价签的候选预览（NOT_CERTIFIED）',
+    });
+    expect(image.getAttribute('src')).toBe('blob:preview-1');
+    expect(screen.getByText('NOT_CERTIFIED · 完整结果已核验')).toBeTruthy();
+  });
+
+  it('identifies candidate errors as non-certified and focuses the recovery summary', async () => {
+    render(<TemplateEditorShell
+      session={cleanSession()}
+      previewTransport={candidateTransport(vi.fn().mockResolvedValue(
+        problemResponse('RENDERER_UNAVAILABLE', 'REQUEST_ADMISSION', true),
+      ))}
+      previewObjectUrls={objectUrlFactory()}
+    />);
+
+    fireEvent.click(screen.getByRole('button', { name: '打开候选预览（NOT_CERTIFIED）' }));
+    fireEvent.click(screen.getByRole('button', { name: '生成候选预览（NOT_CERTIFIED）' }));
+
+    const alert = await screen.findByRole('alert');
+    expect(alert.textContent).toContain('NOT_CERTIFIED 候选预览未生成');
+    expect(document.activeElement).toBe(alert);
+  });
+
+  it('withdraws a verified result instead of relabelling it when assurance changes', async () => {
+    const objectUrls = objectUrlFactory();
+    const view = render(<TemplateEditorShell
+      session={cleanSession()}
+      previewTransport={transport(vi.fn().mockResolvedValue(await renderedResponse()))}
+      previewObjectUrls={objectUrls}
+    />);
+    fireEvent.click(screen.getByRole('button', { name: '打开权威预览' }));
+    fireEvent.click(screen.getByRole('button', { name: '生成权威预览' }));
+    await screen.findByRole('img', { name: '门店价签的权威预览' });
+
+    view.rerender(<TemplateEditorShell
+      session={cleanSession()}
+      previewTransport={candidateTransport(vi.fn())}
+      previewObjectUrls={objectUrls}
+    />);
+
+    expect(screen.queryByRole('img')).toBeNull();
+    expect(screen.getByText('预览 assurance 已变化；旧图片已撤下，请重新生成。'))
+      .toBeTruthy();
+    expect(objectUrls.revoke).toHaveBeenCalledWith('blob:preview-1');
+  });
+
   it('renders a complete verified image and withdraws it when a basis parameter changes', async () => {
     const previewTransport = transport(vi.fn().mockResolvedValue(await renderedResponse()));
     const objectUrls = objectUrlFactory();
@@ -330,6 +395,12 @@ function transport(postPreview: TemplatePreviewTransport['postPreview']): Templa
   return { postPreview };
 }
 
+function candidateTransport(
+  postPreview: TemplatePreviewTransport['postPreview'],
+): TemplatePreviewTransport {
+  return { assurance: 'candidate', postPreview };
+}
+
 function objectUrlFactory(): TemplatePreviewObjectUrlFactory {
   return {
     create: vi.fn().mockReturnValue('blob:preview-1'),
@@ -396,11 +467,16 @@ async function invalidSaveProblem(session: StructuredEditorSession, confirmation
   });
 }
 
-function problemResponse(code: string, stage: string): TemplatePreviewHttpResponse {
+function problemResponse(
+  code: string,
+  stage: string,
+  candidate = false,
+): TemplatePreviewHttpResponse {
   return {
     status: 503,
     headers: new Headers({
       'Content-Type': 'application/vnd.renderweave.render-problem+json;version=1.0',
+      ...(candidate ? { 'RenderWeave-Candidate-Status': 'NOT_CERTIFIED' } : {}),
     }),
     body: new TextEncoder().encode(JSON.stringify({
       contractVersion: 'renderweave-render-problem/1.0',
@@ -412,7 +488,7 @@ function problemResponse(code: string, stage: string): TemplatePreviewHttpRespon
   };
 }
 
-async function renderedResponse(): Promise<TemplatePreviewHttpResponse> {
+async function renderedResponse(candidate = false): Promise<TemplatePreviewHttpResponse> {
   const digest = new Uint8Array(await crypto.subtle.digest('SHA-256', IMAGE));
   return {
     status: 200,
@@ -430,6 +506,7 @@ async function renderedResponse(): Promise<TemplatePreviewHttpResponse> {
       'RenderWeave-Width-Px': '794',
       'RenderWeave-Height-Px': '1123',
       'RenderWeave-DPI': '96',
+      ...(candidate ? { 'RenderWeave-Candidate-Status': 'NOT_CERTIFIED' } : {}),
     }),
     body: IMAGE,
   };

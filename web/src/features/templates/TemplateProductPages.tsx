@@ -8,10 +8,11 @@ import {
   ShieldCheck,
 } from 'lucide-react';
 import { useState, type FormEvent } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 
 import { SelectField } from '../../components/SelectField';
 import { TemplateEditorSurface } from '../template-editor/TemplateEditorShell';
+import { localCandidateTemplatePreviewTransport } from '../template-editor/template-preview';
 import { ResourceError, ResourceLoading } from '../resources/DraftListPage';
 import { ResourceFrame } from '../resources/ResourceFrame';
 import { ResourceSearchInput } from '../resources/ResourceListControls';
@@ -272,7 +273,12 @@ export function TemplateCreatePage() {
 
 export function TemplateEditorPage() {
   const { templateId = '' } = useParams<{ templateId: string }>();
-  return <TemplateEditorSurface templateId={templateId} />;
+  const [searchParams] = useSearchParams();
+  const candidatePreview = searchParams.getAll('candidatePreview');
+  const previewTransport = candidatePreview.length === 1 && candidatePreview[0] === 'local'
+    ? localCandidateTemplatePreviewTransport
+    : undefined;
+  return <TemplateEditorSurface templateId={templateId} previewTransport={previewTransport} />;
 }
 
 function readinessLabel(readiness: 'READY' | 'INVALID' | 'STALE'): string {

@@ -30,6 +30,7 @@ const CLOSED_STAGES = new Set<TemplatePreviewStage>([
 const encoder = new TextEncoder();
 
 export type TemplatePreviewFormat = 'PNG' | 'JPEG';
+export type TemplatePreviewAssurance = 'authoritative' | 'candidate';
 export type TemplatePreviewStage =
   | 'REQUEST_ADMISSION'
   | 'TEMPLATE_CLOSURE'
@@ -55,6 +56,7 @@ export interface TemplatePreviewHttpResponse {
 }
 
 export interface TemplatePreviewTransport {
+  readonly assurance?: TemplatePreviewAssurance;
   postPreview(
     templateId: string,
     request: TemplatePreviewRequest,
@@ -68,6 +70,7 @@ export interface TemplatePreviewObjectUrlFactory {
 }
 
 export interface TemplatePreviewBasis {
+  readonly assurance: TemplatePreviewAssurance;
   readonly templateId: string;
   readonly revision: string;
   readonly contentHash: string;
@@ -118,29 +121,24 @@ export type TemplatePreviewResult =
   };
 
 export const defaultTemplatePreviewTransport: TemplatePreviewTransport = {
+  assurance: 'authoritative',
   async postPreview(templateId, request, signal) {
-    const query = new URLSearchParams({
-      format: request.format,
-      dpi: String(request.dpi),
-    });
-    if (request.quality !== undefined) query.set('quality', String(request.quality));
-    const response = await fetch(
-      `/api/v1/templates/${encodeURIComponent(templateId)}/authoritative-preview?${query}`,
-      {
-        method: 'POST',
-        signal,
-        headers: {
-          Accept: `image/png, image/jpeg, ${RENDER_PROBLEM_MEDIA_TYPE}`,
-          'Content-Type': RENDER_INPUT_MEDIA_TYPE,
-        },
-        body: request.inputJson,
-      },
+    return postTemplatePreview(
+      `/api/v1/templates/${encodeURIComponent(templateId)}/authoritative-preview`,
+      request,
+      signal,
     );
-    return {
-      status: response.status,
-      headers: response.headers,
-      body: new Uint8Array(await response.arrayBuffer()),
-    };
+  },
+};
+
+export const localCandidateTemplatePreviewTransport: TemplatePreviewTransport = {
+  assurance: 'candidate',
+  async postPreview(templateId, request, signal) {
+    return postTemplatePreview(
+      `/internal/candidate-preview/templates/${encodeURIComponent(templateId)}`,
+      request,
+      signal,
+    );
   },
 };
 
@@ -154,19 +152,20 @@ export const defaultTemplatePreviewObjectUrls: TemplatePreviewObjectUrlFactory =
   },
 };
 
-export async function requestAuthoritativeTemplatePreview(
+export async function requestTemplatePreview(
   session: StructuredEditorSession,
   requested: TemplatePreviewRequest,
   transport: TemplatePreviewTransport,
   signal?: AbortSignal,
 ): Promise<TemplatePreviewResult> {
+  const assurance = transport.assurance ?? 'authoritative';
   const guard = authoritativePreviewGuard(session);
   if (guard.state === 'blocked') {
     return clientProblem(
       guard.reason === 'LOCAL_DIVERGENCE'
         ? 'EDITOR_PREVIEW_CURRENT_REQUIRED'
         : 'EDITOR_PREVIEW_READINESS_REQUIRED',
-      guard.message,
+      assuranceMessage(guard.message, assurance),
     );
   }
 
@@ -175,7 +174,7 @@ export async function requestAuthoritativeTemplatePreview(
   if (!globalThis.crypto?.subtle) {
     return clientProblem(
       'EDITOR_PREVIEW_CRYPTO_UNAVAILABLE',
-      '当前浏览器无法核验权威图片摘要；未发起预览。',
+      `当前浏览器无法核验${previewImageName(assurance)}摘要；未发起预览。`,
     );
   }
 
@@ -185,10 +184,11 @@ export async function requestAuthoritativeTemplatePreview(
   } catch {
     return clientProblem(
       'EDITOR_PREVIEW_CRYPTO_UNAVAILABLE',
-      '当前浏览器无法核验权威图片摘要；未发起预览。',
+      `当前浏览器无法核验${previewImageName(assurance)}摘要；未发起预览。`,
     );
   }
   const basis: TemplatePreviewBasis = Object.freeze({
+    assurance,
     templateId: session.baseline.templateId,
     revision: session.baseline.revision,
     contentHash: session.baseline.contentHash,
@@ -211,7 +211,16 @@ export async function requestAuthoritativeTemplatePreview(
     if (isAbort(error) || signal?.aborted) throw error;
     return clientProblem(
       'EDITOR_PREVIEW_TRANSPORT_FAILURE',
-      '权威预览传输失败；未保留旧图片，可重新发起。',
+      `${previewName(assurance)}传输失败；未保留旧图片，可重新发起。`,
+      basis,
+    );
+  }
+
+  if (assurance === 'candidate'
+    && response.headers.get('RenderWeave-Candidate-Status') !== 'NOT_CERTIFIED') {
+    return clientProblem(
+      'EDITOR_PREVIEW_RESPONSE_INTEGRITY_FAILURE',
+      'Candidate Preview 响应缺少精确 NOT_CERTIFIED 声明；图片已撤下。',
       basis,
     );
   }
@@ -220,6 +229,15 @@ export async function requestAuthoritativeTemplatePreview(
     return verifyRenderedResponse(response, basis);
   }
   return verifyProblemResponse(response, basis);
+}
+
+export function requestAuthoritativeTemplatePreview(
+  session: StructuredEditorSession,
+  requested: TemplatePreviewRequest,
+  transport: TemplatePreviewTransport,
+  signal?: AbortSignal,
+): Promise<TemplatePreviewResult> {
+  return requestTemplatePreview(session, requested, transport, signal);
 }
 
 export function previewBasisMatchesSession(
@@ -250,7 +268,7 @@ function admitRequest(requested: TemplatePreviewRequest):
     );
   }
   if (requested.format !== 'PNG' && requested.format !== 'JPEG') {
-    return clientProblem('EDITOR_PREVIEW_FORMAT_INVALID', '权威预览只接受 PNG 或 JPEG。');
+    return clientProblem('EDITOR_PREVIEW_FORMAT_INVALID', '预览只接受 PNG 或 JPEG。');
   }
   if (!Number.isInteger(requested.dpi) || requested.dpi < 1 || requested.dpi > 600) {
     return clientProblem('EDITOR_PREVIEW_DPI_INVALID', 'DPI 必须是 1 到 600 的整数。');
@@ -338,7 +356,7 @@ async function verifyRenderedResponse(
   } catch {
     return clientProblem(
       'EDITOR_PREVIEW_RESPONSE_INTEGRITY_FAILURE',
-      '权威预览响应未通过完整 length、digest 与 metadata 核验；图片已撤下。',
+      `${previewName(basis.assurance)}响应未通过完整 length、digest 与 metadata 核验；图片已撤下。`,
       basis,
     );
   }
@@ -390,7 +408,7 @@ function verifyProblemResponse(
         source: 'server',
         code: value.code,
         stage: value.stage as TemplatePreviewStage,
-        message: `权威预览失败（${value.code}）；没有保留旧图片。`,
+        message: `${previewName(basis.assurance)}失败（${value.code}）；没有保留旧图片。`,
         ...(renderOperationId === undefined ? {} : { renderOperationId }),
         ...(safeLocation === undefined ? {} : { safeLocation }),
         ...(limitId === undefined ? {} : { limitId }),
@@ -399,7 +417,7 @@ function verifyProblemResponse(
   } catch {
     return clientProblem(
       'EDITOR_PREVIEW_RESPONSE_INTEGRITY_FAILURE',
-      '权威预览失败响应不符合 closed contract；图片已撤下。',
+      `${previewName(basis.assurance)}失败响应不符合 closed contract；图片已撤下。`,
       basis,
     );
   }
@@ -507,4 +525,42 @@ function isAbort(error: unknown): boolean {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+async function postTemplatePreview(
+  path: string,
+  request: TemplatePreviewRequest,
+  signal?: AbortSignal,
+): Promise<TemplatePreviewHttpResponse> {
+  const query = new URLSearchParams({
+    format: request.format,
+    dpi: String(request.dpi),
+  });
+  if (request.quality !== undefined) query.set('quality', String(request.quality));
+  const response = await fetch(`${path}?${query}`, {
+    method: 'POST',
+    signal,
+    headers: {
+      Accept: `image/png, image/jpeg, ${RENDER_PROBLEM_MEDIA_TYPE}`,
+      'Content-Type': RENDER_INPUT_MEDIA_TYPE,
+    },
+    body: request.inputJson,
+  });
+  return {
+    status: response.status,
+    headers: response.headers,
+    body: new Uint8Array(await response.arrayBuffer()),
+  };
+}
+
+function previewName(assurance: TemplatePreviewAssurance): string {
+  return assurance === 'candidate' ? 'Candidate Preview（NOT_CERTIFIED）' : '权威预览';
+}
+
+function previewImageName(assurance: TemplatePreviewAssurance): string {
+  return assurance === 'candidate' ? 'NOT_CERTIFIED 候选图片' : '权威图片';
+}
+
+function assuranceMessage(message: string, assurance: TemplatePreviewAssurance): string {
+  return assurance === 'candidate' ? message.replace('权威预览', '候选预览') : message;
 }

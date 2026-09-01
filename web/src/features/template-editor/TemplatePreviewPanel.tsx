@@ -1,6 +1,7 @@
 import {
   AlertTriangle,
   Eye,
+  FlaskConical,
   Image as ImageIcon,
   LoaderCircle,
   ShieldCheck,
@@ -15,7 +16,8 @@ import {
   DEFAULT_TEMPLATE_PREVIEW_INPUT,
   defaultTemplatePreviewObjectUrls,
   previewBasisMatchesSession,
-  requestAuthoritativeTemplatePreview,
+  requestTemplatePreview,
+  type TemplatePreviewAssurance,
   type TemplatePreviewObjectUrlFactory,
   type TemplatePreviewProblem,
   type TemplatePreviewRequest,
@@ -26,7 +28,12 @@ import {
 type TemplatePreviewView =
   | { state: 'idle' }
   | { state: 'withdrawn'; message: string }
-  | { state: 'pending'; sequence: number; savedFirst: boolean }
+  | {
+    state: 'pending';
+    sequence: number;
+    savedFirst: boolean;
+    assurance: TemplatePreviewAssurance;
+  }
   | {
     state: 'rendered';
     sequence: number;
@@ -38,9 +45,15 @@ type TemplatePreviewView =
     state: 'problem';
     sequence: number;
     savedFirst: boolean;
+    assurance: TemplatePreviewAssurance;
     problem: TemplatePreviewProblem;
   }
-  | { state: 'stopped'; sequence: number; message: string };
+  | {
+    state: 'stopped';
+    sequence: number;
+    assurance: TemplatePreviewAssurance;
+    message: string;
+  };
 
 interface BoundPreviewSession {
   templateId: string;
@@ -51,6 +64,7 @@ interface BoundPreviewSession {
 
 export interface TemplatePreviewCoordinator {
   readonly enabled: boolean;
+  readonly assurance: TemplatePreviewAssurance;
   readonly panelOpen: boolean;
   readonly request: TemplatePreviewRequest;
   readonly view: TemplatePreviewView;
@@ -76,6 +90,7 @@ export function useTemplatePreviewCoordinator(
   transport?: TemplatePreviewTransport,
   objectUrls: TemplatePreviewObjectUrlFactory = defaultTemplatePreviewObjectUrls,
 ): TemplatePreviewCoordinator {
+  const assurance = transport?.assurance ?? 'authoritative';
   const [panelOpen, setPanelOpen] = useState(false);
   const [request, setRequest] = useState<TemplatePreviewRequest>({
     inputJson: DEFAULT_TEMPLATE_PREVIEW_INPUT,
@@ -84,6 +99,7 @@ export function useTemplatePreviewCoordinator(
   });
   const [view, setView] = useState<TemplatePreviewView>({ state: 'idle' });
   const sequence = useRef(0);
+  const assuranceRef = useRef(assurance);
   const abort = useRef<AbortController | null>(null);
   const objectUrl = useRef<{
     url: string;
@@ -119,10 +135,16 @@ export function useTemplatePreviewCoordinator(
   }, [releaseObjectUrl]);
 
   useEffect(() => {
+    if (assuranceRef.current === assurance) return;
+    assuranceRef.current = assurance;
+    invalidate('预览 assurance 已变化；旧图片已撤下，请重新生成。');
+  }, [assurance, invalidate]);
+
+  useEffect(() => {
     if (incomingSession.mode === 'structured') return;
     if (boundSession.current === null && view.state !== 'rendered') return;
-    invalidate('Editor 已离开 Structured 模式；旧权威图片已撤下。');
-  }, [incomingSession.mode, invalidate, view.state]);
+    invalidate(`Editor 已离开 Structured 模式；旧${previewImageLabel(assurance)}已撤下。`);
+  }, [assurance, incomingSession.mode, invalidate, view.state]);
 
   const start = async (
     session: StructuredEditorSession,
@@ -138,11 +160,16 @@ export function useTemplatePreviewCoordinator(
     abort.current = controller;
     boundSession.current = boundSessionOf(session);
     const savedFirst = options.savedFirst === true;
-    setView({ state: 'pending', sequence: operationSequence, savedFirst });
+    setView({
+      state: 'pending',
+      sequence: operationSequence,
+      savedFirst,
+      assurance,
+    });
 
     let result: TemplatePreviewResult;
     try {
-      result = await requestAuthoritativeTemplatePreview(
+      result = await requestTemplatePreview(
         session,
         selectedRequest,
         effectiveTransport,
@@ -155,7 +182,7 @@ export function useTemplatePreviewCoordinator(
         problem: {
           source: 'client',
           code: 'EDITOR_PREVIEW_COORDINATOR_FAILURE',
-          message: '权威预览协调器出现无法解释的失败；图片已撤下。',
+          message: `${previewLabel(assurance)}协调器出现无法解释的失败；图片已撤下。`,
         },
       };
     }
@@ -168,6 +195,7 @@ export function useTemplatePreviewCoordinator(
         state: 'problem',
         sequence: operationSequence,
         savedFirst,
+        assurance,
         problem: result.problem,
       });
       return;
@@ -175,7 +203,7 @@ export function useTemplatePreviewCoordinator(
     if (!previewBasisMatchesSession(result.basis, session)) {
       setView({
         state: 'withdrawn',
-        message: '权威预览 basis 已失效；迟到结果已丢弃。',
+        message: `${previewLabel(assurance)} basis 已失效；迟到结果已丢弃。`,
       });
       return;
     }
@@ -198,6 +226,7 @@ export function useTemplatePreviewCoordinator(
         state: 'problem',
         sequence: operationSequence,
         savedFirst,
+        assurance,
         problem: {
           source: 'client',
           code: 'EDITOR_PREVIEW_OBJECT_URL_FAILURE',
@@ -213,6 +242,7 @@ export function useTemplatePreviewCoordinator(
     setView({
       state: 'stopped',
       sequence: nextSequence,
+      assurance,
       message: '已停止本地等待并撤下结果；服务端 operation 可能继续，本操作不等于 Engine cancel。',
     });
   };
@@ -224,15 +254,22 @@ export function useTemplatePreviewCoordinator(
       state: 'problem',
       sequence: sequence.current,
       savedFirst,
+      assurance,
       problem,
     });
   };
 
   return {
     enabled: transport !== undefined,
+    assurance,
     panelOpen,
     request,
-    view,
+    view: viewMatchesAssurance(view, assurance)
+      ? view
+      : {
+        state: 'withdrawn',
+        message: '预览 assurance 已变化；旧图片已撤下，请重新生成。',
+      },
     open: () => setPanelOpen(true),
     close: () => setPanelOpen(false),
     updateRequest: (next, message) => {
@@ -245,13 +282,26 @@ export function useTemplatePreviewCoordinator(
       if ((binding !== null && !boundSessionMatches(binding, session))
         || (view.state === 'rendered'
           && !previewBasisMatchesSession(view.result.basis, session))) {
-        invalidate('服务器 current、readiness 或 Editor generation 已变化；旧权威图片已撤下。');
+        invalidate(
+          `服务器 current、readiness 或 Editor generation 已变化；旧${previewImageLabel(assurance)}已撤下。`,
+        );
       }
     },
     invalidate,
     stop,
     reportProblem,
   };
+}
+
+function viewMatchesAssurance(
+  view: TemplatePreviewView,
+  assurance: TemplatePreviewAssurance,
+): boolean {
+  if (view.state === 'rendered') return view.result.basis.assurance === assurance;
+  if (view.state === 'pending' || view.state === 'problem' || view.state === 'stopped') {
+    return view.assurance === assurance;
+  }
+  return true;
 }
 
 export function TemplatePreviewPanel({
@@ -269,6 +319,7 @@ export function TemplatePreviewPanel({
   canSave: boolean;
   onGenerate: () => void;
 }) {
+  const candidate = coordinator.assurance === 'candidate';
   const titleId = 'template-authoritative-preview-title';
   const inputId = 'template-authoritative-preview-input';
   const view = coordinator.view;
@@ -298,17 +349,31 @@ export function TemplatePreviewPanel({
   };
   return (
     <section
-      className="te-authoritative-preview"
+      className={`te-authoritative-preview${candidate ? ' is-candidate' : ''}`}
       id="template-authoritative-preview-panel"
       aria-labelledby={titleId}
     >
       <header className="te-preview-heading">
         <div>
-          <span><ShieldCheck aria-hidden="true" size={14} />Authoritative Preview</span>
-          <h2 id={titleId}>权威预览</h2>
-          <p>只渲染已保存 current；与正式输出使用同一 Evaluator、RenderEngine 和 exact Profile。</p>
+          <span>
+            {candidate
+              ? <FlaskConical aria-hidden="true" size={14} />
+              : <ShieldCheck aria-hidden="true" size={14} />}
+            {candidate ? 'Candidate Preview · ' : 'Authoritative Preview'}
+            {candidate ? <strong>NOT_CERTIFIED</strong> : null}
+          </span>
+          <h2 id={titleId}>{candidate ? '候选预览' : '权威预览'}</h2>
+          <p>
+            {candidate
+              ? '仅用于本机想法验证；走真实 Evaluator 与 Renderer 候选，但不是权威结果或认证 Profile。'
+              : '只渲染已保存 current；与正式输出使用同一 Evaluator、RenderEngine 和 exact Profile。'}
+          </p>
         </div>
-        <button type="button" onClick={coordinator.close} aria-label="关闭权威预览">
+        <button
+          type="button"
+          onClick={coordinator.close}
+          aria-label={candidate ? '关闭候选预览（NOT_CERTIFIED）' : '关闭权威预览'}
+        >
           <X aria-hidden="true" size={18} />
         </button>
       </header>
@@ -323,7 +388,7 @@ export function TemplatePreviewPanel({
             spellCheck={false}
             onChange={(event) => update(
               { ...request, inputJson: event.currentTarget.value },
-              '输入样例已变化；旧权威图片已撤下。',
+              `输入样例已变化；旧${previewImageLabel(coordinator.assurance)}已撤下。`,
             )}
           />
           <div className="te-preview-input-facts">
@@ -345,7 +410,7 @@ export function TemplatePreviewPanel({
                     format,
                     dpi: request.dpi,
                     ...(format === 'JPEG' ? { quality: 90 } : {}),
-                  }, '输出格式已变化；旧权威图片已撤下。');
+                  }, `输出格式已变化；旧${previewImageLabel(coordinator.assurance)}已撤下。`);
                 }}
               >
                 <option value="PNG">PNG</option>
@@ -364,7 +429,7 @@ export function TemplatePreviewPanel({
                 disabled={controlsLocked}
                 onChange={(event) => update(
                   { ...request, dpi: Number(event.currentTarget.value) },
-                  '输出参数已变化；旧权威图片已撤下。',
+                  `输出参数已变化；旧${previewImageLabel(coordinator.assurance)}已撤下。`,
                 )}
               />
             </label>
@@ -381,7 +446,7 @@ export function TemplatePreviewPanel({
                   disabled={controlsLocked}
                   onChange={(event) => update(
                     { ...request, quality: Number(event.currentTarget.value) },
-                    'JPEG quality 已变化；旧权威图片已撤下。',
+                    `JPEG quality 已变化；旧${previewImageLabel(coordinator.assurance)}已撤下。`,
                   )}
                 />
               </label>
@@ -402,7 +467,11 @@ export function TemplatePreviewPanel({
             ) : (
               <button type="button" disabled={!canGenerate} onClick={onGenerate}>
                 <Eye aria-hidden="true" size={16} />
-                {dirty ? '保存并生成权威预览' : '生成权威预览'}
+                {candidate
+                  ? dirty
+                    ? '保存并生成候选预览（NOT_CERTIFIED）'
+                    : '生成候选预览（NOT_CERTIFIED）'
+                  : dirty ? '保存并生成权威预览' : '生成权威预览'}
               </button>
             )}
           </div>
@@ -417,14 +486,27 @@ export function TemplatePreviewPanel({
 
         <div className="te-preview-slot">
           {view.state === 'idle' ? (
-            <PreviewEmpty message="尚未发起权威预览。完整图片通过校验后才会出现在这里。" />
+            <PreviewEmpty
+              candidate={candidate}
+              message={candidate
+                ? '尚未发起 NOT_CERTIFIED 候选预览。完整图片通过校验后才会出现在这里。'
+                : '尚未发起权威预览。完整图片通过校验后才会出现在这里。'}
+            />
           ) : null}
-          {view.state === 'withdrawn' ? <PreviewEmpty message={view.message} /> : null}
-          {view.state === 'stopped' ? <PreviewEmpty message={view.message} /> : null}
+          {view.state === 'withdrawn' ? (
+            <PreviewEmpty candidate={candidate} message={view.message} />
+          ) : null}
+          {view.state === 'stopped' ? (
+            <PreviewEmpty candidate={candidate} message={view.message} />
+          ) : null}
           {view.state === 'pending' ? (
             <div className="te-preview-pending" role="status">
               <LoaderCircle className="te-loading-icon" aria-hidden="true" size={24} />
-              <strong>{view.savedFirst ? 'Template 已保存，正在独立生成预览' : '正在生成权威预览'}</strong>
+              <strong>
+                {candidate
+                  ? '正在生成 NOT_CERTIFIED 候选预览'
+                  : view.savedFirst ? 'Template 已保存，正在独立生成预览' : '正在生成权威预览'}
+              </strong>
               <span>旧结果已撤下；等待完整 image、length、digest 与 Profile metadata。</span>
             </div>
           ) : null}
@@ -432,7 +514,7 @@ export function TemplatePreviewPanel({
             <div className="te-preview-problem" role="alert" tabIndex={-1} ref={problemRef}>
               <AlertTriangle aria-hidden="true" size={22} />
               <div>
-                <span>权威预览未生成</span>
+                <span>{candidate ? 'NOT_CERTIFIED 候选预览未生成' : '权威预览未生成'}</span>
                 <h3>{view.problem.code}</h3>
                 <p>{view.problem.message}</p>
                 {view.savedFirst ? (
@@ -454,13 +536,20 @@ export function TemplatePreviewPanel({
               <div className="te-preview-image-wrap">
                 <img
                   src={view.objectUrl}
-                  alt={`${documentName}的权威预览`}
+                  alt={candidate
+                    ? `${documentName}的候选预览（NOT_CERTIFIED）`
+                    : `${documentName}的权威预览`}
                   width={view.result.metadata.widthPx}
                   height={view.result.metadata.heightPx}
                 />
               </div>
               <div className="te-preview-result-summary">
-                <span><ShieldCheck aria-hidden="true" size={14} />完整结果已核验</span>
+                <span>
+                  {candidate
+                    ? <FlaskConical aria-hidden="true" size={14} />
+                    : <ShieldCheck aria-hidden="true" size={14} />}
+                  {candidate ? 'NOT_CERTIFIED · 完整结果已核验' : '完整结果已核验'}
+                </span>
                 <strong>{view.result.metadata.widthPx} × {view.result.metadata.heightPx} px</strong>
                 <dl>
                   <div><dt>Current</dt><dd>revision {view.result.basis.revision}</dd></div>
@@ -482,11 +571,11 @@ export function TemplatePreviewPanel({
   );
 }
 
-function PreviewEmpty({ message }: { message: string }) {
+function PreviewEmpty({ message, candidate = false }: { message: string; candidate?: boolean }) {
   return (
     <div className="te-preview-empty" role="status">
       <ImageIcon aria-hidden="true" size={24} />
-      <strong>单一权威结果槽</strong>
+      <strong>{candidate ? '单一 NOT_CERTIFIED 候选结果槽' : '单一权威结果槽'}</strong>
       <span>{message}</span>
     </div>
   );
@@ -513,4 +602,12 @@ function boundSessionMatches(
 
 function shortHash(value: string): string {
   return value.length > 22 ? `${value.slice(0, 13)}…${value.slice(-7)}` : value;
+}
+
+function previewLabel(assurance: TemplatePreviewAssurance): string {
+  return assurance === 'candidate' ? 'NOT_CERTIFIED 候选预览' : '权威预览';
+}
+
+function previewImageLabel(assurance: TemplatePreviewAssurance): string {
+  return assurance === 'candidate' ? 'NOT_CERTIFIED 候选图片' : '权威图片';
 }

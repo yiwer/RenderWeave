@@ -1653,6 +1653,25 @@
   box-shadow: var(--shadow-float);
 }
 
+.te-authoritative-preview.is-candidate {
+  border-color: var(--color-warning-border);
+}
+
+.te-authoritative-preview.is-candidate .te-preview-heading {
+  background: var(--color-warning-soft);
+}
+
+.te-authoritative-preview.is-candidate .te-preview-heading > div > span,
+.te-authoritative-preview.is-candidate .te-preview-result-summary > span {
+  color: var(--color-warning-ink);
+}
+
+.te-authoritative-preview.is-candidate .te-preview-result-summary {
+  border-color: var(--color-warning-border);
+  background: var(--color-warning-soft);
+  color: var(--color-warning-ink);
+}
+
 .te-preview-heading {
   display: flex;
   min-height: 76px;

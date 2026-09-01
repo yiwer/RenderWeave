@@ -5,6 +5,7 @@ import {
   CheckCircle2,
   Download,
   FileJson,
+  FlaskConical,
   FolderTree,
   Image,
   LoaderCircle,
@@ -109,6 +110,7 @@ import {
   defaultTemplatePreviewObjectUrls,
   defaultTemplatePreviewTransport,
   type TemplatePreviewObjectUrlFactory,
+  type TemplatePreviewAssurance,
   type TemplatePreviewRequest,
   type TemplatePreviewTransport,
 } from './template-preview';
@@ -422,6 +424,13 @@ function StructuredShell({
   const selected = nodes.find((node) => node.nodeId === effectiveSelectedNodeId) ?? nodes[0];
   const dirty = isCanonicalDirty(session);
   const workingName = templateDisplayName(session.workingCopy);
+  const candidatePreview = preview.assurance === 'candidate';
+  const previewOperationLabel = candidatePreview
+    ? '候选预览（NOT_CERTIFIED）'
+    : '权威预览';
+  const previewImageLabel = candidatePreview
+    ? 'NOT_CERTIFIED 候选图片'
+    : '权威图片';
   const guard = authoritativePreviewGuard(session);
   const recoveryChoiceLocked = recoveryView.state === 'loading'
     || recoveryView.state === 'offer'
@@ -465,7 +474,7 @@ function StructuredShell({
   const acceptLocalChange = (next: StructuredEditorSession) => {
     if (localLocked) return;
     pendingPreviewAfterSave.current = null;
-    preview.invalidate('DesignDSL 本地工作副本已变化；旧权威图片已撤下。');
+    preview.invalidate(`DesignDSL 本地工作副本已变化；旧${previewImageLabel}已撤下。`);
     if (importView.state === 'candidate') {
       setImportView({ state: 'stale', message: '导入候选已因本地 generation 变化而失效。' });
     }
@@ -609,7 +618,7 @@ function StructuredShell({
     }
     pendingImportAfterSave.current = null;
     pendingPreviewAfterSave.current = null;
-    preview.invalidate('导入内容已替换本地工作副本；旧权威图片已撤下。');
+    preview.invalidate(`导入内容已替换本地工作副本；旧${previewImageLabel}已撤下。`);
     setLocalSession(adopted.session);
     setSaveView({ state: 'idle' });
     setRecoveryBase(undefined);
@@ -676,7 +685,7 @@ function StructuredShell({
     }
     applyRecoveredEditState(record.editState);
     pendingPreviewAfterSave.current = null;
-    preview.invalidate('Local recovery 已恢复为本地草稿；旧权威图片已撤下。');
+    preview.invalidate(`Local recovery 已恢复为本地草稿；旧${previewImageLabel}已撤下。`);
     setRecoveryBase({
       revision: record.baseRevision,
       contentHash: record.baseContentHash,
@@ -702,7 +711,7 @@ function StructuredShell({
     const clean = createSessionFromBaseline(session.baseline, session.readiness);
     if (clean.mode !== 'structured') return;
     pendingPreviewAfterSave.current = null;
-    preview.invalidate('Local recovery 草稿已放弃；旧权威图片已撤下。');
+    preview.invalidate(`Local recovery 草稿已放弃；旧${previewImageLabel}已撤下。`);
     setLocalSession({
       ...clean,
       previewGeneration: session.previewGeneration + 1,
@@ -795,7 +804,7 @@ function StructuredShell({
       preview.reportProblem({
         source: 'client',
         code: 'EDITOR_PREVIEW_SAVE_BASIS_MISMATCH',
-        message: `revision ${committed.baseline.revision} 已采用，但 canonical 内容与保存并预览 intent 不一致；未启动权威预览。`,
+        message: `revision ${committed.baseline.revision} 已采用，但 canonical 内容与保存并预览 intent 不一致；未启动${previewOperationLabel}。`,
       }, true);
       return `revision ${committed.baseline.revision} 已采用；预览 intent 已安全终止。`;
     }
@@ -809,15 +818,15 @@ function StructuredShell({
           ? 'EDITOR_PREVIEW_SAVED_CURRENT_INVALID'
           : 'EDITOR_PREVIEW_SAVED_CURRENT_NOT_READY',
         message: invalid
-          ? `revision ${committed.baseline.revision} 已保存为 INVALID；未启动权威预览。`
-          : `revision ${committed.baseline.revision} 已保存，但 current 尚不能形成 READY snapshot；未启动权威预览。`,
+          ? `revision ${committed.baseline.revision} 已保存为 INVALID；未启动${previewOperationLabel}。`
+          : `revision ${committed.baseline.revision} 已保存，但 current 尚不能形成 READY snapshot；未启动${previewOperationLabel}。`,
       }, true);
       return invalid
-        ? `revision ${committed.baseline.revision} 已保存为 INVALID；未启动权威预览。`
-        : `revision ${committed.baseline.revision} 已保存；当前未启动权威预览。`;
+        ? `revision ${committed.baseline.revision} 已保存为 INVALID；未启动${previewOperationLabel}。`
+        : `revision ${committed.baseline.revision} 已保存；当前未启动${previewOperationLabel}。`;
     }
     void preview.start(committed, intent.request, { savedFirst: true });
-    return `revision ${committed.baseline.revision} 已保存；权威预览已作为独立操作发起。`;
+    return `revision ${committed.baseline.revision} 已保存；${previewOperationLabel}已作为独立操作发起。`;
   };
 
   const abandonPendingPreview = (saveCode: string) => {
@@ -826,7 +835,7 @@ function StructuredShell({
     preview.reportProblem({
       source: 'client',
       code: 'EDITOR_PREVIEW_SAVE_NOT_COMPLETED',
-      message: `Template 保存未完成（${saveCode}）；未启动权威预览。`,
+      message: `Template 保存未完成（${saveCode}）；未启动${previewOperationLabel}。`,
     });
   };
 
@@ -1425,6 +1434,7 @@ function StructuredShell({
               key={workingName}
               session={session}
               guard={guard}
+              previewAssurance={preview.assurance}
               disabled={localLocked}
               onSessionChange={acceptLocalChange}
             />
@@ -1466,11 +1476,17 @@ function StructuredShell({
               type="button"
               aria-pressed={preview.panelOpen}
               aria-controls={preview.panelOpen ? 'template-authoritative-preview-panel' : undefined}
-              aria-label={preview.panelOpen ? '关闭权威预览' : '打开权威预览'}
+              aria-label={candidatePreview
+                ? preview.panelOpen
+                  ? '关闭候选预览（NOT_CERTIFIED）'
+                  : '打开候选预览（NOT_CERTIFIED）'
+                : preview.panelOpen ? '关闭权威预览' : '打开权威预览'}
               onClick={preview.panelOpen ? preview.close : preview.open}
             >
-              <ShieldCheck aria-hidden="true" size={15} />
-              权威预览
+              {candidatePreview
+                ? <FlaskConical aria-hidden="true" size={15} />
+                : <ShieldCheck aria-hidden="true" size={15} />}
+              {candidatePreview ? '候选预览 · NOT_CERTIFIED' : '权威预览'}
             </button>
           ) : null}
           <span>{nodes.length} 个 authored 节点</span>
@@ -1594,11 +1610,13 @@ function StructuredHeaderTools({
 function TemplateNameEditor({
   session,
   guard,
+  previewAssurance,
   disabled,
   onSessionChange,
 }: {
   session: StructuredEditorSession;
   guard: ReturnType<typeof authoritativePreviewGuard>;
+  previewAssurance: TemplatePreviewAssurance;
   disabled: boolean;
   onSessionChange: (session: StructuredEditorSession) => void;
 }) {
@@ -1609,9 +1627,10 @@ function TemplateNameEditor({
   const problemId = `${id}-problem`;
   const [draft, setDraft] = useState(templateDisplayName(session.workingCopy));
   const [problem, setProblem] = useState<string | null>(null);
+  const candidatePreview = previewAssurance === 'candidate';
   const guardMessage = guard.state === 'eligible'
-    ? `当前 current 满足权威预览前置条件 · generation ${guard.generation}`
-    : `${guard.message} · generation ${guard.generation}`;
+    ? `当前 current 满足${candidatePreview ? '候选预览' : '权威预览'}前置条件 · generation ${guard.generation}`
+    : `${candidatePreview ? guard.message.replace('权威预览', '候选预览') : guard.message} · generation ${guard.generation}`;
 
   const submit = (event: React.FormEvent) => {
     event.preventDefault();
@@ -1656,7 +1675,7 @@ function TemplateNameEditor({
         )}
       </form>
       <div className={`te-preview-guard ${guard.state === 'eligible' ? 'is-eligible' : 'is-blocked'}`} role="status" aria-live="polite">
-        <strong>权威预览条件</strong>
+        <strong>{candidatePreview ? '候选预览条件 · NOT_CERTIFIED' : '权威预览条件'}</strong>
         <span>{guardMessage}</span>
       </div>
     </section>

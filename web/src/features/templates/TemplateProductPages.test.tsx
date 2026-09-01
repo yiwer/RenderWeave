@@ -22,8 +22,17 @@ const resources = vi.hoisted(() => ({
 vi.mock('./template-product-api', () => api);
 vi.mock('../resources/resource-api', () => resources);
 vi.mock('../template-editor/TemplateEditorShell', () => ({
-  TemplateEditorSurface: ({ templateId }: { templateId: string }) => (
-    <main aria-label="Template editor bridge">{templateId}</main>
+  TemplateEditorSurface: ({
+    templateId,
+    previewTransport,
+  }: {
+    templateId: string;
+    previewTransport?: { assurance?: string };
+  }) => (
+    <main
+      aria-label="Template editor bridge"
+      data-preview-assurance={previewTransport?.assurance ?? 'default'}
+    >{templateId}</main>
   ),
 }));
 
@@ -120,6 +129,19 @@ describe('Template final-product page substrate', () => {
 
     expect(screen.getByRole('main', { name: 'Template editor bridge' }).textContent)
       .toBe('template-42');
+    expect(screen.getByRole('main', { name: 'Template editor bridge' })
+      .getAttribute('data-preview-assurance')).toBe('default');
+  });
+
+  it('selects the non-certified candidate transport only through the exact local opt-in', () => {
+    renderRoute(
+      '/templates/template-42?candidatePreview=local',
+      '/templates/:templateId',
+      <TemplateEditorPage />,
+    );
+
+    expect(screen.getByRole('main', { name: 'Template editor bridge' })
+      .getAttribute('data-preview-assurance')).toBe('candidate');
   });
 });
 
