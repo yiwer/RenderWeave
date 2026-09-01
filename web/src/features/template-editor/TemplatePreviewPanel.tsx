@@ -484,7 +484,14 @@ export function TemplatePreviewPanel({
           ) : null}
         </div>
 
-        <div className="te-preview-slot">
+        <div
+          aria-label={candidate
+            ? '候选预览图像滚动区域'
+            : '权威预览图像滚动区域'}
+          className="te-preview-slot"
+          role="region"
+          tabIndex={0}
+        >
           {view.state === 'idle' ? (
             <PreviewEmpty
               candidate={candidate}

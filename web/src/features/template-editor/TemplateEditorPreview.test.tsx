@@ -37,8 +37,11 @@ describe('Template Editor E6 Preview', () => {
     fireEvent.click(screen.getByRole('button', { name: '打开候选预览（NOT_CERTIFIED）' }));
     expect(screen.getByRole('heading', { name: '候选预览' })).toBeTruthy();
     expect(screen.getByText('NOT_CERTIFIED', { selector: 'strong' })).toBeTruthy();
+    expect(screen.getByRole('region', { name: '候选预览图像滚动区域' })
+      .getAttribute('tabindex')).toBe('0');
     fireEvent.click(screen.getByRole('button', { name: '生成候选预览（NOT_CERTIFIED）' }));
     expect(await screen.findByText('正在生成 NOT_CERTIFIED 候选预览')).toBeTruthy();
+    await waitFor(() => expect(postPreview).toHaveBeenCalledTimes(1));
 
     resolvePreview(await renderedResponse(true));
     const image = await screen.findByRole('img', {

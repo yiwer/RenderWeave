@@ -50,10 +50,10 @@ describe('Template Editor E1/E2 Product shell', () => {
     );
     expect(authoredRect).not.toBeNull();
     expect(authoredRect?.dataset.templateCanvasNodeKind).toBe('rect');
-    expect(authoredRect?.style.left).toBe('40px');
-    expect(authoredRect?.style.top).toBe('40px');
-    expect(authoredRect?.style.width).toBe('120px');
-    expect(authoredRect?.style.height).toBe('80px');
+    expect(authoredRect?.style.left).toBe('101.6px');
+    expect(authoredRect?.style.top).toBe('101.6px');
+    expect(authoredRect?.style.width).toBe('101.6px');
+    expect(authoredRect?.style.height).toBe('101.6px');
 
     fireEvent.click(screen.getByRole('treeitem', { name: /画布/ }));
     expect(screen.getByRole('heading', { name: '画布' })).toBeTruthy();

@@ -100,17 +100,25 @@ function buildRectNode(
   };
 }
 
+// One inch lowers to exactly 72 pt, so the default Rect remains pixel-aligned at integral DPI.
+const RENDERABLE_RECT_SIZE_MM = 25.4;
+
 function placementFor(parentKind: string): Readonly<Record<string, unknown>> {
   const size = {
     widthMode: 'FIXED',
-    widthMm: 30,
+    widthMm: RENDERABLE_RECT_SIZE_MM,
     heightMode: 'FIXED',
-    heightMm: 20,
+    heightMm: RENDERABLE_RECT_SIZE_MM,
   };
   if (parentKind === 'stack') return { type: 'STACK', ...size };
   if (parentKind === 'grid') return { type: 'GRID', ...size, row: 0, column: 0 };
   if (parentKind === 'repeat') return { type: 'PACK', ...size };
-  return { type: 'ABSOLUTE', xMm: 10, yMm: 10, ...size };
+  return {
+    type: 'ABSOLUTE',
+    xMm: RENDERABLE_RECT_SIZE_MM,
+    yMm: RENDERABLE_RECT_SIZE_MM,
+    ...size,
+  };
 }
 
 function isContainer(node: Record<string, unknown>): boolean {

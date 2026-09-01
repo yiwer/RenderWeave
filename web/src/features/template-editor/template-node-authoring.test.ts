@@ -47,12 +47,12 @@ describe('formal Template node authoring seam', () => {
       bindings: [],
       placement: {
         type: 'ABSOLUTE',
-        xMm: 10,
-        yMm: 10,
+        xMm: 25.4,
+        yMm: 25.4,
         widthMode: 'FIXED',
-        widthMm: 30,
+        widthMm: 25.4,
         heightMode: 'FIXED',
-        heightMm: 20,
+        heightMm: 25.4,
       },
       fill: { color: '#2563EBFF' },
     });
@@ -63,10 +63,10 @@ describe('formal Template node authoring seam', () => {
   });
 
   it.each([
-    ['canvas', 'ABSOLUTE', { xMm: 10, yMm: 10 }],
-    ['group', 'ABSOLUTE', { xMm: 10, yMm: 10 }],
-    ['frame', 'ABSOLUTE', { xMm: 10, yMm: 10 }],
-    ['conditional', 'ABSOLUTE', { xMm: 10, yMm: 10 }],
+    ['canvas', 'ABSOLUTE', { xMm: 25.4, yMm: 25.4 }],
+    ['group', 'ABSOLUTE', { xMm: 25.4, yMm: 25.4 }],
+    ['frame', 'ABSOLUTE', { xMm: 25.4, yMm: 25.4 }],
+    ['conditional', 'ABSOLUTE', { xMm: 25.4, yMm: 25.4 }],
     ['stack', 'STACK', {}],
     ['grid', 'GRID', { row: 0, column: 0 }],
     ['repeat', 'PACK', {}],
@@ -87,9 +87,9 @@ describe('formal Template node authoring seam', () => {
     expect(inserted?.placement).toEqual(expect.objectContaining({
       type,
       widthMode: 'FIXED',
-      widthMm: 30,
+      widthMm: 25.4,
       heightMode: 'FIXED',
-      heightMm: 20,
+      heightMm: 25.4,
       ...detail,
     }));
   });
