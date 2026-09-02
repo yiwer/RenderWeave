@@ -10,9 +10,9 @@ interface PrototypeSwitcherProps {
 
 const variants: PrototypeVariant[] = ['A', 'B', 'C'];
 const names: Record<PrototypeVariant, string> = {
-  A: 'Studio Classic',
+  A: 'Library Studio',
   B: 'Canvas Focus',
-  C: 'Binding Bench',
+  C: 'Structure Bench',
 };
 
 function adjacent(current: PrototypeVariant, direction: -1 | 1): PrototypeVariant {

@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 
 import { designerReducer, initialDesignerState, parseVariant, type PrototypeVariant } from './model';
 import { PrototypeSwitcher } from './PrototypeSwitcher';
-import { ConflictBanner, BindingDialog, InvalidSaveDialog, NoticeToast } from './SharedParts';
+import { BindingDialog, ConflictBanner, InvalidSaveDialog, NoticeToast } from './SharedParts';
 import { VariantA } from './VariantA';
 import { VariantB } from './VariantB';
 import { VariantC } from './VariantC';
@@ -11,7 +11,7 @@ import './template-designer.css';
 
 /**
  * PROTOTYPE — throwaway route /prototype/template-designer?variant=A|B|C
- * 三个在线 Template 设计器变体,验证 issues/17-authoring-workflow-prototype 的信息架构。
+ * 三个在线 Template 设计器变体，验证 T220 的组件库、结构动作与属性分组。
  */
 export function TemplateDesignerPrototype() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -51,6 +51,68 @@ export function TemplateDesignerPrototype() {
   useEffect(() => () => {
     if (previewTimer.current) clearTimeout(previewTimer.current);
   }, []);
+
+  useEffect(() => {
+    function isEditableTarget(target: EventTarget | null) {
+      return target instanceof HTMLInputElement
+        || target instanceof HTMLTextAreaElement
+        || target instanceof HTMLSelectElement
+        || (target instanceof HTMLElement && target.isContentEditable);
+    }
+
+    function handleAuthoringShortcut(event: KeyboardEvent) {
+      const target = event.target;
+      if (isEditableTarget(target)) return;
+      if (variant === 'B' && event.code === 'Space') {
+        event.preventDefault();
+        if (!event.repeat) dispatch({ type: 'set-space-pan', active: true });
+        return;
+      }
+      const key = event.key.toLocaleLowerCase();
+      if ((event.ctrlKey || event.metaKey) && !event.altKey && key === 'a') {
+        event.preventDefault();
+        dispatch({ type: 'select-all' });
+      } else if (key === 'v') {
+        event.preventDefault();
+        dispatch({ type: 'set-tool', tool: 'select' });
+      } else if (key === 'h') {
+        event.preventDefault();
+        dispatch({ type: 'set-tool', tool: 'pan' });
+      } else if (event.key === 'Escape' && state.spacePanActive) {
+        event.preventDefault();
+        dispatch({ type: 'set-space-pan', active: false });
+      } else if (event.key === 'Escape' && state.activeTool === 'pan') {
+        event.preventDefault();
+        dispatch({ type: 'set-tool', tool: 'select' });
+      } else if (event.key === 'Delete' || event.key === 'Backspace') {
+        event.preventDefault();
+        dispatch({ type: 'delete-selection' });
+      }
+    }
+
+    function handleAuthoringShortcutRelease(event: KeyboardEvent) {
+      if (variant !== 'B' || event.code !== 'Space' || !state.spacePanActive) return;
+      event.preventDefault();
+      dispatch({ type: 'set-space-pan', active: false });
+    }
+
+    function handleWindowBlur() {
+      if (state.spacePanActive) dispatch({ type: 'set-space-pan', active: false });
+    }
+
+    window.addEventListener('keydown', handleAuthoringShortcut);
+    window.addEventListener('keyup', handleAuthoringShortcutRelease);
+    window.addEventListener('blur', handleWindowBlur);
+    return () => {
+      window.removeEventListener('keydown', handleAuthoringShortcut);
+      window.removeEventListener('keyup', handleAuthoringShortcutRelease);
+      window.removeEventListener('blur', handleWindowBlur);
+    };
+  }, [state.activeTool, state.spacePanActive, variant]);
+
+  useEffect(() => {
+    if (variant !== 'B' && state.spacePanActive) dispatch({ type: 'set-space-pan', active: false });
+  }, [state.spacePanActive, variant]);
 
   const partProps = { state, dispatch, onRunPreview: runPreview, onCancelPreview: cancelPreview };
 
