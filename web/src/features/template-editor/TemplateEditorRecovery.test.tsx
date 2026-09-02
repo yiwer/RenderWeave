@@ -81,7 +81,7 @@ describe('Template Editor E7 recovery UI', () => {
 
   it.each([
     { entry: 'assets' as const, label: '资产' },
-    { entry: 'definitions' as const, label: '定义' },
+    { entry: 'definitions' as const, label: '数据源' },
   ])('restores the existing $entry recovery wire value to the $label rail', async ({ entry, label }) => {
     const storage = new MemoryStorage();
     persistTemplateRecovery(

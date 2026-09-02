@@ -1,3 +1,5 @@
+import * as Dialog from '@radix-ui/react-dialog';
+import { Link2, Trash2, X } from 'lucide-react';
 import {
   useEffect,
   useId,
@@ -26,6 +28,25 @@ import {
   type TemplateEditorAssetTransport,
 } from './template-editor-assets';
 import { TemplateEditorAssetPicker } from './TemplateEditorAssetPicker';
+import type { StaticSnapshot } from '../schema-studio/lossless-api';
+import {
+  bindingValueTypeLabel,
+  projectBindableProperties,
+  projectBindingSources,
+  type TemplateBindableProperty,
+  type TemplateBindingSource,
+  type TemplateDataAuthoringContext,
+  type TemplateDataAuthoringIntent,
+} from './template-editor-data-authoring';
+import type { TemplateStaticSchemaView } from './TemplateEditorDataSources';
+import type { TemplateBindingFocusDescriptor } from './template-problem-locator';
+import { decodeTemplateTargetPropertyRef } from './template-target-property-ref';
+import {
+  loadExactTemplateStaticSchema,
+  projectPendingTemplateStaticSchemaReferences,
+  type TemplateStaticSchemaPendingReference,
+  type TemplateStaticSchemaTransport,
+} from './template-editor-static-schema';
 
 type InspectorTab = 'properties' | 'bindings';
 type DraftParse<T> = { ok: true; value: T } | { ok: false; problem: string };
@@ -54,6 +75,22 @@ export interface TemplateEditorInspectorProps {
   readonly onCommand: (intent: TemplateEditorCommandIntent) => void;
   readonly assetTransport?: TemplateEditorAssetTransport;
   readonly dependencyStaleMessage?: string;
+  readonly designDsl?: Readonly<Record<string, unknown>>;
+  readonly staticSchema?: TemplateStaticSchemaView;
+  readonly staticSchemaTransport?: TemplateStaticSchemaTransport;
+  readonly onDataIntent?: (
+    intent: TemplateDataAuthoringIntent,
+    context?: TemplateDataAuthoringContext,
+  ) => boolean | void;
+  readonly problemFocus?: TemplateEditorInspectorFocusRequest;
+  readonly onProblemFocusResult?: (requestId: number, focused: boolean) => void;
+}
+
+export interface TemplateEditorInspectorFocusRequest {
+  readonly requestId: number;
+  readonly nodeId: string;
+  readonly mode: 'binding' | 'property';
+  readonly focus: TemplateBindingFocusDescriptor;
 }
 
 /**
@@ -66,13 +103,69 @@ export function TemplateEditorInspector({
   onCommand,
   assetTransport,
   dependencyStaleMessage,
+  designDsl,
+  staticSchema,
+  staticSchemaTransport,
+  onDataIntent,
+  problemFocus,
+  onProblemFocusResult,
 }: TemplateEditorInspectorProps) {
   const [tab, setTab] = useState<InspectorTab>('properties');
+  const [bindingProperty, setBindingProperty] = useState<TemplateBindableProperty | null>(null);
   const tabsId = useId();
+  const inspectorRef = useRef<HTMLElement>(null);
+  const handledProblemFocus = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (!problemFocus || handledProblemFocus.current === problemFocus.requestId) return;
+    if (!node || node.nodeId !== problemFocus.nodeId) {
+      handledProblemFocus.current = problemFocus.requestId;
+      onProblemFocusResult?.(problemFocus.requestId, false);
+      return;
+    }
+
+    const targetTab: InspectorTab = problemFocus.mode === 'binding' ? 'bindings' : 'properties';
+    if (tab !== targetTab) {
+      let active = true;
+      queueMicrotask(() => {
+        if (active) setTab(targetTab);
+      });
+      return () => {
+        active = false;
+      };
+    }
+
+    const root = inspectorRef.current;
+    const matches = root
+      ? [...root.querySelectorAll<HTMLElement>(
+        problemFocus.mode === 'binding'
+          ? '[data-template-binding-id]'
+          : '[data-template-property-path]',
+      )].filter((candidate) => (
+        problemFocus.mode === 'binding'
+          ? candidate.dataset.templateBindingId === problemFocus.focus.bindingId
+          : candidate.dataset.templatePropertyPath === problemFocus.focus.propertyPath
+      ))
+      : [];
+    const target = matches.length === 1 ? matches[0] : undefined;
+    handledProblemFocus.current = problemFocus.requestId;
+    let focused = false;
+    if (target) {
+      let disclosure = target.closest<HTMLDetailsElement>('details');
+      while (disclosure) {
+        disclosure.open = true;
+        disclosure = disclosure.parentElement?.closest<HTMLDetailsElement>('details') ?? null;
+      }
+      target.focus({ preventScroll: true });
+      target.scrollIntoView?.({ block: 'nearest', inline: 'nearest' });
+      focused = target.ownerDocument.activeElement === target;
+    }
+    onProblemFocusResult?.(problemFocus.requestId, focused);
+  }, [node, onProblemFocusResult, problemFocus, tab]);
 
   if (!node) {
     return (
-      <section className="te-node-inspector is-empty" aria-label="节点检视器">
+      <section ref={inspectorRef} className="te-node-inspector is-empty" aria-label="节点检视器">
         <div className="te-node-inspector-empty">
           <strong>未选择元素</strong>
           <span>从画布或结构中选择一个节点以查看它的已编写属性。</span>
@@ -82,6 +175,37 @@ export function TemplateEditorInspector({
   }
 
   const bindings = bindingRecords(node.value.bindings);
+  const bindableProperties = onDataIntent && staticSchema?.state === 'ready'
+    ? projectBindableProperties(node.value)
+    : [];
+  const bindableByPath = new Map(bindableProperties.map((property) => [property.propertyPath, property]));
+  const bindingAction = (path: string) => {
+    const property = bindableByPath.get(path);
+    if (!property) return undefined;
+    if (property.bindingId) {
+      return (
+        <button
+          type="button"
+          className="te-property-binding-action is-bound"
+          aria-label={`查看${property.label}绑定`}
+          onClick={() => setTab('bindings')}
+        >
+          <Link2 aria-hidden="true" size={13} />已绑定
+        </button>
+      );
+    }
+    return (
+      <button
+        type="button"
+        className="te-property-binding-action"
+        disabled={disabled}
+        aria-label={`绑定${property.label}`}
+        onClick={() => setBindingProperty(property)}
+      >
+        <Link2 aria-hidden="true" size={13} />绑定
+      </button>
+    );
+  };
   const propertiesTabId = `${tabsId}-properties-tab`;
   const bindingsTabId = `${tabsId}-bindings-tab`;
   const propertiesPanelId = `${tabsId}-properties-panel`;
@@ -104,6 +228,7 @@ export function TemplateEditorInspector({
 
   return (
     <section
+      ref={inspectorRef}
       className="te-node-inspector"
       aria-label={`${node.displayName} 属性检视器`}
       data-node-kind={node.kind}
@@ -154,6 +279,7 @@ export function TemplateEditorInspector({
             onCommand={onCommand}
             assetTransport={assetTransport}
             dependencyStaleMessage={dependencyStaleMessage}
+            bindingAction={bindingAction}
           />
         </div>
       ) : (
@@ -163,9 +289,39 @@ export function TemplateEditorInspector({
           role="tabpanel"
           aria-labelledby={bindingsTabId}
         >
-          <BindingsPanel bindings={bindings} />
+          <BindingsPanel
+            bindings={bindings}
+            disabled={disabled}
+            onRemove={onDataIntent
+              ? (bindingId) => onDataIntent({
+                operation: 'remove-binding', nodeId: node.nodeId, bindingId,
+              })
+              : undefined}
+          />
         </div>
       )}
+      {bindingProperty && designDsl && staticSchema?.state === 'ready' && onDataIntent ? (
+        <BindingEditorDialog
+          property={bindingProperty}
+          designDsl={designDsl}
+          staticSchema={staticSchema.snapshot}
+          staticSchemaTransport={staticSchemaTransport}
+          nodeId={node.nodeId}
+          onClose={() => setBindingProperty(null)}
+          onSubmit={(source, staticSchemas) => {
+            const intent: TemplateDataAuthoringIntent = {
+              operation: 'create-binding',
+              nodeId: node.nodeId,
+              propertyPath: bindingProperty.propertyPath,
+              source,
+            };
+            const result = staticSchemas.length > 1
+              ? onDataIntent(intent, { staticSchemas })
+              : onDataIntent(intent);
+            if (result !== false) setBindingProperty(null);
+          }}
+        />
+      ) : null}
     </section>
   );
 }
@@ -176,8 +332,10 @@ function PropertiesPanel({
   onCommand,
   assetTransport,
   dependencyStaleMessage,
+  bindingAction,
 }: Required<Pick<TemplateEditorInspectorProps, 'node' | 'disabled' | 'onCommand'>>
-  & Pick<TemplateEditorInspectorProps, 'assetTransport' | 'dependencyStaleMessage'>) {
+  & Pick<TemplateEditorInspectorProps, 'assetTransport' | 'dependencyStaleMessage'>
+  & { bindingAction: (path: string) => ReactNode }) {
   const value = node.value;
   const placement = objectOrNull(value.placement);
   const fill = objectOrNull(value.fill);
@@ -228,9 +386,11 @@ function PropertiesPanel({
               initialValue={stringValue(run.text)}
               disabled={disabled}
               parse={parseTextValue}
-              isUnchanged={(next) => next === run.text}
-              onCommit={(next) => command('text', next)}
-            />
+            isUnchanged={(next) => next === run.text}
+            onCommit={(next) => command('text', next)}
+            propertyPath="runs[0].text"
+            action={bindingAction('runs[0].text')}
+          />
           ) : null}
           {isText && !run ? (
             <div className="te-node-inspector-warning" role="status">
@@ -246,6 +406,8 @@ function PropertiesPanel({
               parse={(draft) => parseRequiredText(draft, '二维码内容不能为空。')}
               isUnchanged={(next) => next === value.content}
               onCommit={(next) => command('content', next)}
+              propertyPath="content"
+              action={bindingAction('content')}
             />
           ) : null}
           {isBarcode ? (
@@ -256,6 +418,8 @@ function PropertiesPanel({
               parse={(draft) => parseRequiredText(draft, '条形码值不能为空。')}
               isUnchanged={(next) => next === value.value}
               onCommit={(next) => command('barcodeValue', next)}
+              propertyPath="value"
+              action={bindingAction('value')}
             />
           ) : null}
         </InspectorGroup>
@@ -263,25 +427,29 @@ function PropertiesPanel({
 
       {isText && run ? (
         <InspectorGroup group="asset" title="字体 Asset">
-          <AssetReferenceField
-            expectedKind="FONT"
-            assetId={fontAssetId}
-            disabled={disabled}
-            transport={assetTransport}
-            dependencyStaleMessage={dependencyStaleMessage}
-            onSelect={(assetId) => command('fontRef', assetId)}
-          />
+          <BindablePropertyRow path="runs[0].fontRef" action={bindingAction('runs[0].fontRef')}>
+            <AssetReferenceField
+              expectedKind="FONT"
+              assetId={fontAssetId}
+              disabled={disabled}
+              transport={assetTransport}
+              dependencyStaleMessage={dependencyStaleMessage}
+              onSelect={(assetId) => command('fontRef', assetId)}
+            />
+          </BindablePropertyRow>
         </InspectorGroup>
       ) : isImage ? (
         <InspectorGroup group="asset" title="图片 Asset">
-          <AssetReferenceField
-            expectedKind="IMAGE"
-            assetId={imageAssetId}
-            disabled={disabled}
-            transport={assetTransport}
-            dependencyStaleMessage={dependencyStaleMessage}
-            onSelect={(assetId) => command('imageRef', assetId)}
-          />
+          <BindablePropertyRow path="imageRef" action={bindingAction('imageRef')}>
+            <AssetReferenceField
+              expectedKind="IMAGE"
+              assetId={imageAssetId}
+              disabled={disabled}
+              transport={assetTransport}
+              dependencyStaleMessage={dependencyStaleMessage}
+              onSelect={(assetId) => command('imageRef', assetId)}
+            />
+          </BindablePropertyRow>
         </InspectorGroup>
       ) : null}
 
@@ -297,6 +465,8 @@ function PropertiesPanel({
               parse={(draft) => parseNumber(draft, true, '字号必须大于 0。')}
               isUnchanged={(next) => sameTemplateNumber(run.fontSizePt, next)}
               onCommit={(next) => command('fontSizePt', next)}
+              propertyPath="runs[0].fontSizePt"
+              action={bindingAction('runs[0].fontSizePt')}
             />
             <CommitInput
               label="文字颜色"
@@ -306,44 +476,51 @@ function PropertiesPanel({
               parse={parseColor}
               isUnchanged={(next) => next === run.color}
               onCommit={(next) => command('textColor', next)}
+              propertyPath="runs[0].color"
+              action={bindingAction('runs[0].color')}
             />
           </div>
-          <label className="te-node-inspector-field">
-            <span>装饰</span>
-            <select
-              aria-label="装饰"
-              value={run.decoration === 'UNDERLINE' || run.decoration === 'LINE_THROUGH'
-                ? run.decoration : 'NONE'}
-              disabled={disabled}
-              onChange={(event) => command('decoration', event.currentTarget.value)}
-            >
-              <option value="NONE">无</option>
-              <option value="UNDERLINE">下划线</option>
-              <option value="LINE_THROUGH">删除线</option>
-            </select>
-          </label>
+          <BindablePropertyRow path="runs[0].decoration" action={bindingAction('runs[0].decoration')}>
+            <label className="te-node-inspector-field">
+              <span>装饰</span>
+              <select
+                aria-label="装饰"
+                value={run.decoration === 'UNDERLINE' || run.decoration === 'LINE_THROUGH'
+                  ? run.decoration : 'NONE'}
+                disabled={disabled}
+                onChange={(event) => command('decoration', event.currentTarget.value)}
+              >
+                <option value="NONE">无</option>
+                <option value="UNDERLINE">下划线</option>
+                <option value="LINE_THROUGH">删除线</option>
+              </select>
+            </label>
+          </BindablePropertyRow>
         </InspectorGroup>
       ) : null}
 
       {hasLayoutProperties ? (
         <InspectorGroup group="layout-constraints" title="布局 / 约束">
           {isStack ? (
-            <label className="te-node-inspector-field">
-              <span>排列方向</span>
-              <select
-                value={value.direction === 'ROW' ? 'ROW' : 'COLUMN'}
-                disabled={disabled}
-                onChange={(event) => onCommand({
-                  operation: 'set-property',
-                  nodeId: node.nodeId,
-                  property: 'direction',
-                  value: event.currentTarget.value,
-                })}
-              >
-                <option value="ROW">横向</option>
-                <option value="COLUMN">纵向</option>
-              </select>
-            </label>
+            <BindablePropertyRow path="direction" action={bindingAction('direction')}>
+              <label className="te-node-inspector-field">
+                <span>排列方向</span>
+                <select
+                  aria-label="排列方向"
+                  value={value.direction === 'ROW' ? 'ROW' : 'COLUMN'}
+                  disabled={disabled}
+                  onChange={(event) => onCommand({
+                    operation: 'set-property',
+                    nodeId: node.nodeId,
+                    property: 'direction',
+                    value: event.currentTarget.value,
+                  })}
+                >
+                  <option value="ROW">横向</option>
+                  <option value="COLUMN">纵向</option>
+                </select>
+              </label>
+            </BindablePropertyRow>
           ) : null}
           {isStack ? (
             <CommitInput
@@ -357,25 +534,29 @@ function PropertiesPanel({
               onCommit={(next) => onCommand({
                 operation: 'set-property', nodeId: node.nodeId, property: 'gapMm', value: next,
               })}
+              propertyPath="gapMm"
+              action={bindingAction('gapMm')}
             />
           ) : null}
-          <label className="te-node-inspector-check">
-            <span>
-              <strong>裁剪溢出内容</strong>
-              <small>子元素不会绘制到容器边界之外</small>
-            </span>
-            <input
-              type="checkbox"
-              checked={value.clipContent === true}
-              disabled={disabled}
-              onChange={(event) => onCommand({
-                operation: 'set-property',
-                nodeId: node.nodeId,
-                property: 'clipContent',
-                value: event.currentTarget.checked,
-              })}
-            />
-          </label>
+          <BindablePropertyRow path="clipContent" action={bindingAction('clipContent')}>
+            <label className="te-node-inspector-check">
+              <span>
+                <strong>裁剪溢出内容</strong>
+                <small>子元素不会绘制到容器边界之外</small>
+              </span>
+              <input
+                type="checkbox"
+                checked={value.clipContent === true}
+                disabled={disabled}
+                onChange={(event) => onCommand({
+                  operation: 'set-property',
+                  nodeId: node.nodeId,
+                  property: 'clipContent',
+                  value: event.currentTarget.checked,
+                })}
+              />
+            </label>
+          </BindablePropertyRow>
         </InspectorGroup>
       ) : null}
 
@@ -417,6 +598,7 @@ function PropertiesPanel({
             placement={placement}
             disabled={disabled}
             onCommand={onCommand}
+            bindingAction={bindingAction}
           />
         </InspectorGroup>
       ) : null}
@@ -434,6 +616,8 @@ function PropertiesPanel({
               parse={parseColor}
               isUnchanged={(next) => next === (isCanvas ? value.backgroundColor : fill?.color)}
               onCommit={(next) => command(isCanvas ? 'backgroundColor' : 'fillColor', next)}
+              propertyPath={isCanvas ? 'backgroundColor' : 'fill.color'}
+              action={bindingAction(isCanvas ? 'backgroundColor' : 'fill.color')}
             />
           ) : null}
           {hasStroke ? (
@@ -446,6 +630,8 @@ function PropertiesPanel({
                 parse={parseColor}
                 isUnchanged={(next) => next === stroke?.color}
                 onCommit={(next) => command('strokeColor', next)}
+                propertyPath="stroke.color"
+                action={bindingAction('stroke.color')}
               />
               <CommitInput
                 label="描边宽度"
@@ -456,6 +642,8 @@ function PropertiesPanel({
                 parse={(draft) => parseNumber(draft, true, '描边宽度必须大于 0。')}
                 isUnchanged={(next) => sameTemplateNumber(stroke?.widthMm, next)}
                 onCommit={(next) => command('strokeWidthMm', next)}
+                propertyPath="stroke.widthMm"
+                action={bindingAction('stroke.widthMm')}
               />
             </div>
           ) : null}
@@ -472,50 +660,58 @@ function PropertiesPanel({
                 next,
               )}
               onCommit={(next) => command('cornerRadiusMm', next)}
+              propertyPath="cornerRadii.topLeftMm"
+              action={bindingAction('cornerRadii.topLeftMm')}
             />
           ) : null}
           {isImage ? (
             <>
-              <label className="te-node-inspector-field">
-                <span>适配</span>
-                <select
-                  aria-label="图片适配"
-                  value={value.fit === 'COVER' || value.fit === 'FILL' ? value.fit : 'CONTAIN'}
-                  disabled={disabled}
-                  onChange={(event) => command('fit', event.currentTarget.value)}
-                >
-                  <option value="CONTAIN">完整显示</option>
-                  <option value="COVER">覆盖边界</option>
-                  <option value="FILL">拉伸填满</option>
-                </select>
-              </label>
-              <label className="te-node-inspector-field">
-                <span>采样</span>
-                <select
-                  aria-label="图片采样"
-                  value={value.sampling === 'NEAREST' ? 'NEAREST' : 'LINEAR'}
-                  disabled={disabled}
-                  onChange={(event) => command('sampling', event.currentTarget.value)}
-                >
-                  <option value="LINEAR">平滑</option>
-                  <option value="NEAREST">邻近像素</option>
-                </select>
-              </label>
+              <BindablePropertyRow path="fit" action={bindingAction('fit')}>
+                <label className="te-node-inspector-field">
+                  <span>适配</span>
+                  <select
+                    aria-label="图片适配"
+                    value={value.fit === 'COVER' || value.fit === 'FILL' ? value.fit : 'CONTAIN'}
+                    disabled={disabled}
+                    onChange={(event) => command('fit', event.currentTarget.value)}
+                  >
+                    <option value="CONTAIN">完整显示</option>
+                    <option value="COVER">覆盖边界</option>
+                    <option value="FILL">拉伸填满</option>
+                  </select>
+                </label>
+              </BindablePropertyRow>
+              <BindablePropertyRow path="sampling" action={bindingAction('sampling')}>
+                <label className="te-node-inspector-field">
+                  <span>采样</span>
+                  <select
+                    aria-label="图片采样"
+                    value={value.sampling === 'NEAREST' ? 'NEAREST' : 'LINEAR'}
+                    disabled={disabled}
+                    onChange={(event) => command('sampling', event.currentTarget.value)}
+                  >
+                    <option value="LINEAR">平滑</option>
+                    <option value="NEAREST">邻近像素</option>
+                  </select>
+                </label>
+              </BindablePropertyRow>
             </>
           ) : null}
           {node.kind === 'path' ? (
-            <label className="te-node-inspector-field">
-              <span>填充规则</span>
-              <select
-                aria-label="填充规则"
-                value={value.fillRule === 'EVEN_ODD' ? 'EVEN_ODD' : 'NONZERO'}
-                disabled={disabled}
-                onChange={(event) => command('fillRule', event.currentTarget.value)}
-              >
-                <option value="NONZERO">非零环绕</option>
-                <option value="EVEN_ODD">奇偶</option>
-              </select>
-            </label>
+            <BindablePropertyRow path="fillRule" action={bindingAction('fillRule')}>
+              <label className="te-node-inspector-field">
+                <span>填充规则</span>
+                <select
+                  aria-label="填充规则"
+                  value={value.fillRule === 'EVEN_ODD' ? 'EVEN_ODD' : 'NONZERO'}
+                  disabled={disabled}
+                  onChange={(event) => command('fillRule', event.currentTarget.value)}
+                >
+                  <option value="NONZERO">非零环绕</option>
+                  <option value="EVEN_ODD">奇偶</option>
+                </select>
+              </label>
+            </BindablePropertyRow>
           ) : null}
           {isQrCode || isBarcode ? (
             <div className="te-node-inspector-field-grid">
@@ -527,6 +723,8 @@ function PropertiesPanel({
                 parse={parseColor}
                 isUnchanged={(next) => next === value.foregroundColor}
                 onCommit={(next) => command('foregroundColor', next)}
+                propertyPath="foregroundColor"
+                action={bindingAction('foregroundColor')}
               />
               <CommitInput
                 label="背景颜色"
@@ -536,37 +734,43 @@ function PropertiesPanel({
                 parse={parseColor}
                 isUnchanged={(next) => next === value.backgroundColor}
                 onCommit={(next) => command('backgroundColor', next)}
+                propertyPath="backgroundColor"
+                action={bindingAction('backgroundColor')}
               />
             </div>
           ) : null}
           {isQrCode ? (
-            <label className="te-node-inspector-field">
-              <span>纠错级别</span>
-              <select
-                aria-label="二维码纠错级别"
-                value={typeof value.errorCorrectionLevel === 'string'
-                  ? value.errorCorrectionLevel : 'M'}
-                disabled={disabled}
-                onChange={(event) => command('errorCorrectionLevel', event.currentTarget.value)}
-              >
-                {['L', 'M', 'Q', 'H'].map((level) => <option key={level} value={level}>{level}</option>)}
-              </select>
-            </label>
+            <BindablePropertyRow path="errorCorrectionLevel" action={bindingAction('errorCorrectionLevel')}>
+              <label className="te-node-inspector-field">
+                <span>纠错级别</span>
+                <select
+                  aria-label="二维码纠错级别"
+                  value={typeof value.errorCorrectionLevel === 'string'
+                    ? value.errorCorrectionLevel : 'M'}
+                  disabled={disabled}
+                  onChange={(event) => command('errorCorrectionLevel', event.currentTarget.value)}
+                >
+                  {['L', 'M', 'Q', 'H'].map((level) => <option key={level} value={level}>{level}</option>)}
+                </select>
+              </label>
+            </BindablePropertyRow>
           ) : null}
           {isBarcode ? (
-            <label className="te-node-inspector-field">
-              <span>编码格式</span>
-              <select
-                aria-label="条形码格式"
-                value={typeof value.format === 'string' ? value.format : 'CODE_128'}
-                disabled={disabled}
-                onChange={(event) => command('format', event.currentTarget.value)}
-              >
-                {['CODE_128', 'EAN_13', 'EAN_8', 'UPC_A'].map((format) => (
-                  <option key={format} value={format}>{format}</option>
-                ))}
-              </select>
-            </label>
+            <BindablePropertyRow path="format" action={bindingAction('format')}>
+              <label className="te-node-inspector-field">
+                <span>编码格式</span>
+                <select
+                  aria-label="条形码格式"
+                  value={typeof value.format === 'string' ? value.format : 'CODE_128'}
+                  disabled={disabled}
+                  onChange={(event) => command('format', event.currentTarget.value)}
+                >
+                  {['CODE_128', 'EAN_13', 'EAN_8', 'UPC_A'].map((format) => (
+                    <option key={format} value={format}>{format}</option>
+                  ))}
+                </select>
+              </label>
+            </BindablePropertyRow>
           ) : null}
         </InspectorGroup>
       ) : null}
@@ -708,6 +912,23 @@ function InspectorGroup({
   );
 }
 
+function BindablePropertyRow({
+  path,
+  action,
+  children,
+}: {
+  path: string;
+  action?: ReactNode;
+  children: ReactNode;
+}) {
+  return (
+    <div className="te-node-inspector-property-row" data-template-property-path={path} tabIndex={-1}>
+      {children}
+      {action}
+    </div>
+  );
+}
+
 function CommitInput<T>({
   label,
   initialValue,
@@ -718,6 +939,8 @@ function CommitInput<T>({
   inputMode,
   suffix,
   placeholder,
+  propertyPath,
+  action,
 }: {
   label: string;
   initialValue: string;
@@ -728,6 +951,8 @@ function CommitInput<T>({
   inputMode?: 'text' | 'decimal';
   suffix?: string;
   placeholder?: string;
+  propertyPath?: string;
+  action?: ReactNode;
 }) {
   const inputId = useId();
   const problemId = `${inputId}-problem`;
@@ -766,27 +991,34 @@ function CommitInput<T>({
   }
 
   return (
-    <label className="te-node-inspector-field" htmlFor={inputId}>
-      <span>{label}</span>
-      <span className="te-node-inspector-input">
-        <input
-          id={inputId}
-          type="text"
-          inputMode={inputMode}
-          value={draft}
-          placeholder={placeholder}
-          disabled={disabled}
-          aria-label={label}
-          aria-invalid={problem !== null}
-          aria-describedby={problem ? problemId : undefined}
-          onChange={change}
-          onBlur={commit}
-          onKeyDown={keyDown}
-        />
-        {suffix ? <span aria-hidden="true">{suffix}</span> : null}
-      </span>
-      {problem ? <small id={problemId} className="te-node-inspector-problem" role="alert">{problem}</small> : null}
-    </label>
+    <div
+      className="te-node-inspector-property-row"
+      data-template-property-path={propertyPath}
+      tabIndex={propertyPath ? -1 : undefined}
+    >
+      <label className="te-node-inspector-field" htmlFor={inputId}>
+        <span>{label}</span>
+        <span className="te-node-inspector-input">
+          <input
+            id={inputId}
+            type="text"
+            inputMode={inputMode}
+            value={draft}
+            placeholder={placeholder}
+            disabled={disabled}
+            aria-label={label}
+            aria-invalid={problem !== null}
+            aria-describedby={problem ? problemId : undefined}
+            onChange={change}
+            onBlur={commit}
+            onKeyDown={keyDown}
+          />
+          {suffix ? <span aria-hidden="true">{suffix}</span> : null}
+        </span>
+        {problem ? <small id={problemId} className="te-node-inspector-problem" role="alert">{problem}</small> : null}
+      </label>
+      {action}
+    </div>
   );
 }
 
@@ -798,11 +1030,13 @@ function GeometryFields({
   placement,
   disabled,
   onCommand,
+  bindingAction,
 }: {
   nodeId: string;
   placement: Record<string, unknown>;
   disabled: boolean;
   onCommand: (intent: TemplateEditorCommandIntent) => void;
+  bindingAction: (path: string) => ReactNode;
 }) {
   const fieldId = useId();
   const fixedWidth = placement.widthMode === 'FIXED';
@@ -855,34 +1089,214 @@ function GeometryFields({
         const inputId = `${fieldId}-${field.key}`;
         const problemId = `${inputId}-problem`;
         const problem = problems[field.key];
+        const propertyPath = `placement.${field.key}`;
         return (
-          <label key={field.key} className="te-node-inspector-field" htmlFor={inputId}>
-            <span>{field.label}</span>
-            <span className="te-node-inspector-input">
-              <input
-                id={inputId}
-                type="text"
-                inputMode="decimal"
-                value={draft[field.key]}
-                disabled={disabled}
-                aria-label={field.label}
-                aria-invalid={problem !== undefined}
-                aria-describedby={problem ? problemId : undefined}
-                onChange={(event) => change(field.key, event)}
-                onBlur={commit}
-                onKeyDown={keyDown}
-              />
-              <span aria-hidden="true">mm</span>
-            </span>
-            {problem ? <small id={problemId} className="te-node-inspector-problem" role="alert">{problem}</small> : null}
-          </label>
+          <BindablePropertyRow key={field.key} path={propertyPath} action={bindingAction(propertyPath)}>
+            <label className="te-node-inspector-field" htmlFor={inputId}>
+              <span>{field.label}</span>
+              <span className="te-node-inspector-input">
+                <input
+                  id={inputId}
+                  type="text"
+                  inputMode="decimal"
+                  value={draft[field.key]}
+                  disabled={disabled}
+                  aria-label={field.label}
+                  aria-invalid={problem !== undefined}
+                  aria-describedby={problem ? problemId : undefined}
+                  onChange={(event) => change(field.key, event)}
+                  onBlur={commit}
+                  onKeyDown={keyDown}
+                />
+                <span aria-hidden="true">mm</span>
+              </span>
+              {problem ? <small id={problemId} className="te-node-inspector-problem" role="alert">{problem}</small> : null}
+            </label>
+          </BindablePropertyRow>
         );
       })}
     </div>
   );
 }
 
-function BindingsPanel({ bindings }: { bindings: readonly Record<string, unknown>[] }) {
+function BindingEditorDialog({
+  property,
+  designDsl,
+  staticSchema,
+  staticSchemaTransport,
+  nodeId,
+  onClose,
+  onSubmit,
+}: {
+  property: TemplateBindableProperty;
+  designDsl: Readonly<Record<string, unknown>>;
+  staticSchema: StaticSnapshot;
+  staticSchemaTransport?: TemplateStaticSchemaTransport;
+  nodeId: string;
+  onClose: () => void;
+  onSubmit: (source: TemplateBindingSource, staticSchemas: readonly StaticSnapshot[]) => void;
+}) {
+  const [schemas, setSchemas] = useState<readonly StaticSnapshot[]>(
+    () => Object.freeze([staticSchema]),
+  );
+  const [referenceStates, setReferenceStates] = useState<Readonly<Record<string, 'loading' | 'error'>>>({});
+  const referenceRequests = useRef(new Map<string, AbortController>());
+  useEffect(() => {
+    const requests = referenceRequests.current;
+    return () => {
+      requests.forEach((controller) => controller.abort());
+      requests.clear();
+    };
+  }, []);
+  const pendingReferences = projectPendingTemplateStaticSchemaReferences(schemas);
+  const loadReference = (reference: TemplateStaticSchemaPendingReference) => {
+    const key = bindingSchemaIdentityKey(reference.identity);
+    if (referenceRequests.current.has(key)) return;
+    if (!staticSchemaTransport) {
+      setReferenceStates((current) => Object.freeze({ ...current, [key]: 'error' }));
+      return;
+    }
+    const controller = new AbortController();
+    referenceRequests.current.set(key, controller);
+    setReferenceStates((current) => Object.freeze({ ...current, [key]: 'loading' }));
+    void loadExactTemplateStaticSchema(
+      reference.identity,
+      staticSchemaTransport,
+      controller.signal,
+    ).then(
+      (snapshot) => {
+        if (controller.signal.aborted) return;
+        setSchemas((current) => current.some((candidate) => (
+          bindingSchemaIdentityKey(candidate) === key
+        )) ? current : Object.freeze([...current, snapshot]));
+        setReferenceStates((current) => {
+          const next = { ...current };
+          delete next[key];
+          return Object.freeze(next);
+        });
+      },
+      () => {
+        if (!controller.signal.aborted) {
+          setReferenceStates((current) => Object.freeze({ ...current, [key]: 'error' }));
+        }
+      },
+    ).finally(() => {
+      referenceRequests.current.delete(key);
+    });
+  };
+  const sources = projectBindingSources(
+    designDsl,
+    staticSchema,
+    nodeId,
+    property.valueType,
+    schemas,
+  );
+  const [selectedId, setSelectedId] = useState('');
+  const selected = sources.find((source) => source.id === selectedId && source.state === 'available');
+  const groups = [
+    { id: 'system' as const, label: '系统数据源' },
+    { id: 'definition' as const, label: '定义数据源' },
+    { id: 'loop' as const, label: '循环域' },
+  ];
+  return (
+    <Dialog.Root open onOpenChange={(open) => { if (!open) onClose(); }}>
+      <Dialog.Portal>
+        <Dialog.Overlay className="te-dialog-overlay" />
+        <Dialog.Content className="te-dialog-content te-binding-dialog">
+          <header>
+            <div>
+              <Dialog.Title>绑定{property.label}</Dialog.Title>
+              <Dialog.Description>
+                {property.propertyPath} · 目标类型 {bindingValueTypeLabel(property.valueType)}
+              </Dialog.Description>
+            </div>
+            <Dialog.Close asChild>
+              <button type="button" aria-label="关闭绑定设置"><X aria-hidden="true" size={17} /></button>
+            </Dialog.Close>
+          </header>
+          <div className="te-binding-source-groups">
+            {pendingReferences.length > 0 ? (
+              <fieldset>
+                <legend>引用字段</legend>
+                {pendingReferences.map((reference) => {
+                  const key = bindingSchemaIdentityKey(reference.identity);
+                  const state = referenceStates[key];
+                  const unavailable = state === 'error' || !staticSchemaTransport;
+                  return (
+                    <button
+                      key={key}
+                      type="button"
+                      className="te-binding-reference-disclosure"
+                      aria-label={`展开${reference.label}引用字段`}
+                      disabled={state === 'loading' || unavailable}
+                      onClick={() => loadReference(reference)}
+                    >
+                      <strong>{reference.label}</strong>
+                      <small>{reference.identity.schemaKey}@{reference.identity.versionTag}</small>
+                      {state === 'loading' ? <span role="status">加载中</span> : null}
+                      {unavailable ? <span role="alert">引用暂不可读取或身份核验失败</span> : null}
+                    </button>
+                  );
+                })}
+              </fieldset>
+            ) : null}
+            {groups.map((group) => {
+              const options = sources.filter((source) => source.group === group.id);
+              if (options.length === 0) return null;
+              return (
+                <fieldset key={group.id}>
+                  <legend>{group.label}</legend>
+                  {options.map((option) => (
+                    <label key={option.id} className={`te-binding-source${option.state === 'available' ? '' : ' is-unavailable'}`}>
+                      <input
+                        type="radio"
+                        name="template-binding-source"
+                        value={option.id}
+                        checked={selectedId === option.id}
+                        disabled={option.state !== 'available'}
+                        onChange={() => setSelectedId(option.id)}
+                      />
+                      <span>
+                        <strong>{option.label}</strong>
+                        <small>{option.detail}</small>
+                        {option.reason ? <em>{option.reason}</em> : null}
+                      </span>
+                    </label>
+                  ))}
+                </fieldset>
+              );
+            })}
+          </div>
+          <footer>
+            <button type="button" onClick={onClose}>取消</button>
+            <button
+              type="button"
+              className="is-primary"
+              disabled={!selected}
+              onClick={() => {
+                if (selected) {
+                  onSubmit(selected.source, schemas);
+                }
+              }}
+            >
+              创建绑定
+            </button>
+          </footer>
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
+  );
+}
+
+function BindingsPanel({
+  bindings,
+  disabled,
+  onRemove,
+}: {
+  bindings: readonly Record<string, unknown>[];
+  disabled: boolean;
+  onRemove?: (bindingId: string) => void;
+}) {
   if (bindings.length === 0) {
     return (
       <div className="te-node-inspector-empty is-compact">
@@ -897,7 +1311,12 @@ function BindingsPanel({ bindings }: { bindings: readonly Record<string, unknown
       {bindings.map((binding, index) => {
         const bindingId = stringValue(binding.bindingId, `binding-${index + 1}`);
         return (
-          <li key={`${bindingId}-${index}`}>
+          <li
+            key={`${bindingId}-${index}`}
+            data-template-binding-id={bindingId}
+            data-template-property-path={targetPropertyLabel(binding.targetPropertyRef)}
+            tabIndex={-1}
+          >
             <div>
               <span>目标属性</span>
               <strong>{targetPropertyLabel(binding.targetPropertyRef)}</strong>
@@ -907,6 +1326,16 @@ function BindingsPanel({ bindings }: { bindings: readonly Record<string, unknown
               <strong>{sourceLabel(binding.source)}</strong>
             </div>
             <code title={bindingId}>{bindingId}</code>
+            {onRemove ? (
+              <button
+                type="button"
+                disabled={disabled}
+                aria-label={`移除绑定 ${targetPropertyLabel(binding.targetPropertyRef)}`}
+                onClick={() => onRemove(bindingId)}
+              >
+                <Trash2 aria-hidden="true" size={13} />移除
+              </button>
+            ) : null}
           </li>
         );
       })}
@@ -1015,22 +1444,7 @@ function assetIdValue(value: unknown): string | null {
 }
 
 function targetPropertyLabel(value: unknown): string {
-  const target = objectOrNull(value);
-  if (!target) return '未知目标';
-  let label = stringValue(target.rootPropertyId, '未知目标');
-  if (!Array.isArray(target.selectors)) return label;
-  for (const candidate of target.selectors) {
-    const selector = objectOrNull(candidate);
-    if (selector?.kind === 'member' && typeof selector.name === 'string') {
-      label += `.${selector.name}`;
-    } else if (selector?.kind === 'index') {
-      const index = typeof selector.index === 'string'
-        ? selector.index
-        : templateNumberDraft(selector.index);
-      if (index.length > 0) label += `[${index}]`;
-    }
-  }
-  return label;
+  return decodeTemplateTargetPropertyRef(value)?.propertyPath ?? '未知目标';
 }
 
 function sourceLabel(value: unknown): string {
@@ -1065,6 +1479,10 @@ function compactParts(...values: unknown[]): string {
 
 function propertyRevisionKey(node: EditorNodeProjection): string {
   return JSON.stringify([node.nodeId, node.kind, node.value, node.childCount]);
+}
+
+function bindingSchemaIdentityKey(identity: { readonly schemaKey: string; readonly versionTag: string }): string {
+  return `${identity.schemaKey.length}:${identity.schemaKey}${identity.versionTag.length}:${identity.versionTag}`;
 }
 
 function stringValue(value: unknown, fallback = ''): string {

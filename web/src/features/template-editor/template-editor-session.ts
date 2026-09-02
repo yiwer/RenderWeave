@@ -472,6 +472,55 @@ function replayCommand(
         designRoot: rewritten.node,
       });
     }
+    case 'replace-definition': {
+      const expected = direction === 'forward' ? command.before : command.after;
+      const replacement = direction === 'forward' ? command.after : command.before;
+      const definitions = editableDefinitions(workingCopy);
+      const next = replaceSetEntry(
+        definitions,
+        'definitionId',
+        command.definitionId,
+        expected,
+        replacement,
+        'Definition history identity drifted',
+      );
+      next.sort((left, right) => compareUtf8(
+        String(left.definitionId),
+        String(right.definitionId),
+      ));
+      return workingCopyFromDesignDsl({
+        ...workingCopy.designDsl,
+        definitions: next,
+      });
+    }
+    case 'replace-node-binding': {
+      const expected = direction === 'forward' ? command.before : command.after;
+      const replacement = direction === 'forward' ? command.after : command.before;
+      const designRoot = editableDesignRoot(workingCopy);
+      const rewritten = rewriteNode(designRoot, command.nodeId, (current) => {
+        if (!Array.isArray(current.bindings) || !current.bindings.every(isRecord)) {
+          throw new Error('Binding history node has no bindings');
+        }
+        const bindings = replaceSetEntry(
+          current.bindings,
+          'bindingId',
+          command.bindingId,
+          expected,
+          replacement,
+          'Binding history identity drifted',
+        );
+        bindings.sort((left, right) => compareUtf8(
+          String(left.bindingId),
+          String(right.bindingId),
+        ));
+        return { ...current, bindings };
+      });
+      if (!rewritten.found) throw new Error('Binding history node identity drifted');
+      return workingCopyFromDesignDsl({
+        ...workingCopy.designDsl,
+        designRoot: rewritten.node,
+      });
+    }
     case 'move-node': {
       const source = direction === 'forward' ? command.before : command.after;
       const destination = direction === 'forward' ? command.after : command.before;
@@ -557,6 +606,17 @@ function freezeStructuredCommand(command: StructuredEditorCommand): StructuredEd
         before: deepFreeze(cloneCanonicalRecord(command.before as Record<string, unknown>)),
         after: deepFreeze(cloneCanonicalRecord(command.after as Record<string, unknown>)),
       });
+    case 'replace-definition':
+    case 'replace-node-binding':
+      return Object.freeze({
+        ...command,
+        before: command.before === null
+          ? null
+          : deepFreeze(cloneCanonicalRecord(command.before as Record<string, unknown>)),
+        after: command.after === null
+          ? null
+          : deepFreeze(cloneCanonicalRecord(command.after as Record<string, unknown>)),
+      });
     case 'move-node':
       return Object.freeze({
         ...command,
@@ -586,6 +646,42 @@ function workingCopyFromDesignDsl(
     canonicalDesignDsl: canonicalStringifyWorkingValue(sorted),
     designDsl: deepFreeze(sorted),
   });
+}
+
+function editableDefinitions(
+  workingCopy: CanonicalDesignWorkingCopy,
+): Record<string, unknown>[] {
+  if (!Array.isArray(workingCopy.designDsl.definitions)
+    || !workingCopy.designDsl.definitions.every(isRecord)) {
+    throw new Error('Structured working copy has no definitions array');
+  }
+  return [...workingCopy.designDsl.definitions];
+}
+
+function replaceSetEntry(
+  entries: readonly Record<string, unknown>[],
+  identityMember: string,
+  identity: string,
+  expected: Readonly<Record<string, unknown>> | null,
+  replacement: Readonly<Record<string, unknown>> | null,
+  driftMessage: string,
+): Record<string, unknown>[] {
+  const index = entries.findIndex((entry) => entry[identityMember] === identity);
+  if (expected === null) {
+    if (index !== -1) throw new Error(driftMessage);
+  } else {
+    if (index === -1 || canonicalStringifyWorkingValue(entries[index])
+      !== canonicalStringifyWorkingValue(expected)) throw new Error(driftMessage);
+  }
+  const next = [...entries];
+  if (replacement === null) {
+    if (index !== -1) next.splice(index, 1);
+  } else if (index === -1) {
+    next.push(cloneCanonicalRecord(replacement as Record<string, unknown>));
+  } else {
+    next.splice(index, 1, cloneCanonicalRecord(replacement as Record<string, unknown>));
+  }
+  return next;
 }
 
 function findNodeRecord(

@@ -122,9 +122,14 @@ export async function publishStaticSnapshotRequest(
   return parseStaticSnapshot(await studioRequestText('/api/v1/static-schemas', { method: 'POST', body }));
 }
 
-export async function getStaticSnapshotRequest(schemaKey: string, versionTag: string): Promise<StaticSnapshot> {
+export async function getStaticSnapshotRequest(
+  schemaKey: string,
+  versionTag: string,
+  signal?: AbortSignal,
+): Promise<StaticSnapshot> {
   return parseStaticSnapshot(await studioRequestText(
     `/api/v1/static-schemas/${encodeURIComponent(schemaKey)}/${encodeURIComponent(versionTag)}`,
+    { signal },
   ));
 }
 

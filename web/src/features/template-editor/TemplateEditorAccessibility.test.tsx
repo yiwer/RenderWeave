@@ -29,13 +29,22 @@ describe('Template Editor E9 accessibility flow', () => {
       widthMode: 'FIXED', widthMm: 120,
       heightMode: 'FIXED', heightMm: 120,
     };
+    const definitionId = '20000000-0000-4000-8000-000000000001';
+    baseline.designDsl.definitions = [{
+      definitionId,
+      kind: 'custom',
+      displayName: '会员标题',
+      exposure: 'PRIVATE',
+      valueType: 'text',
+      defaultValue: '备用文本',
+    }];
     baseline.canonicalDesignDsl = JSON.stringify(baseline.designDsl);
     baseline.contentHash = await contentHash(baseline.canonicalDesignDsl);
     const session = dirtySession(baseline, '需定位的草稿');
     const transport = saveTransport(await invalidProblemResponse(session, [
       ['/displayName', 'TEMPLATE_DISPLAY_NAME_INVALID'],
       ['/designRoot/children/0/fills/0/source', 'TEMPLATE_USE_FILL_TYPE_MISMATCH'],
-      ['/definitions/0/source', 'DEFINITION_SOURCE_INVALID'],
+      ['/definitions/0/defaultValue', 'DEFINITION_SOURCE_INVALID'],
       ['/unsupported/value', 'UNSUPPORTED_POINTER'],
     ]));
     render(<TemplateEditorShell session={session} saveTransport={transport} />);
@@ -64,15 +73,101 @@ describe('Template Editor E9 accessibility flow', () => {
     expect(document.querySelector('[data-template-editor-announcer]')?.textContent)
       .toContain('具体属性没有独立表单控件');
 
-    fireEvent.click(screen.getByRole('button', { name: /定位到定义面板/ }));
-    const definitions = await screen.findByRole('heading', { name: '定义' });
-    await waitFor(() => expect(document.activeElement).toBe(definitions.closest('header')));
-    expect(document.querySelector('[data-template-editor-announcer]')?.textContent).toContain('定义面板');
+    fireEvent.click(screen.getByRole('button', { name: /定位到定义“会员标题”/ }));
+    expect(await screen.findByRole('heading', { name: '数据源' })).toBeTruthy();
+    const definition = document.querySelector<HTMLElement>(
+      `[data-template-definition-id="${definitionId}"]`,
+    );
+    expect(definition).not.toBeNull();
+    await waitFor(() => expect(document.activeElement).toBe(definition));
+    expect(document.querySelector('[data-template-editor-announcer]')?.textContent)
+      .toContain('定义“会员标题”');
 
     const unsupportedProblem = screen.getByText('UNSUPPORTED_POINTER').closest('li');
     expect(unsupportedProblem).not.toBeNull();
     expect(within(unsupportedProblem as HTMLElement).queryByRole('button')).toBeNull();
     expect(within(unsupportedProblem as HTMLElement).getByText('只能在问题摘要中查看')).toBeTruthy();
+  });
+
+  it('selects the exact node and focuses the configured binding or target property', async () => {
+    const baseline = structuredBaseline();
+    const frame = ((baseline.designDsl.designRoot as Record<string, unknown>)
+      .children as Record<string, unknown>[])[0];
+    if (!frame || !Array.isArray(frame.children)) throw new Error('expected Frame fixture');
+    const nodeId = '10000000-0000-4000-8000-000000000091';
+    const bindingId = '30000000-0000-4000-8000-000000000091';
+    frame.children.push({
+      nodeId,
+      kind: 'text',
+      displayName: '标题',
+      placement: {
+        type: 'ABSOLUTE', xMm: 8, yMm: 8,
+        widthMode: 'FIXED', widthMm: 60,
+        heightMode: 'FIXED', heightMm: 20,
+      },
+      bindings: [{
+        bindingId,
+        targetPropertyRef: {
+          rootPropertyId: 'runs',
+          selectors: [{ kind: 'index', index: 0 }, { kind: 'member', name: 'text' }],
+        },
+        source: { kind: 'context', domain: 'invocation', pointer: '/title' },
+      }],
+      runs: [{
+        text: '备用标题',
+        fontRef: { assetId: '40000000-0000-4000-8000-000000000091' },
+        fontSizePt: 16,
+        color: '#111111FF',
+        letterSpacingPt: 0,
+        decoration: 'NONE',
+      }],
+      horizontalAlign: 'LEFT',
+      verticalAlign: 'TOP',
+      overflow: 'CLIP',
+      fitMode: 'NONE',
+    });
+    baseline.canonicalDesignDsl = JSON.stringify(baseline.designDsl);
+    baseline.contentHash = await contentHash(baseline.canonicalDesignDsl);
+    const session = dirtySession(baseline, '绑定问题定位');
+    const transport = saveTransport(await invalidProblemResponse(session, [
+      [
+        '/designRoot/children/0/children/1/bindings/0/source/pointer',
+        'BINDING_SOURCE_INVALID',
+      ],
+      [
+        '/designRoot/children/0/children/1/bindings/0/targetPropertyRef/selectors/1/name',
+        'BINDING_TARGET_INVALID',
+      ],
+    ]));
+    render(<TemplateEditorShell session={session} saveTransport={transport} />);
+
+    fireEvent.click(screen.getByRole('button', { name: '保存 canonical 本地草稿' }));
+    await screen.findByRole('heading', { name: '确认仍保存为 INVALID' });
+
+    fireEvent.click(screen.getByRole('button', {
+      name: /BINDING_SOURCE_INVALID：定位到节点“标题”的绑定“runs\[0\]\.text”/,
+    }));
+    expect(screen.getByRole('treeitem', { name: /标题/ }).getAttribute('aria-selected')).toBe('true');
+    await waitFor(() => expect(
+      screen.getByRole('tab', { name: /^绑定/ }).getAttribute('aria-selected'),
+    ).toBe('true'));
+    const binding = document.querySelector<HTMLElement>(
+      `[data-template-binding-id="${bindingId}"]`,
+    );
+    expect(binding).not.toBeNull();
+    await waitFor(() => expect(document.activeElement).toBe(binding));
+
+    fireEvent.click(screen.getByRole('button', {
+      name: /BINDING_TARGET_INVALID：定位到节点“标题”的属性“runs\[0\]\.text”/,
+    }));
+    await waitFor(() => expect(
+      screen.getByRole('tab', { name: /^属性/ }).getAttribute('aria-selected'),
+    ).toBe('true'));
+    const property = document.querySelector<HTMLElement>(
+      '[data-template-property-path="runs[0].text"]',
+    );
+    expect(property).not.toBeNull();
+    await waitFor(() => expect(document.activeElement).toBe(property));
   });
 
   it('uses one roving tree tab stop with ArrowUp/Down, Home and End navigation', () => {

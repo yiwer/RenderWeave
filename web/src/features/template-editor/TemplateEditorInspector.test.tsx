@@ -1,10 +1,11 @@
 // @vitest-environment happy-dom
 
-import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { parse } from 'lossless-json';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import type { AssetReadableResponse } from '../../api/generated';
+import type { StaticSnapshot } from '../schema-studio/lossless-api';
 import type { EditorNodeProjection } from './template-editor-model';
 import { TemplateEditorInspector } from './TemplateEditorInspector';
 import {
@@ -173,6 +174,292 @@ describe('Template Editor Inspector', () => {
     expect(within(list).getByText('上下文 · invocation / /theme/accent')).toBeTruthy();
     expect(screen.queryByText(/可绑定属性/)).toBeNull();
     expect(within(list).queryAllByRole('button')).toHaveLength(0);
+  });
+
+  it('shows member-then-index wire selectors using the canonical target path', () => {
+    const authored = textNode([
+      textRun('静态标题', 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'),
+    ]);
+    authored.value.bindings = [parse(JSON.stringify({
+      bindingId: '30000000-0000-4000-8000-000000000019',
+      targetPropertyRef: {
+        rootPropertyId: 'runs',
+        selectors: [{ kind: 'member', name: 'text' }, { kind: 'index', index: 0 }],
+      },
+      source: { kind: 'context', domain: 'invocation', pointer: '/title' },
+    })) as Record<string, unknown>];
+    renderInspector(authored);
+
+    fireEvent.click(screen.getByRole('tab', { name: /绑定/ }));
+
+    expect(screen.getByText('runs[0].text')).toBeTruthy();
+    expect(screen.queryByText('runs.text[0]')).toBeNull();
+  });
+
+  it('starts binding from the concrete Text property row and emits one exact intent', () => {
+    const onDataIntent = vi.fn();
+    renderInspector(textNode([
+      textRun('静态标题', 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'),
+    ]), {
+      designDsl: { definitions: [] },
+      staticSchema: { state: 'ready', snapshot: bindingSchemaSnapshot() },
+      onDataIntent,
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: '绑定文本值' }));
+    expect(screen.getByRole('dialog', { name: '绑定文本值' })).toBeTruthy();
+    fireEvent.click(screen.getByRole('radio', { name: /商品标题.*\/title.*文本/ }));
+    fireEvent.click(screen.getByRole('button', { name: '创建绑定' }));
+
+    expect(onDataIntent).toHaveBeenCalledWith({
+      operation: 'create-binding',
+      nodeId: 'text',
+      propertyPath: 'runs[0].text',
+      source: { kind: 'context', domain: 'invocation', pointer: '/title' },
+    });
+  });
+
+  it('keeps root scalar sources available without fetching an unrelated referenced schema', () => {
+    const root = bindingSchemaSnapshot();
+    root.definition.fields.push({
+      fieldKey: 'brokenDetails', displayName: '不可用详情', required: true,
+      value: { type: 'reference', ref: { schemaKey: 'missing-details', versionTag: 'v1' } },
+    });
+    const getStaticSchema = vi.fn(async () => {
+      throw new Error('reference unavailable');
+    });
+    const onDataIntent = vi.fn();
+    renderInspector(textNode([
+      textRun('静态标题', 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'),
+    ]), {
+      designDsl: { definitions: [] },
+      staticSchema: { state: 'ready', snapshot: root },
+      staticSchemaTransport: { getStaticSchema },
+      onDataIntent,
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: '绑定文本值' }));
+
+    fireEvent.click(screen.getByRole('radio', { name: /商品标题.*\/title.*文本/ }));
+    fireEvent.click(screen.getByRole('button', { name: '创建绑定' }));
+    expect(onDataIntent).toHaveBeenCalledWith({
+      operation: 'create-binding',
+      nodeId: 'text',
+      propertyPath: 'runs[0].text',
+      source: { kind: 'context', domain: 'invocation', pointer: '/title' },
+    });
+    expect(getStaticSchema).not.toHaveBeenCalled();
+  });
+
+  it('offers exact scalar leaves behind a referenced StaticSchema boundary', async () => {
+    const onDataIntent = vi.fn();
+    const root = bindingSchemaSnapshot();
+    root.definition.fields = [{
+      fieldKey: 'brand', displayName: '品牌', required: true,
+      value: { type: 'reference', ref: { schemaKey: 'catalog-brand', versionTag: 'v2' } },
+    }];
+    const brand: StaticSnapshot = {
+      ...bindingSchemaSnapshot(),
+      schemaKey: 'catalog-brand',
+      versionTag: 'v2',
+      definition: {
+        ...bindingSchemaSnapshot().definition,
+        displayName: '品牌信息',
+        fields: [{
+          fieldKey: 'name', displayName: '名称', required: true, value: { type: 'text' },
+        }],
+      },
+    };
+    const getStaticSchema = vi.fn(async () => brand);
+    renderInspector(textNode([
+      textRun('静态标题', 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'),
+    ]), {
+      designDsl: { definitions: [] },
+      staticSchema: { state: 'ready', snapshot: root },
+      staticSchemaTransport: { getStaticSchema },
+      onDataIntent,
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: '绑定文本值' }));
+    expect(getStaticSchema).not.toHaveBeenCalled();
+    expect(screen.queryByRole('radio', { name: /品牌 \/ 名称.*\/brand\/name.*文本/ })).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: '展开品牌引用字段' }));
+    fireEvent.click(await screen.findByRole('radio', { name: /品牌 \/ 名称.*\/brand\/name.*文本/ }));
+    fireEvent.click(screen.getByRole('button', { name: '创建绑定' }));
+
+    expect(getStaticSchema).toHaveBeenCalledOnce();
+    expect(getStaticSchema).toHaveBeenCalledWith(
+      { schemaKey: 'catalog-brand', versionTag: 'v2' },
+      expect.any(AbortSignal),
+    );
+    expect(onDataIntent).toHaveBeenCalledWith(
+      {
+        operation: 'create-binding',
+        nodeId: 'text',
+        propertyPath: 'runs[0].text',
+        source: { kind: 'context', domain: 'invocation', pointer: '/brand/name' },
+      },
+      { staticSchemas: [root, brand] },
+    );
+  });
+
+  it('isolates an exact reference failure to that branch while other sources stay usable', async () => {
+    const root = bindingSchemaSnapshot();
+    root.definition.fields.push(
+      {
+        fieldKey: 'brokenDetails', displayName: '不可用详情', required: true,
+        value: { type: 'reference', ref: { schemaKey: 'missing-details', versionTag: 'v1' } },
+      },
+      {
+        fieldKey: 'brand', displayName: '品牌', required: true,
+        value: { type: 'reference', ref: { schemaKey: 'catalog-brand', versionTag: 'v2' } },
+      },
+    );
+    const brand: StaticSnapshot = {
+      ...bindingSchemaSnapshot(),
+      schemaKey: 'catalog-brand',
+      versionTag: 'v2',
+      definition: {
+        ...bindingSchemaSnapshot().definition,
+        fields: [{ fieldKey: 'name', displayName: '名称', required: true, value: { type: 'text' } }],
+      },
+    };
+    const getStaticSchema = vi.fn(async (identity: { schemaKey: string }) => {
+      if (identity.schemaKey === 'catalog-brand') return brand;
+      throw new Error('reference unavailable');
+    });
+    renderInspector(textNode([
+      textRun('静态标题', 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'),
+    ]), {
+      designDsl: { definitions: [] },
+      staticSchema: { state: 'ready', snapshot: root },
+      staticSchemaTransport: { getStaticSchema },
+      onDataIntent: vi.fn(),
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: '绑定文本值' }));
+    fireEvent.click(screen.getByRole('button', { name: '展开不可用详情引用字段' }));
+
+    await screen.findByText('引用暂不可读取或身份核验失败');
+    expect(screen.getByRole('button', { name: '展开不可用详情引用字段' }).hasAttribute('disabled')).toBe(true);
+    expect(screen.getByRole('radio', { name: /商品标题.*\/title.*文本/ }).hasAttribute('disabled')).toBe(false);
+    expect(screen.getByRole('button', { name: '展开品牌引用字段' }).hasAttribute('disabled')).toBe(false);
+
+    fireEvent.click(screen.getByRole('button', { name: '展开品牌引用字段' }));
+    expect((await screen.findByRole('radio', { name: /品牌 \/ 名称.*\/brand\/name.*文本/ })).hasAttribute('disabled')).toBe(false);
+    expect(getStaticSchema).toHaveBeenCalledTimes(2);
+  });
+
+  it('aborts an in-flight exact reference request when the Binding dialog closes', () => {
+    const root = bindingSchemaSnapshot();
+    root.definition.fields.push({
+      fieldKey: 'brand', displayName: '品牌', required: true,
+      value: { type: 'reference', ref: { schemaKey: 'catalog-brand', versionTag: 'v2' } },
+    });
+    const getStaticSchema = vi.fn((
+      identity: { schemaKey: string; versionTag: string },
+      signal?: AbortSignal,
+    ) => {
+      void identity;
+      void signal;
+      return new Promise<StaticSnapshot>(() => undefined);
+    });
+    renderInspector(textNode([
+      textRun('静态标题', 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'),
+    ]), {
+      designDsl: { definitions: [] },
+      staticSchema: { state: 'ready', snapshot: root },
+      staticSchemaTransport: { getStaticSchema },
+      onDataIntent: vi.fn(),
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: '绑定文本值' }));
+    fireEvent.click(screen.getByRole('button', { name: '展开品牌引用字段' }));
+    const signal = getStaticSchema.mock.calls[0]?.[1];
+    expect(signal?.aborted).toBe(false);
+
+    fireEvent.click(screen.getByRole('button', { name: '关闭绑定设置' }));
+    expect(signal?.aborted).toBe(true);
+  });
+
+  it('removes a configured Binding only from the dedicated Bindings tab', () => {
+    const onDataIntent = vi.fn();
+    const authored = textNode([
+      textRun('静态标题', 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'),
+    ]);
+    authored.value.bindings = [{
+      bindingId: '30000000-0000-4000-8000-000000000009',
+      targetPropertyRef: {
+        rootPropertyId: 'runs',
+        selectors: [{ kind: 'index', index: 0 }, { kind: 'member', name: 'text' }],
+      },
+      source: { kind: 'context', domain: 'invocation', pointer: '/title' },
+    }];
+    renderInspector(authored, {
+      designDsl: { definitions: [] },
+      staticSchema: { state: 'ready', snapshot: bindingSchemaSnapshot() },
+      onDataIntent,
+    });
+
+    expect(screen.queryByRole('button', { name: /移除绑定/ })).toBeNull();
+    fireEvent.click(screen.getByRole('tab', { name: /绑定/ }));
+    fireEvent.click(screen.getByRole('button', { name: '移除绑定 runs[0].text' }));
+
+    expect(onDataIntent).toHaveBeenCalledWith({
+      operation: 'remove-binding',
+      nodeId: 'text',
+      bindingId: '30000000-0000-4000-8000-000000000009',
+    });
+  });
+
+  it('fails closed when an exact problem focus binding is duplicated or missing', async () => {
+    const bindingId = '30000000-0000-4000-8000-000000000010';
+    const targetPropertyRef = {
+      rootPropertyId: 'runs',
+      selectors: [{ kind: 'index' as const, index: 0 }, { kind: 'member' as const, name: 'text' }],
+    };
+    const authored = textNode([
+      textRun('静态标题', 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'),
+    ]);
+    authored.value.bindings = [0, 1].map(() => ({
+      bindingId,
+      targetPropertyRef,
+      source: { kind: 'context', domain: 'invocation', pointer: '/title' },
+    }));
+    const onProblemFocusResult = vi.fn();
+    const view = renderInspector(authored, {
+      problemFocus: {
+        requestId: 1,
+        nodeId: authored.nodeId,
+        mode: 'binding',
+        focus: { kind: 'binding', bindingId, propertyPath: 'runs[0].text', targetPropertyRef },
+      },
+      onProblemFocusResult,
+    });
+
+    await waitFor(() => expect(onProblemFocusResult).toHaveBeenCalledWith(1, false));
+    expect(document.activeElement?.getAttribute('data-template-binding-id')).toBeNull();
+
+    view.rerender(<TemplateEditorInspector
+      node={authored}
+      disabled={false}
+      onCommand={vi.fn()}
+      problemFocus={{
+        requestId: 2,
+        nodeId: authored.nodeId,
+        mode: 'binding',
+        focus: {
+          kind: 'binding',
+          bindingId: 'missing-binding',
+          propertyPath: 'runs[0].text',
+          targetPropertyRef,
+        },
+      }}
+      onProblemFocusResult={onProblemFocusResult}
+    />);
+    await waitFor(() => expect(onProblemFocusResult).toHaveBeenCalledWith(2, false));
+    expect(document.activeElement?.getAttribute('data-template-binding-id')).toBeNull();
   });
 
   it('keeps multi-Run Text explicitly read-only instead of flattening authored runs', () => {
@@ -364,6 +651,27 @@ function canvasNode(): EditorNodeProjection {
     heightMm: 297,
     backgroundColor: '#FFFFFFFF',
   }, 1);
+}
+
+function bindingSchemaSnapshot(): StaticSnapshot {
+  return {
+    schemaKey: 'catalog-product',
+    versionTag: 'v1',
+    origin: 'SYSTEM',
+    sourceDraftRevision: null,
+    compilerVersion: 'schema-compiler/1',
+    releaseNote: null,
+    referenceDepth: 0,
+    publishedAt: '2026-09-03T00:00:00Z',
+    definition: {
+      dslVersion: 'renderweave-schema/1.0',
+      displayName: '商品数据',
+      fields: [
+        { fieldKey: 'title', displayName: '商品标题', required: true, value: { type: 'text' } },
+        { fieldKey: 'subtitle', displayName: '副标题', required: false, value: { type: 'text' } },
+      ],
+    },
+  };
 }
 
 function node(

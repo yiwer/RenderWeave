@@ -71,6 +71,23 @@ export interface ReplaceNodeShellCommand {
   after: Readonly<Record<string, unknown>>;
 }
 
+/** A compact reversible mutation of one set-like DesignDSL definition. */
+export interface ReplaceDefinitionCommand {
+  kind: 'replace-definition';
+  definitionId: string;
+  before: Readonly<Record<string, unknown>> | null;
+  after: Readonly<Record<string, unknown>> | null;
+}
+
+/** A compact reversible mutation of one node-local set-like Binding. */
+export interface ReplaceNodeBindingCommand {
+  kind: 'replace-node-binding';
+  nodeId: string;
+  bindingId: string;
+  before: Readonly<Record<string, unknown>> | null;
+  after: Readonly<Record<string, unknown>> | null;
+}
+
 export interface NodeTreeLocation {
   parentNodeId: string;
   childIndex: number;
@@ -90,6 +107,8 @@ export type StructuredEditorCommand =
   | InsertNodeCommand
   | DeleteNodeCommand
   | ReplaceNodeShellCommand
+  | ReplaceDefinitionCommand
+  | ReplaceNodeBindingCommand
   | MoveNodeCommand;
 
 export interface StructuredEditorHistory {

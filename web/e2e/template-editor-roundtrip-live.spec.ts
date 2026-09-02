@@ -413,6 +413,80 @@ test.describe('complete DesignDSL real Template round trip', () => {
     });
     expect(browserErrors).toEqual([]);
   });
+
+  test('binds a required StaticSchema text field and preserves the exact Binding through save/reload', async ({ page }) => {
+    test.setTimeout(90_000);
+    const browserErrors = captureBrowserErrors(page);
+    await page.setViewportSize({ width: 1280, height: 800 });
+
+    const font = await createE2eAsset(
+      page.request,
+      'FONT',
+      'E2E 绑定字体',
+      'template-editor-binding-font-v1',
+      'minimal-ttf.ttf',
+      'font/ttf',
+      FONT_FIXTURE,
+    );
+    const created = await createTemplateForBindingAuthoring(page.request);
+    const initialOpen = page.waitForResponse(templateCurrentResponse(created.templateId));
+    await page.goto(`/templates/${created.templateId}`, { waitUntil: 'domcontentloaded' });
+    expect((await initialOpen).status()).toBe(200);
+
+    await page.getByRole('button', { name: '数据源' }).click();
+    await expect(page.getByText('system-basic-text', { exact: true })).toBeVisible();
+
+    await page.getByRole('button', { name: '元素' }).click();
+    await page.getByRole('button', { name: '添加文本' }).click();
+    await page.getByRole('button', { name: new RegExp(font.assetId) }).click();
+    const textRow = page.getByRole('treeitem', { name: /文本 1/ });
+    const textId = requiredAttribute(await textRow.getAttribute('data-template-editor-node-id'));
+
+    await page.getByRole('button', { name: '绑定文本值' }).click();
+    const bindingDialog = page.getByRole('dialog', { name: '绑定文本值' });
+    await expect(bindingDialog).toBeVisible();
+    await bindingDialog.getByRole('radio', { name: /value.*\/value.*文本/ }).check();
+    await bindingDialog.getByRole('button', { name: '创建绑定' }).click();
+
+    await page.getByRole('tab', { name: /绑定 1 个绑定/ }).click();
+    await expect(page.getByText('runs[0].text', { exact: true })).toBeVisible();
+    await expect(page.getByText('上下文 · invocation / /value', { exact: true })).toBeVisible();
+
+    await page.getByRole('button', { name: '撤销本地编辑' }).click();
+    await expect(page.getByRole('tab', { name: /绑定 0 个绑定/ })).toBeVisible();
+    await page.getByRole('button', { name: '重做本地编辑' }).click();
+    await expect(page.getByRole('tab', { name: /绑定 1 个绑定/ })).toBeVisible();
+
+    const saveResponsePromise = page.waitForResponse(
+      templateSaveResponse(created.templateId, 200),
+    );
+    await page.getByRole('button', { name: '保存 canonical 本地草稿' }).click();
+    const saved = await (await saveResponsePromise).json() as TemplateCurrentBody;
+    expect(requiredAuthoredNode(saved.designDsl, textId).bindings).toEqual([{
+      bindingId: expect.stringMatching(
+        /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/,
+      ),
+      targetPropertyRef: {
+        rootPropertyId: 'runs',
+        selectors: [{ kind: 'index', index: 0 }, { kind: 'member', name: 'text' }],
+      },
+      source: { kind: 'context', domain: 'invocation', pointer: '/value' },
+    }]);
+
+    const reloadResponse = page.waitForResponse(templateCurrentResponse(created.templateId));
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    expect((await reloadResponse).status()).toBe(200);
+    await page.getByRole('treeitem', { name: /文本 1/ }).click();
+    await page.getByRole('tab', { name: /绑定 1 个绑定/ }).click();
+    await expect(page.getByText('runs[0].text', { exact: true })).toBeVisible();
+
+    const reloadedResponse = await page.request.get(`/api/v1/templates/${created.templateId}`);
+    expect(reloadedResponse.status()).toBe(200);
+    const reloaded = await reloadedResponse.json() as TemplateCurrentBody;
+    expect(requiredAuthoredNode(reloaded.designDsl, textId).bindings)
+      .toEqual(requiredAuthoredNode(saved.designDsl, textId).bindings);
+    expect(browserErrors).toEqual([]);
+  });
 });
 
 async function createTemplateForCompleteWire(
@@ -499,6 +573,34 @@ async function createTemplateForVisualAuthoring(
   const current = await response.json() as TemplateCurrentBody;
   expect(current).toMatchObject({ revision: 0, readiness: 'READY' });
   return current;
+}
+
+async function createTemplateForBindingAuthoring(
+  request: APIRequestContext,
+): Promise<TemplateCurrentBody> {
+  const initialDesign = JSON.stringify({
+    dslVersion: 'renderweave-design/1.0',
+    expressionProfile: 'renderweave-expression/1.0',
+    displayName: 'Binding authoring E2E',
+    definitions: [],
+    designRoot: {
+      nodeId: '93000000-0000-4000-8000-000000000001',
+      kind: 'canvas',
+      widthMm: 210,
+      heightMm: 297,
+      bindings: [],
+      children: [],
+    },
+  });
+  const response = await request.post(
+    '/api/v1/templates?schemaKey=system-basic-text&versionTag=v1',
+    {
+      headers: { 'Content-Type': DESIGN_MEDIA_TYPE },
+      data: initialDesign,
+    },
+  );
+  expect(response.status()).toBe(201);
+  return response.json() as Promise<TemplateCurrentBody>;
 }
 
 async function createE2eAsset(
@@ -981,6 +1083,23 @@ function authoredNode(value: unknown, location: string): AuthoredNodeBody {
     throw new Error(`${location} has no nodeId/kind`);
   }
   return candidate as AuthoredNodeBody;
+}
+
+function requiredAuthoredNode(designDsl: Record<string, unknown>, nodeId: string): AuthoredNodeBody {
+  const visit = (value: unknown): AuthoredNodeBody | null => {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+    const candidate = value as Record<string, unknown>;
+    if (candidate.nodeId === nodeId) return authoredNode(candidate, `node ${nodeId}`);
+    if (!Array.isArray(candidate.children)) return null;
+    for (const child of candidate.children) {
+      const found = visit(child);
+      if (found) return found;
+    }
+    return null;
+  };
+  const found = visit(designDsl.designRoot);
+  if (!found) throw new Error(`Expected authored node ${nodeId}`);
+  return found;
 }
 
 function requiredAttribute(value: string | null): string {

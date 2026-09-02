@@ -2,9 +2,9 @@ import {
   AlertTriangle,
   Barcode,
   Box,
-  Braces,
   CheckCircle2,
   Circle,
+  Database,
   Download,
   FileJson,
   FlaskConical,
@@ -146,7 +146,24 @@ import {
   type TemplateCanvasDropKind,
 } from './TemplateEditorCanvas';
 import { TemplateEditorAssetPicker } from './TemplateEditorAssetPicker';
-import { TemplateEditorInspector } from './TemplateEditorInspector';
+import {
+  TemplateEditorInspector,
+  type TemplateEditorInspectorFocusRequest,
+} from './TemplateEditorInspector';
+import {
+  executeTemplateDataAuthoringCommand,
+  type TemplateDataAuthoringContext,
+  type TemplateDataAuthoringIntent,
+} from './template-editor-data-authoring';
+import {
+  defaultTemplateStaticSchemaTransport,
+  loadTemplateStaticSchema,
+  type TemplateStaticSchemaTransport,
+} from './template-editor-static-schema';
+import {
+  TemplateEditorDataSources,
+  type TemplateStaticSchemaView,
+} from './TemplateEditorDataSources';
 import { TemplateEditorStructureTree } from './TemplateEditorStructureTree';
 import './template-editor.css';
 
@@ -158,7 +175,7 @@ const ENTRIES: Array<{ id: EditorEntry; label: string; icon: LucideIcon }> = [
   { id: 'elements', label: '元素', icon: Box },
   { id: 'containers', label: '容器', icon: SquarePlus },
   { id: 'assets', label: '资产', icon: Image },
-  { id: 'definitions', label: '定义', icon: Braces },
+  { id: 'definitions', label: '数据源', icon: Database },
   { id: 'structure', label: '结构', icon: FolderTree },
 ];
 
@@ -200,6 +217,7 @@ interface TemplateEditorShellProps {
   recoveryNow?: () => number;
   download?: TemplateEditorDownload;
   assetTransport?: TemplateEditorAssetTransport;
+  staticSchemaTransport?: TemplateStaticSchemaTransport;
 }
 
 export interface TemplateEditorDownloadArtifact {
@@ -222,6 +240,7 @@ export function TemplateEditorShell({
   recoveryNow = Date.now,
   download = defaultTemplateEditorDownload,
   assetTransport = defaultTemplateEditorAssetTransport,
+  staticSchemaTransport,
 }: TemplateEditorShellProps) {
   const preview = useTemplatePreviewCoordinator(session, previewTransport, previewObjectUrls);
   if (session.mode === 'raw-repair') {
@@ -247,6 +266,7 @@ export function TemplateEditorShell({
       recoveryNow={recoveryNow}
       download={download}
       assetTransport={assetTransport}
+      staticSchemaTransport={staticSchemaTransport}
     />
   );
 }
@@ -261,6 +281,7 @@ interface TemplateEditorSurfaceProps {
   recoveryNow?: () => number;
   download?: TemplateEditorDownload;
   assetTransport?: TemplateEditorAssetTransport;
+  staticSchemaTransport?: TemplateStaticSchemaTransport;
 }
 
 type SurfaceState =
@@ -278,6 +299,7 @@ export function TemplateEditorSurface({
   recoveryNow = Date.now,
   download,
   assetTransport = defaultTemplateEditorAssetTransport,
+  staticSchemaTransport,
 }: TemplateEditorSurfaceProps) {
   const [retryKey, setRetryKey] = useState(0);
   const [surface, setSurface] = useState<SurfaceState>({ state: 'loading' });
@@ -286,6 +308,10 @@ export function TemplateEditorSurface({
     ?? (transport === defaultTemplateEditorTransport ? defaultTemplateSaveTransport : undefined);
   const effectivePreviewTransport = previewTransport
     ?? (transport === defaultTemplateEditorTransport ? defaultTemplatePreviewTransport : undefined);
+  const effectiveStaticSchemaTransport = staticSchemaTransport
+    ?? (transport === defaultTemplateEditorTransport
+      ? defaultTemplateStaticSchemaTransport
+      : undefined);
   const effectiveRecoveryStorage = recoveryStorage ?? browserTemplateRecoveryStorage();
 
   useEffect(() => {
@@ -346,6 +372,7 @@ export function TemplateEditorSurface({
       recoveryNow={recoveryNow}
       download={download}
       assetTransport={assetTransport}
+      staticSchemaTransport={effectiveStaticSchemaTransport}
     />
   );
 }
@@ -420,6 +447,12 @@ interface PendingPreviewAfterSave {
   request: TemplatePreviewRequest;
 }
 
+interface PendingInspectorProblemFocus {
+  readonly request: TemplateEditorInspectorFocusRequest;
+  readonly problem: InvalidSaveProblem;
+  readonly location: LocatedTemplateProblem;
+}
+
 function StructuredShell({
   session: incomingSession,
   onRetryReadiness,
@@ -431,6 +464,7 @@ function StructuredShell({
   recoveryNow,
   download,
   assetTransport,
+  staticSchemaTransport,
 }: {
   session: StructuredEditorSession;
   onRetryReadiness?: () => void;
@@ -442,6 +476,7 @@ function StructuredShell({
   recoveryNow: () => number;
   download: TemplateEditorDownload;
   assetTransport: TemplateEditorAssetTransport;
+  staticSchemaTransport?: TemplateStaticSchemaTransport;
 }) {
   const [localSession, setLocalSession] = useState(incomingSession);
   const [saveView, setSaveView] = useState<StructuredSaveView>(
@@ -473,7 +508,11 @@ function StructuredShell({
   const pendingPreviewAfterSave = useRef<PendingPreviewAfterSave | null>(null);
   const incomingSessionRef = useRef(incomingSession);
   const editorRootRef = useRef<HTMLDivElement>(null);
+  const problemFocusSequence = useRef(0);
   const incomingBaselineKey = baselineIdentity(incomingSession.baseline);
+  const [staticSchemaView, setStaticSchemaView] = useState<TemplateStaticSchemaView>({
+    state: 'loading',
+  });
   const session = useMemo(
     () => baselineIdentity(localSession.baseline) === baselineIdentity(incomingSession.baseline)
       ? updateStructuredReadiness(localSession, incomingSession.readiness)
@@ -483,6 +522,37 @@ function StructuredShell({
   useEffect(() => {
     preview.syncSession(session);
   }, [preview, session]);
+  useEffect(() => {
+    if (!staticSchemaTransport) {
+      queueMicrotask(() => setStaticSchemaView({
+        state: 'error',
+        message: '当前宿主未提供 StaticSchema 读取能力。',
+      }));
+      return undefined;
+    }
+    const controller = new AbortController();
+    queueMicrotask(() => {
+      if (!controller.signal.aborted) setStaticSchemaView({ state: 'loading' });
+    });
+    void loadTemplateStaticSchema(
+      incomingSession,
+      staticSchemaTransport,
+      controller.signal,
+    ).then(
+      (snapshot) => {
+        if (!controller.signal.aborted) setStaticSchemaView({ state: 'ready', snapshot });
+      },
+      () => {
+        if (!controller.signal.aborted) {
+          setStaticSchemaView({
+            state: 'error',
+            message: '永久 StaticSchema 暂不可读取或未通过身份核验。',
+          });
+        }
+      },
+    );
+    return () => controller.abort();
+  }, [incomingBaselineKey, incomingSession, staticSchemaTransport]);
   const nodes = useMemo(() => projectStructuredNodes(session), [session]);
   const [entry, setEntry] = useState<EditorEntry>('structure');
   const [selectedNodeId, setSelectedNodeId] = useState(nodes[0]?.nodeId ?? '');
@@ -493,6 +563,9 @@ function StructuredShell({
   const [inspectorOpen, setInspectorOpen] = useState(true);
   const [canvasTool, setCanvasTool] = useState<'select' | 'pan'>('select');
   const [announcement, setAnnouncement] = useState('');
+  const [inspectorProblemFocus, setInspectorProblemFocus] = useState<
+    PendingInspectorProblemFocus | null
+  >(null);
   const effectiveSelectedNodeId = nodes.some((node) => node.nodeId === selectedNodeId)
     ? selectedNodeId
     : nodes[0]?.nodeId ?? '';
@@ -593,6 +666,33 @@ function StructuredShell({
     }
     if (options.openStructure) setEntry('structure');
     setAnnouncement(result.message);
+  };
+  const dispatchDataAuthoringIntent = (
+    intent: TemplateDataAuthoringIntent,
+    context: TemplateDataAuthoringContext = {},
+  ): boolean => {
+    if (localLocked) return false;
+    const result = executeTemplateDataAuthoringCommand(session, intent, {
+      ...(staticSchemaView.state === 'ready'
+        ? {
+          staticSchema: staticSchemaView.snapshot,
+          staticSchemas: context.staticSchemas,
+        }
+        : {}),
+    });
+    if (result.state === 'rejected') {
+      setNodeAuthoringProblem(result.message);
+      setAnnouncement(`数据编辑未应用：${result.message}`);
+      return false;
+    }
+    setNodeAuthoringProblem(null);
+    if (result.state === 'no-op') {
+      setAnnouncement(result.message);
+      return true;
+    }
+    acceptLocalChange(result.session);
+    setAnnouncement(result.message);
+    return true;
   };
   const insertNode = (
     kind: TemplateCanvasDropKind,
@@ -1306,6 +1406,25 @@ function StructuredShell({
     problem: InvalidSaveProblem,
     location: LocatedTemplateProblem,
   ) => {
+    if (location.target.kind === 'node' && location.target.focus?.kind === 'binding') {
+      setNavigatorOpen(true);
+      setEntry('structure');
+      setInspectorOpen(true);
+      selectNode(location.target.nodeId);
+      problemFocusSequence.current += 1;
+      setInspectorProblemFocus({
+        request: {
+          requestId: problemFocusSequence.current,
+          nodeId: location.target.nodeId,
+          mode: bindingProblemFocusMode(problem.canonicalPointer),
+          focus: location.target.focus,
+        },
+        problem,
+        location,
+      });
+      return;
+    }
+    setInspectorProblemFocus(null);
     switch (location.target.kind) {
       case 'template-display-name':
         setInspectorOpen(true);
@@ -1328,8 +1447,16 @@ function StructuredShell({
         target = root.querySelector<HTMLElement>('[data-template-editor-location="template-display-name"]')
           ?? undefined;
       } else if (location.target.kind === 'definitions') {
-        target = root.querySelector<HTMLElement>('[data-template-editor-location="definitions"]')
-          ?? undefined;
+        if (location.target.focus?.kind === 'definition') {
+          const definitionId = location.target.focus.definitionId;
+          const matches = [...root.querySelectorAll<HTMLElement>('[data-template-definition-id]')]
+            .filter((candidate) => candidate.dataset.templateDefinitionId === definitionId);
+          target = matches.length === 1 ? matches[0] : undefined;
+          if (target) target.tabIndex = -1;
+        } else {
+          target = root.querySelector<HTMLElement>('[data-template-editor-location="definitions"]')
+            ?? undefined;
+        }
       } else {
         const nodeId = location.target.nodeId;
         target = [...root.querySelectorAll<HTMLElement>('[data-template-editor-node-id]')]
@@ -1338,11 +1465,19 @@ function StructuredShell({
       if (target) {
         target.focus({ preventScroll: true });
         target.scrollIntoView?.({ block: 'nearest', inline: 'nearest' });
-        setAnnouncement(problemLocationAnnouncement(problem.code, location));
+        setAnnouncement(problemLocationAnnouncement(problem, location));
       } else {
         setAnnouncement(`问题 ${problem.code} 的目标当前不可用；问题仍保留在摘要中。`);
       }
     });
+  };
+  const completeInspectorProblemFocus = (requestId: number, focused: boolean) => {
+    if (!inspectorProblemFocus || inspectorProblemFocus.request.requestId !== requestId) return;
+    const pending = inspectorProblemFocus;
+    setInspectorProblemFocus(null);
+    setAnnouncement(focused
+      ? problemLocationAnnouncement(pending.problem, pending.location)
+      : `问题 ${pending.problem.code} 的目标当前不可用；问题仍保留在摘要中。`);
   };
   const retryUnknownSave = (attempt: TemplateUnknownSaveAttempt) => {
     const transport = saveTransport;
@@ -1453,7 +1588,7 @@ function StructuredShell({
           {announcement}
         </p>
         {navigatorOpen ? (
-          <aside className="te-navigator" aria-label="结构、资产与定义面板">
+          <aside className="te-navigator" aria-label="元素、容器、资产、数据源与结构面板">
             <nav className="te-entry-nav" aria-label="编辑器入口">
               {ENTRIES.map(({ id, label, icon: Icon }) => (
                 <button
@@ -1481,6 +1616,9 @@ function StructuredShell({
               <EntryPanel
                 entry={entry}
                 session={session}
+                staticSchema={staticSchemaView}
+                referenceTransport={staticSchemaTransport}
+                onDataIntent={dispatchDataAuthoringIntent}
                 assetTransport={assetTransport}
                 dependencyStaleMessage={dependencyStaleMessage}
                 nodes={nodes}
@@ -1645,6 +1783,12 @@ function StructuredShell({
               node={selected}
               disabled={localLocked}
               onCommand={dispatchEditorCommand}
+              problemFocus={inspectorProblemFocus?.request}
+              onProblemFocusResult={completeInspectorProblemFocus}
+              designDsl={session.workingCopy.designDsl}
+              staticSchema={staticSchemaView}
+              staticSchemaTransport={staticSchemaTransport}
+              onDataIntent={dispatchDataAuthoringIntent}
               assetTransport={assetTransport}
               dependencyStaleMessage={dependencyStaleMessage}
             />
@@ -2233,10 +2377,10 @@ function InvalidSaveConfirmationPanel({
                 <button
                   type="button"
                   className="te-problem-locator"
-                  aria-label={`${problem.code}：${problemLocationButtonLabel(location)}`}
+                  aria-label={`${problem.code}：${problemLocationButtonLabel(problem, location)}`}
                   onClick={() => onLocate(problem, location)}
                 >
-                  {problemLocationButtonLabel(location)}
+                  {problemLocationButtonLabel(problem, location)}
                 </button>
               ) : (
                 <span className="te-problem-unavailable">只能在问题摘要中查看</span>
@@ -2255,27 +2399,47 @@ function InvalidSaveConfirmationPanel({
   );
 }
 
-function problemLocationButtonLabel(location: LocatedTemplateProblem): string {
+function problemLocationButtonLabel(
+  problem: InvalidSaveProblem,
+  location: LocatedTemplateProblem,
+): string {
   switch (location.target.kind) {
     case 'template-display-name':
       return '定位到 Template 名称';
     case 'definitions':
-      return '定位到定义面板';
+      return location.target.focus?.kind === 'definition'
+        ? `定位到定义“${location.target.label}”`
+        : '定位到数据源面板';
     case 'node':
+      if (location.target.focus?.kind === 'binding') {
+        const focusLabel = bindingProblemFocusMode(problem.canonicalPointer) === 'property'
+          ? '属性'
+          : '绑定';
+        return `定位到节点“${location.target.label}”的${focusLabel}“${location.target.focus.propertyPath}”`;
+      }
       return `定位到节点“${location.target.label}”`;
   }
 }
 
 function problemLocationAnnouncement(
-  code: string,
+  problem: InvalidSaveProblem,
   location: LocatedTemplateProblem,
 ): string {
+  const code = problem.code;
   switch (location.target.kind) {
     case 'template-display-name':
       return `已定位问题 ${code} 到 Template 名称。`;
     case 'definitions':
-      return `已定位问题 ${code} 到定义面板。`;
+      return location.target.focus?.kind === 'definition'
+        ? `已定位问题 ${code} 到定义“${location.target.label}”。`
+        : `已定位问题 ${code} 到数据源面板。`;
     case 'node':
+      if (location.target.focus?.kind === 'binding') {
+        const focusLabel = bindingProblemFocusMode(problem.canonicalPointer) === 'property'
+          ? '属性'
+          : '绑定';
+        return `已定位问题 ${code} 到节点“${location.target.label}”的${focusLabel}“${location.target.focus.propertyPath}”。`;
+      }
       return location.precision === 'owning-node'
         ? `已定位问题 ${code} 到所属节点“${location.target.label}”；具体属性没有独立表单控件。`
         : `已定位问题 ${code} 到节点“${location.target.label}”。`;
@@ -2328,6 +2492,9 @@ function ReadinessStatus({
 function EntryPanel({
   entry,
   session,
+  staticSchema,
+  referenceTransport,
+  onDataIntent,
   assetTransport,
   dependencyStaleMessage,
   nodes,
@@ -2353,6 +2520,12 @@ function EntryPanel({
 }: {
   entry: EditorEntry;
   session: StructuredEditorSession;
+  staticSchema: TemplateStaticSchemaView;
+  referenceTransport?: TemplateStaticSchemaTransport;
+  onDataIntent: (
+    intent: TemplateDataAuthoringIntent,
+    context?: TemplateDataAuthoringContext,
+  ) => boolean;
   assetTransport: TemplateEditorAssetTransport;
   dependencyStaleMessage?: string;
   nodes: EditorNodeProjection[];
@@ -2414,7 +2587,13 @@ function EntryPanel({
         dependencyStaleMessage={dependencyStaleMessage}
       />;
     case 'definitions':
-      return <DefinitionSummary designDsl={session.workingCopy.designDsl} />;
+      return <TemplateEditorDataSources
+        designDsl={session.workingCopy.designDsl}
+        staticSchema={staticSchema}
+        referenceTransport={referenceTransport}
+        disabled={nodeAuthoringLocked}
+        onIntent={onDataIntent}
+      />;
     case 'exchange':
       return (
         <ExchangeSummary
@@ -2571,6 +2750,14 @@ function templateDependencyStaleMessage(
   }
 }
 
+function bindingProblemFocusMode(canonicalPointer: string): 'binding' | 'property' {
+  const segments = canonicalPointer.split('/');
+  const bindingsIndex = segments.lastIndexOf('bindings');
+  return bindingsIndex >= 0 && segments[bindingsIndex + 2] === 'targetPropertyRef'
+    ? 'property'
+    : 'binding';
+}
+
 function AssetSummary({
   designDsl,
   transport,
@@ -2663,29 +2850,6 @@ function assetSummaryState(
     case 'kind-mismatch': return '类型不匹配 · 引用已保留';
     case 'unavailable': return '暂不可核验 · 引用已保留';
   }
-}
-
-function DefinitionSummary({ designDsl }: { designDsl: Record<string, unknown> }) {
-  const definitions = Array.isArray(designDsl.definitions)
-    ? designDsl.definitions.map(objectOrNull).filter((value): value is Record<string, unknown> => value !== null)
-    : [];
-  return (
-    <>
-      <PanelHeading title="定义" detail={`${definitions.length} 个定义`} location="definitions" />
-      {definitions.length === 0 ? (
-        <p className="te-empty-state">0 个定义 · 当前 baseline 不含 Custom、Mapping 或 Expression。</p>
-      ) : (
-        <ul className="te-summary-list">
-          {definitions.map((definition, index) => (
-            <li key={typeof definition.definitionId === 'string' ? definition.definitionId : index}>
-              <span>{typeof definition.displayName === 'string' ? definition.displayName : '未命名定义'}</span>
-              <small>{typeof definition.kind === 'string' ? definition.kind : 'unknown'}</small>
-            </li>
-          ))}
-        </ul>
-      )}
-    </>
-  );
 }
 
 function ExchangeSummary({

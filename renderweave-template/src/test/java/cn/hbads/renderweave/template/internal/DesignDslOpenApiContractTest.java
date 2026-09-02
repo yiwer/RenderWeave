@@ -97,6 +97,28 @@ class DesignDslOpenApiContractTest {
     }
 
     @Test
+    void projectsEachBindingTargetPathToItsAuthoritativeValueType() {
+        var projection = map(schema("DesignNode").get("x-renderweave-binding-policy"),
+                "DesignNode.x-renderweave-binding-policy");
+        var projected = stringMap(projection.get("valueTypes"),
+                "DesignNode.x-renderweave-binding-policy.valueTypes");
+        var expected = new LinkedHashMap<String, String>();
+
+        for (var entry : BindingPolicyCatalog.ENTRIES) {
+            var path = entry.propertyPathPattern();
+            var valueType = BindingPolicyCatalog.valueType(entry.nodeKind(), path);
+            assertNotNull(valueType, "missing authoritative value type for " + entry);
+            var previous = expected.putIfAbsent(path, valueType);
+            if (previous != null) {
+                assertEquals(previous, valueType,
+                        "property path has different types across node kinds: " + path);
+            }
+        }
+
+        assertEquals(expected, projected);
+    }
+
+    @Test
     void projectsNestedNodePropertyIdentitiesFromTheCatalog() {
         assertClosedProperties("DesignBleed", NodeContractCatalog.BLEED_MEMBERS);
         assertClosedProperties("DesignTransform", NodeContractCatalog.TRANSFORM_MEMBERS);

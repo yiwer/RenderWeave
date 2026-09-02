@@ -9,7 +9,7 @@
   },
   "scripts": {
     "dev": "vite",
-    "api:generate": "openapi-ts -i ../openapi/renderweave-v1.yaml -o src/api/generated -c @hey-api/client-fetch",
+    "api:generate": "openapi-ts -i ../openapi/renderweave-v1.yaml -o src/api/generated -c @hey-api/client-fetch && node ../tools/generate-template-binding-policy.mjs",
     "typecheck": "tsc -b --pretty false",
     "lint": "eslint .",
     "test": "vitest run src --passWithNoTests",

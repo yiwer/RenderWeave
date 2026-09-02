@@ -14,6 +14,8 @@ import { TemplateRequestError, type TemplateEditorTransport } from './template-o
 import type { TemplateSaveTransport } from './template-save';
 import type { AssetCatalogEntry, AssetReadableResponse } from '../../api/generated';
 import type { TemplateEditorAssetTransport } from './template-editor-assets';
+import type { TemplateStaticSchemaTransport } from './template-editor-static-schema';
+import type { StaticSnapshot } from '../schema-studio/lossless-api';
 import {
   currentResponse,
   recheckResponse,
@@ -28,6 +30,40 @@ afterEach(() => {
 });
 
 describe('Template Editor E1/E2 Product shell', () => {
+  it('loads the exact permanent schema and authors a Definition through canonical history', async () => {
+    vi.spyOn(globalThis.crypto, 'randomUUID')
+      .mockReturnValue('21111111-1111-4111-8111-111111111111');
+    const staticSchemaTransport: TemplateStaticSchemaTransport = {
+      getStaticSchema: vi.fn().mockResolvedValue(templateStaticSnapshot()),
+    };
+    const session = createSessionFromBaseline(
+      structuredBaseline(),
+      { state: 'checked', value: 'READY' },
+    );
+    render(<TemplateEditorShell
+      session={session}
+      saveTransport={saveTransport({})}
+      staticSchemaTransport={staticSchemaTransport}
+    />);
+
+    fireEvent.click(screen.getByRole('button', { name: '数据源' }));
+    expect(await screen.findByText('测试数据')).toBeTruthy();
+    expect(staticSchemaTransport.getStaticSchema).toHaveBeenCalledWith(
+      session.baseline.staticSchema,
+      expect.any(AbortSignal),
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: '新建定义数据源' }));
+    fireEvent.change(screen.getByLabelText('定义名称'), { target: { value: '门店名称' } });
+    fireEvent.change(screen.getByLabelText('默认值'), { target: { value: '默认门店' } });
+    fireEvent.click(screen.getByRole('button', { name: '创建定义' }));
+
+    expect(screen.getByText('门店名称')).toBeTruthy();
+    expect(screen.getByRole('button', { name: '保存 canonical 本地草稿' }).hasAttribute('disabled')).toBe(false);
+    fireEvent.click(screen.getByRole('button', { name: '撤销本地编辑' }));
+    expect(screen.queryByText('门店名称')).toBeNull();
+  });
+
   it('authors a Rect through the formal node library and synchronizes every working-copy projection', () => {
     vi.spyOn(globalThis.crypto, 'randomUUID')
       .mockReturnValue('11111111-1111-4111-8111-111111111111');
@@ -202,9 +238,9 @@ describe('Template Editor E1/E2 Product shell', () => {
 
     expect(screen.getByRole('main', { name: 'Template 编辑工作区' })).toBeTruthy();
     expect(screen.getByRole('navigation', { name: '编辑器入口' })).toBeTruthy();
-    expect(screen.getAllByRole('button', { name: /^(元素|容器|资产|定义|结构)$/ }))
+    expect(screen.getAllByRole('button', { name: /^(元素|容器|资产|数据源|结构)$/ }))
       .toHaveLength(5);
-    expect(screen.getByRole('complementary', { name: '结构、资产与定义面板' })).toBeTruthy();
+    expect(screen.getByRole('complementary', { name: '元素、容器、资产、数据源与结构面板' })).toBeTruthy();
     expect(screen.getByText('本地草稿投影 · 非权威')).toBeTruthy();
     expect(screen.getByText('revision 7')).toBeTruthy();
     expect(screen.getByText('READY')).toBeTruthy();
@@ -214,8 +250,8 @@ describe('Template Editor E1/E2 Product shell', () => {
 
     fireEvent.click(screen.getByRole('treeitem', { name: /底色/ }));
     expect(screen.getByRole('heading', { name: '底色' })).toBeTruthy();
-    fireEvent.click(screen.getByRole('button', { name: '定义' }));
-    expect(screen.getByRole('heading', { name: '定义' })).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: '数据源' }));
+    expect(screen.getByRole('heading', { name: '数据源' })).toBeTruthy();
     expect(screen.getByText('0 个定义')).toBeTruthy();
 
     fireEvent.click(screen.getByRole('button', { name: '资产' }));
@@ -703,6 +739,24 @@ describe('Template Editor E1/E2 Product shell', () => {
     expect(screen.queryByText('revision 7')).toBeNull();
   });
 });
+
+function templateStaticSnapshot(): StaticSnapshot {
+  return {
+    schemaKey: 'system-empty',
+    versionTag: 'v1',
+    origin: 'SYSTEM',
+    sourceDraftRevision: null,
+    compilerVersion: 'schema-compiler/1',
+    releaseNote: null,
+    referenceDepth: 0,
+    publishedAt: '2026-09-03T00:00:00Z',
+    definition: {
+      dslVersion: 'renderweave-schema/1.0',
+      displayName: '测试数据',
+      fields: [{ fieldKey: 'title', required: true, value: { type: 'text' } }],
+    },
+  };
+}
 
 function dirtySession(name: string): StructuredEditorSession {
   const result = applyTemplateDisplayName(cleanSessionAt('7'), name);
