@@ -20,7 +20,18 @@ afterEach(() => {
 
 describe('Template Editor E9 accessibility flow', () => {
   it('focuses the invalid summary and locates only strict, stable UI targets', async () => {
-    const session = dirtySession(structuredBaseline(), '需定位的草稿');
+    const baseline = structuredBaseline();
+    const frameWire = ((baseline.designDsl.designRoot as Record<string, unknown>)
+      .children as Record<string, unknown>[])[0];
+    if (!frameWire) throw new Error('expected Frame fixture');
+    frameWire.placement = {
+      type: 'ABSOLUTE', xMm: 0, yMm: 0,
+      widthMode: 'FIXED', widthMm: 120,
+      heightMode: 'FIXED', heightMm: 120,
+    };
+    baseline.canonicalDesignDsl = JSON.stringify(baseline.designDsl);
+    baseline.contentHash = await contentHash(baseline.canonicalDesignDsl);
+    const session = dirtySession(baseline, '需定位的草稿');
     const transport = saveTransport(await invalidProblemResponse(session, [
       ['/displayName', 'TEMPLATE_DISPLAY_NAME_INVALID'],
       ['/designRoot/children/0/fills/0/source', 'TEMPLATE_USE_FILL_TYPE_MISMATCH'],
@@ -29,6 +40,8 @@ describe('Template Editor E9 accessibility flow', () => {
     ]));
     render(<TemplateEditorShell session={session} saveTransport={transport} />);
 
+    fireEvent.keyDown(window, { key: 'a', ctrlKey: true });
+    expect(document.querySelectorAll('[data-template-canvas-selection]')).toHaveLength(2);
     fireEvent.click(screen.getByRole('button', { name: '保存 canonical 本地草稿' }));
     const heading = await screen.findByRole('heading', { name: '确认仍保存为 INVALID' });
     const summary = heading.closest('section');
@@ -43,9 +56,11 @@ describe('Template Editor E9 accessibility flow', () => {
     ));
 
     fireEvent.click(screen.getByRole('button', { name: /定位到节点“内容区”/ }));
-    const frame = await screen.findByRole('treeitem', { name: /内容区/ });
-    await waitFor(() => expect(document.activeElement).toBe(frame));
-    expect(frame.getAttribute('aria-selected')).toBe('true');
+    const frameRow = await screen.findByRole('treeitem', { name: /内容区/ });
+    await waitFor(() => expect(document.activeElement).toBe(frameRow));
+    expect(frameRow.getAttribute('aria-selected')).toBe('true');
+    expect(document.querySelectorAll('[data-template-canvas-selection]')).toHaveLength(1);
+    expect(document.querySelector('[data-template-canvas-selection="frame-id"]')).not.toBeNull();
     expect(document.querySelector('[data-template-editor-announcer]')?.textContent)
       .toContain('具体属性没有独立表单控件');
 

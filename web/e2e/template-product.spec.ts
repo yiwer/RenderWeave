@@ -77,7 +77,7 @@ test.describe('formal Template final product', () => {
     await page.setViewportSize({ width: 1280, height: 720 });
     await page.goto(`/templates/${TEMPLATE_ID}`);
 
-    await page.getByRole('button', { name: '节点' }).click();
+    await page.getByRole('button', { name: '元素' }).click();
     await page.getByRole('button', { name: '添加矩形' }).click();
 
     await expect(page.getByRole('button', { name: '结构' })).toHaveAttribute('aria-current', 'page');

@@ -68,13 +68,24 @@ describe('Template Editor E2 canonical local session', () => {
     expect(nbspOnly.state).toBe('applied');
     expect(templateDisplayName(nbspOnly.session.workingCopy)).toBe('\u00a0');
 
-    for (const value of ['\u0000\t\r\n ', '😀'.repeat(129), '\ud800']) {
-      const invalid = applyTemplateDisplayName(session, value);
-      expect(invalid).toEqual(expect.objectContaining({
-        state: 'invalid',
-        session,
-      }));
-    }
+    expect(applyTemplateDisplayName(session, '\u0000\t\r\n ')).toEqual({
+      state: 'invalid',
+      session,
+      reason: 'DISPLAY_NAME_REQUIRED',
+      message: 'Template 名称不能为空。',
+    });
+    expect(applyTemplateDisplayName(session, '😀'.repeat(129))).toEqual({
+      state: 'invalid',
+      session,
+      reason: 'DISPLAY_NAME_TOO_LONG',
+      message: 'Template 名称最多 128 个 Unicode 字符。',
+    });
+    expect(applyTemplateDisplayName(session, '\ud800')).toEqual({
+      state: 'invalid',
+      session,
+      reason: 'DISPLAY_NAME_INVALID_UNICODE',
+      message: 'Template 名称包含无效 Unicode。',
+    });
 
     const maximum = applyTemplateDisplayName(session, '😀'.repeat(128));
     expect(maximum.state).toBe('applied');

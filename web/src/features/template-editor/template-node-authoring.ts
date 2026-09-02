@@ -2,14 +2,17 @@ import {
   objectOrNull,
   type StructuredEditorSession,
 } from './template-editor-model';
+import { executeTemplateEditorCommand } from './template-editor-commands';
+import {
+  expectedTemplateChildPlacement,
+  isCoreTemplateAuthoringParentKind,
+  isTemplateDesignContainerKind,
+} from './template-editor-node-contract';
 import { applyNodeInsertion } from './template-editor-session';
 
 const UUID_V4 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
-const CONTAINER_KINDS = new Set([
-  'canvas', 'group', 'frame', 'stack', 'grid', 'repeat', 'conditional',
-]);
 
-export type InsertableTemplateNodeKind = 'rect';
+export type InsertableTemplateNodeKind = 'rect' | 'frame' | 'stack';
 
 export interface TemplateNodeInsertionIntent {
   kind: InsertableTemplateNodeKind;
@@ -61,6 +64,42 @@ export function insertTemplateNode(
     return rejected(session, 'NODE_ID_DUPLICATE', '浏览器生成的 nodeId 已存在，请重试。');
   }
 
+  if (isCoreTemplateAuthoringParentKind(parent.kind)) {
+    const result = executeTemplateEditorCommand(
+      session,
+      { operation: 'insert', nodeKind: intent.kind, parentNodeId: parent.nodeId },
+      { createNodeId: () => nodeId },
+    );
+    if (result.state !== 'applied') {
+      const reason = result.state === 'rejected' && result.code === 'CANONICAL_SIZE_EXCEEDED'
+        ? 'CANONICAL_SIZE_EXCEEDED'
+        : result.state === 'rejected' && result.code === 'NODE_ID_DUPLICATE'
+          ? 'NODE_ID_DUPLICATE'
+          : result.state === 'rejected' && result.code === 'NODE_ID_INVALID'
+            ? 'NODE_ID_INVALID'
+            : result.state === 'rejected'
+                && (result.code === 'PARENT_NOT_FOUND'
+                  || result.code === 'PARENT_CANNOT_HAVE_CHILDREN')
+              ? 'EDIT_PARENT_UNAVAILABLE'
+              : 'WORKING_COPY_INVALID';
+      return rejected(session, reason, result.message);
+    }
+    return {
+      state: 'applied',
+      session: result.session,
+      nodeId,
+      parentNodeId: parent.nodeId,
+    };
+  }
+
+  if (intent.kind !== 'rect') {
+    return rejected(
+      session,
+      'EDIT_PARENT_UNAVAILABLE',
+      'Frame 与 Stack 的首批插入只支持 Canvas、Frame 或 Stack 父级。',
+    );
+  }
+
   const node = buildRectNode(nodeId, countKind(root, intent.kind) + 1, parent.kind);
   const applied = applyNodeInsertion(session, parent.nodeId, node);
   if (applied.state === 'invalid') {
@@ -110,11 +149,12 @@ function placementFor(parentKind: string): Readonly<Record<string, unknown>> {
     heightMode: 'FIXED',
     heightMm: RENDERABLE_RECT_SIZE_MM,
   };
-  if (parentKind === 'stack') return { type: 'STACK', ...size };
-  if (parentKind === 'grid') return { type: 'GRID', ...size, row: 0, column: 0 };
-  if (parentKind === 'repeat') return { type: 'PACK', ...size };
+  const placement = expectedTemplateChildPlacement(parentKind);
+  if (placement === 'STACK') return { type: placement, ...size };
+  if (placement === 'GRID') return { type: placement, ...size, row: 0, column: 0 };
+  if (placement === 'PACK') return { type: placement, ...size };
   return {
-    type: 'ABSOLUTE',
+    type: placement ?? 'ABSOLUTE',
     xMm: RENDERABLE_RECT_SIZE_MM,
     yMm: RENDERABLE_RECT_SIZE_MM,
     ...size,
@@ -122,8 +162,7 @@ function placementFor(parentKind: string): Readonly<Record<string, unknown>> {
 }
 
 function isContainer(node: Record<string, unknown>): boolean {
-  return typeof node.kind === 'string'
-    && CONTAINER_KINDS.has(node.kind)
+  return isTemplateDesignContainerKind(node.kind)
     && Array.isArray(node.children);
 }
 

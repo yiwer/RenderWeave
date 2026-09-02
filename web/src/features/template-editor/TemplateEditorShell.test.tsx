@@ -35,7 +35,7 @@ describe('Template Editor E1/E2 Product shell', () => {
     );
     render(<TemplateEditorShell session={session} saveTransport={saveTransport({})} />);
 
-    fireEvent.click(screen.getByRole('button', { name: '节点' }));
+    fireEvent.click(screen.getByRole('button', { name: '元素' }));
     const addRect = screen.getByRole('button', { name: '添加矩形' });
     addRect.focus();
     expect(document.activeElement).toBe(addRect);
@@ -81,6 +81,43 @@ describe('Template Editor E1/E2 Product shell', () => {
     expect(screen.getByRole('treeitem', { name: /矩形 2/ }).getAttribute('aria-selected')).toBe('true');
   });
 
+  it('routes core container creation and tree rename through one canonical history', () => {
+    vi.spyOn(globalThis.crypto, 'randomUUID')
+      .mockReturnValueOnce('11111111-1111-4111-8111-111111111111')
+      .mockReturnValueOnce('22222222-2222-4222-8222-222222222222')
+      .mockReturnValueOnce('33333333-3333-4333-8333-333333333333');
+    const session = createSessionFromBaseline(
+      structuredBaseline(),
+      { state: 'checked', value: 'READY' },
+    );
+    render(<TemplateEditorShell session={session} saveTransport={saveTransport({})} />);
+
+    fireEvent.click(screen.getByRole('button', { name: '容器' }));
+    fireEvent.click(screen.getByRole('button', { name: '添加框架' }));
+    expect(screen.getByRole('treeitem', { name: /框架 2/ }).getAttribute('aria-selected'))
+      .toBe('true');
+
+    fireEvent.click(screen.getByRole('button', { name: '容器' }));
+    fireEvent.click(screen.getByRole('button', { name: '添加堆叠容器' }));
+    expect(screen.getByRole('treeitem', { name: /堆叠 1/ }).getAttribute('aria-level')).toBe('3');
+
+    fireEvent.click(screen.getByRole('button', { name: '元素' }));
+    fireEvent.click(screen.getByRole('button', { name: '添加矩形' }));
+    const rect = screen.getByRole('treeitem', { name: /矩形 2/ });
+    expect(rect.getAttribute('aria-level')).toBe('4');
+    expect(document.querySelector('[data-template-canvas-editor-overlay]')).not.toBeNull();
+
+    fireEvent.keyDown(rect, { key: 'F2' });
+    const rename = screen.getByRole('textbox', { name: '重命名 矩形 2' });
+    fireEvent.change(rename, { target: { value: '售价底板' } });
+    fireEvent.keyDown(rename, { key: 'Enter' });
+    expect(screen.getByRole('treeitem', { name: /售价底板/ })).toBeTruthy();
+    expect(screen.getByText('Canonical 本地草稿')).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: '撤销本地编辑' }));
+    expect(screen.getByRole('treeitem', { name: /矩形 2/ })).toBeTruthy();
+  });
+
   it('renders the approved Canvas Focus workbench with only real behavior', () => {
     const session = createSessionFromBaseline(
       structuredBaseline(),
@@ -90,7 +127,9 @@ describe('Template Editor E1/E2 Product shell', () => {
 
     expect(screen.getByRole('main', { name: 'Template 编辑工作区' })).toBeTruthy();
     expect(screen.getByRole('navigation', { name: '编辑器入口' })).toBeTruthy();
-    expect(screen.getAllByRole('button', { name: /^(结构|节点|资产|定义|交换)$/ })).toHaveLength(5);
+    expect(screen.getAllByRole('button', { name: /^(元素|容器|资产|定义|结构)$/ }))
+      .toHaveLength(5);
+    expect(screen.getByRole('complementary', { name: '结构、资产与定义面板' })).toBeTruthy();
     expect(screen.getByText('本地草稿投影 · 非权威')).toBeTruthy();
     expect(screen.getByText('revision 7')).toBeTruthy();
     expect(screen.getByText('READY')).toBeTruthy();
@@ -101,9 +140,14 @@ describe('Template Editor E1/E2 Product shell', () => {
     fireEvent.click(screen.getByRole('treeitem', { name: /底色/ }));
     expect(screen.getByRole('heading', { name: '底色' })).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: '定义' }));
+    expect(screen.getByRole('heading', { name: '定义' })).toBeTruthy();
     expect(screen.getByText('0 个定义')).toBeTruthy();
 
-    expect(screen.queryByRole('button', { name: /保存|预览|导入|恢复/ })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: '资产' }));
+    expect(screen.getByRole('heading', { name: '资产' })).toBeTruthy();
+    expect(screen.getByText('0 个已引用资产')).toBeTruthy();
+
+    expect(screen.queryByRole('button', { name: /保存|预览|恢复/ })).toBeNull();
   });
 
   it('edits the local canonical name and exposes real undo/redo without save or preview actions', () => {
@@ -129,7 +173,7 @@ describe('Template Editor E1/E2 Product shell', () => {
 
     fireEvent.click(screen.getByRole('button', { name: '重做本地编辑' }));
     expect(screen.getByRole('heading', { level: 1, name: '新价签 😀' })).toBeTruthy();
-    expect(screen.queryByRole('button', { name: /保存|预览|导入|恢复/ })).toBeNull();
+    expect(screen.queryByRole('button', { name: /保存|预览|恢复/ })).toBeNull();
   });
 
   it('validates the local name without changing canonical state', () => {
@@ -346,7 +390,7 @@ describe('Template Editor E1/E2 Product shell', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /canonical/ }));
     fireEvent.click(await screen.findByRole('button', { name: '仍保存为 INVALID' }));
-    expect(screen.getByRole('textbox').hasAttribute('disabled')).toBe(true);
+    expect(screen.getByRole('textbox', { name: 'Template 名称' }).hasAttribute('disabled')).toBe(true);
 
     await waitFor(() => expect(screen.getByText('revision 8')).toBeTruthy());
     expect(screen.getByText('INVALID')).toBeTruthy();

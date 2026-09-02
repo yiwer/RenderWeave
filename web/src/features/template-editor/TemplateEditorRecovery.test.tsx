@@ -58,6 +58,51 @@ describe('Template Editor E7 recovery UI', () => {
     expect(screen.getByRole('button', { name: '放弃已恢复草稿' })).toBeTruthy();
   });
 
+  it('maps the legacy nodes recovery entry onto the new Elements rail without invalidating v1', async () => {
+    const storage = new MemoryStorage();
+    persistTemplateRecovery(
+      storage,
+      await buildTemplateRecoveryRecord(
+        dirtySessionAt('7', '旧入口草稿'),
+        { ...EDIT_STATE, entry: 'nodes', navigatorOpen: true },
+        '2026-08-21T00:00:00.000Z',
+      ),
+    );
+    render(<TemplateEditorShell
+      session={cleanSessionAt('7')}
+      recoveryStorage={storage}
+      recoveryNow={() => NOW}
+    />);
+
+    fireEvent.click(await screen.findByRole('button', { name: '恢复本地草稿' }));
+    expect(screen.getByRole('button', { name: '元素' }).getAttribute('aria-current')).toBe('page');
+    expect(screen.getByRole('heading', { level: 1, name: '旧入口草稿' })).toBeTruthy();
+  });
+
+  it.each([
+    { entry: 'assets' as const, label: '资产' },
+    { entry: 'definitions' as const, label: '定义' },
+  ])('restores the existing $entry recovery wire value to the $label rail', async ({ entry, label }) => {
+    const storage = new MemoryStorage();
+    persistTemplateRecovery(
+      storage,
+      await buildTemplateRecoveryRecord(
+        dirtySessionAt('7', `${label}入口草稿`),
+        { ...EDIT_STATE, entry, navigatorOpen: true },
+        '2026-08-21T00:00:00.000Z',
+      ),
+    );
+    render(<TemplateEditorShell
+      session={cleanSessionAt('7')}
+      recoveryStorage={storage}
+      recoveryNow={() => NOW}
+    />);
+
+    fireEvent.click(await screen.findByRole('button', { name: '恢复本地草稿' }));
+    expect(screen.getByRole('button', { name: label }).getAttribute('aria-current')).toBe('page');
+    expect(screen.getByRole('heading', { name: label })).toBeTruthy();
+  });
+
   it('shows baseline drift before restore and requires the existing overwrite confirmation before any PUT', async () => {
     const storage = new MemoryStorage();
     const oldDraft = dirtySessionAt('7', '旧基线草稿');

@@ -39,7 +39,7 @@ test.describe('local Template Candidate Preview', () => {
     });
     await expect(page.getByRole('main', { name: 'Template 编辑工作区' })).toBeVisible();
 
-    await page.getByRole('button', { name: '节点' }).click();
+    await page.getByRole('button', { name: '元素' }).click();
     await page.getByRole('button', { name: '添加矩形' }).click();
     await expect(page.getByRole('treeitem', { name: /矩形 1/ })).toBeVisible();
     await page.getByRole('button', { name: '保存 canonical 本地草稿' }).click();

@@ -20,6 +20,15 @@ export interface CanvasViewportTransform {
   readonly y: number;
 }
 
+export interface CanvasRect {
+  readonly x: number;
+  readonly y: number;
+  readonly width: number;
+  readonly height: number;
+}
+
+export type CanvasResizeHandle = 'nw' | 'n' | 'ne' | 'e' | 'se' | 's' | 'sw' | 'w';
+
 export function fitCanvasViewport(
   viewport: CanvasSize,
   artboard: CanvasSize,
@@ -83,6 +92,44 @@ export function panCanvasViewport(
     scale: clampCanvasScale(current.scale),
     x: finiteOr(current.x, 0) + finiteOr(delta.x, 0),
     y: finiteOr(current.y, 0) + finiteOr(delta.y, 0),
+  };
+}
+
+export function resizeCanvasRect(
+  current: CanvasRect,
+  handle: CanvasResizeHandle,
+  delta: CanvasPoint,
+  minimumSize: number,
+): CanvasRect {
+  const minimum = Math.max(0, finiteOr(minimumSize, 0));
+  const startX = finiteOr(current.x, 0);
+  const startY = finiteOr(current.y, 0);
+  const startWidth = Math.max(minimum, finiteOr(current.width, minimum));
+  const startHeight = Math.max(minimum, finiteOr(current.height, minimum));
+  const right = startX + startWidth;
+  const bottom = startY + startHeight;
+  const deltaX = finiteOr(delta.x, 0);
+  const deltaY = finiteOr(delta.y, 0);
+  const movesLeft = handle.includes('w');
+  const movesRight = handle.includes('e');
+  const movesTop = handle.includes('n');
+  const movesBottom = handle.includes('s');
+  const x = movesLeft ? Math.min(startX + deltaX, right - minimum) : startX;
+  const y = movesTop ? Math.min(startY + deltaY, bottom - minimum) : startY;
+
+  return {
+    x,
+    y,
+    width: movesLeft
+      ? right - x
+      : movesRight
+        ? Math.max(minimum, startWidth + deltaX)
+        : startWidth,
+    height: movesTop
+      ? bottom - y
+      : movesBottom
+        ? Math.max(minimum, startHeight + deltaY)
+        : startHeight,
   };
 }
 

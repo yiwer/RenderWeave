@@ -7,8 +7,10 @@ import {
   FileJson,
   FlaskConical,
   FolderTree,
+  Hand,
   Image,
   LoaderCircle,
+  MousePointer2,
   PanelLeft,
   PanelRight,
   PencilLine,
@@ -22,7 +24,15 @@ import {
   Wrench,
   type LucideIcon,
 } from 'lucide-react';
-import { useEffect, useEffectEvent, useId, useMemo, useRef, useState } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useEffectEvent,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 
 import {
   createSessionFromBaseline,
@@ -47,9 +57,11 @@ import {
   updateStructuredReadiness,
 } from './template-editor-session';
 import {
-  insertTemplateNode,
-  type InsertableTemplateNodeKind,
-} from './template-node-authoring';
+  executeTemplateEditorCommand,
+  type CoreInsertableNodeKind,
+  type TemplateEditorCommandIntent,
+} from './template-editor-commands';
+import { isCoreTemplateAuthoringParentKind } from './template-editor-node-contract';
 import {
   BARE_DESIGN_DSL_MEDIA_TYPE,
   inspectTemplateImport,
@@ -114,21 +126,48 @@ import {
   type TemplatePreviewRequest,
   type TemplatePreviewTransport,
 } from './template-preview';
-import { TemplateEditorCanvas } from './TemplateEditorCanvas';
+import { TEMPLATE_NODE_DRAG_MIME, TemplateEditorCanvas } from './TemplateEditorCanvas';
+import { TemplateEditorInspector } from './TemplateEditorInspector';
 import { TemplateEditorStructureTree } from './TemplateEditorStructureTree';
 import './template-editor.css';
 
-type EditorEntry = TemplateRecoveryEntry;
+type EditorEntry = 'elements' | 'containers' | 'assets' | 'definitions' | 'structure' | 'exchange';
 type LocatedTemplateProblem = Extract<TemplateProblemLocation, { state: 'located' }>;
 type InvalidSaveProblem = TemplateInvalidSaveOffer['problems'][number];
 
 const ENTRIES: Array<{ id: EditorEntry; label: string; icon: LucideIcon }> = [
-  { id: 'structure', label: '结构', icon: FolderTree },
-  { id: 'nodes', label: '节点', icon: Box },
+  { id: 'elements', label: '元素', icon: Box },
+  { id: 'containers', label: '容器', icon: SquarePlus },
   { id: 'assets', label: '资产', icon: Image },
   { id: 'definitions', label: '定义', icon: Braces },
-  { id: 'exchange', label: '交换', icon: FileJson },
+  { id: 'structure', label: '结构', icon: FolderTree },
 ];
+
+function recoveryEntryFor(entry: EditorEntry): TemplateRecoveryEntry {
+  switch (entry) {
+    case 'elements':
+    case 'containers':
+      return 'nodes';
+    case 'assets':
+      return 'assets';
+    case 'definitions':
+      return 'definitions';
+    case 'structure':
+    case 'exchange':
+      return entry;
+  }
+}
+
+function editorEntryFromRecovery(entry: TemplateRecoveryEntry): EditorEntry {
+  switch (entry) {
+    case 'nodes': return 'elements';
+    case 'assets': return 'assets';
+    case 'definitions': return 'definitions';
+    case 'structure':
+    case 'exchange':
+      return entry;
+  }
+}
 
 interface TemplateEditorShellProps {
   session: TemplateEditorSession;
@@ -415,13 +454,23 @@ function StructuredShell({
   const nodes = useMemo(() => projectStructuredNodes(session), [session]);
   const [entry, setEntry] = useState<EditorEntry>('structure');
   const [selectedNodeId, setSelectedNodeId] = useState(nodes[0]?.nodeId ?? '');
+  const [selectedNodeIds, setSelectedNodeIds] = useState<readonly string[]>(
+    nodes[0]?.nodeId ? [nodes[0].nodeId] : [],
+  );
   const [navigatorOpen, setNavigatorOpen] = useState(true);
   const [inspectorOpen, setInspectorOpen] = useState(true);
+  const [canvasTool, setCanvasTool] = useState<'select' | 'pan'>('select');
   const [announcement, setAnnouncement] = useState('');
   const effectiveSelectedNodeId = nodes.some((node) => node.nodeId === selectedNodeId)
     ? selectedNodeId
     : nodes[0]?.nodeId ?? '';
   const selected = nodes.find((node) => node.nodeId === effectiveSelectedNodeId) ?? nodes[0];
+  const validSelectedNodeIds = selectedNodeIds.filter((nodeId) => (
+    nodes.some((node) => node.nodeId === nodeId)
+  ));
+  const effectiveSelectedNodeIds = validSelectedNodeIds.length > 0
+    ? validSelectedNodeIds
+    : effectiveSelectedNodeId ? [effectiveSelectedNodeId] : [];
   const dirty = isCanonicalDirty(session);
   const workingName = templateDisplayName(session.workingCopy);
   const candidatePreview = preview.assurance === 'candidate';
@@ -446,7 +495,7 @@ function StructuredShell({
     || saveView.state === 'conflict'
     || saveView.state === 'invalid-save-confirmation';
   const recoveryEditState: TemplateRecoveryEditState = useMemo(() => ({
-    entry,
+    entry: recoveryEntryFor(entry),
     selectedNodeId: effectiveSelectedNodeId,
     navigatorOpen,
     inspectorOpen,
@@ -464,15 +513,20 @@ function StructuredShell({
     incomingSessionRef.current = incomingSession;
   }, [incomingSession]);
 
+  const selectNode = useCallback((nodeId: string) => {
+    setSelectedNodeId(nodeId);
+    setSelectedNodeIds([nodeId]);
+  }, []);
+
   const applyRecoveredEditState = (editState: TemplateRecoveryEditState) => {
-    setEntry(editState.entry);
-    setSelectedNodeId(editState.selectedNodeId);
+    setEntry(editorEntryFromRecovery(editState.entry));
+    selectNode(editState.selectedNodeId);
     setNavigatorOpen(editState.navigatorOpen);
     setInspectorOpen(editState.inspectorOpen);
   };
 
   const acceptLocalChange = (next: StructuredEditorSession) => {
-    if (localLocked) return;
+    if (localLocked || next === session) return;
     pendingPreviewAfterSave.current = null;
     preview.invalidate(`DesignDSL 本地工作副本已变化；旧${previewImageLabel}已撤下。`);
     if (importView.state === 'candidate') {
@@ -484,22 +538,39 @@ function StructuredShell({
 
   const undo = () => acceptLocalChange(undoStructuredCommand(session));
   const redo = () => acceptLocalChange(redoStructuredCommand(session));
-  const insertNode = (kind: InsertableTemplateNodeKind) => {
+  const dispatchEditorCommand = (
+    intent: TemplateEditorCommandIntent,
+    options: { selectAffected?: boolean; openStructure?: boolean } = {},
+  ) => {
     if (localLocked) return;
-    const result = insertTemplateNode(session, {
-      kind,
-      selectedNodeId: effectiveSelectedNodeId,
-    });
+    const result = executeTemplateEditorCommand(session, intent);
     if (result.state === 'rejected') {
       setNodeAuthoringProblem(result.message);
-      setAnnouncement(`节点创建失败：${result.message}`);
+      setAnnouncement(`编辑未应用：${result.message}`);
       return;
     }
     setNodeAuthoringProblem(null);
+    if (result.state === 'no-op') {
+      setAnnouncement(result.message);
+      return;
+    }
     acceptLocalChange(result.session);
-    setSelectedNodeId(result.nodeId);
-    setEntry('structure');
-    setAnnouncement(`已添加矩形并选中；父节点 ${result.parentNodeId}。`);
+    if (options.selectAffected && result.affectedNodeIds[0]) {
+      selectNode(result.affectedNodeIds[0]);
+    }
+    if (options.openStructure) setEntry('structure');
+    setAnnouncement(result.message);
+  };
+  const insertNode = (kind: CoreInsertableNodeKind) => {
+    const parentNodeId = nearestCoreParentNodeId(nodes, effectiveSelectedNodeId);
+    if (!parentNodeId) {
+      setNodeAuthoringProblem('当前选择没有可承载新节点的 Canvas、Frame 或 Stack。');
+      return;
+    }
+    dispatchEditorCommand(
+      { operation: 'insert', nodeKind: kind, parentNodeId },
+      { selectAffected: true, openStructure: true },
+    );
   };
 
   const persistRecoveryNow = async (
@@ -1001,8 +1072,8 @@ function StructuredShell({
             setRecoveryView({ state: 'invalid', reason: restored.reason });
             return;
           }
-          setEntry(loaded.record.editState.entry);
-          setSelectedNodeId(loaded.record.editState.selectedNodeId);
+          setEntry(editorEntryFromRecovery(loaded.record.editState.entry));
+          selectNode(loaded.record.editState.selectedNodeId);
           setNavigatorOpen(loaded.record.editState.navigatorOpen);
           setInspectorOpen(loaded.record.editState.inspectorOpen);
           setRecoveryBase({
@@ -1054,7 +1125,7 @@ function StructuredShell({
     return () => {
       if (recoveryEpoch.current === epoch) recoveryEpoch.current += 1;
     };
-  }, [incomingBaselineKey, recoveryNow, recoveryStorage]);
+  }, [incomingBaselineKey, recoveryNow, recoveryStorage, selectNode]);
 
   const runMutation = async (
     message: string,
@@ -1196,7 +1267,7 @@ function StructuredShell({
       case 'node':
         setNavigatorOpen(true);
         setEntry('structure');
-        setSelectedNodeId(location.target.nodeId);
+        selectNode(location.target.nodeId);
         break;
     }
     queueMicrotask(() => {
@@ -1332,7 +1403,7 @@ function StructuredShell({
           {announcement}
         </p>
         {navigatorOpen ? (
-          <aside className="te-navigator" aria-label="结构与资源面板">
+          <aside className="te-navigator" aria-label="结构、资产与定义面板">
             <nav className="te-entry-nav" aria-label="编辑器入口">
               {ENTRIES.map(({ id, label, icon: Icon }) => (
                 <button
@@ -1347,13 +1418,32 @@ function StructuredShell({
                 </button>
               ))}
             </nav>
+            <button
+              type="button"
+              className={`te-exchange-entry${entry === 'exchange' ? ' is-active' : ''}`}
+              aria-current={entry === 'exchange' ? 'page' : undefined}
+              onClick={() => setEntry('exchange')}
+            >
+              <FileJson aria-hidden="true" size={15} />
+              导入 / 导出
+            </button>
             <section className="te-entry-panel">
               <EntryPanel
                 entry={entry}
                 session={session}
                 nodes={nodes}
                 selectedNodeId={effectiveSelectedNodeId}
-                onSelectNode={setSelectedNodeId}
+                onSelectNode={selectNode}
+                onRenameNode={(nodeId, displayName) => dispatchEditorCommand({
+                  operation: 'rename', nodeId, displayName,
+                })}
+                onMoveNode={(nodeId, targetNodeId, position) => dispatchEditorCommand({
+                  operation: 'move-tree', nodeId, targetNodeId, position,
+                })}
+                onReorderNode={(nodeId, order) => dispatchEditorCommand({
+                  operation: 'reorder', nodeId, order,
+                })}
+                onDeleteNode={(nodeId) => dispatchEditorCommand({ operation: 'delete', nodeId })}
                 nodeAuthoringProblem={nodeAuthoringProblem}
                 nodeAuthoringLocked={localLocked}
                 onInsertNode={insertNode}
@@ -1381,6 +1471,22 @@ function StructuredShell({
             <div>
               <strong>Canvas Focus</strong>
               <span>本地草稿投影 · 非权威</span>
+            </div>
+            <div className="te-canvas-tool-picker" role="toolbar" aria-label="画布操作模式">
+              <button
+                type="button"
+                aria-pressed={canvasTool === 'select'}
+                onClick={() => setCanvasTool('select')}
+              >
+                <MousePointer2 aria-hidden="true" size={14} />选择 <kbd>V</kbd>
+              </button>
+              <button
+                type="button"
+                aria-pressed={canvasTool === 'pan'}
+                onClick={() => setCanvasTool('pan')}
+              >
+                <Hand aria-hidden="true" size={14} />平移 <kbd>H</kbd>
+              </button>
             </div>
             <span className={`te-mode-chip${dirty ? ' is-dirty' : ''}`}>
               {dirty ? <PencilLine aria-hidden="true" size={14} /> : <ShieldCheck aria-hidden="true" size={14} />}
@@ -1414,7 +1520,42 @@ function StructuredShell({
             workingCopy={session.workingCopy}
             nodes={nodes}
             selectedNodeId={effectiveSelectedNodeId}
-            onSelectNode={setSelectedNodeId}
+            selectedNodeIds={effectiveSelectedNodeIds}
+            tool={canvasTool}
+            disabled={localLocked}
+            onToolChange={setCanvasTool}
+            onSelectNode={selectNode}
+            onSelectionChange={(nodeIds, primaryNodeId) => {
+              setSelectedNodeIds(nodeIds);
+              setSelectedNodeId(primaryNodeId);
+            }}
+            onGeometryCommit={(nodeId, geometry) => {
+              if (geometry.xMm === undefined || geometry.yMm === undefined) return;
+              dispatchEditorCommand({
+                operation: 'set-geometry',
+                nodeId,
+                geometry: {
+                  xMm: geometry.xMm,
+                  yMm: geometry.yMm,
+                  widthMm: geometry.widthMm,
+                  heightMm: geometry.heightMm,
+                },
+              });
+            }}
+            onDeleteSelection={() => dispatchEditorCommand({
+              operation: 'delete', nodeId: effectiveSelectedNodeId,
+            })}
+            onReorderNode={(nodeId, order) => dispatchEditorCommand({
+              operation: 'reorder', nodeId, order,
+            })}
+            onInsertAt={(nodeKind, xMm, yMm) => {
+              const canvasNodeId = nodes.find((node) => node.kind === 'canvas')?.nodeId;
+              if (!canvasNodeId) return;
+              dispatchEditorCommand(
+                { operation: 'insert', nodeKind, parentNodeId: canvasNodeId, at: { xMm, yMm } },
+                { selectAffected: true, openStructure: true },
+              );
+            }}
           />
           {preview.enabled ? (
             <TemplatePreviewPanel
@@ -1450,7 +1591,11 @@ function StructuredShell({
                 'renderweave-local-draft.design.json',
               )}
             />
-            <NodeInspector node={selected} />
+            <TemplateEditorInspector
+              node={selected}
+              disabled={localLocked}
+              onCommand={dispatchEditorCommand}
+            />
           </aside>
         ) : null}
 
@@ -2114,6 +2259,10 @@ function EntryPanel({
   nodes,
   selectedNodeId,
   onSelectNode,
+  onRenameNode,
+  onMoveNode,
+  onReorderNode,
+  onDeleteNode,
   nodeAuthoringProblem,
   nodeAuthoringLocked,
   onInsertNode,
@@ -2133,9 +2282,13 @@ function EntryPanel({
   nodes: EditorNodeProjection[];
   selectedNodeId: string;
   onSelectNode: (nodeId: string) => void;
+  onRenameNode: (nodeId: string, displayName: string) => void;
+  onMoveNode: (nodeId: string, targetNodeId: string, position: 'before' | 'into' | 'after') => void;
+  onReorderNode: (nodeId: string, operation: 'front' | 'forward' | 'backward' | 'back') => void;
+  onDeleteNode: (nodeId: string) => void;
   nodeAuthoringProblem: string | null;
   nodeAuthoringLocked: boolean;
-  onInsertNode: (kind: InsertableTemplateNodeKind) => void;
+  onInsertNode: (kind: CoreInsertableNodeKind) => void;
   importView: StructuredImportView;
   importLocked: boolean;
   canSaveBeforeImport: boolean;
@@ -2153,15 +2306,28 @@ function EntryPanel({
         <TemplateEditorStructureTree
           nodes={nodes}
           selectedNodeId={selectedNodeId}
+          disabled={nodeAuthoringLocked}
           onSelectNode={onSelectNode}
+          onRenameNode={onRenameNode}
+          onMoveNode={onMoveNode}
+          onReorderNode={onReorderNode}
+          onDeleteNode={onDeleteNode}
         />
       );
-    case 'nodes':
+    case 'elements':
       return (
         <NodeCatalogSummary
           nodes={nodes}
           problem={nodeAuthoringProblem}
           disabled={nodeAuthoringLocked}
+          onInsert={onInsertNode}
+        />
+      );
+    case 'containers':
+      return (
+        <ContainerCatalogSummary
+          disabled={nodeAuthoringLocked}
+          problem={nodeAuthoringProblem}
           onInsert={onInsertNode}
         />
       );
@@ -2197,13 +2363,13 @@ function NodeCatalogSummary({
   nodes: EditorNodeProjection[];
   problem: string | null;
   disabled: boolean;
-  onInsert: (kind: InsertableTemplateNodeKind) => void;
+  onInsert: (kind: CoreInsertableNodeKind) => void;
 }) {
   const counts = new Map<string, number>();
   for (const node of nodes) counts.set(node.kind, (counts.get(node.kind) ?? 0) + 1);
   return (
     <>
-      <PanelHeading title="节点" detail="1 个可创建" />
+      <PanelHeading title="元素" detail="1 个已接通" />
       <p className="te-panel-copy">
         添加到当前容器；若当前选择是叶子节点，则使用最近的合法父级。placement 由父级 ContentModel 决定。
       </p>
@@ -2212,6 +2378,11 @@ function NodeCatalogSummary({
           type="button"
           aria-label="添加矩形"
           disabled={disabled}
+          draggable={!disabled}
+          onDragStart={(event) => {
+            event.dataTransfer.effectAllowed = 'copy';
+            event.dataTransfer.setData(TEMPLATE_NODE_DRAG_MIME, 'rect');
+          }}
           onClick={() => onInsert('rect')}
         >
           <span className="te-node-library-icon"><SquarePlus aria-hidden="true" size={18} /></span>
@@ -2224,7 +2395,7 @@ function NodeCatalogSummary({
       </div>
       {problem ? <p className="te-node-authoring-alert" role="alert">{problem}</p> : null}
       <p className="te-node-contract-note">
-        当前客户端识别 {SUPPORTED_NODE_KIND_COUNT} 种 v1 closed wire；这里只显示已经接通完整创建闭环的元素。
+        当前客户端识别 {SUPPORTED_NODE_KIND_COUNT} 种 v1 closed wire；本票只开放已经接通完整创建闭环的元素。
       </p>
       <ul className="te-summary-list">
         {[...counts.entries()].map(([kind, count]) => (
@@ -2235,13 +2406,63 @@ function NodeCatalogSummary({
   );
 }
 
+function ContainerCatalogSummary({
+  problem,
+  disabled,
+  onInsert,
+}: {
+  problem: string | null;
+  disabled: boolean;
+  onInsert: (kind: CoreInsertableNodeKind) => void;
+}) {
+  return (
+    <>
+      <PanelHeading title="容器" detail="2 个已接通" />
+      <p className="te-panel-copy">Frame 保留绝对定位子级；Stack 以排列方向约束直接子级。</p>
+      <div className="te-node-library" aria-label="可添加容器">
+        <button
+          type="button"
+          aria-label="添加框架"
+          disabled={disabled}
+          draggable={!disabled}
+          onDragStart={(event) => {
+            event.dataTransfer.effectAllowed = 'copy';
+            event.dataTransfer.setData(TEMPLATE_NODE_DRAG_MIME, 'frame');
+          }}
+          onClick={() => onInsert('frame')}
+        >
+          <span className="te-node-library-icon"><Box aria-hidden="true" size={18} /></span>
+          <span className="te-node-library-copy"><strong>框架</strong><small>固定边界 · 绝对子级</small></span>
+          <span className="te-node-library-action">添加</span>
+        </button>
+        <button
+          type="button"
+          aria-label="添加堆叠容器"
+          disabled={disabled}
+          draggable={!disabled}
+          onDragStart={(event) => {
+            event.dataTransfer.effectAllowed = 'copy';
+            event.dataTransfer.setData(TEMPLATE_NODE_DRAG_MIME, 'stack');
+          }}
+          onClick={() => onInsert('stack')}
+        >
+          <span className="te-node-library-icon"><SquarePlus aria-hidden="true" size={18} /></span>
+          <span className="te-node-library-copy"><strong>堆叠容器</strong><small>横向 / 纵向由布局属性决定</small></span>
+          <span className="te-node-library-action">添加</span>
+        </button>
+      </div>
+      {problem ? <p className="te-node-authoring-alert" role="alert">{problem}</p> : null}
+    </>
+  );
+}
+
 function AssetSummary({ designDsl }: { designDsl: Record<string, unknown> }) {
   const assets = authoredAssetIds(designDsl);
   return (
     <>
-      <PanelHeading title="资产" detail={`${assets.length} 个 authored ref`} />
+      <PanelHeading title="资产" detail={`${assets.length} 个已引用资产`} />
       {assets.length === 0 ? (
-        <p className="te-empty-state">当前 DesignDSL 没有 authored imageRef/fontRef。</p>
+        <p className="te-empty-state">当前 DesignDSL 没有 imageRef/fontRef 资产引用。</p>
       ) : (
         <ul className="te-summary-list">
           {assets.map((asset) => <li key={asset}><code>{shortIdentity(asset)}</code></li>)}
@@ -2466,29 +2687,6 @@ function PanelHeading({
       <h2>{title}</h2>
       <span>{detail}</span>
     </header>
-  );
-}
-
-function NodeInspector({ node }: { node?: EditorNodeProjection }) {
-  if (!node) {
-    return <p className="te-empty-state">当前 DesignDSL 没有可投影节点。</p>;
-  }
-  const bindings = Array.isArray(node.value.bindings) ? node.value.bindings.length : 0;
-  const placement = objectOrNull(node.value.placement);
-  return (
-    <>
-      <header className="te-inspector-heading">
-        <span>{node.kind}</span>
-        <h2>{node.displayName}</h2>
-      </header>
-      <dl className="te-fact-list">
-        <div><dt>nodeId</dt><dd title={node.nodeId}>{shortIdentity(node.nodeId)}</dd></div>
-        <div><dt>children</dt><dd>{node.childCount}</dd></div>
-        <div><dt>bindings</dt><dd>{bindings}</dd></div>
-        <div><dt>placement</dt><dd>{typeof placement?.type === 'string' ? placement.type : 'root / none'}</dd></div>
-      </dl>
-      <p className="te-inspector-note">只读检视器只投影 authored facts；浏览器不会把推测的坐标写回 DesignDSL。</p>
-    </>
   );
 }
 
@@ -2827,6 +3025,24 @@ function authoredAssetIds(value: unknown): string[] {
   };
   visit(value);
   return [...ids].sort();
+}
+
+function nearestCoreParentNodeId(
+  nodes: readonly EditorNodeProjection[],
+  selectedNodeId: string,
+): string | null {
+  const selectedIndex = nodes.findIndex((node) => node.nodeId === selectedNodeId);
+  if (selectedIndex < 0) return nodes.find((node) => node.kind === 'canvas')?.nodeId ?? null;
+  const selected = nodes[selectedIndex];
+  if (selected && isCoreTemplateAuthoringParentKind(selected.kind)) return selected.nodeId;
+  let maximumDepth = selected?.depth ?? Number.POSITIVE_INFINITY;
+  for (let index = selectedIndex - 1; index >= 0; index -= 1) {
+    const candidate = nodes[index];
+    if (!candidate || candidate.depth >= maximumDepth) continue;
+    maximumDepth = candidate.depth;
+    if (isCoreTemplateAuthoringParentKind(candidate.kind)) return candidate.nodeId;
+  }
+  return null;
 }
 
 function shortIdentity(value: string): string {

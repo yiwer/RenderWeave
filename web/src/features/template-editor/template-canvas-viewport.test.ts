@@ -5,6 +5,7 @@ import {
   CANVAS_ZOOM_MIN,
   fitCanvasViewport,
   panCanvasViewport,
+  resizeCanvasRect,
   wheelZoomCanvasViewport,
   zoomCanvasViewportAt,
 } from './template-canvas-viewport';
@@ -52,5 +53,16 @@ describe('Template Canvas viewport transform', () => {
   it('pans without changing scale', () => {
     expect(panCanvasViewport({ scale: 0.75, x: 20, y: 30 }, { x: -8, y: 12 }))
       .toEqual({ scale: 0.75, x: 12, y: 42 });
+  });
+
+  it('resizes each edge independently instead of preserving the authored aspect ratio', () => {
+    const start = { x: 40, y: 60, width: 120, height: 120 };
+
+    expect(resizeCanvasRect(start, 's', { x: 0, y: -80 }, 4))
+      .toEqual({ x: 40, y: 60, width: 120, height: 40 });
+    expect(resizeCanvasRect(start, 'nw', { x: 150, y: 20 }, 4))
+      .toEqual({ x: 156, y: 80, width: 4, height: 100 });
+    expect(resizeCanvasRect(start, 'e', { x: -200, y: 0 }, 4))
+      .toEqual({ x: 40, y: 60, width: 4, height: 120 });
   });
 });

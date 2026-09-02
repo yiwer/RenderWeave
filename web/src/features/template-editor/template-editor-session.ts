@@ -10,10 +10,14 @@ import type {
   StructuredEditorHistory,
   StructuredEditorSession,
 } from './template-editor-model';
+import {
+  normalizeTemplateEditorDisplayName,
+  type TemplateEditorDisplayNameInvalidReason,
+} from './template-editor-display-name';
+import { inspectDesignDslWire } from './template-design-dsl-wire';
 import type { StructuredTemplateImport } from './template-import';
 
 const HISTORY_LIMIT = 100;
-const MAX_DISPLAY_NAME_CODE_POINTS = 128;
 const MAX_CANONICAL_BYTES = 16 * 1024 * 1024;
 const textEncoder = new TextEncoder();
 
@@ -51,6 +55,15 @@ export type AuthoritativePreviewGuard =
 export type StructuredImportAdoption =
   | { state: 'adopted'; session: StructuredEditorSession }
   | { state: 'no-op'; session: StructuredEditorSession };
+
+export type StructuredCommandCommitResult =
+  | { state: 'applied'; session: StructuredEditorSession }
+  | { state: 'no-op'; session: StructuredEditorSession }
+  | {
+    state: 'invalid';
+    session: StructuredEditorSession;
+    reason: 'CANONICAL_SIZE_EXCEEDED' | 'WORKING_COPY_INVALID';
+  };
 
 export function createStructuredEditorSession(
   baseline: CanonicalTemplateBaseline,
@@ -95,9 +108,14 @@ export function applyTemplateDisplayName(
   session: StructuredEditorSession,
   rawValue: string,
 ): TemplateDisplayNameEditResult {
-  const normalized = normalizeDisplayName(rawValue);
+  const normalized = normalizeTemplateEditorDisplayName(rawValue);
   if (normalized.state === 'invalid') {
-    return { ...normalized, session };
+    return {
+      state: 'invalid',
+      reason: normalized.reason,
+      session,
+      message: templateDisplayNameInvalidMessage(normalized.reason),
+    };
   }
   const before = session.workingCopy.designDsl.displayName;
   if (typeof before !== 'string') {
@@ -114,28 +132,22 @@ export function applyTemplateDisplayName(
     before,
     after: normalized.value,
   };
-  const nextWorkingCopy = replayCommand(session.workingCopy, command, 'forward');
-  if (nextWorkingCopy.canonicalDesignDsl === session.workingCopy.canonicalDesignDsl) {
+  const committed = commitStructuredEditorCommand(session, command);
+  if (committed.state === 'no-op') {
     return { state: 'no-op', session };
   }
-  if (textEncoder.encode(nextWorkingCopy.canonicalDesignDsl).byteLength > MAX_CANONICAL_BYTES) {
+  if (committed.state === 'invalid') {
+    const sizeExceeded = committed.reason === 'CANONICAL_SIZE_EXCEEDED';
     return {
       state: 'invalid',
       session,
-      reason: 'CANONICAL_SIZE_EXCEEDED',
-      message: '编辑后的 DesignDSL 超过 16 MiB canonical 上限。',
+      reason: sizeExceeded ? 'CANONICAL_SIZE_EXCEEDED' : 'WORKING_COPY_INVALID',
+      message: sizeExceeded
+        ? '编辑后的 DesignDSL 超过 16 MiB canonical 上限。'
+        : '当前工作副本不能安全应用结构化编辑。',
     };
   }
-
-  return {
-    state: 'applied',
-    session: {
-      ...session,
-      workingCopy: nextWorkingCopy,
-      history: structuredHistory(appendBounded(session.history.past, command), []),
-      previewGeneration: session.previewGeneration + 1,
-    },
-  };
+  return committed;
 }
 
 export function applyNodeInsertion(
@@ -174,32 +186,29 @@ export function applyNodeInsertion(
     childIndex: parent.children.length,
     node,
   };
-  let nextWorkingCopy: CanonicalDesignWorkingCopy;
-  try {
-    nextWorkingCopy = replayCommand(session.workingCopy, command, 'forward');
-  } catch {
+  const committed = commitStructuredEditorCommand(session, command);
+  if (committed.state === 'invalid' && committed.reason === 'WORKING_COPY_INVALID') {
     return invalidNodeInsertion(
       session,
       'WORKING_COPY_INVALID',
       '当前工作副本不能安全应用节点插入命令。',
     );
   }
-  if (textEncoder.encode(nextWorkingCopy.canonicalDesignDsl).byteLength > MAX_CANONICAL_BYTES) {
+  if (committed.state === 'invalid') {
     return invalidNodeInsertion(
       session,
       'CANONICAL_SIZE_EXCEEDED',
       '添加节点后的 DesignDSL 超过 16 MiB canonical 上限。',
     );
   }
-  return {
-    state: 'applied',
-    session: {
-      ...session,
-      workingCopy: nextWorkingCopy,
-      history: structuredHistory(appendBounded(session.history.past, command), []),
-      previewGeneration: session.previewGeneration + 1,
-    },
-  };
+  if (committed.state === 'no-op') {
+    return invalidNodeInsertion(
+      session,
+      'WORKING_COPY_INVALID',
+      '节点插入命令没有产生完整的结构化变更。',
+    );
+  }
+  return committed;
 }
 
 export function undoStructuredCommand(
@@ -207,9 +216,15 @@ export function undoStructuredCommand(
 ): StructuredEditorSession {
   const command = session.history.past.at(-1);
   if (!command) return session;
+  let workingCopy: CanonicalDesignWorkingCopy;
+  try {
+    workingCopy = replayCommand(session.workingCopy, command, 'backward');
+  } catch {
+    return session;
+  }
   return {
     ...session,
-    workingCopy: replayCommand(session.workingCopy, command, 'backward'),
+    workingCopy,
     history: structuredHistory(
       session.history.past.slice(0, -1),
       [command, ...session.history.future],
@@ -223,14 +238,55 @@ export function redoStructuredCommand(
 ): StructuredEditorSession {
   const [command, ...remaining] = session.history.future;
   if (!command) return session;
+  let workingCopy: CanonicalDesignWorkingCopy;
+  try {
+    workingCopy = replayCommand(session.workingCopy, command, 'forward');
+  } catch {
+    return session;
+  }
   return {
     ...session,
-    workingCopy: replayCommand(session.workingCopy, command, 'forward'),
+    workingCopy,
     history: structuredHistory(
       appendBounded(session.history.past, command),
       remaining,
     ),
     previewGeneration: session.previewGeneration + 1,
+  };
+}
+
+/**
+ * Applies one already-resolved, reversible semantic command as a single canonical history step.
+ * Callers resolve user intent first; this seam owns atomic replay, closed-wire validation,
+ * canonical size, history branching and preview-generation invalidation.
+ */
+export function commitStructuredEditorCommand(
+  session: StructuredEditorSession,
+  command: StructuredEditorCommand,
+): StructuredCommandCommitResult {
+  let nextWorkingCopy: CanonicalDesignWorkingCopy;
+  try {
+    nextWorkingCopy = replayCommand(session.workingCopy, command, 'forward');
+  } catch {
+    return { state: 'invalid', session, reason: 'WORKING_COPY_INVALID' };
+  }
+  if (nextWorkingCopy.canonicalDesignDsl === session.workingCopy.canonicalDesignDsl) {
+    return { state: 'no-op', session };
+  }
+  if (textEncoder.encode(nextWorkingCopy.canonicalDesignDsl).byteLength > MAX_CANONICAL_BYTES) {
+    return { state: 'invalid', session, reason: 'CANONICAL_SIZE_EXCEEDED' };
+  }
+  if (inspectDesignDslWire(nextWorkingCopy.designDsl).status !== 'supported') {
+    return { state: 'invalid', session, reason: 'WORKING_COPY_INVALID' };
+  }
+  return {
+    state: 'applied',
+    session: {
+      ...session,
+      workingCopy: nextWorkingCopy,
+      history: structuredHistory(appendBounded(session.history.past, command), []),
+      previewGeneration: session.previewGeneration + 1,
+    },
   };
 }
 
@@ -296,60 +352,17 @@ export function canonicalStringifyWorkingValue(value: unknown): string {
   return canonical;
 }
 
-function normalizeDisplayName(rawValue: string):
-  | { state: 'valid'; value: string }
-  | {
-    state: 'invalid';
-    reason: 'DISPLAY_NAME_REQUIRED' | 'DISPLAY_NAME_TOO_LONG' | 'DISPLAY_NAME_INVALID_UNICODE';
-    message: string;
-  } {
-  const value = javaTrim(rawValue);
-  if (!hasOnlyUnicodeScalars(value)) {
-    return {
-      state: 'invalid',
-      reason: 'DISPLAY_NAME_INVALID_UNICODE',
-      message: 'Template 名称包含无效 Unicode。',
-    };
+function templateDisplayNameInvalidMessage(
+  reason: TemplateEditorDisplayNameInvalidReason,
+): string {
+  switch (reason) {
+    case 'DISPLAY_NAME_REQUIRED':
+      return 'Template 名称不能为空。';
+    case 'DISPLAY_NAME_TOO_LONG':
+      return 'Template 名称最多 128 个 Unicode 字符。';
+    case 'DISPLAY_NAME_INVALID_UNICODE':
+      return 'Template 名称包含无效 Unicode。';
   }
-  const codePoints = Array.from(value).length;
-  if (codePoints === 0) {
-    return {
-      state: 'invalid',
-      reason: 'DISPLAY_NAME_REQUIRED',
-      message: 'Template 名称不能为空。',
-    };
-  }
-  if (codePoints > MAX_DISPLAY_NAME_CODE_POINTS) {
-    return {
-      state: 'invalid',
-      reason: 'DISPLAY_NAME_TOO_LONG',
-      message: 'Template 名称最多 128 个 Unicode 字符。',
-    };
-  }
-  return { state: 'valid', value };
-}
-
-function javaTrim(value: string): string {
-  let start = 0;
-  let end = value.length;
-  while (start < end && value.charCodeAt(start) <= 0x20) start += 1;
-  while (end > start && value.charCodeAt(end - 1) <= 0x20) end -= 1;
-  return value.slice(start, end);
-}
-
-function hasOnlyUnicodeScalars(value: string): boolean {
-  for (let index = 0; index < value.length; index += 1) {
-    const current = value.charCodeAt(index);
-    if (current >= 0xd800 && current <= 0xdbff) {
-      if (index + 1 >= value.length) return false;
-      const next = value.charCodeAt(index + 1);
-      if (next < 0xdc00 || next > 0xdfff) return false;
-      index += 1;
-    } else if (current >= 0xdc00 && current <= 0xdfff) {
-      return false;
-    }
-  }
-  return true;
 }
 
 function replayCommand(
@@ -380,13 +393,16 @@ function replayCommand(
         command.parentNodeId,
         (children) => {
           if (direction === 'forward') {
-            if (command.childIndex !== children.length) {
+            if (command.childIndex < 0 || command.childIndex > children.length) {
               throw new Error('Insert-node history index drifted');
             }
-            return [
-              ...children,
+            const next = [...children];
+            next.splice(
+              command.childIndex,
+              0,
               cloneCanonicalRecord(command.node as Record<string, unknown>),
-            ];
+            );
+            return next;
           }
           const authored = children[command.childIndex];
           if (!isRecord(authored) || authored.nodeId !== command.node.nodeId) {
@@ -399,6 +415,98 @@ function replayCommand(
       return workingCopyFromDesignDsl({
         ...workingCopy.designDsl,
         designRoot: rewritten.node,
+      });
+    }
+    case 'delete-node': {
+      const designRoot = editableDesignRoot(workingCopy);
+      const rewritten = rewriteNodeChildren(
+        designRoot,
+        command.parentNodeId,
+        (children) => {
+          if (direction === 'forward') {
+            const authored = children[command.childIndex];
+            if (!isRecord(authored) || authored.nodeId !== command.node.nodeId) {
+              throw new Error('Delete-node history identity drifted');
+            }
+            return children.filter((_, index) => index !== command.childIndex);
+          }
+          if (command.childIndex < 0 || command.childIndex > children.length) {
+            throw new Error('Delete-node history index drifted');
+          }
+          const next = [...children];
+          next.splice(
+            command.childIndex,
+            0,
+            cloneCanonicalRecord(command.node as Record<string, unknown>),
+          );
+          return next;
+        },
+      );
+      if (!rewritten.found) throw new Error('Delete-node history parent drifted');
+      return workingCopyFromDesignDsl({
+        ...workingCopy.designDsl,
+        designRoot: rewritten.node,
+      });
+    }
+    case 'replace-node-shell': {
+      const designRoot = editableDesignRoot(workingCopy);
+      const expected = direction === 'forward' ? command.before : command.after;
+      const replacement = direction === 'forward' ? command.after : command.before;
+      const rewritten = rewriteNode(
+        designRoot,
+        command.nodeId,
+        (current) => {
+          const currentShell = nodeShell(current);
+          if (canonicalStringifyWorkingValue(currentShell)
+            !== canonicalStringifyWorkingValue(expected)) {
+            throw new Error('Replace-node history shell drifted');
+          }
+          const next = cloneCanonicalRecord(replacement as Record<string, unknown>);
+          if (Array.isArray(current.children)) next.children = current.children;
+          return next;
+        },
+      );
+      if (!rewritten.found) throw new Error('Replace-node history identity drifted');
+      return workingCopyFromDesignDsl({
+        ...workingCopy.designDsl,
+        designRoot: rewritten.node,
+      });
+    }
+    case 'move-node': {
+      const source = direction === 'forward' ? command.before : command.after;
+      const destination = direction === 'forward' ? command.after : command.before;
+      const designRoot = editableDesignRoot(workingCopy);
+      const removed = removeChildAt(
+        designRoot,
+        source.parentNodeId,
+        source.childIndex,
+        command.nodeId,
+      );
+      if (!removed.found || !removed.removed) {
+        throw new Error('Move-node history source drifted');
+      }
+      const currentPlacement = isRecord(removed.removed.placement)
+        ? removed.removed.placement
+        : null;
+      if (!currentPlacement
+        || canonicalStringifyWorkingValue(currentPlacement)
+          !== canonicalStringifyWorkingValue(source.placement)) {
+        throw new Error('Move-node history placement drifted');
+      }
+      const moving = {
+        ...removed.removed,
+        placement: cloneCanonicalRecord(destination.placement as Record<string, unknown>),
+      };
+      const inserted = insertChildAt(
+        removed.node,
+        destination.parentNodeId,
+        destination.childIndex,
+        moving,
+      );
+      if (!inserted.found) throw new Error('Move-node history destination drifted');
+      return workingCopyFromDesignDsl({
+        ...workingCopy.designDsl,
+        designRoot: inserted.node,
       });
     }
   }
@@ -436,13 +544,38 @@ function appendBounded(
 }
 
 function freezeStructuredCommand(command: StructuredEditorCommand): StructuredEditorCommand {
-  if (command.kind === 'insert-node') {
-    return Object.freeze({
-      ...command,
-      node: deepFreeze(cloneCanonicalRecord(command.node as Record<string, unknown>)),
-    });
+  switch (command.kind) {
+    case 'insert-node':
+    case 'delete-node':
+      return Object.freeze({
+        ...command,
+        node: deepFreeze(cloneCanonicalRecord(command.node as Record<string, unknown>)),
+      });
+    case 'replace-node-shell':
+      return Object.freeze({
+        ...command,
+        before: deepFreeze(cloneCanonicalRecord(command.before as Record<string, unknown>)),
+        after: deepFreeze(cloneCanonicalRecord(command.after as Record<string, unknown>)),
+      });
+    case 'move-node':
+      return Object.freeze({
+        ...command,
+        before: Object.freeze({
+          ...command.before,
+          placement: deepFreeze(cloneCanonicalRecord(
+            command.before.placement as Record<string, unknown>,
+          )),
+        }),
+        after: Object.freeze({
+          ...command.after,
+          placement: deepFreeze(cloneCanonicalRecord(
+            command.after.placement as Record<string, unknown>,
+          )),
+        }),
+      });
+    case 'set-template-display-name':
+      return Object.freeze({ ...command });
   }
-  return Object.freeze({ ...command });
 }
 
 function workingCopyFromDesignDsl(
@@ -489,6 +622,73 @@ function rewriteNodeChildren(
     return { node: { ...node, children }, found: true };
   }
   return { node, found: false };
+}
+
+function rewriteNode(
+  node: Record<string, unknown>,
+  nodeId: string,
+  rewrite: (node: Record<string, unknown>) => Record<string, unknown>,
+): { node: Record<string, unknown>; found: boolean } {
+  if (node.nodeId === nodeId) return { node: rewrite(node), found: true };
+  if (!Array.isArray(node.children)) return { node, found: false };
+  for (let index = 0; index < node.children.length; index += 1) {
+    const child = node.children[index];
+    if (!isRecord(child)) continue;
+    const rewritten = rewriteNode(child, nodeId, rewrite);
+    if (!rewritten.found) continue;
+    const children = [...node.children];
+    children[index] = rewritten.node;
+    return { node: { ...node, children }, found: true };
+  }
+  return { node, found: false };
+}
+
+function removeChildAt(
+  root: Record<string, unknown>,
+  parentNodeId: string,
+  childIndex: number,
+  childNodeId: string,
+): { node: Record<string, unknown>; found: boolean; removed?: Record<string, unknown> } {
+  let removed: Record<string, unknown> | undefined;
+  const rewritten = rewriteNodeChildren(root, parentNodeId, (children) => {
+    const child = children[childIndex];
+    if (!isRecord(child) || child.nodeId !== childNodeId) {
+      throw new Error('Child location drifted');
+    }
+    removed = child;
+    return children.filter((_, index) => index !== childIndex);
+  });
+  return { ...rewritten, ...(removed ? { removed } : {}) };
+}
+
+function insertChildAt(
+  root: Record<string, unknown>,
+  parentNodeId: string,
+  childIndex: number,
+  child: Record<string, unknown>,
+): { node: Record<string, unknown>; found: boolean } {
+  return rewriteNodeChildren(root, parentNodeId, (children) => {
+    if (childIndex < 0 || childIndex > children.length) {
+      throw new Error('Child insertion index drifted');
+    }
+    const next = [...children];
+    next.splice(childIndex, 0, child);
+    return next;
+  });
+}
+
+function nodeShell(node: Record<string, unknown>): Record<string, unknown> {
+  const shell = { ...node };
+  delete shell.children;
+  return shell;
+}
+
+function editableDesignRoot(workingCopy: CanonicalDesignWorkingCopy): Record<string, unknown> {
+  const designRoot = isRecord(workingCopy.designDsl.designRoot)
+    ? workingCopy.designDsl.designRoot
+    : null;
+  if (!designRoot) throw new Error('Structured working copy has no DesignDSL root');
+  return designRoot;
 }
 
 function invalidNodeInsertion(

@@ -241,7 +241,7 @@ describe('Template Editor E8 import modes and replacement guard', () => {
 
     fireEvent.click(screen.getByRole('button', { name: '保存 canonical 本地草稿' }));
     await waitFor(() => expect(putCurrent).toHaveBeenCalledTimes(1));
-    fireEvent.click(screen.getByRole('button', { name: '交换' }));
+    fireEvent.click(screen.getByRole('button', { name: '导入 / 导出' }));
     expect(screen.getByLabelText('选择本地 Template 文件').hasAttribute('disabled')).toBe(true);
 
     settle({ status: 200, body: await saveResponse(session, '8') });
@@ -258,7 +258,7 @@ describe('Template Editor E8 import modes and replacement guard', () => {
 
     fireEvent.click(screen.getByRole('button', { name: '保存 canonical 本地草稿' }));
     expect(await screen.findByText('保存结果仍未知')).toBeTruthy();
-    fireEvent.click(screen.getByRole('button', { name: '交换' }));
+    fireEvent.click(screen.getByRole('button', { name: '导入 / 导出' }));
 
     expect(screen.getByLabelText('选择本地 Template 文件').hasAttribute('disabled')).toBe(true);
   });
@@ -285,7 +285,7 @@ describe('Template Editor E8 import modes and replacement guard', () => {
     />);
 
     expect(await screen.findByRole('heading', { name: '发现此设备上的本地恢复草稿' })).toBeTruthy();
-    fireEvent.click(screen.getByRole('button', { name: '交换' }));
+    fireEvent.click(screen.getByRole('button', { name: '导入 / 导出' }));
 
     expect(screen.getByLabelText('选择本地 Template 文件').hasAttribute('disabled')).toBe(true);
     expect(screen.getByRole('heading', { level: 1, name: '门店价签' })).toBeTruthy();
@@ -293,7 +293,7 @@ describe('Template Editor E8 import modes and replacement guard', () => {
 });
 
 async function inspectFile(contents: string | Uint8Array) {
-  fireEvent.click(screen.getByRole('button', { name: '交换' }));
+  fireEvent.click(screen.getByRole('button', { name: '导入 / 导出' }));
   const bytes = typeof contents === 'string' ? encoder.encode(contents) : contents;
   const file = new File([copyArrayBuffer(bytes)], 'import.design.json', {
     type: 'application/vnd.renderweave.design+json',

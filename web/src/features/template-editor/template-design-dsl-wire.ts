@@ -1,4 +1,8 @@
 import { isLosslessNumber } from 'lossless-json';
+import {
+  TEMPLATE_DESIGN_CONTAINER_NODE_KINDS,
+  TEMPLATE_DESIGN_NODE_KINDS,
+} from './template-editor-node-contract';
 
 export const DESIGN_DSL_VERSION = 'renderweave-design/1.0';
 export const EXPRESSION_PROFILE = 'renderweave-expression/1.0';
@@ -33,7 +37,7 @@ export function inspectDesignDslWire(
   definitions?.forEach((entry, index) => inspector.definition(entry, `definitions[${index}]`));
   if (isRecord(root.designRoot)
     && typeof root.designRoot.kind === 'string'
-    && NODE_KINDS.has(root.designRoot.kind)
+    && TEMPLATE_DESIGN_NODE_KINDS.has(root.designRoot.kind)
     && root.designRoot.kind !== 'canvas') {
     inspector.malformed('designRoot.kind');
   }
@@ -226,7 +230,7 @@ class ClosedWireInspector {
     if (!node) return;
     this.requiredString(node.nodeId, `${path}.nodeId`);
     const kind = node.kind;
-    if (!this.union(kind, NODE_KINDS, `${path}.kind`)) return;
+    if (!this.union(kind, TEMPLATE_DESIGN_NODE_KINDS, `${path}.kind`)) return;
     const allowed = kind === 'canvas' ? CANVAS_MEMBERS : NODE_MEMBERS[kind] ?? COMMON_NODE_MEMBERS;
     this.allowed(node, allowed, path);
     this.bindings(node.bindings, `${path}.bindings`);
@@ -282,7 +286,7 @@ class ClosedWireInspector {
       this.source(this.required(node.condition, `${path}.condition`), `${path}.condition`);
     }
 
-    if (CONTAINER_NODE_KINDS.has(kind)) {
+    if (TEMPLATE_DESIGN_CONTAINER_NODE_KINDS.has(kind)) {
       const children = this.array(node.children, `${path}.children`);
       children?.forEach((child, index) => this.node(child, `${path}.children[${index}]`));
     }
@@ -490,9 +494,7 @@ const BARCODE_MEMBERS = set('format', 'value', 'foregroundColor', 'backgroundCol
 const POINT_MM_MEMBERS = set('xMm', 'yMm');
 const TEMPLATE_USE_MEMBERS = set('useId', 'templateRef', 'contextSelector', 'fills');
 const CONDITIONAL_MEMBERS = set('condition', 'absentPolicy');
-const NODE_KINDS = set('canvas', 'group', 'frame', 'stack', 'grid', 'repeat', 'text', 'image', 'rect', 'ellipse', 'line', 'polygon', 'polyline', 'path', 'qrCode', 'barcode', 'templateUse', 'conditional');
-export const SUPPORTED_NODE_KIND_COUNT = NODE_KINDS.size;
-const CONTAINER_NODE_KINDS = set('canvas', 'group', 'frame', 'stack', 'grid', 'repeat', 'conditional');
+export const SUPPORTED_NODE_KIND_COUNT = TEMPLATE_DESIGN_NODE_KINDS.size;
 
 const NODE_MEMBERS: Record<string, ReadonlySet<string>> = {
   group: union(COMMON_NODE_MEMBERS, CONTAINER_MEMBERS),

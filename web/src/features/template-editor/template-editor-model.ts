@@ -53,7 +53,44 @@ export interface InsertNodeCommand {
   node: Readonly<Record<string, unknown>>;
 }
 
-export type StructuredEditorCommand = SetTemplateDisplayNameCommand | InsertNodeCommand;
+export interface DeleteNodeCommand {
+  kind: 'delete-node';
+  parentNodeId: string;
+  childIndex: number;
+  node: Readonly<Record<string, unknown>>;
+}
+
+/**
+ * Replaces authored members on one node without copying its descendant tree into history.
+ * The before/after shells deliberately omit `children`; replay preserves the current children.
+ */
+export interface ReplaceNodeShellCommand {
+  kind: 'replace-node-shell';
+  nodeId: string;
+  before: Readonly<Record<string, unknown>>;
+  after: Readonly<Record<string, unknown>>;
+}
+
+export interface NodeTreeLocation {
+  parentNodeId: string;
+  childIndex: number;
+  placement: Readonly<Record<string, unknown>>;
+}
+
+/** A compact reversible reparent/reorder record; the moved subtree itself is not duplicated. */
+export interface MoveNodeCommand {
+  kind: 'move-node';
+  nodeId: string;
+  before: NodeTreeLocation;
+  after: NodeTreeLocation;
+}
+
+export type StructuredEditorCommand =
+  | SetTemplateDisplayNameCommand
+  | InsertNodeCommand
+  | DeleteNodeCommand
+  | ReplaceNodeShellCommand
+  | MoveNodeCommand;
 
 export interface StructuredEditorHistory {
   past: readonly StructuredEditorCommand[];
