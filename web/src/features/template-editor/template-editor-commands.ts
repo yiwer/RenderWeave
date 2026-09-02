@@ -22,11 +22,19 @@ import {
   proveTemplateStructureCommandSafety,
   type TemplateStructureSafetyProblemCode,
 } from './template-editor-structure-safety';
+import {
+  buildTemplateShapePresetNode,
+  buildTemplateVisualNode,
+  updateTemplateVisualNodeProperty,
+  type TemplateShapePreset,
+  type TemplateVisualLeafKind,
+  type TemplateVisualPropertyChange,
+} from './template-editor-visual-authoring';
 
 const UUID_V4 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 const COLOR = /^#[0-9A-Fa-f]{8}$/;
 
-export type CoreInsertableNodeKind = 'frame' | 'stack' | 'rect';
+export type CoreInsertableNodeKind = 'frame' | 'stack' | TemplateVisualLeafKind;
 export type TemplateTreeDropPosition = 'before' | 'into' | 'after';
 export type TemplateSiblingOrder = 'front' | 'forward' | 'backward' | 'back';
 
@@ -36,6 +44,8 @@ export type TemplateEditorCommandIntent =
     nodeKind: CoreInsertableNodeKind;
     parentNodeId: string;
     at?: { xMm: number; yMm: number };
+    assetId?: string;
+    shapePreset?: TemplateShapePreset;
   }
   | { operation: 'rename'; nodeId: string; displayName: string }
   | { operation: 'delete'; nodeId: string }
@@ -56,7 +66,7 @@ export type TemplateEditorCommandIntent =
     operation: 'set-property';
     nodeId: string;
     property: 'fillColor' | 'backgroundColor' | 'clipContent' | 'direction' | 'gapMm'
-      | 'canvasWidthMm' | 'canvasHeightMm';
+      | 'canvasWidthMm' | 'canvasHeightMm' | TemplateVisualPropertyChange['property'];
     value: unknown;
   };
 
@@ -87,6 +97,8 @@ export type TemplateEditorCommandProblemCode =
   | 'NODE_ID_UNAVAILABLE'
   | 'NODE_ID_INVALID'
   | 'NODE_ID_DUPLICATE'
+  | 'ASSET_REQUIRED'
+  | 'ASSET_ID_INVALID'
   | 'PARENT_NOT_FOUND'
   | 'PARENT_CANNOT_HAVE_CHILDREN'
   | 'CANVAS_MUTATION_FORBIDDEN'
@@ -200,17 +212,24 @@ function resolveInsert(
   if (findNode(root, nodeId)) {
     return rejected(session, 'NODE_ID_DUPLICATE', '浏览器生成的 nodeId 已存在。');
   }
-  const parentKind = stringMember(parent, 'kind');
-  const placement = placementForParent(
-    parentKind,
-    defaultSize(intent.nodeKind),
-    intent.at,
-  );
+  const ordinal = countKind(root, intent.nodeKind) + 1;
+  const built = defaultNode(intent, nodeId, ordinal);
+  if (built.state === 'rejected') {
+    const code = built.code === 'ASSET_ID_REQUIRED'
+      ? 'ASSET_REQUIRED'
+      : built.code === 'ASSET_ID_INVALID'
+        ? 'ASSET_ID_INVALID'
+        : 'PROPERTY_INVALID';
+    return rejected(session, code, built.message);
+  }
+  const authoredPlacement = objectOrNull(built.node.placement);
+  const placement = authoredPlacement
+    ? placementForParent(stringMember(parent, 'kind'), placementSize(authoredPlacement), intent.at)
+    : null;
   if (!placement) {
     return rejected(session, 'PLACEMENT_CONVERSION_INVALID', '目标父级没有可用的 placement 合同。');
   }
-  const ordinal = countKind(root, intent.nodeKind) + 1;
-  const node = defaultNode(intent.nodeKind, nodeId, ordinal, placement);
+  const node = { ...built.node, placement };
   const children = parent.children;
   if (!Array.isArray(children)) {
     return rejected(session, 'PARENT_CANNOT_HAVE_CHILDREN', '目标节点没有 children[]。');
@@ -435,6 +454,12 @@ function resolveGeometry(
       || placement.heightMode !== 'FIXED'))) {
     return rejected(session, 'GEOMETRY_INVALID', '只有合法 ABSOLUTE geometry 可写入首批 move/resize。');
   }
+  const finalWidthMm = positiveTemplateNumber(geometry.widthMm ?? placement.widthMm);
+  const finalHeightMm = positiveTemplateNumber(geometry.heightMm ?? placement.heightMm);
+  if (located.node.kind === 'qrCode'
+    && (finalWidthMm === null || finalHeightMm === null || finalWidthMm !== finalHeightMm)) {
+    return rejected(session, 'GEOMETRY_INVALID', '二维码最终尺寸必须是严格正方形。');
+  }
   const before = nodeShell(located.node);
   const after = {
     ...before,
@@ -476,6 +501,17 @@ function resolveProperty(
   }
   const kind = stringMember(located.node, 'kind');
   const before = nodeShell(located.node);
+  if (isVisualLeafKind(kind)) {
+    const change = visualPropertyChange(property, value);
+    if (!change) {
+      return rejected(session, 'PROPERTY_INVALID', '视觉属性值不符合 closed authoring contract。');
+    }
+    const updated = updateTemplateVisualNodeProperty(before, change);
+    if (updated.state === 'rejected') {
+      return rejected(session, 'PROPERTY_INVALID', updated.message);
+    }
+    return replaceNodeCommand(nodeId, before, updated.node, '已更新 authored visual property。');
+  }
   let after: Record<string, unknown>;
   switch (property) {
     case 'fillColor':
@@ -527,6 +563,8 @@ function resolveProperty(
       };
       break;
     }
+    default:
+      return rejected(session, 'PROPERTY_INVALID', '该节点不能使用这个属性。');
   }
   return replaceNodeCommand(nodeId, before, after, '已更新 authored property。');
 }
@@ -546,11 +584,37 @@ function replaceNodeCommand(
 }
 
 function defaultNode(
-  kind: CoreInsertableNodeKind,
+  intent: Extract<TemplateEditorCommandIntent, { operation: 'insert' }>,
   nodeId: string,
   ordinal: number,
-  placement: Record<string, unknown>,
-): Record<string, unknown> {
+):
+  | { state: 'built'; node: Record<string, unknown> }
+  | { state: 'rejected'; code: string; message: string } {
+  const kind = intent.nodeKind;
+  if (kind !== 'frame' && kind !== 'stack') {
+    const result = intent.shapePreset && kind === 'polygon'
+      ? buildTemplateShapePresetNode({
+        nodeId,
+        ordinal,
+        preset: intent.shapePreset,
+        ...(intent.at ? { at: intent.at } : {}),
+      })
+      : buildTemplateVisualNode({
+        kind,
+        nodeId,
+        ordinal,
+        ...(intent.at ? { at: intent.at } : {}),
+        ...(kind === 'text' ? { fontAssetId: intent.assetId ?? '' } : {}),
+        ...(kind === 'image' ? { imageAssetId: intent.assetId ?? '' } : {}),
+      } as Parameters<typeof buildTemplateVisualNode>[0]);
+    return result.state === 'built'
+      ? { state: 'built', node: result.node as unknown as Record<string, unknown> }
+      : result;
+  }
+  const placement = {
+    type: 'ABSOLUTE', xMm: intent.at?.xMm ?? 25.4, yMm: intent.at?.yMm ?? 25.4,
+    ...defaultContainerSize(),
+  };
   const common = {
     nodeId,
     kind,
@@ -560,28 +624,33 @@ function defaultNode(
   };
   switch (kind) {
     case 'frame':
-      return {
+      return { state: 'built', node: {
         ...common,
         children: [],
         padding: { topMm: 0, rightMm: 0, bottomMm: 0, leftMm: 0 },
-      };
+      } };
     case 'stack':
-      return {
+      return { state: 'built', node: {
         ...common,
         children: [],
         padding: { topMm: 0, rightMm: 0, bottomMm: 0, leftMm: 0 },
         direction: 'COLUMN',
         gapMm: 0,
-      };
-    case 'rect':
-      return { ...common, fill: { color: '#2563EBFF' } };
+      } };
   }
 }
 
-function defaultSize(kind: CoreInsertableNodeKind): Record<string, unknown> {
-  const widthMm = kind === 'rect' ? 25.4 : 80;
-  const heightMm = kind === 'rect' ? 25.4 : 60;
+function defaultContainerSize(): Record<string, unknown> {
+  const widthMm = 80;
+  const heightMm = 60;
   return { widthMode: 'FIXED', widthMm, heightMode: 'FIXED', heightMm };
+}
+
+function placementSize(placement: Record<string, unknown>): Record<string, unknown> {
+  return Object.fromEntries([
+    'widthMode', 'widthMm', 'heightMode', 'heightMm',
+    'minWidthMm', 'minHeightMm', 'maxWidthMm', 'maxHeightMm',
+  ].filter((key) => Object.hasOwn(placement, key)).map((key) => [key, placement[key]]));
 }
 
 function placementForParent(
@@ -707,6 +776,82 @@ function countKind(node: Record<string, unknown>, kind: string): number {
   return count;
 }
 
+const VISUAL_LEAF_KINDS: ReadonlySet<string> = new Set([
+  'text', 'image', 'rect', 'ellipse', 'line', 'polygon',
+  'polyline', 'path', 'qrCode', 'barcode',
+]);
+
+function isVisualLeafKind(value: unknown): value is TemplateVisualLeafKind {
+  return typeof value === 'string' && VISUAL_LEAF_KINDS.has(value);
+}
+
+function visualPropertyChange(
+  property: Extract<TemplateEditorCommandIntent, { operation: 'set-property' }>['property'],
+  value: unknown,
+): TemplateVisualPropertyChange | null {
+  switch (property) {
+    case 'text':
+    case 'fontRef':
+    case 'imageRef':
+    case 'fillColor':
+    case 'strokeColor':
+    case 'textColor':
+    case 'content':
+    case 'barcodeValue':
+    case 'foregroundColor':
+    case 'backgroundColor':
+      if (typeof value !== 'string') return null;
+      return property === 'fontRef' || property === 'imageRef'
+        ? { property, assetId: value } as TemplateVisualPropertyChange
+        : { property, value } as TemplateVisualPropertyChange;
+    case 'fontSizePt':
+    case 'letterSpacingPt':
+    case 'letterSpacingFactor':
+    case 'strokeWidthMm':
+    case 'cornerRadiusMm':
+      return typeof value === 'number' && Number.isFinite(value)
+        ? { property, value } as TemplateVisualPropertyChange
+        : null;
+    case 'decoration':
+      return value === 'NONE' || value === 'UNDERLINE' || value === 'LINE_THROUGH'
+        ? { property, value }
+        : null;
+    case 'fit':
+      return value === 'CONTAIN' || value === 'COVER' || value === 'FILL'
+        ? { property, value }
+        : null;
+    case 'sampling':
+      return value === 'LINEAR' || value === 'NEAREST'
+        ? { property, value }
+        : null;
+    case 'fillRule':
+      return value === 'NONZERO' || value === 'EVEN_ODD'
+        ? { property, value }
+        : null;
+    case 'errorCorrectionLevel':
+      return value === 'L' || value === 'M' || value === 'Q' || value === 'H'
+        ? { property, value }
+        : null;
+    case 'format':
+      return value === 'EAN_8' || value === 'EAN_13'
+        || value === 'UPC_A' || value === 'CODE_128'
+        ? { property, value }
+        : null;
+    case 'start':
+    case 'end':
+      return objectOrNull(value)
+        ? { property, value } as unknown as TemplateVisualPropertyChange
+        : null;
+    case 'points':
+    case 'commands':
+      return Array.isArray(value)
+        ? { property, value } as unknown as TemplateVisualPropertyChange
+        : null;
+    default:
+      return null;
+  }
+}
+
 function canAcceptCoreChildren(node: Record<string, unknown>): boolean {
   return isCoreTemplateAuthoringParentKind(node.kind)
     && Array.isArray(node.children);
@@ -731,7 +876,21 @@ function stringMember(value: Record<string, unknown>, member: string): string | 
 }
 
 function kindLabel(kind: CoreInsertableNodeKind): string {
-  return kind === 'frame' ? '框架' : kind === 'stack' ? '堆叠' : '矩形';
+  const labels: Record<CoreInsertableNodeKind, string> = {
+    frame: '框架',
+    stack: '堆叠',
+    text: '文本',
+    image: '图片',
+    rect: '矩形',
+    ellipse: '椭圆',
+    line: '直线',
+    polygon: '多边形',
+    polyline: '折线',
+    path: '路径',
+    qrCode: '二维码',
+    barcode: '条形码',
+  };
+  return labels[kind];
 }
 
 function defaultNodeId(): string {

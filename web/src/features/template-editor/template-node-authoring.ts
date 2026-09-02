@@ -9,6 +9,10 @@ import {
   isTemplateDesignContainerKind,
 } from './template-editor-node-contract';
 import { applyNodeInsertion } from './template-editor-session';
+import {
+  buildTemplateVisualNode,
+  templateVisualDefaultSize,
+} from './template-editor-visual-authoring';
 
 const UUID_V4 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 
@@ -129,25 +133,18 @@ function buildRectNode(
   ordinal: number,
   parentKind: string,
 ): Readonly<Record<string, unknown>> {
-  return {
-    nodeId,
-    kind: 'rect',
-    displayName: `矩形 ${ordinal}`,
-    bindings: [],
-    placement: placementFor(parentKind),
-    fill: { color: '#2563EBFF' },
-  };
+  const built = buildTemplateVisualNode({ kind: 'rect', nodeId, ordinal });
+  if (built.state === 'rejected') throw new Error(built.message);
+  return { ...built.node, placement: placementFor(parentKind) };
 }
 
-// One inch lowers to exactly 72 pt, so the default Rect remains pixel-aligned at integral DPI.
-const RENDERABLE_RECT_SIZE_MM = 25.4;
-
 function placementFor(parentKind: string): Readonly<Record<string, unknown>> {
+  const { widthMm, heightMm } = templateVisualDefaultSize('rect');
   const size = {
     widthMode: 'FIXED',
-    widthMm: RENDERABLE_RECT_SIZE_MM,
+    widthMm,
     heightMode: 'FIXED',
-    heightMm: RENDERABLE_RECT_SIZE_MM,
+    heightMm,
   };
   const placement = expectedTemplateChildPlacement(parentKind);
   if (placement === 'STACK') return { type: placement, ...size };
@@ -155,8 +152,8 @@ function placementFor(parentKind: string): Readonly<Record<string, unknown>> {
   if (placement === 'PACK') return { type: placement, ...size };
   return {
     type: placement ?? 'ABSOLUTE',
-    xMm: RENDERABLE_RECT_SIZE_MM,
-    yMm: RENDERABLE_RECT_SIZE_MM,
+    xMm: widthMm,
+    yMm: heightMm,
     ...size,
   };
 }

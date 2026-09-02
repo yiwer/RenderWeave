@@ -27,6 +27,20 @@ const COMPLETE_WIRE_FIXTURE = readFileSync(path.resolve(
   'all-kinds.json',
 ), 'utf8');
 const COMPLETE_WIRE_EDITED_NAME = 'Complete wire edited in Structured mode';
+const FONT_FIXTURE = readFileSync(path.resolve(
+  process.cwd(),
+  '..',
+  'renderweave-asset',
+  'src',
+  'test',
+  'resources',
+  'asset-fixtures',
+  'minimal-ttf.ttf',
+));
+const PNG_FIXTURE = Buffer.from(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=',
+  'base64',
+);
 
 interface TemplateCurrentBody {
   templateId: string;
@@ -43,7 +57,15 @@ interface InvalidConfirmationBody {
   problems: Array<{ code: string; canonicalPointer: string }>;
 }
 
-interface AuthoredNodeBody {
+interface AssetCurrentBody {
+  assetId: string;
+  disclosure: 'READABLE';
+  kind: 'IMAGE' | 'FONT';
+  lifecycle: 'ACTIVE' | 'DELETED';
+  displayName: string;
+}
+
+interface AuthoredNodeBody extends Record<string, unknown> {
   nodeId: string;
   kind: string;
   displayName?: string;
@@ -133,7 +155,14 @@ test.describe('complete DesignDSL real Template round trip', () => {
     );
     expectCompleteWireCoverage(reloaded.designDsl);
     expect(browserErrors.filter((message) => message.includes('status of 422'))).toHaveLength(1);
-    expect(browserErrors.filter((message) => !message.includes('status of 422'))).toEqual([]);
+    // The deliberately INVALID complete-wire fixture contains unresolved Font/Image
+    // AssetRefs. The production editor now resolves those refs to show authored
+    // dependency feedback, so Chromium reports the expected 404 resource probes.
+    expect(browserErrors.filter((message) => message.includes('status of 404')).length)
+      .toBeGreaterThanOrEqual(2);
+    expect(browserErrors.filter((message) => (
+      !message.includes('status of 422') && !message.includes('status of 404')
+    ))).toEqual([]);
   });
 
   test('authors Frame, Stack and Rect through the production shell and reloads their exact tree and geometry', async ({ page }) => {
@@ -264,6 +293,126 @@ test.describe('complete DesignDSL real Template round trip', () => {
     });
     expect(browserErrors).toEqual([]);
   });
+
+  test('authors every visual leaf with real Assets and preserves exact wire through reload', async ({ page }) => {
+    test.setTimeout(120_000);
+    const browserErrors = captureBrowserErrors(page);
+    await page.setViewportSize({ width: 1440, height: 900 });
+
+    const font = await createE2eAsset(
+      page.request,
+      'FONT',
+      'E2E 价签字体',
+      'template-editor-font-v1',
+      'minimal-ttf.ttf',
+      'font/ttf',
+      FONT_FIXTURE,
+    );
+    const image = await createE2eAsset(
+      page.request,
+      'IMAGE',
+      'E2E 商品图片',
+      'template-editor-image-v1',
+      'product.png',
+      'image/png',
+      PNG_FIXTURE,
+    );
+    const created = await createTemplateForVisualAuthoring(page.request);
+    const initialOpen = page.waitForResponse(templateCurrentResponse(created.templateId));
+    await page.goto(`/templates/${created.templateId}`, { waitUntil: 'domcontentloaded' });
+    expect((await initialOpen).status()).toBe(200);
+    await expect(page.getByRole('main', { name: 'Template 编辑工作区' })).toBeVisible();
+
+    await page.getByRole('button', { name: '元素' }).click();
+    await page.getByRole('button', { name: '添加文本' }).click();
+    await expect(page.getByRole('dialog', { name: '选择字体 Asset' })).toBeVisible();
+    await page.getByRole('button', { name: new RegExp(font.assetId) }).click();
+    const textRow = page.getByRole('treeitem', { name: /文本 1/ });
+    const textId = requiredAttribute(await textRow.getAttribute('data-template-editor-node-id'));
+    await page.getByLabel('文本值', { exact: true }).fill('会员价 ¥19.90');
+    await page.getByLabel('文本值', { exact: true }).press('Enter');
+
+    await page.getByRole('button', { name: '元素' }).click();
+    await page.getByRole('button', { name: '添加图片' }).click();
+    await expect(page.getByRole('dialog', { name: '选择图片 Asset' })).toBeVisible();
+    await page.getByRole('button', { name: new RegExp(image.assetId) }).click();
+    const imageRow = page.getByRole('treeitem', { name: /图片 1/ });
+    const imageNodeId = requiredAttribute(await imageRow.getAttribute('data-template-editor-node-id'));
+    await page.getByLabel('图片适配', { exact: true }).selectOption('COVER');
+
+    await page.getByRole('button', { name: '元素' }).click();
+    const ellipseButton = page.getByRole('button', { name: '添加椭圆' });
+    const artboard = page.locator('.te-artboard');
+    await ellipseButton.dragTo(artboard, { targetPosition: { x: 200, y: 160 } });
+    const ellipseRow = page.getByRole('treeitem', { name: /椭圆 1/ });
+    const ellipseId = requiredAttribute(await ellipseRow.getAttribute('data-template-editor-node-id'));
+    const ellipseBefore = await readSelectedAbsoluteGeometry(page);
+    await dragLocatorBy(
+      page,
+      page.locator(`[data-template-canvas-selection="${ellipseId}"] [data-resize-handle="se"]`),
+      36,
+      8,
+    );
+    await expect.poll(() => readSelectedAbsoluteGeometry(page)).not.toEqual(ellipseBefore);
+    const ellipseGeometry = await readSelectedAbsoluteGeometry(page);
+    expect(ellipseGeometry.widthMm - ellipseBefore.widthMm)
+      .toBeGreaterThan(ellipseGeometry.heightMm - ellipseBefore.heightMm);
+    const projectedEllipse = page.locator(
+      `[data-template-canvas-node-id="${ellipseId}"] [data-template-visual-kind="ellipse"] ellipse`,
+    );
+    await expect(projectedEllipse).toBeVisible();
+    expect(Number(await projectedEllipse.getAttribute('rx')))
+      .toBeGreaterThan(Number(await projectedEllipse.getAttribute('ry')));
+
+    for (const label of [
+      '矩形', '直线', '多边形', '折线', '路径', '二维码', '条形码', '形状',
+    ]) {
+      await page.getByRole('button', { name: '元素' }).click();
+      await page.getByRole('button', { name: `添加${label}` }).click();
+    }
+
+    await expect(page.getByRole('treeitem', { name: /星形/ })).toBeVisible();
+    await expect(page.locator('[data-template-preview-authority="non-certified-local-draft"]'))
+      .toHaveCount(2);
+
+    const saveResponsePromise = page.waitForResponse(
+      templateSaveResponse(created.templateId, 200),
+    );
+    await page.getByRole('button', { name: '保存 canonical 本地草稿' }).click();
+    const saved = await (await saveResponsePromise).json() as TemplateCurrentBody;
+    expect(saved.revision).toBe(1);
+    expect(saved.readiness).toBe('READY');
+    expectVisualAuthoringResult(saved, {
+      textId,
+      imageNodeId,
+      ellipseId,
+      fontAssetId: font.assetId,
+      imageAssetId: image.assetId,
+      ellipseGeometry,
+    });
+
+    const reloadResponse = page.waitForResponse(templateCurrentResponse(created.templateId));
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    expect((await reloadResponse).status()).toBe(200);
+    await expect(page.getByText('revision 1', { exact: true })).toBeVisible();
+    await expect(page.getByRole('treeitem', { name: /文本 1/ })).toBeVisible();
+    await expect(page.getByRole('treeitem', { name: /星形/ })).toBeVisible();
+
+    const reloadedResponse = await page.request.get(`/api/v1/templates/${created.templateId}`);
+    expect(reloadedResponse.status()).toBe(200);
+    const reloaded = await reloadedResponse.json() as TemplateCurrentBody;
+    expect(reloaded.contentHash).toBe(saved.contentHash);
+    expect(reloaded.designDsl).toEqual(saved.designDsl);
+    expectVisualAuthoringResult(reloaded, {
+      textId,
+      imageNodeId,
+      ellipseId,
+      fontAssetId: font.assetId,
+      imageAssetId: image.assetId,
+      ellipseGeometry,
+    });
+    expect(browserErrors).toEqual([]);
+  });
 });
 
 async function createTemplateForCompleteWire(
@@ -320,6 +469,72 @@ async function createTemplateForCoreAuthoring(
   );
   expect(response.status()).toBe(201);
   return response.json() as Promise<TemplateCurrentBody>;
+}
+
+async function createTemplateForVisualAuthoring(
+  request: APIRequestContext,
+): Promise<TemplateCurrentBody> {
+  const initialDesign = JSON.stringify({
+    dslVersion: 'renderweave-design/1.0',
+    expressionProfile: 'renderweave-expression/1.0',
+    displayName: 'Visual authoring E2E',
+    definitions: [],
+    designRoot: {
+      nodeId: '92000000-0000-4000-8000-000000000001',
+      kind: 'canvas',
+      widthMm: 210,
+      heightMm: 297,
+      bindings: [],
+      children: [],
+    },
+  });
+  const response = await request.post(
+    '/api/v1/templates?schemaKey=system-empty&versionTag=v1',
+    {
+      headers: { 'Content-Type': DESIGN_MEDIA_TYPE },
+      data: initialDesign,
+    },
+  );
+  expect(response.status()).toBe(201);
+  const current = await response.json() as TemplateCurrentBody;
+  expect(current).toMatchObject({ revision: 0, readiness: 'READY' });
+  return current;
+}
+
+async function createE2eAsset(
+  request: APIRequestContext,
+  kind: AssetCurrentBody['kind'],
+  displayName: string,
+  idempotencyKey: string,
+  sourceFileName: string,
+  mimeType: string,
+  content: Buffer,
+): Promise<AssetCurrentBody> {
+  const response = await request.post('/api/v1/assets', {
+    headers: { 'Idempotency-Key': idempotencyKey },
+    multipart: {
+      kind,
+      displayName,
+      sourceFileName,
+      content: {
+        name: sourceFileName,
+        mimeType,
+        buffer: content,
+      },
+    },
+  });
+  expect(response.status()).toBe(201);
+  const asset = await response.json() as AssetCurrentBody;
+  expect(asset).toMatchObject({
+    assetId: expect.stringMatching(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/,
+    ),
+    disclosure: 'READABLE',
+    kind,
+    lifecycle: 'ACTIVE',
+    displayName,
+  });
+  return asset;
 }
 
 async function saveAndConfirmInvalid(
@@ -504,6 +719,257 @@ function expectCoreAuthoringResult(
       ...expected.absoluteGeometry,
     },
   });
+}
+
+function expectVisualAuthoringResult(
+  current: TemplateCurrentBody,
+  expected: {
+    textId: string;
+    imageNodeId: string;
+    ellipseId: string;
+    fontAssetId: string;
+    imageAssetId: string;
+    ellipseGeometry: AbsoluteGeometry;
+  },
+): void {
+  expect(current).toMatchObject({ revision: 1, readiness: 'READY' });
+  const root = authoredNode(current.designDsl.designRoot, 'visual DesignDSL root');
+  expect(root).toMatchObject({
+    nodeId: '92000000-0000-4000-8000-000000000001',
+    kind: 'canvas',
+    widthMm: 210,
+    heightMm: 297,
+    bindings: [],
+  });
+  expect(root.children).toHaveLength(11);
+  expect(root.children?.map(({ kind }) => kind)).toEqual([
+    'text',
+    'image',
+    'ellipse',
+    'rect',
+    'line',
+    'polygon',
+    'polyline',
+    'path',
+    'qrCode',
+    'barcode',
+    'polygon',
+  ]);
+  expect(root.children?.map(({ displayName }) => displayName)).toEqual([
+    '文本 1',
+    '图片 1',
+    '椭圆 1',
+    '矩形 1',
+    '直线 1',
+    '多边形 1',
+    '折线 1',
+    '路径 1',
+    '二维码 1',
+    '条形码 1',
+    '星形 2',
+  ]);
+
+  const children = (root.children ?? []).map((child, index) => (
+    authoredNode(child, `visual child ${index}`)
+  ));
+  expect(new Set(children.map(({ nodeId }) => nodeId)).size).toBe(11);
+  for (const child of children) {
+    expect(child.nodeId).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/,
+    );
+    expect(child.bindings).toEqual([]);
+    expect(child).not.toHaveProperty('children');
+  }
+
+  const text = visualChild(children, 0, 'Text');
+  expect(text).toEqual({
+    nodeId: expected.textId,
+    kind: 'text',
+    displayName: '文本 1',
+    bindings: [],
+    placement: fixedVisualPlacement(60, 20),
+    runs: [{
+      text: '会员价 ¥19.90',
+      fontRef: { assetId: expected.fontAssetId },
+      fontSizePt: 12,
+      color: '#000000FF',
+      decoration: 'NONE',
+      letterSpacingPt: 0,
+    }],
+    writingMode: 'HORIZONTAL_TB',
+    horizontalAlign: 'LEFT',
+    verticalAlign: 'TOP',
+    lineBreak: 'WORD',
+    overflow: 'CLIP',
+    lineHeight: { type: 'FACTOR', factor: 1.2 },
+    padding: { topMm: 0, rightMm: 0, bottomMm: 0, leftMm: 0 },
+    fitMode: 'NONE',
+  });
+
+  const image = visualChild(children, 1, 'Image');
+  expect(image).toEqual({
+    nodeId: expected.imageNodeId,
+    kind: 'image',
+    displayName: '图片 1',
+    bindings: [],
+    placement: fixedVisualPlacement(40, 30),
+    imageRef: { assetId: expected.imageAssetId },
+    fit: 'COVER',
+    sampling: 'LINEAR',
+  });
+
+  const ellipse = visualChild(children, 2, 'Ellipse');
+  expect(ellipse).toEqual({
+    nodeId: expected.ellipseId,
+    kind: 'ellipse',
+    displayName: '椭圆 1',
+    bindings: [],
+    placement: {
+      type: 'ABSOLUTE',
+      widthMode: 'FIXED',
+      heightMode: 'FIXED',
+      ...expected.ellipseGeometry,
+    },
+    fill: { color: '#2563EBFF' },
+  });
+
+  expect(visualChild(children, 3, 'Rect')).toMatchObject({
+    kind: 'rect',
+    placement: fixedVisualPlacement(25.4, 25.4),
+    fill: { color: '#2563EBFF' },
+  });
+  expectVisualKeys(children[3], ['fill']);
+
+  expect(visualChild(children, 4, 'Line')).toMatchObject({
+    kind: 'line',
+    placement: fixedVisualPlacement(40, 10),
+    start: { xMm: 0, yMm: 0 },
+    end: { xMm: 40, yMm: 10 },
+    stroke: defaultVisualStroke(),
+  });
+  expectVisualKeys(children[4], ['start', 'end', 'stroke']);
+
+  expect(visualChild(children, 5, 'Polygon')).toMatchObject({
+    kind: 'polygon',
+    placement: fixedVisualPlacement(30, 25),
+    points: [
+      { xMm: 15, yMm: 0 },
+      { xMm: 30, yMm: 25 },
+      { xMm: 0, yMm: 25 },
+    ],
+    fill: { color: '#2563EBFF' },
+  });
+  expectVisualKeys(children[5], ['points', 'fill']);
+
+  expect(visualChild(children, 6, 'Polyline')).toMatchObject({
+    kind: 'polyline',
+    placement: fixedVisualPlacement(30, 20),
+    points: [
+      { xMm: 0, yMm: 20 },
+      { xMm: 15, yMm: 0 },
+      { xMm: 30, yMm: 20 },
+    ],
+    stroke: defaultVisualStroke(),
+  });
+  expectVisualKeys(children[6], ['points', 'stroke']);
+
+  const pathNode = visualChild(children, 7, 'Path');
+  expect(pathNode).toMatchObject({
+    kind: 'path',
+    placement: fixedVisualPlacement(32, 24),
+    commands: [
+      { type: 'MOVE_TO', xMm: 0, yMm: 24 },
+      {
+        type: 'CUBIC_TO',
+        c1xMm: 8,
+        c1yMm: 0,
+        c2xMm: 24,
+        c2yMm: 0,
+        xMm: 32,
+        yMm: 24,
+      },
+      { type: 'CLOSE' },
+    ],
+    fill: { color: '#2563EBFF' },
+    fillRule: 'NONZERO',
+  });
+  expect(pathNode).not.toHaveProperty('pathData');
+  expectVisualKeys(pathNode, ['commands', 'fill', 'fillRule']);
+
+  expect(visualChild(children, 8, 'QRCode')).toMatchObject({
+    kind: 'qrCode',
+    placement: fixedVisualPlacement(25, 25),
+    content: 'RenderWeave',
+    errorCorrectionLevel: 'M',
+    foregroundColor: '#000000FF',
+    backgroundColor: '#FFFFFFFF',
+  });
+  expectVisualKeys(children[8], [
+    'content', 'errorCorrectionLevel', 'foregroundColor', 'backgroundColor',
+  ]);
+
+  expect(visualChild(children, 9, 'Barcode')).toMatchObject({
+    kind: 'barcode',
+    placement: fixedVisualPlacement(50, 20),
+    format: 'CODE_128',
+    value: 'RENDERWEAVE',
+    foregroundColor: '#000000FF',
+    backgroundColor: '#FFFFFFFF',
+  });
+  expectVisualKeys(children[9], [
+    'format', 'value', 'foregroundColor', 'backgroundColor',
+  ]);
+
+  const shape = visualChild(children, 10, 'Shape Polygon');
+  expect(shape).toMatchObject({
+    kind: 'polygon',
+    displayName: '星形 2',
+    placement: fixedVisualPlacement(30, 30),
+    fill: { color: '#2563EBFF' },
+  });
+  expect(shape.points).toHaveLength(10);
+  expect(shape).not.toHaveProperty('shape');
+  expect(shape).not.toHaveProperty('preset');
+  expectVisualKeys(shape, ['points', 'fill']);
+}
+
+function visualChild(
+  children: readonly AuthoredNodeBody[],
+  index: number,
+  label: string,
+): AuthoredNodeBody {
+  return authoredNode(children[index], label);
+}
+
+function fixedVisualPlacement(widthMm: number, heightMm: number): Record<string, unknown> {
+  return {
+    type: 'ABSOLUTE',
+    xMm: 25.4,
+    yMm: 25.4,
+    widthMode: 'FIXED',
+    widthMm,
+    heightMode: 'FIXED',
+    heightMm,
+  };
+}
+
+function defaultVisualStroke(): Record<string, unknown> {
+  return { color: '#172033FF', widthMm: 0.5, cap: 'ROUND', join: 'ROUND' };
+}
+
+function expectVisualKeys(
+  value: AuthoredNodeBody | undefined,
+  visualKeys: readonly string[],
+): void {
+  const node = authoredNode(value, 'visual node key set');
+  expect(Object.keys(node).sort()).toEqual([
+    'nodeId',
+    'kind',
+    'displayName',
+    'bindings',
+    'placement',
+    ...visualKeys,
+  ].sort());
 }
 
 function authoredNode(value: unknown, location: string): AuthoredNodeBody {

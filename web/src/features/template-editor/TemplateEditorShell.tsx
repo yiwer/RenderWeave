@@ -1,8 +1,10 @@
 import {
   AlertTriangle,
+  Barcode,
   Box,
   Braces,
   CheckCircle2,
+  Circle,
   Download,
   FileJson,
   FlaskConical,
@@ -10,15 +12,20 @@ import {
   Hand,
   Image,
   LoaderCircle,
+  Minus,
   MousePointer2,
   PanelLeft,
   PanelRight,
   PencilLine,
   Redo2,
   RefreshCw,
+  QrCode,
   Save,
+  Shapes,
   ShieldCheck,
+  Spline,
   SquarePlus,
+  Type,
   Undo2,
   Unplug,
   Wrench,
@@ -61,6 +68,13 @@ import {
   type CoreInsertableNodeKind,
   type TemplateEditorCommandIntent,
 } from './template-editor-commands';
+import {
+  defaultTemplateEditorAssetTransport,
+  resolveTemplateAssetRef,
+  type TemplateAssetResolution,
+  type TemplateEditorAssetKind,
+  type TemplateEditorAssetTransport,
+} from './template-editor-assets';
 import { isCoreTemplateAuthoringParentKind } from './template-editor-node-contract';
 import {
   BARE_DESIGN_DSL_MEDIA_TYPE,
@@ -126,7 +140,12 @@ import {
   type TemplatePreviewRequest,
   type TemplatePreviewTransport,
 } from './template-preview';
-import { TEMPLATE_NODE_DRAG_MIME, TemplateEditorCanvas } from './TemplateEditorCanvas';
+import {
+  TEMPLATE_NODE_DRAG_MIME,
+  TemplateEditorCanvas,
+  type TemplateCanvasDropKind,
+} from './TemplateEditorCanvas';
+import { TemplateEditorAssetPicker } from './TemplateEditorAssetPicker';
 import { TemplateEditorInspector } from './TemplateEditorInspector';
 import { TemplateEditorStructureTree } from './TemplateEditorStructureTree';
 import './template-editor.css';
@@ -180,6 +199,7 @@ interface TemplateEditorShellProps {
   recoveryStorage?: TemplateRecoveryStorage;
   recoveryNow?: () => number;
   download?: TemplateEditorDownload;
+  assetTransport?: TemplateEditorAssetTransport;
 }
 
 export interface TemplateEditorDownloadArtifact {
@@ -201,6 +221,7 @@ export function TemplateEditorShell({
   recoveryStorage,
   recoveryNow = Date.now,
   download = defaultTemplateEditorDownload,
+  assetTransport = defaultTemplateEditorAssetTransport,
 }: TemplateEditorShellProps) {
   const preview = useTemplatePreviewCoordinator(session, previewTransport, previewObjectUrls);
   if (session.mode === 'raw-repair') {
@@ -225,6 +246,7 @@ export function TemplateEditorShell({
       recoveryStorage={recoveryStorage}
       recoveryNow={recoveryNow}
       download={download}
+      assetTransport={assetTransport}
     />
   );
 }
@@ -238,6 +260,7 @@ interface TemplateEditorSurfaceProps {
   recoveryStorage?: TemplateRecoveryStorage;
   recoveryNow?: () => number;
   download?: TemplateEditorDownload;
+  assetTransport?: TemplateEditorAssetTransport;
 }
 
 type SurfaceState =
@@ -254,6 +277,7 @@ export function TemplateEditorSurface({
   recoveryStorage,
   recoveryNow = Date.now,
   download,
+  assetTransport = defaultTemplateEditorAssetTransport,
 }: TemplateEditorSurfaceProps) {
   const [retryKey, setRetryKey] = useState(0);
   const [surface, setSurface] = useState<SurfaceState>({ state: 'loading' });
@@ -321,6 +345,7 @@ export function TemplateEditorSurface({
       recoveryStorage={effectiveRecoveryStorage}
       recoveryNow={recoveryNow}
       download={download}
+      assetTransport={assetTransport}
     />
   );
 }
@@ -405,6 +430,7 @@ function StructuredShell({
   recoveryStorage,
   recoveryNow,
   download,
+  assetTransport,
 }: {
   session: StructuredEditorSession;
   onRetryReadiness?: () => void;
@@ -415,6 +441,7 @@ function StructuredShell({
   recoveryStorage?: TemplateRecoveryStorage;
   recoveryNow: () => number;
   download: TemplateEditorDownload;
+  assetTransport: TemplateEditorAssetTransport;
 }) {
   const [localSession, setLocalSession] = useState(incomingSession);
   const [saveView, setSaveView] = useState<StructuredSaveView>(
@@ -431,6 +458,11 @@ function StructuredShell({
   const [recoveryBase, setRecoveryBase] = useState<TemplateRecoveryBase>();
   const [importView, setImportView] = useState<StructuredImportView>({ state: 'idle' });
   const [nodeAuthoringProblem, setNodeAuthoringProblem] = useState<string | null>(null);
+  const [pendingAssetInsertion, setPendingAssetInsertion] = useState<{
+    kind: 'text' | 'image';
+    parentNodeId: string;
+    at?: { xMm: number; yMm: number };
+  } | null>(null);
   const mutationId = useRef(0);
   const mutationAbort = useRef<AbortController | null>(null);
   const recoveryEpoch = useRef(0);
@@ -472,6 +504,7 @@ function StructuredShell({
     ? validSelectedNodeIds
     : effectiveSelectedNodeId ? [effectiveSelectedNodeId] : [];
   const dirty = isCanonicalDirty(session);
+  const dependencyStaleMessage = templateDependencyStaleMessage(session);
   const workingName = templateDisplayName(session.workingCopy);
   const candidatePreview = preview.assurance === 'candidate';
   const previewOperationLabel = candidatePreview
@@ -561,14 +594,31 @@ function StructuredShell({
     if (options.openStructure) setEntry('structure');
     setAnnouncement(result.message);
   };
-  const insertNode = (kind: CoreInsertableNodeKind) => {
-    const parentNodeId = nearestCoreParentNodeId(nodes, effectiveSelectedNodeId);
+  const insertNode = (
+    kind: TemplateCanvasDropKind,
+    at?: { xMm: number; yMm: number },
+    explicitParentNodeId?: string,
+  ) => {
+    const parentNodeId = explicitParentNodeId
+      ?? nearestCoreParentNodeId(nodes, effectiveSelectedNodeId);
     if (!parentNodeId) {
       setNodeAuthoringProblem('当前选择没有可承载新节点的 Canvas、Frame 或 Stack。');
       return;
     }
+    if (kind === 'text' || kind === 'image') {
+      setNodeAuthoringProblem(null);
+      setPendingAssetInsertion({ kind, parentNodeId, ...(at ? { at } : {}) });
+      return;
+    }
+    const nodeKind: CoreInsertableNodeKind = kind === 'shape' ? 'polygon' : kind;
     dispatchEditorCommand(
-      { operation: 'insert', nodeKind: kind, parentNodeId },
+      {
+        operation: 'insert',
+        nodeKind,
+        parentNodeId,
+        ...(at ? { at } : {}),
+        ...(kind === 'shape' ? { shapePreset: 'star' as const } : {}),
+      },
       { selectAffected: true, openStructure: true },
     );
   };
@@ -1431,6 +1481,8 @@ function StructuredShell({
               <EntryPanel
                 entry={entry}
                 session={session}
+                assetTransport={assetTransport}
+                dependencyStaleMessage={dependencyStaleMessage}
                 nodes={nodes}
                 selectedNodeId={effectiveSelectedNodeId}
                 onSelectNode={selectNode}
@@ -1523,6 +1575,7 @@ function StructuredShell({
             selectedNodeIds={effectiveSelectedNodeIds}
             tool={canvasTool}
             disabled={localLocked}
+            assetTransport={assetTransport}
             onToolChange={setCanvasTool}
             onSelectNode={selectNode}
             onSelectionChange={(nodeIds, primaryNodeId) => {
@@ -1551,10 +1604,7 @@ function StructuredShell({
             onInsertAt={(nodeKind, xMm, yMm) => {
               const canvasNodeId = nodes.find((node) => node.kind === 'canvas')?.nodeId;
               if (!canvasNodeId) return;
-              dispatchEditorCommand(
-                { operation: 'insert', nodeKind, parentNodeId: canvasNodeId, at: { xMm, yMm } },
-                { selectAffected: true, openStructure: true },
-              );
+              insertNode(nodeKind, { xMm, yMm }, canvasNodeId);
             }}
           />
           {preview.enabled ? (
@@ -1595,6 +1645,8 @@ function StructuredShell({
               node={selected}
               disabled={localLocked}
               onCommand={dispatchEditorCommand}
+              assetTransport={assetTransport}
+              dependencyStaleMessage={dependencyStaleMessage}
             />
           </aside>
         ) : null}
@@ -1637,6 +1689,26 @@ function StructuredShell({
           <span>{nodes.length} 个 authored 节点</span>
         </div>
       </main>
+      <TemplateEditorAssetPicker
+        open={pendingAssetInsertion !== null}
+        expectedKind={pendingAssetInsertion?.kind === 'image' ? 'IMAGE' : 'FONT'}
+        transport={assetTransport}
+        onOpenChange={(open) => {
+          if (!open) setPendingAssetInsertion(null);
+        }}
+        onSelect={(selection) => {
+          const pending = pendingAssetInsertion;
+          if (!pending) return;
+          dispatchEditorCommand({
+            operation: 'insert',
+            nodeKind: pending.kind,
+            parentNodeId: pending.parentNodeId,
+            assetId: selection.ref.assetId,
+            ...(pending.at ? { at: pending.at } : {}),
+          }, { selectAffected: true, openStructure: true });
+          setPendingAssetInsertion(null);
+        }}
+      />
     </EditorFrame>
   );
 }
@@ -2256,6 +2328,8 @@ function ReadinessStatus({
 function EntryPanel({
   entry,
   session,
+  assetTransport,
+  dependencyStaleMessage,
   nodes,
   selectedNodeId,
   onSelectNode,
@@ -2279,6 +2353,8 @@ function EntryPanel({
 }: {
   entry: EditorEntry;
   session: StructuredEditorSession;
+  assetTransport: TemplateEditorAssetTransport;
+  dependencyStaleMessage?: string;
   nodes: EditorNodeProjection[];
   selectedNodeId: string;
   onSelectNode: (nodeId: string) => void;
@@ -2288,7 +2364,7 @@ function EntryPanel({
   onDeleteNode: (nodeId: string) => void;
   nodeAuthoringProblem: string | null;
   nodeAuthoringLocked: boolean;
-  onInsertNode: (kind: CoreInsertableNodeKind) => void;
+  onInsertNode: (kind: TemplateCanvasDropKind) => void;
   importView: StructuredImportView;
   importLocked: boolean;
   canSaveBeforeImport: boolean;
@@ -2332,7 +2408,11 @@ function EntryPanel({
         />
       );
     case 'assets':
-      return <AssetSummary designDsl={session.workingCopy.designDsl} />;
+      return <AssetSummary
+        designDsl={session.workingCopy.designDsl}
+        transport={assetTransport}
+        dependencyStaleMessage={dependencyStaleMessage}
+      />;
     case 'definitions':
       return <DefinitionSummary designDsl={session.workingCopy.designDsl} />;
     case 'exchange':
@@ -2363,39 +2443,41 @@ function NodeCatalogSummary({
   nodes: EditorNodeProjection[];
   problem: string | null;
   disabled: boolean;
-  onInsert: (kind: CoreInsertableNodeKind) => void;
+  onInsert: (kind: TemplateCanvasDropKind) => void;
 }) {
   const counts = new Map<string, number>();
   for (const node of nodes) counts.set(node.kind, (counts.get(node.kind) ?? 0) + 1);
   return (
     <>
-      <PanelHeading title="元素" detail="1 个已接通" />
-      <p className="te-panel-copy">
-        添加到当前容器；若当前选择是叶子节点，则使用最近的合法父级。placement 由父级 ContentModel 决定。
-      </p>
+      <PanelHeading title="元素" detail="10 类视觉元素" />
       <div className="te-node-library" aria-label="可添加元素">
-        <button
-          type="button"
-          aria-label="添加矩形"
-          disabled={disabled}
-          draggable={!disabled}
-          onDragStart={(event) => {
-            event.dataTransfer.effectAllowed = 'copy';
-            event.dataTransfer.setData(TEMPLATE_NODE_DRAG_MIME, 'rect');
-          }}
-          onClick={() => onInsert('rect')}
-        >
-          <span className="te-node-library-icon"><SquarePlus aria-hidden="true" size={18} /></span>
-          <span className="te-node-library-copy">
-            <strong>矩形</strong>
-            <small>30 × 20 mm · 实色填充</small>
-          </span>
-          <span className="te-node-library-action">添加</span>
-        </button>
+        {ELEMENT_CATALOG.map(({ kind, label, detail, icon: Icon }) => (
+          <button
+            key={kind}
+            type="button"
+            aria-label={`添加${label}`}
+            disabled={disabled}
+            draggable={!disabled}
+            onDragStart={(event) => {
+              event.dataTransfer.effectAllowed = 'copy';
+              event.dataTransfer.setData(TEMPLATE_NODE_DRAG_MIME, kind);
+            }}
+            onClick={() => onInsert(kind)}
+          >
+            <span className="te-node-library-icon"><Icon aria-hidden="true" size={18} /></span>
+            <span className="te-node-library-copy">
+              <strong>{label}</strong>
+              <small>{detail}</small>
+            </span>
+            <span className="te-node-library-action">
+              {kind === 'text' || kind === 'image' ? '选择资产' : '添加'}
+            </span>
+          </button>
+        ))}
       </div>
       {problem ? <p className="te-node-authoring-alert" role="alert">{problem}</p> : null}
       <p className="te-node-contract-note">
-        当前客户端识别 {SUPPORTED_NODE_KIND_COUNT} 种 v1 closed wire；本票只开放已经接通完整创建闭环的元素。
+        Shape 是创建预设并保存为 Polygon；当前客户端识别 {SUPPORTED_NODE_KIND_COUNT} 种 v1 closed wire。
       </p>
       <ul className="te-summary-list">
         {[...counts.entries()].map(([kind, count]) => (
@@ -2413,7 +2495,7 @@ function ContainerCatalogSummary({
 }: {
   problem: string | null;
   disabled: boolean;
-  onInsert: (kind: CoreInsertableNodeKind) => void;
+  onInsert: (kind: TemplateCanvasDropKind) => void;
 }) {
   return (
     <>
@@ -2456,8 +2538,49 @@ function ContainerCatalogSummary({
   );
 }
 
-function AssetSummary({ designDsl }: { designDsl: Record<string, unknown> }) {
-  const assets = authoredAssetIds(designDsl);
+const ELEMENT_CATALOG: ReadonlyArray<{
+  kind: TemplateCanvasDropKind;
+  label: string;
+  detail: string;
+  icon: LucideIcon;
+}> = [
+  { kind: 'text', label: '文本', detail: '单 Run · 真实字体 Asset', icon: Type },
+  { kind: 'image', label: '图片', detail: '真实图片 Asset · 自适应', icon: Image },
+  { kind: 'rect', label: '矩形', detail: '实色填充 · 可设圆角', icon: SquarePlus },
+  { kind: 'ellipse', label: '椭圆', detail: '随边界自由缩放', icon: Circle },
+  { kind: 'line', label: '直线', detail: '端点与描边', icon: Minus },
+  { kind: 'shape', label: '形状', detail: '星形预设 · 保存为 Polygon', icon: Shapes },
+  { kind: 'polygon', label: '多边形', detail: '闭合点序列', icon: Shapes },
+  { kind: 'polyline', label: '折线', detail: '开放点序列', icon: Spline },
+  { kind: 'path', label: '路径', detail: '正式 commands[]', icon: Spline },
+  { kind: 'qrCode', label: '二维码', detail: '本地草稿预览', icon: QrCode },
+  { kind: 'barcode', label: '条形码', detail: '本地草稿预览', icon: Barcode },
+];
+
+function templateDependencyStaleMessage(
+  session: StructuredEditorSession,
+): string | undefined {
+  if (session.baseline.persistedReadiness !== 'STALE') return undefined;
+  switch (session.readiness.state) {
+    case 'checking':
+      return 'Template 打开时依赖快照 STALE；权威重检中';
+    case 'unavailable':
+      return 'Template 打开时依赖快照 STALE；权威重检暂不可用';
+    case 'checked':
+      return `Template 打开时依赖快照 STALE；本次权威重检 ${session.readiness.value}`;
+  }
+}
+
+function AssetSummary({
+  designDsl,
+  transport,
+  dependencyStaleMessage,
+}: {
+  designDsl: Record<string, unknown>;
+  transport: TemplateEditorAssetTransport;
+  dependencyStaleMessage?: string;
+}) {
+  const assets = authoredAssetReferences(designDsl);
   return (
     <>
       <PanelHeading title="资产" detail={`${assets.length} 个已引用资产`} />
@@ -2465,11 +2588,81 @@ function AssetSummary({ designDsl }: { designDsl: Record<string, unknown> }) {
         <p className="te-empty-state">当前 DesignDSL 没有 imageRef/fontRef 资产引用。</p>
       ) : (
         <ul className="te-summary-list">
-          {assets.map((asset) => <li key={asset}><code>{shortIdentity(asset)}</code></li>)}
+          {assets.map((asset) => (
+            <AssetSummaryItem
+              key={`${asset.expectedKind}:${asset.assetId}`}
+              reference={asset}
+              transport={transport}
+              dependencyStaleMessage={dependencyStaleMessage}
+            />
+          ))}
         </ul>
       )}
     </>
   );
+}
+
+function AssetSummaryItem({
+  reference,
+  transport,
+  dependencyStaleMessage,
+}: {
+  reference: AuthoredAssetReference;
+  transport: TemplateEditorAssetTransport;
+  dependencyStaleMessage?: string;
+}) {
+  const [resolution, setResolution] = useState<TemplateAssetResolution | null>(null);
+  useEffect(() => {
+    const controller = new AbortController();
+    queueMicrotask(() => {
+      if (!controller.signal.aborted) setResolution(null);
+    });
+    void resolveTemplateAssetRef(
+      { assetId: reference.assetId },
+      reference.expectedKind,
+      transport,
+      controller.signal,
+    ).then(
+      (next) => {
+        if (!controller.signal.aborted) setResolution(next);
+      },
+      () => {
+        if (!controller.signal.aborted) {
+          setResolution({
+            state: 'unavailable',
+            ref: { assetId: reference.assetId },
+            expectedKind: reference.expectedKind,
+            code: 'ASSET_REQUEST_UNAVAILABLE',
+          });
+        }
+      },
+    );
+    return () => controller.abort();
+  }, [reference.assetId, reference.expectedKind, transport]);
+  const kindLabel = reference.expectedKind === 'FONT' ? '字体' : '图片';
+  return (
+    <li>
+      <span>{resolution?.state === 'active' ? resolution.asset.displayName : `${kindLabel} Asset`}</span>
+      <small>{assetSummaryState(resolution, dependencyStaleMessage)}</small>
+      <code title={reference.assetId}>{shortIdentity(reference.assetId)}</code>
+    </li>
+  );
+}
+
+function assetSummaryState(
+  resolution: TemplateAssetResolution | null,
+  dependencyStaleMessage?: string,
+): string {
+  if (!resolution) return '核验中';
+  switch (resolution.state) {
+    case 'active': return dependencyStaleMessage
+      ? `当前 Asset ACTIVE · ${dependencyStaleMessage}`
+      : 'ACTIVE';
+    case 'missing': return '不存在 · 引用已保留';
+    case 'deleted': return 'DELETED · 引用已保留';
+    case 'kind-mismatch': return '类型不匹配 · 引用已保留';
+    case 'unavailable': return '暂不可核验 · 引用已保留';
+  }
 }
 
 function DefinitionSummary({ designDsl }: { designDsl: Record<string, unknown> }) {
@@ -3006,8 +3199,13 @@ function isAbort(error: unknown): boolean {
   return error instanceof DOMException && error.name === 'AbortError';
 }
 
-function authoredAssetIds(value: unknown): string[] {
-  const ids = new Set<string>();
+interface AuthoredAssetReference {
+  readonly assetId: string;
+  readonly expectedKind: TemplateEditorAssetKind;
+}
+
+function authoredAssetReferences(value: unknown): AuthoredAssetReference[] {
+  const references = new Map<string, AuthoredAssetReference>();
   const visit = (entry: unknown, parentKey?: string) => {
     if (Array.isArray(entry)) {
       entry.forEach((item) => visit(item, parentKey));
@@ -3019,12 +3217,16 @@ function authoredAssetIds(value: unknown): string[] {
       (parentKey === 'imageRef' || parentKey === 'fontRef')
       && typeof object.assetId === 'string'
     ) {
-      ids.add(object.assetId);
+      const expectedKind = parentKey === 'imageRef' ? 'IMAGE' : 'FONT';
+      references.set(`${expectedKind}:${object.assetId}`, { assetId: object.assetId, expectedKind });
     }
     Object.entries(object).forEach(([key, child]) => visit(child, key));
   };
   visit(value);
-  return [...ids].sort();
+  return [...references.values()].sort((left, right) => (
+    left.expectedKind.localeCompare(right.expectedKind)
+      || left.assetId.localeCompare(right.assetId)
+  ));
 }
 
 function nearestCoreParentNodeId(

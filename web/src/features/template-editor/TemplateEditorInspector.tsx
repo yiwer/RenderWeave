@@ -1,4 +1,5 @@
 import {
+  useEffect,
   useId,
   useRef,
   useState,
@@ -18,6 +19,13 @@ import {
   type EditorNodeProjection,
 } from './template-editor-model';
 import { isCoreTemplateAuthoringKind } from './template-editor-node-contract';
+import {
+  resolveTemplateAssetRef,
+  type TemplateAssetResolution,
+  type TemplateEditorAssetKind,
+  type TemplateEditorAssetTransport,
+} from './template-editor-assets';
+import { TemplateEditorAssetPicker } from './TemplateEditorAssetPicker';
 
 type InspectorTab = 'properties' | 'bindings';
 type DraftParse<T> = { ok: true; value: T } | { ok: false; problem: string };
@@ -28,13 +36,24 @@ const KIND_LABELS: Readonly<Record<string, string>> = {
   canvas: '画布',
   frame: '框架',
   stack: '堆叠',
+  text: '文本',
+  image: '图片',
   rect: '矩形',
+  ellipse: '椭圆',
+  line: '直线',
+  polygon: '多边形',
+  polyline: '折线',
+  path: '路径',
+  qrCode: '二维码',
+  barcode: '条形码',
 };
 
 export interface TemplateEditorInspectorProps {
   readonly node?: EditorNodeProjection;
   readonly disabled: boolean;
   readonly onCommand: (intent: TemplateEditorCommandIntent) => void;
+  readonly assetTransport?: TemplateEditorAssetTransport;
+  readonly dependencyStaleMessage?: string;
 }
 
 /**
@@ -45,6 +64,8 @@ export function TemplateEditorInspector({
   node,
   disabled,
   onCommand,
+  assetTransport,
+  dependencyStaleMessage,
 }: TemplateEditorInspectorProps) {
   const [tab, setTab] = useState<InspectorTab>('properties');
   const tabsId = useId();
@@ -127,7 +148,13 @@ export function TemplateEditorInspector({
           role="tabpanel"
           aria-labelledby={propertiesTabId}
         >
-          <PropertiesPanel node={node} disabled={disabled} onCommand={onCommand} />
+          <PropertiesPanel
+            node={node}
+            disabled={disabled}
+            onCommand={onCommand}
+            assetTransport={assetTransport}
+            dependencyStaleMessage={dependencyStaleMessage}
+          />
         </div>
       ) : (
         <div
@@ -147,18 +174,39 @@ function PropertiesPanel({
   node,
   disabled,
   onCommand,
-}: Required<Pick<TemplateEditorInspectorProps, 'node' | 'disabled' | 'onCommand'>>) {
+  assetTransport,
+  dependencyStaleMessage,
+}: Required<Pick<TemplateEditorInspectorProps, 'node' | 'disabled' | 'onCommand'>>
+  & Pick<TemplateEditorInspectorProps, 'assetTransport' | 'dependencyStaleMessage'>) {
   const value = node.value;
   const placement = objectOrNull(value.placement);
   const fill = objectOrNull(value.fill);
+  const stroke = objectOrNull(value.stroke);
+  const runs = Array.isArray(value.runs)
+    ? value.runs.map(objectOrNull).filter((run): run is Record<string, unknown> => run !== null)
+    : [];
+  const run = runs.length === 1 ? runs[0] : undefined;
   const isCore = isCoreTemplateAuthoringKind(node.kind);
   const isCanvas = node.kind === 'canvas';
   const isFrame = node.kind === 'frame';
   const isStack = node.kind === 'stack';
   const isRect = node.kind === 'rect';
+  const isText = node.kind === 'text';
+  const isImage = node.kind === 'image';
+  const isQrCode = node.kind === 'qrCode';
+  const isBarcode = node.kind === 'barcode';
   const hasAbsoluteGeometry = placement?.type === 'ABSOLUTE' && !isCanvas;
   const hasLayoutProperties = isFrame || isStack;
-  const hasAppearance = isCanvas || isFrame || isStack || isRect;
+  const hasFill = isFrame || isStack || isRect || node.kind === 'ellipse'
+    || node.kind === 'polygon' || node.kind === 'path';
+  const hasStroke = isRect || node.kind === 'ellipse' || node.kind === 'line'
+    || node.kind === 'polygon' || node.kind === 'polyline' || node.kind === 'path';
+  const hasAppearance = isCanvas || hasFill || hasStroke || isImage || isQrCode || isBarcode;
+  const fontAssetId = assetIdValue(run?.fontRef);
+  const imageAssetId = assetIdValue(value.imageRef);
+  const command = (property: Extract<TemplateEditorCommandIntent, { operation: 'set-property' }>['property'], next: unknown) => onCommand({
+    operation: 'set-property', nodeId: node.nodeId, property, value: next,
+  });
 
   return (
     <div className="te-node-inspector-groups">
@@ -174,6 +222,106 @@ function PropertiesPanel({
               operation: 'rename', nodeId: node.nodeId, displayName,
             })}
           />
+          {isText && run ? (
+            <CommitInput
+              label="文本值"
+              initialValue={stringValue(run.text)}
+              disabled={disabled}
+              parse={parseTextValue}
+              isUnchanged={(next) => next === run.text}
+              onCommit={(next) => command('text', next)}
+            />
+          ) : null}
+          {isText && !run ? (
+            <div className="te-node-inspector-warning" role="status">
+              <strong>多 Run 内容保持只读</strong>
+              <span>当前版本不会合并、拍平或覆盖这些 Text Run。</span>
+            </div>
+          ) : null}
+          {isQrCode ? (
+            <CommitInput
+              label="二维码内容"
+              initialValue={stringValue(value.content)}
+              disabled={disabled}
+              parse={(draft) => parseRequiredText(draft, '二维码内容不能为空。')}
+              isUnchanged={(next) => next === value.content}
+              onCommit={(next) => command('content', next)}
+            />
+          ) : null}
+          {isBarcode ? (
+            <CommitInput
+              label="条形码值"
+              initialValue={stringValue(value.value)}
+              disabled={disabled}
+              parse={(draft) => parseRequiredText(draft, '条形码值不能为空。')}
+              isUnchanged={(next) => next === value.value}
+              onCommit={(next) => command('barcodeValue', next)}
+            />
+          ) : null}
+        </InspectorGroup>
+      ) : null}
+
+      {isText && run ? (
+        <InspectorGroup group="asset" title="字体 Asset">
+          <AssetReferenceField
+            expectedKind="FONT"
+            assetId={fontAssetId}
+            disabled={disabled}
+            transport={assetTransport}
+            dependencyStaleMessage={dependencyStaleMessage}
+            onSelect={(assetId) => command('fontRef', assetId)}
+          />
+        </InspectorGroup>
+      ) : isImage ? (
+        <InspectorGroup group="asset" title="图片 Asset">
+          <AssetReferenceField
+            expectedKind="IMAGE"
+            assetId={imageAssetId}
+            disabled={disabled}
+            transport={assetTransport}
+            dependencyStaleMessage={dependencyStaleMessage}
+            onSelect={(assetId) => command('imageRef', assetId)}
+          />
+        </InspectorGroup>
+      ) : null}
+
+      {isText && run ? (
+        <InspectorGroup group="typography" title="文字">
+          <div className="te-node-inspector-field-grid">
+            <CommitInput
+              label="字号"
+              suffix="pt"
+              inputMode="decimal"
+              initialValue={templateNumberDraft(run.fontSizePt)}
+              disabled={disabled}
+              parse={(draft) => parseNumber(draft, true, '字号必须大于 0。')}
+              isUnchanged={(next) => sameTemplateNumber(run.fontSizePt, next)}
+              onCommit={(next) => command('fontSizePt', next)}
+            />
+            <CommitInput
+              label="文字颜色"
+              initialValue={stringValue(run.color)}
+              placeholder="#RRGGBBAA"
+              disabled={disabled}
+              parse={parseColor}
+              isUnchanged={(next) => next === run.color}
+              onCommit={(next) => command('textColor', next)}
+            />
+          </div>
+          <label className="te-node-inspector-field">
+            <span>装饰</span>
+            <select
+              aria-label="装饰"
+              value={run.decoration === 'UNDERLINE' || run.decoration === 'LINE_THROUGH'
+                ? run.decoration : 'NONE'}
+              disabled={disabled}
+              onChange={(event) => command('decoration', event.currentTarget.value)}
+            >
+              <option value="NONE">无</option>
+              <option value="UNDERLINE">下划线</option>
+              <option value="LINE_THROUGH">删除线</option>
+            </select>
+          </label>
         </InspectorGroup>
       ) : null}
 
@@ -275,22 +423,151 @@ function PropertiesPanel({
 
       {hasAppearance ? (
         <InspectorGroup group="appearance" title="外观">
-          <CommitInput
-            label={isCanvas ? '背景颜色' : '填充颜色'}
-            initialValue={isCanvas
-              ? stringValue(value.backgroundColor)
-              : stringValue(fill?.color)}
-            placeholder="#RRGGBBAA"
-            disabled={disabled}
-            parse={parseColor}
-            isUnchanged={(next) => next === (isCanvas ? value.backgroundColor : fill?.color)}
-            onCommit={(next) => onCommand({
-              operation: 'set-property',
-              nodeId: node.nodeId,
-              property: isCanvas ? 'backgroundColor' : 'fillColor',
-              value: next,
-            })}
-          />
+          {isCanvas || hasFill ? (
+            <CommitInput
+              label={isCanvas ? '背景颜色' : '填充颜色'}
+              initialValue={isCanvas
+                ? stringValue(value.backgroundColor)
+                : stringValue(fill?.color)}
+              placeholder="#RRGGBBAA"
+              disabled={disabled}
+              parse={parseColor}
+              isUnchanged={(next) => next === (isCanvas ? value.backgroundColor : fill?.color)}
+              onCommit={(next) => command(isCanvas ? 'backgroundColor' : 'fillColor', next)}
+            />
+          ) : null}
+          {hasStroke ? (
+            <div className="te-node-inspector-field-grid">
+              <CommitInput
+                label="描边颜色"
+                initialValue={stringValue(stroke?.color)}
+                placeholder="#RRGGBBAA"
+                disabled={disabled}
+                parse={parseColor}
+                isUnchanged={(next) => next === stroke?.color}
+                onCommit={(next) => command('strokeColor', next)}
+              />
+              <CommitInput
+                label="描边宽度"
+                suffix="mm"
+                inputMode="decimal"
+                initialValue={templateNumberDraft(stroke?.widthMm)}
+                disabled={disabled}
+                parse={(draft) => parseNumber(draft, true, '描边宽度必须大于 0。')}
+                isUnchanged={(next) => sameTemplateNumber(stroke?.widthMm, next)}
+                onCommit={(next) => command('strokeWidthMm', next)}
+              />
+            </div>
+          ) : null}
+          {isRect ? (
+            <CommitInput
+              label="圆角"
+              suffix="mm"
+              inputMode="decimal"
+              initialValue={templateNumberDraft(objectOrNull(value.cornerRadii)?.topLeftMm ?? 0)}
+              disabled={disabled}
+              parse={(draft) => parseNumber(draft, false, '圆角必须是非负有限值。')}
+              isUnchanged={(next) => sameTemplateNumber(
+                objectOrNull(value.cornerRadii)?.topLeftMm ?? 0,
+                next,
+              )}
+              onCommit={(next) => command('cornerRadiusMm', next)}
+            />
+          ) : null}
+          {isImage ? (
+            <>
+              <label className="te-node-inspector-field">
+                <span>适配</span>
+                <select
+                  aria-label="图片适配"
+                  value={value.fit === 'COVER' || value.fit === 'FILL' ? value.fit : 'CONTAIN'}
+                  disabled={disabled}
+                  onChange={(event) => command('fit', event.currentTarget.value)}
+                >
+                  <option value="CONTAIN">完整显示</option>
+                  <option value="COVER">覆盖边界</option>
+                  <option value="FILL">拉伸填满</option>
+                </select>
+              </label>
+              <label className="te-node-inspector-field">
+                <span>采样</span>
+                <select
+                  aria-label="图片采样"
+                  value={value.sampling === 'NEAREST' ? 'NEAREST' : 'LINEAR'}
+                  disabled={disabled}
+                  onChange={(event) => command('sampling', event.currentTarget.value)}
+                >
+                  <option value="LINEAR">平滑</option>
+                  <option value="NEAREST">邻近像素</option>
+                </select>
+              </label>
+            </>
+          ) : null}
+          {node.kind === 'path' ? (
+            <label className="te-node-inspector-field">
+              <span>填充规则</span>
+              <select
+                aria-label="填充规则"
+                value={value.fillRule === 'EVEN_ODD' ? 'EVEN_ODD' : 'NONZERO'}
+                disabled={disabled}
+                onChange={(event) => command('fillRule', event.currentTarget.value)}
+              >
+                <option value="NONZERO">非零环绕</option>
+                <option value="EVEN_ODD">奇偶</option>
+              </select>
+            </label>
+          ) : null}
+          {isQrCode || isBarcode ? (
+            <div className="te-node-inspector-field-grid">
+              <CommitInput
+                label="前景颜色"
+                initialValue={stringValue(value.foregroundColor)}
+                placeholder="#RRGGBBAA"
+                disabled={disabled}
+                parse={parseColor}
+                isUnchanged={(next) => next === value.foregroundColor}
+                onCommit={(next) => command('foregroundColor', next)}
+              />
+              <CommitInput
+                label="背景颜色"
+                initialValue={stringValue(value.backgroundColor)}
+                placeholder="#RRGGBBAA"
+                disabled={disabled}
+                parse={parseColor}
+                isUnchanged={(next) => next === value.backgroundColor}
+                onCommit={(next) => command('backgroundColor', next)}
+              />
+            </div>
+          ) : null}
+          {isQrCode ? (
+            <label className="te-node-inspector-field">
+              <span>纠错级别</span>
+              <select
+                aria-label="二维码纠错级别"
+                value={typeof value.errorCorrectionLevel === 'string'
+                  ? value.errorCorrectionLevel : 'M'}
+                disabled={disabled}
+                onChange={(event) => command('errorCorrectionLevel', event.currentTarget.value)}
+              >
+                {['L', 'M', 'Q', 'H'].map((level) => <option key={level} value={level}>{level}</option>)}
+              </select>
+            </label>
+          ) : null}
+          {isBarcode ? (
+            <label className="te-node-inspector-field">
+              <span>编码格式</span>
+              <select
+                aria-label="条形码格式"
+                value={typeof value.format === 'string' ? value.format : 'CODE_128'}
+                disabled={disabled}
+                onChange={(event) => command('format', event.currentTarget.value)}
+              >
+                {['CODE_128', 'EAN_13', 'EAN_8', 'UPC_A'].map((format) => (
+                  <option key={format} value={format}>{format}</option>
+                ))}
+              </select>
+            </label>
+          ) : null}
         </InspectorGroup>
       ) : null}
 
@@ -303,10 +580,113 @@ function PropertiesPanel({
           {placement && typeof placement.type === 'string' ? (
             <div><dt>Placement</dt><dd>{placement.type}</dd></div>
           ) : null}
+          {Array.isArray(value.points) ? <div><dt>点数量</dt><dd>{value.points.length}</dd></div> : null}
+          {Array.isArray(value.commands) ? <div><dt>Path 命令</dt><dd>{value.commands.length}</dd></div> : null}
         </dl>
       </InspectorGroup>
     </div>
   );
+}
+
+function AssetReferenceField({
+  expectedKind,
+  assetId,
+  disabled,
+  transport,
+  dependencyStaleMessage,
+  onSelect,
+}: {
+  expectedKind: TemplateEditorAssetKind;
+  assetId: string | null;
+  disabled: boolean;
+  transport?: TemplateEditorAssetTransport;
+  dependencyStaleMessage?: string;
+  onSelect: (assetId: string) => void;
+}) {
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [resolution, setResolution] = useState<TemplateAssetResolution | null>(null);
+  const kindLabel = expectedKind === 'FONT' ? '字体' : '图片';
+
+  useEffect(() => {
+    if (!assetId || !transport) {
+      let active = true;
+      queueMicrotask(() => {
+        if (active) setResolution(null);
+      });
+      return () => {
+        active = false;
+      };
+    }
+    const controller = new AbortController();
+    queueMicrotask(() => {
+      if (!controller.signal.aborted) setResolution(null);
+    });
+    void resolveTemplateAssetRef(
+      { assetId },
+      expectedKind,
+      transport,
+      controller.signal,
+    ).then(
+      (next) => {
+        if (!controller.signal.aborted) setResolution(next);
+      },
+      () => {
+        if (!controller.signal.aborted) {
+          setResolution({
+            state: 'unavailable',
+            ref: { assetId },
+            expectedKind,
+            code: 'ASSET_REQUEST_UNAVAILABLE',
+          });
+        }
+      },
+    );
+    return () => controller.abort();
+  }, [assetId, expectedKind, transport]);
+
+  return (
+    <div className="te-node-inspector-asset">
+      <div className="te-node-inspector-asset-summary" aria-live="polite">
+        <span>{assetResolutionLabel(resolution, assetId, kindLabel, dependencyStaleMessage)}</span>
+        {assetId ? <code title={assetId}>{assetId}</code> : null}
+      </div>
+      <button
+        type="button"
+        className="te-node-inspector-asset-action"
+        disabled={disabled}
+        onClick={() => setPickerOpen(true)}
+      >
+        {assetId ? `更换${kindLabel} Asset` : `选择${kindLabel} Asset`}
+      </button>
+      <TemplateEditorAssetPicker
+        open={pickerOpen}
+        expectedKind={expectedKind}
+        selectedAssetId={assetId ?? undefined}
+        transport={transport}
+        onOpenChange={setPickerOpen}
+        onSelect={(selection) => onSelect(selection.ref.assetId)}
+      />
+    </div>
+  );
+}
+
+function assetResolutionLabel(
+  resolution: TemplateAssetResolution | null,
+  assetId: string | null,
+  kindLabel: string,
+  dependencyStaleMessage?: string,
+): string {
+  if (!assetId) return `未设置${kindLabel} Asset`;
+  if (!resolution) return `正在核验${kindLabel} Asset…`;
+  switch (resolution.state) {
+    case 'active': return dependencyStaleMessage
+      ? `${resolution.asset.displayName} · 当前 Asset ACTIVE；${dependencyStaleMessage}`
+      : `${resolution.asset.displayName} · ACTIVE`;
+    case 'missing': return `${kindLabel} Asset 不存在；引用已保留`;
+    case 'deleted': return `${kindLabel} Asset 已删除；引用已保留`;
+    case 'kind-mismatch': return `${kindLabel} Asset 类型不匹配；引用已保留`;
+    case 'unavailable': return `${kindLabel} Asset 暂不可核验；引用已保留`;
+  }
 }
 
 function InspectorGroup({
@@ -583,6 +963,22 @@ function parseDisplayName(draft: string): DraftParse<string> {
   return { ok: true, value: result.value };
 }
 
+function parseTextValue(draft: string): DraftParse<string> {
+  for (const character of draft) {
+    const code = character.codePointAt(0) ?? 0;
+    if (code < 0x20 && code !== 0x0a) {
+      return { ok: false, problem: '文本只允许 LF 换行，不允许其他控制字符。' };
+    }
+  }
+  return { ok: true, value: draft };
+}
+
+function parseRequiredText(draft: string, problem: string): DraftParse<string> {
+  const parsed = parseTextValue(draft);
+  if (!parsed.ok) return parsed;
+  return draft.length > 0 ? parsed : { ok: false, problem };
+}
+
 function parseColor(draft: string): DraftParse<string> {
   const value = draft.trim();
   return COLOR.test(value)
@@ -611,6 +1007,11 @@ function bindingRecords(value: unknown): readonly Record<string, unknown>[] {
   return Array.isArray(value)
     ? value.map(objectOrNull).filter((entry): entry is Record<string, unknown> => entry !== null)
     : [];
+}
+
+function assetIdValue(value: unknown): string | null {
+  const ref = objectOrNull(value);
+  return typeof ref?.assetId === 'string' && ref.assetId.length > 0 ? ref.assetId : null;
 }
 
 function targetPropertyLabel(value: unknown): string {
@@ -663,29 +1064,7 @@ function compactParts(...values: unknown[]): string {
 }
 
 function propertyRevisionKey(node: EditorNodeProjection): string {
-  const placement = objectOrNull(node.value.placement);
-  const fill = objectOrNull(node.value.fill);
-  return JSON.stringify([
-    node.nodeId,
-    node.kind,
-    node.value.displayName,
-    node.value.widthMm,
-    node.value.heightMm,
-    node.value.backgroundColor,
-    node.value.clipContent,
-    node.value.direction,
-    node.value.gapMm,
-    fill?.color,
-    placement?.type,
-    placement?.xMm,
-    placement?.yMm,
-    placement?.widthMode,
-    placement?.widthMm,
-    placement?.heightMode,
-    placement?.heightMm,
-    node.childCount,
-    bindingRecords(node.value.bindings).length,
-  ]);
+  return JSON.stringify([node.nodeId, node.kind, node.value, node.childCount]);
 }
 
 function stringValue(value: unknown, fallback = ''): string {

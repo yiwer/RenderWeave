@@ -28,6 +28,7 @@ const BINDING_ID = '66666666-6666-4666-8666-666666666666';
 const OUTSIDE_FRAME_ID = '77777777-7777-4777-8777-777777777777';
 const LOOP_DEFINITION_ID = '88888888-8888-4888-8888-888888888888';
 const DELETE_FRAME_ID = '99999999-9999-4999-8999-999999999999';
+const QR_CODE_ID = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 
 describe('Template Editor core command seam', () => {
   it('inserts Frame, Stack and Rect into an explicit parent with admitted defaults', () => {
@@ -56,6 +57,62 @@ describe('Template Editor core command seam', () => {
     expect(node(session, STACK_ID).padding).toEqual({ topMm: 0, rightMm: 0, bottomMm: 0, leftMm: 0 });
     expect(session.history.past).toHaveLength(3);
     expect(isCanonicalDirty(session)).toBe(true);
+  });
+
+  it('inserts every visual leaf through the canonical command seam and lowers Shape to Polygon', () => {
+    const fontAssetId = 'aaaaaaaa-0000-4000-8000-000000000001';
+    const imageAssetId = 'bbbbbbbb-0000-4000-8000-000000000002';
+    const inputs: Array<Extract<TemplateEditorCommandIntent, { operation: 'insert' }>> = [
+      { operation: 'insert', nodeKind: 'text', parentNodeId: 'canvas-id', assetId: fontAssetId },
+      { operation: 'insert', nodeKind: 'image', parentNodeId: 'canvas-id', assetId: imageAssetId },
+      { operation: 'insert', nodeKind: 'rect', parentNodeId: 'canvas-id' },
+      { operation: 'insert', nodeKind: 'ellipse', parentNodeId: 'canvas-id' },
+      { operation: 'insert', nodeKind: 'line', parentNodeId: 'canvas-id' },
+      { operation: 'insert', nodeKind: 'polygon', parentNodeId: 'canvas-id' },
+      { operation: 'insert', nodeKind: 'polyline', parentNodeId: 'canvas-id' },
+      { operation: 'insert', nodeKind: 'path', parentNodeId: 'canvas-id' },
+      { operation: 'insert', nodeKind: 'qrCode', parentNodeId: 'canvas-id' },
+      { operation: 'insert', nodeKind: 'barcode', parentNodeId: 'canvas-id' },
+      {
+        operation: 'insert', nodeKind: 'polygon', parentNodeId: 'canvas-id',
+        shapePreset: 'star', at: { xMm: 3, yMm: 4 },
+      },
+    ];
+    let session = structuredSession();
+    const ids = inputs.map((_, index) => (
+      `a0000000-0000-4000-8000-${String(index + 1).padStart(12, '0')}`
+    ));
+    inputs.forEach((intent, index) => {
+      session = applied(session, intent, ids[index]);
+    });
+
+    expect(ids.map((id) => node(session, id).kind)).toEqual([
+      'text', 'image', 'rect', 'ellipse', 'line', 'polygon',
+      'polyline', 'path', 'qrCode', 'barcode', 'polygon',
+    ]);
+    expect(node(session, ids[0]!).runs).toEqual([expect.objectContaining({
+      fontRef: { assetId: fontAssetId },
+    })]);
+    expect(node(session, ids[1]!).imageRef).toEqual({ assetId: imageAssetId });
+    expect(node(session, ids[7]!)).toHaveProperty('commands');
+    expect(node(session, ids[7]!)).not.toHaveProperty('pathData');
+    expect(node(session, ids[10]!).displayName).toMatch(/星形/);
+    expect(node(session, ids[10]!).placement).toEqual(expect.objectContaining({
+      type: 'ABSOLUTE', xMm: 3, yMm: 4,
+    }));
+  });
+
+  it('rejects assetless Text/Image before changing canonical state', () => {
+    const session = structuredSession();
+    for (const nodeKind of ['text', 'image'] as const) {
+      const result = executeTemplateEditorCommand(session, {
+        operation: 'insert', nodeKind, parentNodeId: 'canvas-id',
+      }, { createNodeId: () => 'a0000000-0000-4000-8000-000000000099' });
+      expect(result).toEqual(expect.objectContaining({
+        state: 'rejected', code: 'ASSET_REQUIRED', session,
+      }));
+    }
+    expect(session.history.past).toHaveLength(0);
   });
 
   it('renames and updates core properties as reversible canonical commands', () => {
@@ -509,6 +566,39 @@ describe('Template Editor core command seam', () => {
         operation: 'set-geometry', nodeId: 'rect-id', geometry,
       });
       expect(rejected).toEqual(expect.objectContaining({ state: 'rejected', session: initial }));
+    }
+  });
+
+  it('accepts only strict positive square geometry for QR codes', () => {
+    let initial = structuredSession();
+    initial = applied(initial, {
+      operation: 'insert', nodeKind: 'qrCode', parentNodeId: 'canvas-id',
+    }, QR_CODE_ID);
+
+    const square = executeTemplateEditorCommand(initial, {
+      operation: 'set-geometry', nodeId: QR_CODE_ID,
+      geometry: { xMm: 8, yMm: 9, widthMm: 30, heightMm: 30 },
+    });
+    expect(square.state).toBe('applied');
+    if (square.state !== 'applied') throw new Error(square.message);
+    expect(node(square.session, QR_CODE_ID).placement).toEqual(expect.objectContaining({
+      xMm: 8, yMm: 9, widthMm: 30, heightMm: 30,
+    }));
+
+    for (const geometry of [
+      { xMm: 8, yMm: 9, widthMm: 30, heightMm: 20 },
+      { xMm: 8, yMm: 9, widthMm: 30 },
+    ]) {
+      const rejected = executeTemplateEditorCommand(initial, {
+        operation: 'set-geometry', nodeId: QR_CODE_ID, geometry,
+      });
+      expect(rejected).toEqual(expect.objectContaining({
+        state: 'rejected',
+        session: initial,
+        code: 'GEOMETRY_INVALID',
+        message: expect.stringContaining('正方形'),
+      }));
+      expect(initial.history.past).toHaveLength(1);
     }
   });
 

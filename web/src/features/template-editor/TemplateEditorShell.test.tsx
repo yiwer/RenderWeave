@@ -12,6 +12,8 @@ import { applyTemplateDisplayName } from './template-editor-session';
 import { TemplateEditorShell, TemplateEditorSurface } from './TemplateEditorShell';
 import { TemplateRequestError, type TemplateEditorTransport } from './template-open';
 import type { TemplateSaveTransport } from './template-save';
+import type { AssetCatalogEntry, AssetReadableResponse } from '../../api/generated';
+import type { TemplateEditorAssetTransport } from './template-editor-assets';
 import {
   currentResponse,
   recheckResponse,
@@ -79,6 +81,79 @@ describe('Template Editor E1/E2 Product shell', () => {
     expect(screen.queryByRole('treeitem', { name: /矩形 2/ })).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: '重做本地编辑' }));
     expect(screen.getByRole('treeitem', { name: /矩形 2/ }).getAttribute('aria-selected')).toBe('true');
+  });
+
+  it('requires explicit ACTIVE Asset choices before authoring Text and Image refs', async () => {
+    vi.spyOn(globalThis.crypto, 'randomUUID')
+      .mockReturnValueOnce('11111111-1111-4111-8111-111111111111')
+      .mockReturnValueOnce('22222222-2222-4222-8222-222222222222');
+    const fontId = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+    const imageId = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
+    const assetTransport = assetTransportFixture(fontId, imageId);
+    const session = createSessionFromBaseline(
+      structuredBaseline(),
+      { state: 'checked', value: 'READY' },
+    );
+    render(<TemplateEditorShell
+      session={session}
+      saveTransport={saveTransport({})}
+      assetTransport={assetTransport}
+    />);
+
+    fireEvent.click(screen.getByRole('button', { name: '元素' }));
+    fireEvent.click(screen.getByRole('button', { name: '添加文本' }));
+    expect(screen.queryByRole('treeitem', { name: /文本 1/ })).toBeNull();
+    expect(screen.getByRole('dialog', { name: '选择字体 Asset' })).toBeTruthy();
+    fireEvent.click(await screen.findByRole('button', { name: /测试字体/ }));
+
+    const textRow = screen.getByRole('treeitem', { name: /文本 1/ });
+    expect(textRow.getAttribute('aria-selected')).toBe('true');
+    expect(screen.getByText(fontId)).toBeTruthy();
+    const textValue = screen.getByLabelText('文本值');
+    fireEvent.change(textValue, { target: { value: '售价 ¥19.90' } });
+    fireEvent.keyDown(textValue, { key: 'Enter' });
+    expect(screen.getByText('售价 ¥19.90')).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: '元素' }));
+    fireEvent.click(screen.getByRole('button', { name: '添加图片' }));
+    expect(screen.getByRole('dialog', { name: '选择图片 Asset' })).toBeTruthy();
+    fireEvent.click(await screen.findByRole('button', { name: /测试图片/ }));
+
+    const imageRow = screen.getByRole('treeitem', { name: /图片 1/ });
+    expect(imageRow.getAttribute('aria-selected')).toBe('true');
+    expect(screen.getByText(imageId)).toBeTruthy();
+    expect(assetTransport.listAssets).toHaveBeenCalledWith(
+      expect.objectContaining({ kind: 'FONT', includeDeleted: false }),
+      expect.any(AbortSignal),
+    );
+    expect(assetTransport.listAssets).toHaveBeenCalledWith(
+      expect.objectContaining({ kind: 'IMAGE', includeDeleted: false }),
+      expect.any(AbortSignal),
+    );
+  });
+
+  it('projects a STALE Template dependency snapshot without relabelling its ACTIVE Asset', async () => {
+    const imageId = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
+    const session = sessionWithImageDependency(imageId);
+    const assetTransport = assetTransportFixture(
+      'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+      imageId,
+    );
+    render(<TemplateEditorShell session={session} assetTransport={assetTransport} />);
+
+    expect(screen.getByText('READY')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: '资产' }));
+    expect(await screen.findByText(
+      '当前 Asset ACTIVE · Template 打开时依赖快照 STALE；本次权威重检 READY',
+    )).toBeTruthy();
+    expect(screen.getByText('测试图片')).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: '结构' }));
+    fireEvent.click(screen.getByRole('treeitem', { name: /快照商品图/ }));
+    expect(await screen.findByText(
+      '测试图片 · 当前 Asset ACTIVE；Template 打开时依赖快照 STALE；本次权威重检 READY',
+    )).toBeTruthy();
+    expect(screen.getByText(imageId)).toBeTruthy();
   });
 
   it('routes core container creation and tree rename through one canonical history', () => {
@@ -643,6 +718,34 @@ function cleanSessionAt(revision: string): StructuredEditorSession {
   return session;
 }
 
+function sessionWithImageDependency(assetId: string): StructuredEditorSession {
+  const baseline = structuredBaseline();
+  const designRoot = baseline.designDsl.designRoot as Record<string, unknown>;
+  const children = designRoot.children as Record<string, unknown>[];
+  children.push({
+    nodeId: '55555555-5555-4555-8555-555555555555',
+    kind: 'image',
+    displayName: '快照商品图',
+    bindings: [],
+    placement: {
+      type: 'ABSOLUTE', xMm: 25, yMm: 25,
+      widthMode: 'FIXED', widthMm: 40,
+      heightMode: 'FIXED', heightMm: 30,
+    },
+    imageRef: { assetId },
+    fit: 'CONTAIN',
+    sampling: 'LINEAR',
+  });
+  baseline.canonicalDesignDsl = JSON.stringify(baseline.designDsl);
+  baseline.persistedReadiness = 'STALE';
+  const session = createSessionFromBaseline(
+    baseline,
+    { state: 'checked', value: 'READY' },
+  );
+  if (session.mode !== 'structured') throw new Error('expected Structured Editor');
+  return session;
+}
+
 function saveTransport(
   overrides: Partial<TemplateSaveTransport>,
 ): TemplateSaveTransport {
@@ -651,6 +754,74 @@ function saveTransport(
     putCurrent: vi.fn().mockRejectedValue(new Error('unexpected PUT')),
     ...overrides,
   };
+}
+
+function assetTransportFixture(
+  fontId: string,
+  imageId: string,
+): TemplateEditorAssetTransport {
+  const entries: AssetCatalogEntry[] = [
+    {
+      assetId: fontId,
+      kind: 'FONT',
+      lifecycle: 'ACTIVE',
+      displayName: '测试字体',
+      tags: ['e2e'],
+      sourceFileName: 'test.ttf',
+      updatedAt: '2026-09-03T00:00:00Z',
+    },
+    {
+      assetId: imageId,
+      kind: 'IMAGE',
+      lifecycle: 'ACTIVE',
+      displayName: '测试图片',
+      tags: ['e2e'],
+      sourceFileName: 'test.png',
+      updatedAt: '2026-09-03T00:00:00Z',
+    },
+  ];
+  return {
+    listAssets: vi.fn(async (query) => ({
+      items: entries.filter((entry) => entry.kind === query.kind),
+    })),
+    getCurrent: vi.fn(async (assetId) => assetDetail(
+      entries.find((entry) => entry.assetId === assetId)
+        ?? (() => { throw new Error('unexpected Asset'); })(),
+    )),
+    previewCurrent: vi.fn(async () => new Blob([new Uint8Array([1, 2, 3])])),
+  };
+}
+
+function assetDetail(entry: AssetCatalogEntry): AssetReadableResponse {
+  const common = {
+    ...entry,
+    disclosure: 'READABLE' as const,
+    assetRevision: 0,
+    currentContentVersion: 0,
+    mediaType: entry.kind === 'FONT' ? 'font/ttf' : 'image/png',
+    byteLength: 3,
+    sha256: 'a'.repeat(64),
+    createdAt: '2026-09-03T00:00:00Z',
+  };
+  return entry.kind === 'FONT'
+    ? {
+      ...common,
+      kind: 'FONT',
+      descriptor: { faceIndex: 0, flavor: 'TRUETYPE_GLYF', unitsPerEm: 1_000 },
+    }
+    : {
+      ...common,
+      kind: 'IMAGE',
+      descriptor: {
+        encodedWidthPx: 1,
+        encodedHeightPx: 1,
+        orientation: 'IDENTITY',
+        logicalWidthPx: 1,
+        logicalHeightPx: 1,
+        frameCount: 1,
+        colorEncoding: 'SRGB_8BIT',
+      },
+    };
 }
 
 async function saveResponse(

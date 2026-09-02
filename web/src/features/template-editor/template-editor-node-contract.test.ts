@@ -24,7 +24,12 @@ describe('Template Editor node contract projection', () => {
   it('distinguishes complete DesignDSL containers from the current core command slice', () => {
     expect(isTemplateDesignContainerKind('grid')).toBe(true);
     expect(isCoreTemplateAuthoringKind('grid')).toBe(false);
-    expect(isCoreTemplateAuthoringKind('rect')).toBe(true);
+    for (const kind of [
+      'text', 'image', 'rect', 'ellipse', 'line', 'polygon',
+      'polyline', 'path', 'qrCode', 'barcode',
+    ]) {
+      expect(isCoreTemplateAuthoringKind(kind)).toBe(true);
+    }
     expect(isCoreTemplateAuthoringParentKind('stack')).toBe(true);
     expect(isCoreTemplateAuthoringParentKind('rect')).toBe(false);
     expect(isCoreTemplateAuthoringParentKind('grid')).toBe(false);

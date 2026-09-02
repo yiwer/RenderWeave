@@ -29,6 +29,13 @@ import {
   finiteTemplateNumber,
   positiveTemplateNumber,
 } from './template-editor-numbers';
+import {
+  resolveTemplateAssetRef,
+  type TemplateAssetResolution,
+  type TemplateEditorAssetTransport,
+} from './template-editor-assets';
+import { TemplateEditorVisualNode } from './TemplateEditorVisualNode';
+import { isTemplateEditorVisualNodeKind } from './template-editor-visual-projection';
 
 export const CANVAS_PX_PER_MM = 4;
 export const TEMPLATE_NODE_DRAG_MIME = 'application/x-renderweave-template-node-kind';
@@ -54,6 +61,7 @@ interface AuthoredCanvasNode {
   readonly opacity: number;
   readonly transform: string | undefined;
   readonly transformOrigin: string | undefined;
+  readonly value: Readonly<Record<string, unknown>>;
 }
 
 export type TemplateEditorCanvasTool = 'select' | 'pan';
@@ -82,8 +90,43 @@ export interface TemplateEditorCanvasProps {
     nodeId: string,
     operation: TemplateEditorCanvasReorderOperation,
   ) => void;
-  readonly onInsertAt?: (kind: 'rect' | 'frame' | 'stack', xMm: number, yMm: number) => void;
+  readonly assetTransport?: TemplateEditorAssetTransport;
+  readonly assetResources?: TemplateEditorCanvasAssetResources;
+  readonly onInsertAt?: (kind: TemplateCanvasDropKind, xMm: number, yMm: number) => void;
 }
+
+export type TemplateCanvasDropKind =
+  | 'frame' | 'stack' | 'text' | 'image' | 'rect' | 'ellipse' | 'line'
+  | 'shape' | 'polygon' | 'polyline' | 'path' | 'qrCode' | 'barcode';
+
+interface TemplateEditorCanvasImageResource {
+  readonly url: string;
+  dispose(): void;
+}
+
+interface TemplateEditorCanvasFontResource {
+  readonly family: string;
+  dispose(): void;
+}
+
+export interface TemplateEditorCanvasAssetResources {
+  createImage(blob: Blob): TemplateEditorCanvasImageResource;
+  loadFont(assetId: string, blob: Blob): Promise<TemplateEditorCanvasFontResource | null>;
+}
+
+const defaultTemplateEditorCanvasAssetResources: TemplateEditorCanvasAssetResources = {
+  createImage(blob) {
+    const url = URL.createObjectURL(blob);
+    return { url, dispose: () => URL.revokeObjectURL(url) };
+  },
+  async loadFont(assetId, blob) {
+    if (typeof FontFace === 'undefined' || !document.fonts) return null;
+    const family = `RenderWeaveAsset-${assetId}`;
+    const face = await new FontFace(family, await blob.arrayBuffer()).load();
+    document.fonts.add(face);
+    return { family, dispose: () => document.fonts.delete(face) };
+  },
+};
 
 const RESIZE_HANDLES = ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w'] as const;
 
@@ -129,6 +172,8 @@ export function TemplateEditorCanvas({
   onDeleteSelection,
   onReorderNode,
   onInsertAt,
+  assetTransport,
+  assetResources = defaultTemplateEditorCanvasAssetResources,
 }: TemplateEditorCanvasProps) {
   const canvas = objectOrNull(workingCopy.designDsl.designRoot);
   const widthMm = positiveTemplateNumber(canvas?.widthMm) ?? 210;
@@ -364,7 +409,14 @@ export function TemplateEditorCanvas({
       height: interaction.node.heightPx,
     };
     const rect = interaction.mode === 'resize' && interaction.handle
-      ? resizeCanvasRect(startRect, interaction.handle, delta, CANVAS_PX_PER_MM)
+      ? interaction.node.kind === 'qrCode'
+        ? resizeStrictSquareCanvasRect(
+          startRect,
+          interaction.handle,
+          delta,
+          CANVAS_PX_PER_MM,
+        )
+        : resizeCanvasRect(startRect, interaction.handle, delta, CANVAS_PX_PER_MM)
       : {
         ...startRect,
         x: startRect.x + delta.x,
@@ -574,7 +626,7 @@ export function TemplateEditorCanvas({
           onDrop={(event) => {
             if (disabled || !onInsertAt) return;
             const kind = event.dataTransfer.getData(TEMPLATE_NODE_DRAG_MIME);
-            if (kind !== 'rect' && kind !== 'frame' && kind !== 'stack') return;
+            if (!isTemplateCanvasDropKind(kind)) return;
             event.preventDefault();
             event.stopPropagation();
             const bounds = event.currentTarget.getBoundingClientRect();
@@ -591,7 +643,7 @@ export function TemplateEditorCanvas({
             return (
               <div
                 key={node.nodeId}
-                className="te-canvas-node"
+                className={`te-canvas-node${isTemplateEditorVisualNodeKind(node.kind) ? ' is-visual' : ''}`}
                 data-template-canvas-authored-node=""
                 data-template-canvas-node-id={node.nodeId}
                 data-template-canvas-node-kind={node.kind}
@@ -600,9 +652,12 @@ export function TemplateEditorCanvas({
                   top: displayRect.y,
                   width: displayRect.width,
                   height: displayRect.height,
-                  background: node.fill ?? 'transparent',
-                  borderColor: node.stroke ?? undefined,
-                  borderWidth: node.stroke ? node.strokeWidthPx : undefined,
+                  background: isTemplateEditorVisualNodeKind(node.kind)
+                    ? 'transparent' : node.fill ?? 'transparent',
+                  borderColor: isTemplateEditorVisualNodeKind(node.kind)
+                    ? undefined : node.stroke ?? undefined,
+                  borderWidth: isTemplateEditorVisualNodeKind(node.kind)
+                    ? undefined : node.stroke ? node.strokeWidthPx : undefined,
                   borderRadius: node.borderRadius,
                   opacity: node.opacity,
                   transform: node.transform,
@@ -615,6 +670,15 @@ export function TemplateEditorCanvas({
                 }}
                 onContextMenu={(event) => openContextMenu(event, node.nodeId)}
               >
+                {isTemplateEditorVisualNodeKind(node.kind) ? (
+                  <CanvasVisualNode
+                    node={node.value}
+                    widthMm={displayRect.width / CANVAS_PX_PER_MM}
+                    heightMm={displayRect.height / CANVAS_PX_PER_MM}
+                    assetTransport={assetTransport}
+                    assetResources={assetResources}
+                  />
+                ) : null}
               </div>
             );
           })}
@@ -753,6 +817,46 @@ export function TemplateEditorCanvas({
   );
 }
 
+/**
+ * QR has one physical side length, not two independently authored dimensions.
+ * Corner handles keep the opposite corner fixed and use the dominant pointer axis;
+ * edge handles keep the opposite edge fixed and preserve the orthogonal center.
+ */
+function resizeStrictSquareCanvasRect(
+  current: CanvasRect,
+  handle: CanvasResizeHandle,
+  delta: Readonly<{ x: number; y: number }>,
+  minimumSize: number,
+): CanvasRect {
+  const freelyResized = resizeCanvasRect(current, handle, delta, minimumSize);
+  const startRight = current.x + current.width;
+  const startBottom = current.y + current.height;
+  const startCenterX = current.x + current.width / 2;
+  const startCenterY = current.y + current.height / 2;
+  const horizontalChange = Math.abs(freelyResized.width - current.width);
+  const verticalChange = Math.abs(freelyResized.height - current.height);
+  const hasHorizontalAxis = handle.includes('e') || handle.includes('w');
+  const hasVerticalAxis = handle.includes('n') || handle.includes('s');
+  const side = hasHorizontalAxis && hasVerticalAxis
+    ? horizontalChange >= verticalChange ? freelyResized.width : freelyResized.height
+    : hasHorizontalAxis ? freelyResized.width : freelyResized.height;
+
+  return {
+    x: handle.includes('w')
+      ? startRight - side
+      : handle.includes('e')
+        ? current.x
+        : startCenterX - side / 2,
+    y: handle.includes('n')
+      ? startBottom - side
+      : handle.includes('s')
+        ? current.y
+        : startCenterY - side / 2,
+    width: side,
+    height: side,
+  };
+}
+
 function projectZOrderAvailability(
   nodes: readonly EditorNodeProjection[],
 ): ReadonlyMap<string, CanvasZOrderAvailability> {
@@ -836,12 +940,190 @@ function projectAuthoredCanvasNodes(
           ? `rotate(${rotation}deg) scale(${scaleX}, ${scaleY})`
           : undefined,
         transformOrigin: `${originX * 100}% ${originY * 100}%`,
+        value: child,
       });
       if (Array.isArray(child.children)) visit(child.children, x, y);
     }
   };
   visit(canvas.children, 0, 0);
   return projected;
+}
+
+interface CanvasVisualResourceState {
+  readonly imagePreviewUrl?: string;
+  readonly imageAlt?: string;
+  readonly fontFamilies: ReadonlyMap<string, string>;
+  readonly warning?: string;
+}
+
+function CanvasVisualNode({
+  node,
+  widthMm,
+  heightMm,
+  assetTransport,
+  assetResources,
+}: {
+  node: Readonly<Record<string, unknown>>;
+  widthMm: number;
+  heightMm: number;
+  assetTransport?: TemplateEditorAssetTransport;
+  assetResources: TemplateEditorCanvasAssetResources;
+}) {
+  const [resources, setResources] = useState<CanvasVisualResourceState>({
+    fontFamilies: new Map(),
+  });
+  const signature = visualAssetSignature(node);
+
+  useEffect(() => {
+    if (!assetTransport || signature.length === 0) {
+      let active = true;
+      queueMicrotask(() => {
+        if (active) setResources({ fontFamilies: new Map() });
+      });
+      return () => {
+        active = false;
+      };
+    }
+    const controller = new AbortController();
+    const disposables: Array<{ dispose(): void }> = [];
+    queueMicrotask(() => {
+      if (!controller.signal.aborted) setResources({ fontFamilies: new Map() });
+    });
+    void loadCanvasVisualResources(
+      node,
+      assetTransport,
+      assetResources,
+      controller.signal,
+      disposables,
+    ).then((next) => {
+      if (!controller.signal.aborted) setResources(next);
+    }).catch((error: unknown) => {
+      if (!controller.signal.aborted && !isAbortError(error)) {
+        setResources({ fontFamilies: new Map(), warning: 'Asset 预览暂不可用' });
+      }
+    });
+    return () => {
+      controller.abort();
+      disposables.splice(0).forEach((resource) => resource.dispose());
+    };
+  }, [assetResources, assetTransport, node, signature]);
+
+  return (
+    <div className="te-canvas-visual" data-template-asset-warning={resources.warning ?? undefined}>
+      <TemplateEditorVisualNode
+        node={node}
+        widthMm={widthMm}
+        heightMm={heightMm}
+        pixelsPerMm={CANVAS_PX_PER_MM}
+        resources={{
+          imagePreviewUrl: resources.imagePreviewUrl,
+          imageAlt: resources.imageAlt,
+          resolveFontFamily: (assetId) => resources.fontFamilies.get(assetId),
+        }}
+      />
+      {resources.warning ? <span className="te-canvas-asset-warning">{resources.warning}</span> : null}
+    </div>
+  );
+}
+
+async function loadCanvasVisualResources(
+  node: Readonly<Record<string, unknown>>,
+  transport: TemplateEditorAssetTransport,
+  factory: TemplateEditorCanvasAssetResources,
+  signal: AbortSignal,
+  disposables: Array<{ dispose(): void }>,
+): Promise<CanvasVisualResourceState> {
+  if (node.kind === 'image') {
+    const assetId = assetIdFromRef(node.imageRef);
+    if (!assetId) return { fontFamilies: new Map(), warning: '图片 AssetRef 无效' };
+    const resolution = await resolveTemplateAssetRef({ assetId }, 'IMAGE', transport, signal);
+    if (resolution.state !== 'active') {
+      return { fontFamilies: new Map(), warning: assetResolutionWarning(resolution, '图片') };
+    }
+    const image = factory.createImage(await transport.previewCurrent(assetId, signal));
+    if (signal.aborted) {
+      image.dispose();
+      throw abortError();
+    }
+    disposables.push(image);
+    return {
+      imagePreviewUrl: image.url,
+      imageAlt: `${resolution.asset.displayName} · 本地草稿预览`,
+      fontFamilies: new Map(),
+    };
+  }
+  if (node.kind !== 'text') return { fontFamilies: new Map() };
+  const assetIds = textFontAssetIds(node);
+  const fontFamilies = new Map<string, string>();
+  const warnings: string[] = [];
+  for (const assetId of assetIds) {
+    const resolution = await resolveTemplateAssetRef({ assetId }, 'FONT', transport, signal);
+    if (resolution.state !== 'active') {
+      warnings.push(assetResolutionWarning(resolution, '字体'));
+      continue;
+    }
+    const font = await factory.loadFont(
+      assetId,
+      await transport.previewCurrent(assetId, signal),
+    );
+    if (!font) {
+      warnings.push('当前浏览器无法加载字体 Asset');
+      continue;
+    }
+    if (signal.aborted) {
+      font.dispose();
+      throw abortError();
+    }
+    disposables.push(font);
+    fontFamilies.set(assetId, font.family);
+  }
+  return {
+    fontFamilies,
+    ...(warnings.length > 0 ? { warning: warnings[0] } : {}),
+  };
+}
+
+function visualAssetSignature(node: Readonly<Record<string, unknown>>): string {
+  if (node.kind === 'image') return assetIdFromRef(node.imageRef) ?? 'invalid-image-ref';
+  return node.kind === 'text' ? textFontAssetIds(node).join('|') : '';
+}
+
+function textFontAssetIds(node: Readonly<Record<string, unknown>>): string[] {
+  if (!Array.isArray(node.runs)) return [];
+  return [...new Set(node.runs.map((run) => assetIdFromRef(objectOrNull(run)?.fontRef))
+    .filter((assetId): assetId is string => assetId !== null))];
+}
+
+function assetIdFromRef(value: unknown): string | null {
+  const ref = objectOrNull(value);
+  return typeof ref?.assetId === 'string' && ref.assetId.length > 0 ? ref.assetId : null;
+}
+
+function assetResolutionWarning(resolution: TemplateAssetResolution, label: string): string {
+  switch (resolution.state) {
+    case 'missing': return `${label} Asset 不存在`;
+    case 'deleted': return `${label} Asset 已删除`;
+    case 'kind-mismatch': return `${label} Asset 类型不匹配`;
+    case 'unavailable': return `${label} Asset 暂不可读取`;
+    case 'active': return '';
+  }
+}
+
+const TEMPLATE_CANVAS_DROP_KINDS: ReadonlySet<string> = new Set([
+  'frame', 'stack', 'text', 'image', 'rect', 'ellipse', 'line', 'shape',
+  'polygon', 'polyline', 'path', 'qrCode', 'barcode',
+]);
+
+function isTemplateCanvasDropKind(value: unknown): value is TemplateCanvasDropKind {
+  return typeof value === 'string' && TEMPLATE_CANVAS_DROP_KINDS.has(value);
+}
+
+function isAbortError(error: unknown): boolean {
+  return typeof error === 'object' && error !== null && 'name' in error && error.name === 'AbortError';
+}
+
+function abortError(): DOMException {
+  return new DOMException('Asset preview was aborted', 'AbortError');
 }
 
 function nodeGeometrySummary(node: Record<string, unknown>): string {

@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { parse } from 'lossless-json';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
@@ -8,7 +8,13 @@ import type {
   CanonicalDesignWorkingCopy,
   EditorNodeProjection,
 } from './template-editor-model';
-import { TEMPLATE_NODE_DRAG_MIME, TemplateEditorCanvas } from './TemplateEditorCanvas';
+import type { AssetReadableResponse } from '../../api/generated';
+import type { TemplateEditorAssetTransport } from './template-editor-assets';
+import {
+  TEMPLATE_NODE_DRAG_MIME,
+  TemplateEditorCanvas,
+  type TemplateEditorCanvasAssetResources,
+} from './TemplateEditorCanvas';
 
 afterEach(() => {
   cleanup();
@@ -50,6 +56,73 @@ describe('Template Editor Canvas interaction surface', () => {
     expect(authored?.style.width).toBe('120px');
     expect(authored?.style.height).toBe('160px');
     expect(screen.getByText('30×40 mm @ 10, 20')).toBeTruthy();
+  });
+
+  it('loads ephemeral Image/Font previews and disposes both browser resources on unmount', async () => {
+    const fontId = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+    const imageId = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
+    const text = {
+      ...fixedNode('text-node', 'text', '售价', 4, 5, 50, 15),
+      runs: [{
+        text: '¥19.90',
+        fontRef: { assetId: fontId },
+        fontSizePt: 12,
+        color: '#000000FF',
+        decoration: 'NONE',
+      }],
+    };
+    const image = {
+      ...fixedNode('image-node', 'image', '商品图', 60, 5, 40, 30),
+      imageRef: { assetId: imageId },
+      fit: 'CONTAIN',
+      sampling: 'LINEAR',
+    };
+    const designRoot: Record<string, unknown> = {
+      nodeId: 'canvas', kind: 'canvas', displayName: '画布', widthMm: 210, heightMm: 297,
+      bindings: [], children: [text, image],
+    };
+    const imageDispose = vi.fn();
+    const fontDispose = vi.fn();
+    const assetResources: TemplateEditorCanvasAssetResources = {
+      createImage: vi.fn(() => ({ url: 'blob:asset-image', dispose: imageDispose })),
+      loadFont: vi.fn(async () => ({ family: 'RenderWeaveTestFont', dispose: fontDispose })),
+    };
+    const assetTransport: TemplateEditorAssetTransport = {
+      listAssets: vi.fn(async () => ({ items: [] })),
+      getCurrent: vi.fn(async (assetId) => canvasAssetDetail(
+        assetId,
+        assetId === imageId ? 'IMAGE' : 'FONT',
+      )),
+      previewCurrent: vi.fn(async () => new Blob([new Uint8Array([1, 2, 3])])),
+    };
+    const view = render(<TemplateEditorCanvas
+      workingCopy={{
+        canonicalDesignDsl: '{}',
+        designDsl: {
+          dslVersion: 'renderweave-design/1.0',
+          expressionProfile: 'renderweave-expression/1.0',
+          definitions: [],
+          designRoot,
+        },
+      }}
+      nodes={projectNodes(designRoot)}
+      selectedNodeId="text-node"
+      onSelectNode={vi.fn()}
+      assetTransport={assetTransport}
+      assetResources={assetResources}
+    />);
+
+    await waitFor(() => {
+      expect(view.container.querySelector<HTMLImageElement>(
+        '[data-template-visual-kind="image"]',
+      )?.getAttribute('src')).toBe('blob:asset-image');
+      expect(view.container.querySelector<HTMLElement>(
+        '[data-template-text-run]',
+      )?.style.fontFamily).toContain('RenderWeaveTestFont');
+    });
+    view.unmount();
+    expect(imageDispose).toHaveBeenCalledTimes(1);
+    expect(fontDispose).toHaveBeenCalledTimes(1);
   });
 
   it('keeps authored nodes in preorder and renders selection chrome in an independent overlay', () => {
@@ -324,6 +397,80 @@ describe('Template Editor Canvas interaction surface', () => {
     expect(onGeometryCommit).toHaveBeenCalledTimes(2);
     expect(authored?.style.left).toBe('208px');
     expect(authored?.style.top).toBe('252px');
+  });
+
+  it('keeps QR resize strictly square while preserving the opposite edge or corner anchor', () => {
+    const qrCode = {
+      ...fixedNode('qr-code', 'qrCode', '二维码', 10, 20, 25, 25),
+      content: 'RenderWeave',
+      errorCorrectionLevel: 'M',
+      foregroundColor: '#000000FF',
+      backgroundColor: '#FFFFFFFF',
+    };
+    const designRoot: Record<string, unknown> = {
+      nodeId: 'canvas', kind: 'canvas', displayName: '画布', widthMm: 210, heightMm: 297,
+      bindings: [], children: [qrCode],
+    };
+    const onGeometryCommit = vi.fn();
+    const view = render(<TemplateEditorCanvas
+      workingCopy={{
+        canonicalDesignDsl: '{}',
+        designDsl: {
+          dslVersion: 'renderweave-design/1.0',
+          expressionProfile: 'renderweave-expression/1.0',
+          definitions: [],
+          designRoot,
+        },
+      }}
+      nodes={projectNodes(designRoot)}
+      selectedNodeId="qr-code"
+      tool="select"
+      onSelectNode={vi.fn()}
+      onGeometryCommit={onGeometryCommit}
+    />);
+    const viewport = screen.getByLabelText('本地草稿画布视口');
+    const authored = view.container.querySelector<HTMLElement>(
+      '[data-template-canvas-authored-node][data-template-canvas-node-id="qr-code"]',
+    );
+
+    const eastHandle = view.container.querySelector<HTMLElement>(
+      '[data-template-canvas-selection="qr-code"] [data-resize-handle="e"]',
+    );
+    fireEvent.pointerDown(eastHandle as HTMLElement, {
+      button: 0, pointerId: 41, clientX: 300, clientY: 300,
+    });
+    fireEvent.pointerMove(viewport, { pointerId: 41, clientX: 320, clientY: 300 });
+    expect(authored?.style.left).toBe('40px');
+    expect(authored?.style.top).toBe('70px');
+    expect(authored?.style.width).toBe('120px');
+    expect(authored?.style.height).toBe('120px');
+    fireEvent.pointerUp(viewport, { pointerId: 41, clientX: 320, clientY: 300 });
+    expect(onGeometryCommit).toHaveBeenLastCalledWith('qr-code', {
+      xMm: 10,
+      yMm: 17.5,
+      widthMm: 30,
+      heightMm: 30,
+    });
+
+    const northwestHandle = view.container.querySelector<HTMLElement>(
+      '[data-template-canvas-selection="qr-code"] [data-resize-handle="nw"]',
+    );
+    fireEvent.pointerDown(northwestHandle as HTMLElement, {
+      button: 0, pointerId: 42, clientX: 300, clientY: 300,
+    });
+    fireEvent.pointerMove(viewport, { pointerId: 42, clientX: 320, clientY: 308 });
+    expect(authored?.style.left).toBe('60px');
+    expect(authored?.style.top).toBe('100px');
+    expect(authored?.style.width).toBe('80px');
+    expect(authored?.style.height).toBe('80px');
+    fireEvent.pointerUp(viewport, { pointerId: 42, clientX: 320, clientY: 308 });
+    expect(onGeometryCommit).toHaveBeenLastCalledWith('qr-code', {
+      xMm: 15,
+      yMm: 25,
+      widthMm: 20,
+      heightMm: 20,
+    });
+    expect(onGeometryCommit).toHaveBeenCalledTimes(2);
   });
 
   it('keeps a locked canvas selectable and navigable while disabling every semantic mutation', () => {
@@ -607,7 +754,7 @@ describe('Template Editor Canvas interaction surface', () => {
     expectMenuItem('置于底层', true);
   });
 
-  it('accepts a core library drop at artboard-local millimetres', () => {
+  it('accepts every element and container library drop at artboard-local millimetres', () => {
     const { workingCopy, nodes } = canvasFixture();
     const onInsertAt = vi.fn();
     const view = render(<TemplateEditorCanvas
@@ -627,16 +774,23 @@ describe('Template Editor Canvas interaction surface', () => {
       getData: (type: string) => data.get(type) ?? '',
     };
 
-    fireEvent.dragOver(artboard as HTMLElement, { dataTransfer });
-    const drop = new Event('drop', { bubbles: true, cancelable: true });
-    Object.defineProperties(drop, {
-      clientX: { value: 140 },
-      clientY: { value: 90 },
-      dataTransfer: { value: dataTransfer },
-    });
-    fireEvent(artboard as HTMLElement, drop);
+    const kinds = [
+      'frame', 'stack', 'text', 'image', 'rect', 'ellipse', 'line', 'shape',
+      'polygon', 'polyline', 'path', 'qrCode', 'barcode',
+    ];
+    for (const kind of kinds) {
+      data.set(TEMPLATE_NODE_DRAG_MIME, kind);
+      fireEvent.dragOver(artboard as HTMLElement, { dataTransfer });
+      const drop = new Event('drop', { bubbles: true, cancelable: true });
+      Object.defineProperties(drop, {
+        clientX: { value: 140 },
+        clientY: { value: 90 },
+        dataTransfer: { value: dataTransfer },
+      });
+      fireEvent(artboard as HTMLElement, drop);
+    }
 
-    expect(onInsertAt).toHaveBeenCalledWith('frame', 10, 10);
+    expect(onInsertAt.mock.calls).toEqual(kinds.map((kind) => [kind, 10, 10]));
   });
 });
 
@@ -700,6 +854,45 @@ function fixedNode(
       heightMm,
     },
   };
+}
+
+function canvasAssetDetail(
+  assetId: string,
+  kind: 'IMAGE' | 'FONT',
+): AssetReadableResponse {
+  const common = {
+    assetId,
+    disclosure: 'READABLE' as const,
+    lifecycle: 'ACTIVE' as const,
+    assetRevision: 0,
+    currentContentVersion: 0,
+    displayName: kind === 'IMAGE' ? '商品图' : '售价字体',
+    tags: [],
+    mediaType: kind === 'IMAGE' ? 'image/png' : 'font/ttf',
+    byteLength: 3,
+    sha256: 'a'.repeat(64),
+    createdAt: '2026-09-03T00:00:00Z',
+    updatedAt: '2026-09-03T00:00:00Z',
+  };
+  return kind === 'IMAGE'
+    ? {
+      ...common,
+      kind,
+      descriptor: {
+        encodedWidthPx: 1,
+        encodedHeightPx: 1,
+        orientation: 'IDENTITY',
+        logicalWidthPx: 1,
+        logicalHeightPx: 1,
+        frameCount: 1,
+        colorEncoding: 'SRGB_8BIT',
+      },
+    }
+    : {
+      ...common,
+      kind,
+      descriptor: { faceIndex: 0, flavor: 'TRUETYPE_GLYF', unitsPerEm: 1_000 },
+    };
 }
 
 function projectNodes(root: Record<string, unknown>): EditorNodeProjection[] {

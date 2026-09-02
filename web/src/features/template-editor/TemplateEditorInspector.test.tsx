@@ -4,8 +4,13 @@ import { cleanup, fireEvent, render, screen, within } from '@testing-library/rea
 import { parse } from 'lossless-json';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
+import type { AssetReadableResponse } from '../../api/generated';
 import type { EditorNodeProjection } from './template-editor-model';
 import { TemplateEditorInspector } from './TemplateEditorInspector';
+import {
+  TemplateAssetRequestError,
+  type TemplateEditorAssetTransport,
+} from './template-editor-assets';
 
 afterEach(cleanup);
 
@@ -170,6 +175,79 @@ describe('Template Editor Inspector', () => {
     expect(within(list).queryAllByRole('button')).toHaveLength(0);
   });
 
+  it('keeps multi-Run Text explicitly read-only instead of flattening authored runs', () => {
+    const onCommand = vi.fn();
+    renderInspector(textNode([
+      textRun('第一段', 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'),
+      textRun('第二段', 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'),
+    ]), { onCommand });
+
+    expect(screen.getByText('多 Run 内容保持只读')).toBeTruthy();
+    expect(screen.getByText(/不会合并、拍平或覆盖/)).toBeTruthy();
+    expect(screen.queryByLabelText('文本值')).toBeNull();
+    expect(screen.queryByRole('button', { name: /字体 Asset/ })).toBeNull();
+    expect(onCommand).not.toHaveBeenCalled();
+  });
+
+  it('shows a deleted Asset dependency without clearing or replacing its AssetRef', async () => {
+    const assetId = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+    const assetTransport: TemplateEditorAssetTransport = {
+      listAssets: vi.fn(async () => ({ items: [] })),
+      getCurrent: vi.fn(async () => {
+        throw new TemplateAssetRequestError(410, 'ASSET_DELETED');
+      }),
+      previewCurrent: vi.fn(async () => new Blob()),
+    };
+    renderInspector(imageNode(assetId), { assetTransport });
+
+    expect(await screen.findByText('图片 Asset 已删除；引用已保留')).toBeTruthy();
+    expect(screen.getByText(assetId)).toBeTruthy();
+    expect(screen.getByRole('button', { name: '更换图片 Asset' })).toBeTruthy();
+  });
+
+  it('keeps an ACTIVE Asset current while attributing STALE to the Template dependency snapshot', async () => {
+    const assetId = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+    const assetTransport: TemplateEditorAssetTransport = {
+      listAssets: vi.fn(async () => ({ items: [] })),
+      getCurrent: vi.fn(async (): Promise<AssetReadableResponse> => ({
+        assetId,
+        disclosure: 'READABLE',
+        kind: 'IMAGE',
+        lifecycle: 'ACTIVE',
+        assetRevision: 3,
+        currentContentVersion: 2,
+        displayName: '当前商品图',
+        tags: [],
+        sourceFileName: 'current.png',
+        mediaType: 'image/png',
+        byteLength: 4,
+        sha256: 'a'.repeat(64),
+        descriptor: {
+          encodedWidthPx: 1,
+          encodedHeightPx: 1,
+          orientation: 'IDENTITY',
+          logicalWidthPx: 1,
+          logicalHeightPx: 1,
+          frameCount: 1,
+          colorEncoding: 'SRGB_8BIT',
+        },
+        createdAt: '2026-09-03T00:00:00Z',
+        updatedAt: '2026-09-03T00:00:00Z',
+      })),
+      previewCurrent: vi.fn(async () => new Blob()),
+    };
+    renderInspector(imageNode(assetId), {
+      assetTransport,
+      dependencyStaleMessage: 'Template 打开时依赖快照 STALE；本次权威重检 READY',
+    });
+
+    expect(await screen.findByText(
+      '当前商品图 · 当前 Asset ACTIVE；Template 打开时依赖快照 STALE；本次权威重检 READY',
+    )).toBeTruthy();
+    expect(screen.getByText(assetId)).toBeTruthy();
+    expect(screen.queryByText('当前商品图 · STALE')).toBeNull();
+  });
+
   it('renders an honest empty selection and disables every authored control', () => {
     const onCommand = vi.fn();
     const view = render(<TemplateEditorInspector
@@ -233,6 +311,44 @@ function stackNode(): EditorNodeProjection {
     fill: { color: '#FFFFFFFF' },
     placement: {
       type: 'STACK',
+      widthMode: 'FIXED', widthMm: 80,
+      heightMode: 'FIXED', heightMm: 40,
+    },
+  });
+}
+
+function textNode(runs: Record<string, unknown>[]): EditorNodeProjection {
+  return node('text', '售价文本', {
+    displayName: '售价文本',
+    bindings: [],
+    runs,
+    placement: {
+      type: 'ABSOLUTE', xMm: 12, yMm: 18,
+      widthMode: 'FIXED', widthMm: 80,
+      heightMode: 'FIXED', heightMm: 20,
+    },
+  });
+}
+
+function textRun(text: string, assetId: string): Record<string, unknown> {
+  return {
+    text,
+    fontRef: { assetId },
+    fontSizePt: 12,
+    color: '#000000FF',
+    decoration: 'NONE',
+  };
+}
+
+function imageNode(assetId: string): EditorNodeProjection {
+  return node('image', '商品图', {
+    displayName: '商品图',
+    bindings: [],
+    imageRef: { assetId },
+    fit: 'CONTAIN',
+    sampling: 'LINEAR',
+    placement: {
+      type: 'ABSOLUTE', xMm: 12, yMm: 18,
       widthMode: 'FIXED', widthMm: 80,
       heightMode: 'FIXED', heightMm: 40,
     },

@@ -30,6 +30,9 @@ $containerId = $null
 $postgresDataDir = $null
 $postgresStarted = $false
 $postgresShutdownFailed = $false
+$minioContainerName = "renderweave-template-roundtrip-minio-e2e-$PID"
+$minioContainerId = $null
+$minioContainerShutdownFailed = $false
 $apiProcess = $null
 $webProcess = $null
 $apiPort = $null
@@ -78,7 +81,7 @@ function Wait-ForHttp {
         [string]$Name
     )
     foreach ($attempt in 1..120) {
-        if ($Process.HasExited) {
+        if ($Process -and $Process.HasExited) {
             throw "$Name exited before becoming ready (exit $($Process.ExitCode))."
         }
         try {
@@ -239,8 +242,17 @@ try {
         'RENDERWEAVE_API_URL', 'RENDERWEAVE_BLOB_ROOT', 'RENDERWEAVE_LIVE_E2E',
         'RENDERWEAVE_TEMPLATE_ROUNDTRIP_LIVE',
         'RENDERWEAVE_TEMPLATE_SINGLE_OWNER_ENABLED',
-        'RENDERWEAVE_TEMPLATE_SINGLE_OWNER_OWNER_SCOPE',
+        'RENDERWEAVE_TEMPLATE_SINGLE_OWNER_SCOPE',
         'RENDERWEAVE_TEMPLATE_SINGLE_OWNER_CAPABILITIES',
+        'RENDERWEAVE_ASSET_SINGLE_OWNER_ENABLED',
+        'RENDERWEAVE_ASSET_SINGLE_OWNER_SCOPE',
+        'RENDERWEAVE_ASSET_SINGLE_OWNER_CAPABILITIES',
+        'RENDERWEAVE_ASSET_S3_ENDPOINT',
+        'RENDERWEAVE_ASSET_S3_REGION',
+        'RENDERWEAVE_ASSET_S3_BUCKET',
+        'RENDERWEAVE_ASSET_S3_ACCESS_KEY',
+        'RENDERWEAVE_ASSET_S3_SECRET_KEY',
+        'RENDERWEAVE_ASSET_S3_PATH_STYLE',
         'RENDERWEAVE_WEB_PORT', 'RENDERWEAVE_EVIDENCE_DIR',
         'RENDERWEAVE_PLAYWRIGHT_OUTPUT_DIR', 'RENDERWEAVE_PLAYWRIGHT_HTML_DIR'
     )) {
@@ -252,9 +264,57 @@ try {
     $env:RENDERWEAVE_BLOB_ROOT = Join-Path $runDir 'blobs'
     if ($Journey -eq 'template-roundtrip') {
         $env:RENDERWEAVE_TEMPLATE_SINGLE_OWNER_ENABLED = 'true'
-        $env:RENDERWEAVE_TEMPLATE_SINGLE_OWNER_OWNER_SCOPE = 'template-roundtrip-e2e'
+        $env:RENDERWEAVE_TEMPLATE_SINGLE_OWNER_SCOPE = 'template-roundtrip-e2e'
         $env:RENDERWEAVE_TEMPLATE_SINGLE_OWNER_CAPABILITIES = `
             'template.create,template.read,template.update'
+        $env:RENDERWEAVE_ASSET_SINGLE_OWNER_ENABLED = 'true'
+        $env:RENDERWEAVE_ASSET_SINGLE_OWNER_SCOPE = 'template-roundtrip-e2e'
+        $env:RENDERWEAVE_ASSET_SINGLE_OWNER_CAPABILITIES = 'asset.create,asset.read'
+
+        if ([string]::IsNullOrWhiteSpace($env:RENDERWEAVE_ASSET_S3_ENDPOINT)) {
+            $minioAccessKey = 'renderweave-local-e2e'
+            $minioSecretKey = 'renderweave-local-e2e-secret'
+            $minioRegion = 'us-east-1'
+            $minioBucket = 'renderweave-assets'
+            $minioImage = 'minio/minio:RELEASE.2024-12-18T13-15-44Z'
+            $minioContainerId = (& docker run --detach --rm `
+                --name $minioContainerName `
+                --env "MINIO_ROOT_USER=$minioAccessKey" `
+                --env "MINIO_ROOT_PASSWORD=$minioSecretKey" `
+                --publish '127.0.0.1::9000' `
+                $minioImage server /data --console-address ':9001').Trim()
+            if ($LASTEXITCODE -ne 0 -or -not $minioContainerId) {
+                throw "Unable to start the pinned MinIO E2E container $minioImage."
+            }
+            $minioPortBinding = (& docker port $minioContainerId '9000/tcp' |
+                Select-Object -First 1).Trim()
+            if ($LASTEXITCODE -ne 0 -or -not $minioPortBinding) {
+                throw 'Unable to resolve the MinIO E2E loopback port.'
+            }
+            $minioApiPort = [int]($minioPortBinding -replace '^.*:', '')
+            $minioEndpoint = "http://127.0.0.1:$minioApiPort"
+            $env:RENDERWEAVE_ASSET_S3_ENDPOINT = $minioEndpoint
+            $env:RENDERWEAVE_ASSET_S3_REGION = $minioRegion
+            $env:RENDERWEAVE_ASSET_S3_BUCKET = $minioBucket
+            $env:RENDERWEAVE_ASSET_S3_ACCESS_KEY = $minioAccessKey
+            $env:RENDERWEAVE_ASSET_S3_SECRET_KEY = $minioSecretKey
+            $env:RENDERWEAVE_ASSET_S3_PATH_STYLE = 'true'
+
+            Wait-ForHttp `
+                -Uri "$minioEndpoint/minio/health/live" `
+                -Name 'local MinIO'
+            & docker exec $minioContainerId mc alias set `
+                renderweave-local http://127.0.0.1:9000 `
+                $minioAccessKey $minioSecretKey *> $null
+            if ($LASTEXITCODE -ne 0) {
+                throw 'Unable to configure the MinIO E2E mc alias.'
+            }
+            & docker exec $minioContainerId mc mb --ignore-existing `
+                "renderweave-local/$minioBucket" *> $null
+            if ($LASTEXITCODE -ne 0) {
+                throw 'Unable to create the MinIO E2E Asset bucket.'
+            }
+        }
     }
 
     $javaExecutable = if ($env:JAVA_HOME) {
@@ -425,6 +485,17 @@ finally {
     elseif ($containerId) {
         & docker stop $containerName *> $null
     }
+    if ($minioContainerId) {
+        & docker stop $minioContainerId *> $null
+        if ($LASTEXITCODE -ne 0) {
+            $remainingMinioContainer = (& docker ps --all --quiet --no-trunc `
+                --filter "id=$minioContainerId" 2> $null | Select-Object -First 1)
+            if ($LASTEXITCODE -ne 0 -or $remainingMinioContainer) {
+                $cleanupWarnings += "owned MinIO container cleanup failed: $minioContainerId"
+                $minioContainerShutdownFailed = $true
+            }
+        }
+    }
     foreach ($name in $oldEnvironment.Keys) {
         [Environment]::SetEnvironmentVariable($name, $oldEnvironment[$name], 'Process')
     }
@@ -434,7 +505,18 @@ finally {
     else {
         $null
     }
-    if ($postgresCleanupFailure -and $null -eq $journeyFailure) {
+    $minioCleanupFailure = if ($minioContainerShutdownFailed) {
+        "Owned MinIO container cleanup failed: $minioContainerId."
+    }
+    else {
+        $null
+    }
+    $localCleanupFailure = @(
+        $postgresCleanupFailure
+        $minioCleanupFailure
+    ) | Where-Object { $_ }
+    $localCleanupFailure = $localCleanupFailure -join ' '
+    if ($localCleanupFailure -and $null -eq $journeyFailure) {
         $journeyResult = 'failed'
     }
     $metadata = [ordered]@{
@@ -448,7 +530,7 @@ finally {
         finishedAt = (Get-Date).ToString('o')
         cleanupMode = if ($script:cimUnavailable) { 'owned-handles-only' } else { 'cim-sweep' }
         cleanupWarning = $cleanupWarnings -join '; '
-        failure = if ($null -ne $journeyFailure) { $journeyFailure } else { $postgresCleanupFailure }
+        failure = if ($null -ne $journeyFailure) { $journeyFailure } else { $localCleanupFailure }
     }
     $encoding = New-Object System.Text.UTF8Encoding($false)
     [System.IO.File]::WriteAllText(
@@ -463,10 +545,10 @@ finally {
     if ($remainingProcessIds -and $journeyFailure) {
         Write-Warning "E2E process cleanup failed for PID(s): $($remainingProcessIds -join ', '); journey failure is the primary result."
     }
-    if ($postgresShutdownFailed -and $null -eq $journeyFailure) {
-        throw $postgresCleanupFailure
+    if ($localCleanupFailure -and $null -eq $journeyFailure) {
+        throw $localCleanupFailure
     }
-    if ($postgresShutdownFailed -and $journeyFailure) {
-        Write-Warning "Local PostgreSQL cleanup failed; data directory retained at $postgresDataResolved; journey failure is the primary result."
+    if ($localCleanupFailure -and $journeyFailure) {
+        Write-Warning "$localCleanupFailure Journey failure is the primary result."
     }
 }
