@@ -1,4 +1,7 @@
+import { inspectDesignDslWire } from './template-design-dsl-wire';
 import { createStructuredEditorSession } from './template-editor-session';
+
+export { SUPPORTED_NODE_KIND_COUNT } from './template-design-dsl-wire';
 
 export type PersistedTemplateReadiness = 'READY' | 'INVALID' | 'STALE';
 export type CheckedTemplateReadiness = 'READY' | 'INVALID';
@@ -85,28 +88,15 @@ export type TemplateEditorSession =
   | CompatibilityEditorSession
   | RawRepairEditorSession;
 
-const SUPPORTED_NODE_KINDS = new Set([
-  'canvas',
-  'group',
-  'frame',
-  'stack',
-  'grid',
-  'repeat',
-  'text',
-  'image',
-  'rect',
-  'ellipse',
-  'line',
-  'polygon',
-  'polyline',
-  'path',
-  'qrCode',
-  'barcode',
-  'templateUse',
-  'conditional',
-]);
+export class MalformedDesignDslWireError extends Error {
+  readonly path: string;
 
-export const SUPPORTED_NODE_KIND_COUNT = SUPPORTED_NODE_KINDS.size;
+  constructor(path: string) {
+    super(`${path} is not a safe closed DesignDSL wire`);
+    this.name = 'MalformedDesignDslWireError';
+    this.path = path;
+  }
+}
 
 export function createSessionFromBaseline(
   baseline: CanonicalTemplateBaseline,
@@ -166,31 +156,17 @@ export function profileIdentity(baseline: CanonicalTemplateBaseline): string {
 }
 
 function compatibilityReasonOf(designDsl: Record<string, unknown>): string | null {
-  if (designDsl.dslVersion !== 'renderweave-design/1.0') {
-    return '客户端不理解该 DesignDSL Profile。';
+  const inspection = inspectDesignDslWire(designDsl);
+  if (inspection.status === 'supported') return null;
+  if (inspection.status === 'unsupported-profile') {
+    return inspection.path === 'dslVersion'
+      ? '客户端不理解该 DesignDSL Profile。'
+      : '客户端不理解该 Expression Profile。';
   }
-  if (designDsl.expressionProfile !== 'renderweave-expression/1.0') {
-    return '客户端不理解该 Expression Profile。';
+  if (inspection.status === 'malformed') {
+    throw new MalformedDesignDslWireError(inspection.path);
   }
-  if (!Array.isArray(designDsl.definitions)) {
-    return 'definitions 不是客户端理解的 closed wire。';
-  }
-  const canvas = objectOrNull(designDsl.designRoot);
-  if (!canvas || canvas.kind !== 'canvas' || !supportedNodeTree(canvas)) {
-    return 'DesignDSL 包含客户端不理解的 Node wire。';
-  }
-  return null;
-}
-
-function supportedNodeTree(node: Record<string, unknown>): boolean {
-  if (typeof node.nodeId !== 'string' || typeof node.kind !== 'string') return false;
-  if (!SUPPORTED_NODE_KINDS.has(node.kind)) return false;
-  if (node.children === undefined) return true;
-  if (!Array.isArray(node.children)) return false;
-  return node.children.every((child) => {
-    const childObject = objectOrNull(child);
-    return childObject !== null && supportedNodeTree(childObject);
-  });
+  return `DesignDSL 包含客户端不理解的 closed wire：${inspection.path}。`;
 }
 
 function visitNode(

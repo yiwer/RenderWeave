@@ -5,13 +5,28 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Single machine authority for the admitted DesignDSL Node contract (T14 increment 1: containers).
+ * Single machine authority for the admitted DesignDSL Node contract.
  * Every property tree, ValueType, unit, ContentModel and placement capability below is a permanent
  * Node Property Identity fact for {@code renderweave-design/1.0}; future extensions must create a
- * new dslVersion. Visual leaf kinds and the repeat/conditional/templateUse structural kinds are
- * intentionally NOT in this catalog yet (they fail closed with DESIGN_KERNEL_SCOPE_UNSUPPORTED).
+ * new dslVersion. All eighteen {@code renderweave-design/1.0} kinds are admitted here; an
+ * additional wire kind therefore requires a new profile identity rather than a permissive
+ * fallback.
  */
 final class NodeContractCatalog {
+
+    static final Set<String> DESIGN_ROOT_MEMBERS = Set.of(
+            "dslVersion", "expressionProfile", "displayName", "description",
+            "definitions", "designRoot"
+    );
+
+    static final Set<String> CANVAS_MEMBERS = Set.of(
+            "nodeId", "kind", "displayName", "widthMm", "heightMm", "backgroundColor",
+            "bleed", "bindings", "children"
+    );
+
+    static final Set<String> BLEED_MEMBERS = Set.of(
+            "topMm", "rightMm", "bottomMm", "leftMm"
+    );
 
     enum NodeKind {
         CANVAS,
@@ -198,7 +213,10 @@ final class NodeContractCatalog {
             "kind", "domain", "pointer", "contextAbsentPolicy"
     );
     static final Set<String> EMPTY_SELECTOR_MEMBERS = Set.of("kind");
-    static final Set<String> SELECTOR_DOMAIN_MEMBERS = Set.of("kind", "loopId");
+    /** Union-wide prefilter only; each discriminator branch still applies its exact member set. */
+    static final Set<String> SELECTOR_DOMAIN_UNION_MEMBERS = Set.of("kind", "loopId");
+    static final Set<String> INVOCATION_SELECTOR_DOMAIN_MEMBERS = Set.of("kind");
+    static final Set<String> LOOP_SELECTOR_DOMAIN_MEMBERS = Set.of("kind", "loopId");
     static final Set<String> CONTEXT_ABSENT_POLICY_TOKENS = Set.of("ERROR", "SKIP");
     static final Set<String> USE_FILL_MEMBERS = Set.of("targetDefinitionId", "source");
 
@@ -296,6 +314,47 @@ final class NodeContractCatalog {
                     QRCODE, BARCODE, TEMPLATE_USE -> false;
             case GROUP, FRAME, STACK, GRID, REPEAT, CONDITIONAL -> true;
         };
+    }
+
+    /**
+     * Exact authored top-level members for one node kind. Nested value-object members remain
+     * owned by the named member sets above. This is also the projection seam used by the
+     * OpenAPI parity test; callers must not reconstruct the table in a second switch.
+     */
+    static Set<String> allowedMembers(NodeKind kind) {
+        if (kind == NodeKind.CANVAS) {
+            return CANVAS_MEMBERS;
+        }
+        var members = new java.util.HashSet<>(COMMON_NODE_MEMBERS);
+        if (allowsChildren(kind)) {
+            members.addAll(CONTAINER_MEMBERS);
+        }
+        switch (kind) {
+            case FRAME, STACK, GRID -> members.addAll(APPEARANCE_MEMBERS);
+            case CANVAS, GROUP, REPEAT, TEXT, IMAGE, RECT, ELLIPSE, LINE, POLYGON,
+                    POLYLINE, PATH, QRCODE, BARCODE, TEMPLATE_USE, CONDITIONAL -> {
+            }
+        }
+        switch (kind) {
+            case STACK -> members.addAll(STACK_MEMBERS);
+            case GRID -> members.addAll(GRID_MEMBERS);
+            case REPEAT -> members.addAll(REPEAT_MEMBERS);
+            case TEMPLATE_USE -> members.addAll(TEMPLATE_USE_MEMBERS);
+            case CONDITIONAL -> members.addAll(CONDITIONAL_MEMBERS);
+            case TEXT -> members.addAll(TEXT_MEMBERS);
+            case IMAGE -> members.addAll(IMAGE_MEMBERS);
+            case RECT -> members.addAll(RECT_MEMBERS);
+            case ELLIPSE -> members.addAll(ELLIPSE_MEMBERS);
+            case LINE -> members.addAll(LINE_MEMBERS);
+            case POLYGON -> members.addAll(POLYGON_MEMBERS);
+            case POLYLINE -> members.addAll(POLYLINE_MEMBERS);
+            case PATH -> members.addAll(PATH_MEMBERS);
+            case QRCODE -> members.addAll(QRCODE_MEMBERS);
+            case BARCODE -> members.addAll(BARCODE_MEMBERS);
+            case CANVAS, GROUP, FRAME -> {
+            }
+        }
+        return Set.copyOf(members);
     }
 
     /**

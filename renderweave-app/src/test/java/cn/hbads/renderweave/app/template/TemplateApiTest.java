@@ -12,6 +12,10 @@ import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -311,6 +315,89 @@ class TemplateApiTest {
     }
 
     @Test
+    void completeWireRoundTripsThroughRealTemplateEndpointsWithoutSemanticLoss() throws Exception {
+        var mapper = tools.jackson.databind.json.JsonMapper.builder().build();
+        var canonicalFixture = Files.readString(repoFile(
+                "renderweave-template/src/test/resources/cn/hbads/renderweave/template/"
+                        + "complete-wire-v1/all-kinds.json"
+        ), StandardCharsets.UTF_8);
+        var originalDesign = mapper.readTree(canonicalFixture);
+
+        var create = mockMvc.perform(post("/api/v1/templates")
+                        .queryParam("schemaKey", "system-basic-text")
+                        .queryParam("versionTag", "v1")
+                        .contentType(DESIGN_MEDIA_TYPE)
+                        .content(DESIGN))
+                .andExpect(status().isCreated())
+                .andReturn();
+        var templateId = mapper.readTree(create.getResponse().getContentAsByteArray())
+                .path("templateId")
+                .asText();
+
+        var initialOffer = mockMvc.perform(put("/api/v1/templates/{templateId}", templateId)
+                        .queryParam("expectedRevision", "0")
+                        .contentType(DESIGN_MEDIA_TYPE)
+                        .content(canonicalFixture))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(content().contentTypeCompatibleWith("application/problem+json"))
+                .andExpect(jsonPath("$.code")
+                        .value("TEMPLATE_DEPENDENCY_CONFIRMATION_REQUIRED"))
+                .andExpect(jsonPath("$.truncated").value(false))
+                .andReturn();
+        var initialToken = mapper.readTree(initialOffer.getResponse().getContentAsByteArray())
+                .path("confirmationToken")
+                .asText();
+
+        var committed = mockMvc.perform(put("/api/v1/templates/{templateId}", templateId)
+                        .queryParam("expectedRevision", "0")
+                        .header("X-Confirmation-Token", initialToken)
+                        .contentType(DESIGN_MEDIA_TYPE)
+                        .content(canonicalFixture))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.revision").value(1))
+                .andExpect(jsonPath("$.readiness").value("INVALID"))
+                .andReturn();
+        org.assertj.core.api.Assertions.assertThat(
+                mapper.readTree(committed.getResponse().getContentAsByteArray()).path("designDsl")
+        ).isEqualTo(originalDesign);
+
+        var editedDesign = originalDesign.deepCopy();
+        ((tools.jackson.databind.node.ObjectNode) editedDesign)
+                .put("displayName", "Complete wire edited");
+        var editedJson = mapper.writeValueAsBytes(editedDesign);
+        var editOffer = mockMvc.perform(put("/api/v1/templates/{templateId}", templateId)
+                        .queryParam("expectedRevision", "1")
+                        .contentType(DESIGN_MEDIA_TYPE)
+                        .content(editedJson))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.code")
+                        .value("TEMPLATE_DEPENDENCY_CONFIRMATION_REQUIRED"))
+                .andExpect(jsonPath("$.truncated").value(false))
+                .andReturn();
+        var editToken = mapper.readTree(editOffer.getResponse().getContentAsByteArray())
+                .path("confirmationToken")
+                .asText();
+
+        mockMvc.perform(put("/api/v1/templates/{templateId}", templateId)
+                        .queryParam("expectedRevision", "1")
+                        .header("X-Confirmation-Token", editToken)
+                        .contentType(DESIGN_MEDIA_TYPE)
+                        .content(editedJson))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.revision").value(2))
+                .andExpect(jsonPath("$.readiness").value("INVALID"));
+
+        var reloaded = mockMvc.perform(get("/api/v1/templates/{templateId}", templateId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.revision").value(2))
+                .andExpect(jsonPath("$.readiness").value("INVALID"))
+                .andReturn();
+        var reloadedBody = mapper.readTree(reloaded.getResponse().getContentAsByteArray());
+        org.assertj.core.api.Assertions.assertThat(reloadedBody.path("designDsl"))
+                .isEqualTo(editedDesign);
+    }
+
+    @Test
     void missingSchemaAndWrongMediaTypeFailWithoutWrites() throws Exception {
         mockMvc.perform(post("/api/v1/templates")
                         .queryParam("schemaKey", "missing-schema")
@@ -363,5 +450,17 @@ class TemplateApiTest {
         org.assertj.core.api.Assertions.assertThat(
                 jdbc.sql("select count(*) from template_aggregate").query(Long.class).single()
         ).isZero();
+    }
+
+    private static Path repoFile(String relative) {
+        var cursor = Path.of("").toAbsolutePath();
+        while (cursor != null) {
+            var candidate = cursor.resolve(relative);
+            if (Files.exists(candidate)) {
+                return candidate;
+            }
+            cursor = cursor.getParent();
+        }
+        throw new AssertionError("repository file is absent: " + relative);
     }
 }

@@ -201,6 +201,10 @@ async function largeBaseline(childCount: number): Promise<CanonicalTemplateBasel
     displayName: `节点 ${index + 1}`,
     bindings: [],
     children: [],
+    placement: {
+      type: 'ABSOLUTE', xMm: 0, yMm: 0,
+      widthMode: 'HUG_CONTENT', heightMode: 'HUG_CONTENT',
+    },
   }));
   baseline.canonicalDesignDsl = JSON.stringify(baseline.designDsl);
   baseline.contentHash = await contentHash(baseline.canonicalDesignDsl);

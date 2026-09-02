@@ -245,34 +245,811 @@ export type StaticSchemaRef = {
 };
 
 /**
- * The real minimal DesignDSL kernel admitted by TV1-T03/T06. This schema does not register renderweave-design/1.0 as an available full Profile; non-empty definitions, bindings and children remain fail-closed until their semantic slices are implemented.
+ * Complete closed HTTP projection of the admitted renderweave-design/1.0 authoring wire. Cross-field, lexical-scope, dependency and capacity semantics remain enforced by the Template-owned DesignDslAuthority.
  */
 export type DesignDslKernel = {
     dslVersion: 'renderweave-design/1.0';
     expressionProfile: 'renderweave-expression/1.0';
     displayName: string;
     description?: string;
-    definitions: Array<unknown>;
-    designRoot: DesignCanvasKernel;
+    definitions: Array<DesignDefinition>;
+    designRoot: DesignCanvasNode;
 };
 
-export type DesignCanvasKernel = {
+export type DesignDefinition = ({
+    kind: 'custom';
+} & DesignCustomDefinition) | ({
+    kind: 'mapping';
+} & DesignMappingDefinition) | ({
+    kind: 'expression';
+} & DesignExpressionDefinition);
+
+export type DesignCustomDefinition = {
+    definitionId: DesignUuidV4;
+    kind: 'custom';
+    displayName: DesignDisplayName;
+    exposure: 'PUBLIC' | 'PRIVATE';
+    valueType: DesignValueType;
+    defaultValue: DesignLiteralValue;
+};
+
+export type DesignMappingDefinition = {
+    definitionId: DesignUuidV4;
+    kind: 'mapping';
+    displayName: DesignDisplayName;
+    domain: DesignDefinitionDomain;
+    output: DesignValueType;
+    input: DesignNonCapabilityValueSource;
+    cases: Array<DesignMappingCase>;
+    otherwise: DesignNonCapabilityValueSource;
+};
+
+export type DesignExpressionDefinition = {
+    definitionId: DesignUuidV4;
+    kind: 'expression';
+    displayName: DesignDisplayName;
+    domain: DesignDefinitionDomain;
+    output: DesignValueType;
+    inputs: Array<DesignExpressionInput>;
+    source: string;
+};
+
+export type DesignDefinitionDomain = 'invocation' | DesignLoopDomain;
+
+export type DesignLoopDomain = {
+    kind: 'loop';
+    loopId: DesignUuidV4;
+};
+
+export type DesignValueType = DesignBaseValueType | DesignListValueType | DesignEnumValueType;
+
+export type DesignBaseValueType = 'text' | 'decimal' | 'boolean' | 'date' | 'time' | 'color' | 'imageRef' | 'fontRef';
+
+export type DesignListValueType = {
+    type: 'list';
+    items: 'text' | 'decimal' | 'boolean' | 'date' | 'time' | 'imageRef' | 'fontRef';
+};
+
+export type DesignEnumValueType = {
+    type: 'enum';
+    catalogId: string;
+};
+
+export type DesignLiteralValue = string | number | boolean | DesignAssetRef | Array<string | number | boolean | DesignAssetRef>;
+
+export type DesignValueSource = ({
+    kind: 'literal';
+} & DesignLiteralSource) | ({
+    kind: 'context';
+} & DesignContextSource) | ({
+    kind: 'loopIndex';
+} & DesignLoopIndexSource) | ({
+    kind: 'definition';
+} & DesignDefinitionSource) | ({
+    kind: 'capability';
+} & DesignCapabilitySource);
+
+export type DesignNonCapabilityValueSource = ({
+    kind: 'literal';
+} & DesignLiteralSource) | ({
+    kind: 'context';
+} & DesignContextSource) | ({
+    kind: 'loopIndex';
+} & DesignLoopIndexSource) | ({
+    kind: 'definition';
+} & DesignDefinitionSource);
+
+export type DesignBindingSource = ({
+    kind: 'context';
+} & DesignContextSource) | ({
+    kind: 'loopIndex';
+} & DesignLoopIndexSource) | ({
+    kind: 'definition';
+} & DesignDefinitionSource);
+
+export type DesignStructuralValueSource = ({
+    kind: 'literal';
+} & DesignLiteralSource) | ({
+    kind: 'context';
+} & DesignContextSource) | ({
+    kind: 'definition';
+} & DesignDefinitionSource);
+
+export type DesignLiteralSource = {
+    kind: 'literal';
+    valueType: DesignValueType;
+    value: DesignLiteralValue;
+};
+
+export type DesignContextSource = {
+    kind: 'context';
+    domain: DesignDefinitionDomain;
+    pointer: string;
+};
+
+export type DesignLoopIndexSource = {
+    kind: 'loopIndex';
+    loopId: DesignUuidV4;
+};
+
+export type DesignDefinitionSource = {
+    kind: 'definition';
+    definitionId: DesignUuidV4;
+};
+
+export type DesignCapabilitySource = {
+    kind: 'capability';
+    capability: 'CLOCK' | 'RANDOM';
+    operation: 'UTC_DATE' | 'UTC_TIME' | 'UNIFORM_DECIMAL_0_1';
+};
+
+export type DesignMappingCase = {
+    operator: 'IS_ABSENT' | 'IS_PRESENT' | 'EQ' | 'NOT_EQ' | 'GT' | 'GTE' | 'LT' | 'LTE' | 'CONTAINS' | 'STARTS_WITH' | 'ENDS_WITH' | 'PATTERN_MATCH' | 'IS_BLANK' | 'IS_NOT_BLANK';
+    operand?: DesignMappingOperand;
+    then: DesignNonCapabilityValueSource;
+};
+
+export type DesignMappingOperand = {
+    valueType: DesignValueType;
+    value: DesignLiteralValue;
+};
+
+export type DesignExpressionInput = {
+    alias: string;
+    source: DesignValueSource;
+};
+
+export type DesignBinding = {
+    bindingId: DesignUuidV4;
+    targetPropertyRef: DesignTargetPropertyRef;
+    source: DesignBindingSource;
+};
+
+export type DesignTargetPropertyRef = {
+    rootPropertyId: string;
+    selectors: Array<DesignPropertySelector>;
+};
+
+export type DesignPropertySelector = ({
+    kind: 'member';
+} & DesignMemberSelector) | ({
+    kind: 'index';
+} & DesignIndexSelector);
+
+export type DesignMemberSelector = {
+    kind: 'member';
+    name: string;
+};
+
+export type DesignIndexSelector = {
+    kind: 'index';
+    index: number;
+};
+
+export type DesignUuidV4 = string;
+
+export type DesignDisplayName = string;
+
+export type DesignAssetRef = {
+    assetId: DesignUuidV4;
+};
+
+export type DesignCanvasNode = {
     nodeId: string;
     kind: 'canvas';
     displayName?: string;
     widthMm: number;
     heightMm: number;
     backgroundColor?: string;
-    bleed?: DesignBleedKernel;
-    bindings: Array<unknown>;
-    children: Array<unknown>;
+    bleed?: DesignBleed;
+    bindings: Array<DesignBinding>;
+    children: Array<DesignNode>;
 };
 
-export type DesignBleedKernel = {
+export type DesignBleed = {
     topMm: number;
     rightMm: number;
     bottomMm: number;
     leftMm: number;
+};
+
+export type DesignTransform = {
+    rotationDeg: number;
+    scaleX: number;
+    scaleY: number;
+    originX: number;
+    originY: number;
+};
+
+export type DesignFill = {
+    color: string;
+};
+
+export type DesignStrokeMm = {
+    color: string;
+    widthMm: number;
+    cap: 'BUTT' | 'ROUND' | 'SQUARE';
+    join: 'MITER' | 'ROUND' | 'BEVEL';
+};
+
+export type DesignStrokePt = {
+    color: string;
+    widthPt: number;
+    cap: 'BUTT' | 'ROUND' | 'SQUARE';
+    join: 'MITER' | 'ROUND' | 'BEVEL';
+};
+
+export type DesignPadding = {
+    topMm: number;
+    rightMm: number;
+    bottomMm: number;
+    leftMm: number;
+};
+
+export type DesignCornerRadii = {
+    topLeftMm: number;
+    topRightMm: number;
+    bottomRightMm: number;
+    bottomLeftMm: number;
+};
+
+export type DesignPointMm = {
+    xMm: number;
+    yMm: number;
+};
+
+export type DesignPlacement = ({
+    type: 'ABSOLUTE';
+} & DesignAbsolutePlacement) | ({
+    type: 'STACK';
+} & DesignStackPlacement) | ({
+    type: 'GRID';
+} & DesignGridPlacement) | ({
+    type: 'PACK';
+} & DesignPackPlacement);
+
+export type DesignAbsolutePlacement = {
+    type: 'ABSOLUTE';
+    xMm: number;
+    yMm: number;
+    widthMode: DesignSizeMode;
+    heightMode: DesignSizeMode;
+    widthMm?: number;
+    heightMm?: number;
+    minWidthMm?: number;
+    minHeightMm?: number;
+    maxWidthMm?: number;
+    maxHeightMm?: number;
+    rightInsetMm?: number;
+    bottomInsetMm?: number;
+};
+
+export type DesignStackPlacement = {
+    type: 'STACK';
+    widthMode: DesignSizeMode;
+    heightMode: DesignSizeMode;
+    widthMm?: number;
+    heightMm?: number;
+    minWidthMm?: number;
+    minHeightMm?: number;
+    maxWidthMm?: number;
+    maxHeightMm?: number;
+    marginTopMm?: number;
+    marginRightMm?: number;
+    marginBottomMm?: number;
+    marginLeftMm?: number;
+    alignSelf?: 'START' | 'CENTER' | 'END';
+    fillWeight?: number;
+};
+
+export type DesignGridPlacement = {
+    type: 'GRID';
+    widthMode: DesignSizeMode;
+    heightMode: DesignSizeMode;
+    widthMm?: number;
+    heightMm?: number;
+    minWidthMm?: number;
+    minHeightMm?: number;
+    maxWidthMm?: number;
+    maxHeightMm?: number;
+    row: number;
+    column: number;
+    rowSpan?: number;
+    columnSpan?: number;
+    marginTopMm?: number;
+    marginRightMm?: number;
+    marginBottomMm?: number;
+    marginLeftMm?: number;
+    horizontalAlignSelf?: 'START' | 'CENTER' | 'END';
+    verticalAlignSelf?: 'START' | 'CENTER' | 'END';
+};
+
+export type DesignPackPlacement = {
+    type: 'PACK';
+    widthMode: 'FIXED' | 'HUG_CONTENT';
+    heightMode: 'FIXED' | 'HUG_CONTENT';
+    widthMm?: number;
+    heightMm?: number;
+    minWidthMm?: number;
+    minHeightMm?: number;
+    maxWidthMm?: number;
+    maxHeightMm?: number;
+};
+
+export type DesignSizeMode = 'FIXED' | 'HUG_CONTENT' | 'FILL';
+
+export type DesignTrack = ({
+    type: 'FIXED';
+} & DesignFixedTrack) | ({
+    type: 'FRACTION';
+} & DesignFractionTrack) | ({
+    type: 'AUTO';
+} & DesignAutoTrack);
+
+export type DesignFixedTrack = {
+    type: 'FIXED';
+    valueMm: number;
+};
+
+export type DesignFractionTrack = {
+    type: 'FRACTION';
+    weight: number;
+};
+
+export type DesignAutoTrack = {
+    type: 'AUTO';
+};
+
+export type DesignRepeatPackingSpec = ({
+    kind: 'STACK';
+} & DesignStackPackingSpec) | ({
+    kind: 'GRID';
+} & DesignGridPackingSpec);
+
+export type DesignStackPackingSpec = {
+    kind: 'STACK';
+    direction: 'ROW' | 'COLUMN';
+    gapMm?: number;
+};
+
+export type DesignGridPackingSpec = {
+    kind: 'GRID';
+    columns: number;
+    columnGapMm?: number;
+    rowGapMm?: number;
+};
+
+export type DesignTextRun = {
+    text: string;
+    fontRef: DesignAssetRef;
+    fontSizePt: number;
+    color: string;
+    decoration: 'NONE' | 'UNDERLINE' | 'LINE_THROUGH';
+    letterSpacingPt?: number;
+    letterSpacingFactor?: number;
+};
+
+export type DesignLineHeight = ({
+    type: 'FACTOR';
+} & DesignFactorLineHeight) | ({
+    type: 'FIXED';
+} & DesignFixedLineHeight);
+
+export type DesignFactorLineHeight = {
+    type: 'FACTOR';
+    factor: number;
+};
+
+export type DesignFixedLineHeight = {
+    type: 'FIXED';
+    valuePt: number;
+};
+
+export type DesignPathCommand = ({
+    type: 'MOVE_TO';
+} & DesignMoveToCommand) | ({
+    type: 'LINE_TO';
+} & DesignLineToCommand) | ({
+    type: 'QUAD_TO';
+} & DesignQuadToCommand) | ({
+    type: 'CUBIC_TO';
+} & DesignCubicToCommand) | ({
+    type: 'CLOSE';
+} & DesignCloseCommand);
+
+export type DesignMoveToCommand = {
+    type: 'MOVE_TO';
+    xMm: number;
+    yMm: number;
+};
+
+export type DesignLineToCommand = {
+    type: 'LINE_TO';
+    xMm: number;
+    yMm: number;
+};
+
+export type DesignQuadToCommand = {
+    type: 'QUAD_TO';
+    cxMm: number;
+    cyMm: number;
+    xMm: number;
+    yMm: number;
+};
+
+export type DesignCubicToCommand = {
+    type: 'CUBIC_TO';
+    c1xMm: number;
+    c1yMm: number;
+    c2xMm: number;
+    c2yMm: number;
+    xMm: number;
+    yMm: number;
+};
+
+export type DesignCloseCommand = {
+    type: 'CLOSE';
+};
+
+export type DesignTemplateRef = {
+    templateId: DesignUuidV4;
+};
+
+export type DesignTemplateUseContextSelector = ({
+    kind: 'context';
+} & DesignContextTemplateSelector) | ({
+    kind: 'empty';
+} & DesignEmptyTemplateSelector);
+
+export type DesignContextTemplateSelector = {
+    kind: 'context';
+    domain: DesignTemplateSelectorDomain;
+    pointer?: string;
+    contextAbsentPolicy: 'ERROR' | 'SKIP';
+};
+
+export type DesignEmptyTemplateSelector = {
+    kind: 'empty';
+};
+
+export type DesignTemplateSelectorDomain = ({
+    kind: 'invocation';
+} & DesignInvocationSelectorDomain) | ({
+    kind: 'loop';
+} & DesignLoopSelectorDomain);
+
+export type DesignInvocationSelectorDomain = {
+    kind: 'invocation';
+};
+
+export type DesignLoopSelectorDomain = {
+    kind: 'loop';
+    loopId: DesignUuidV4;
+};
+
+export type DesignTemplateUseFill = {
+    targetDefinitionId: DesignUuidV4;
+    source: DesignBindingSource;
+};
+
+export type DesignNode = ({
+    kind: 'group';
+} & DesignGroupNode) | ({
+    kind: 'frame';
+} & DesignFrameNode) | ({
+    kind: 'stack';
+} & DesignStackNode) | ({
+    kind: 'grid';
+} & DesignGridNode) | ({
+    kind: 'repeat';
+} & DesignRepeatNode) | ({
+    kind: 'text';
+} & DesignTextNode) | ({
+    kind: 'image';
+} & DesignImageNode) | ({
+    kind: 'rect';
+} & DesignRectNode) | ({
+    kind: 'ellipse';
+} & DesignEllipseNode) | ({
+    kind: 'line';
+} & DesignLineNode) | ({
+    kind: 'polygon';
+} & DesignPolygonNode) | ({
+    kind: 'polyline';
+} & DesignPolylineNode) | ({
+    kind: 'path';
+} & DesignPathNode) | ({
+    kind: 'qrCode';
+} & DesignQrCodeNode) | ({
+    kind: 'barcode';
+} & DesignBarcodeNode) | ({
+    kind: 'templateUse';
+} & DesignTemplateUseNode) | ({
+    kind: 'conditional';
+} & DesignConditionalNode);
+
+export type DesignGroupNode = {
+    nodeId: DesignUuidV4;
+    kind: 'group';
+    displayName?: DesignDisplayName;
+    bindings: Array<DesignBinding>;
+    placement: DesignPlacement;
+    render?: boolean;
+    visible?: boolean;
+    opacity?: number;
+    transform?: DesignTransform;
+    children: Array<DesignNode>;
+};
+
+export type DesignFrameNode = {
+    nodeId: DesignUuidV4;
+    kind: 'frame';
+    displayName?: DesignDisplayName;
+    bindings: Array<DesignBinding>;
+    placement: DesignPlacement;
+    render?: boolean;
+    visible?: boolean;
+    opacity?: number;
+    transform?: DesignTransform;
+    children: Array<DesignNode>;
+    fill?: DesignFill;
+    stroke?: DesignStrokeMm;
+    cornerRadii?: DesignCornerRadii;
+    padding?: DesignPadding;
+    clipContent?: boolean;
+};
+
+export type DesignStackNode = {
+    nodeId: DesignUuidV4;
+    kind: 'stack';
+    displayName?: DesignDisplayName;
+    bindings: Array<DesignBinding>;
+    placement: DesignPlacement;
+    render?: boolean;
+    visible?: boolean;
+    opacity?: number;
+    transform?: DesignTransform;
+    children: Array<DesignNode>;
+    fill?: DesignFill;
+    stroke?: DesignStrokeMm;
+    cornerRadii?: DesignCornerRadii;
+    padding?: DesignPadding;
+    clipContent?: boolean;
+    direction?: 'ROW' | 'COLUMN';
+    gapMm?: number;
+    justifyContent?: 'START' | 'CENTER' | 'END' | 'SPACE_BETWEEN' | 'SPACE_AROUND' | 'SPACE_EVENLY';
+    alignItems?: 'START' | 'CENTER' | 'END';
+};
+
+export type DesignGridNode = {
+    nodeId: DesignUuidV4;
+    kind: 'grid';
+    displayName?: DesignDisplayName;
+    bindings: Array<DesignBinding>;
+    placement: DesignPlacement;
+    render?: boolean;
+    visible?: boolean;
+    opacity?: number;
+    transform?: DesignTransform;
+    children: Array<DesignNode>;
+    fill?: DesignFill;
+    stroke?: DesignStrokeMm;
+    cornerRadii?: DesignCornerRadii;
+    padding?: DesignPadding;
+    clipContent?: boolean;
+    rows: Array<DesignTrack>;
+    columns: Array<DesignTrack>;
+    rowGapMm?: number;
+    columnGapMm?: number;
+};
+
+export type DesignRepeatNode = {
+    nodeId: DesignUuidV4;
+    kind: 'repeat';
+    displayName?: DesignDisplayName;
+    bindings: Array<DesignBinding>;
+    placement: DesignPlacement;
+    render?: boolean;
+    visible?: boolean;
+    opacity?: number;
+    transform?: DesignTransform;
+    children: Array<DesignNode>;
+    loopId: DesignUuidV4;
+    items: DesignStructuralValueSource;
+    absentPolicy: 'ERROR' | 'EMPTY';
+    itemLayout: DesignRepeatPackingSpec;
+    instanceLayout: DesignRepeatPackingSpec;
+};
+
+export type DesignTemplateUseNode = {
+    nodeId: DesignUuidV4;
+    kind: 'templateUse';
+    displayName?: DesignDisplayName;
+    bindings: Array<DesignBinding>;
+    placement: DesignPlacement;
+    render?: boolean;
+    visible?: boolean;
+    opacity?: number;
+    transform?: DesignTransform;
+    useId: DesignUuidV4;
+    templateRef: DesignTemplateRef;
+    contextSelector: DesignTemplateUseContextSelector;
+    fills: Array<DesignTemplateUseFill>;
+};
+
+export type DesignConditionalNode = {
+    nodeId: DesignUuidV4;
+    kind: 'conditional';
+    displayName?: DesignDisplayName;
+    bindings: Array<DesignBinding>;
+    placement: DesignPlacement;
+    render?: boolean;
+    visible?: boolean;
+    opacity?: number;
+    transform?: DesignTransform;
+    condition: DesignStructuralValueSource;
+    absentPolicy: 'FALSE' | 'ERROR';
+    children: Array<DesignNode>;
+};
+
+export type DesignTextNode = {
+    nodeId: DesignUuidV4;
+    kind: 'text';
+    displayName?: DesignDisplayName;
+    bindings: Array<DesignBinding>;
+    placement: DesignPlacement;
+    render?: boolean;
+    visible?: boolean;
+    opacity?: number;
+    transform?: DesignTransform;
+    runs: Array<DesignTextRun>;
+    writingMode?: 'HORIZONTAL_TB' | 'VERTICAL_RL';
+    horizontalAlign?: 'LEFT' | 'CENTER' | 'RIGHT' | 'JUSTIFY' | 'SPACE_EVENLY';
+    verticalAlign?: 'TOP' | 'CENTER' | 'BOTTOM' | 'JUSTIFY' | 'SPACE_EVENLY';
+    lineBreak?: 'NONE' | 'WORD' | 'CHAR';
+    overflow?: 'VISIBLE' | 'CLIP' | 'ELLIPSIS' | 'FAIL';
+    lineHeight?: DesignLineHeight;
+    maxLines?: number;
+    padding?: DesignPadding;
+    stroke?: DesignStrokePt;
+    fitMode?: 'NONE' | 'SHRINK_TO_FIT';
+    minScale?: number;
+};
+
+export type DesignImageNode = {
+    nodeId: DesignUuidV4;
+    kind: 'image';
+    displayName?: DesignDisplayName;
+    bindings: Array<DesignBinding>;
+    placement: DesignPlacement;
+    render?: boolean;
+    visible?: boolean;
+    opacity?: number;
+    transform?: DesignTransform;
+    imageRef: DesignAssetRef;
+    fit?: 'CONTAIN' | 'COVER' | 'FILL';
+    sampling?: 'LINEAR' | 'NEAREST';
+};
+
+export type DesignRectNode = {
+    nodeId: DesignUuidV4;
+    kind: 'rect';
+    displayName?: DesignDisplayName;
+    bindings: Array<DesignBinding>;
+    placement: DesignPlacement;
+    render?: boolean;
+    visible?: boolean;
+    opacity?: number;
+    transform?: DesignTransform;
+    fill?: DesignFill;
+    stroke?: DesignStrokeMm;
+    cornerRadii?: DesignCornerRadii;
+};
+
+export type DesignEllipseNode = {
+    nodeId: DesignUuidV4;
+    kind: 'ellipse';
+    displayName?: DesignDisplayName;
+    bindings: Array<DesignBinding>;
+    placement: DesignPlacement;
+    render?: boolean;
+    visible?: boolean;
+    opacity?: number;
+    transform?: DesignTransform;
+    fill?: DesignFill;
+    stroke?: DesignStrokeMm;
+};
+
+export type DesignLineNode = {
+    nodeId: DesignUuidV4;
+    kind: 'line';
+    displayName?: DesignDisplayName;
+    bindings: Array<DesignBinding>;
+    placement: DesignPlacement;
+    render?: boolean;
+    visible?: boolean;
+    opacity?: number;
+    transform?: DesignTransform;
+    start: DesignPointMm;
+    end: DesignPointMm;
+    stroke: DesignStrokeMm;
+};
+
+export type DesignPolygonNode = {
+    nodeId: DesignUuidV4;
+    kind: 'polygon';
+    displayName?: DesignDisplayName;
+    bindings: Array<DesignBinding>;
+    placement: DesignPlacement;
+    render?: boolean;
+    visible?: boolean;
+    opacity?: number;
+    transform?: DesignTransform;
+    points: Array<DesignPointMm>;
+    fill?: DesignFill;
+    stroke?: DesignStrokeMm;
+};
+
+export type DesignPolylineNode = {
+    nodeId: DesignUuidV4;
+    kind: 'polyline';
+    displayName?: DesignDisplayName;
+    bindings: Array<DesignBinding>;
+    placement: DesignPlacement;
+    render?: boolean;
+    visible?: boolean;
+    opacity?: number;
+    transform?: DesignTransform;
+    points: Array<DesignPointMm>;
+    stroke: DesignStrokeMm;
+};
+
+export type DesignPathNode = {
+    nodeId: DesignUuidV4;
+    kind: 'path';
+    displayName?: DesignDisplayName;
+    bindings: Array<DesignBinding>;
+    placement: DesignPlacement;
+    render?: boolean;
+    visible?: boolean;
+    opacity?: number;
+    transform?: DesignTransform;
+    commands: Array<DesignPathCommand>;
+    fill?: DesignFill;
+    stroke?: DesignStrokeMm;
+    fillRule?: 'NONZERO' | 'EVEN_ODD';
+};
+
+export type DesignQrCodeNode = {
+    nodeId: DesignUuidV4;
+    kind: 'qrCode';
+    displayName?: DesignDisplayName;
+    bindings: Array<DesignBinding>;
+    placement: DesignPlacement;
+    render?: boolean;
+    visible?: boolean;
+    opacity?: number;
+    transform?: DesignTransform;
+    content: string;
+    errorCorrectionLevel?: 'L' | 'M' | 'Q' | 'H';
+    foregroundColor?: string;
+    backgroundColor?: string;
+};
+
+export type DesignBarcodeNode = {
+    nodeId: DesignUuidV4;
+    kind: 'barcode';
+    displayName?: DesignDisplayName;
+    bindings: Array<DesignBinding>;
+    placement: DesignPlacement;
+    render?: boolean;
+    visible?: boolean;
+    opacity?: number;
+    transform?: DesignTransform;
+    format: 'EAN_8' | 'EAN_13' | 'UPC_A' | 'CODE_128';
+    value: string;
+    foregroundColor?: string;
+    backgroundColor?: string;
 };
 
 export type TemplateValidationIssue = {

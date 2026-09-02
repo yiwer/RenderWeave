@@ -1,8 +1,9 @@
 [CmdletBinding()]
 param(
-    [ValidateSet('draft', 'inference')]
+    [ValidateSet('draft', 'inference', 'template-roundtrip')]
     [string]$Journey = 'draft',
-    [string]$EvidenceDir
+    [string]$EvidenceDir,
+    [string]$LocalPostgresBin
 )
 
 $ErrorActionPreference = 'Stop'
@@ -11,7 +12,13 @@ $webRoot = Join-Path $repoRoot 'web'
 $jarPath = Join-Path $repoRoot 'renderweave-app\target\renderweave-app-1.0-SNAPSHOT.jar'
 $runDir = Join-Path $repoRoot ".sdlc\$Journey-e2e\$PID"
 $evidenceDir = if ($EvidenceDir) {
-    Join-Path $EvidenceDir "$Journey-journey"
+    $requestedEvidenceRoot = if ([System.IO.Path]::IsPathRooted($EvidenceDir)) {
+        [System.IO.Path]::GetFullPath($EvidenceDir)
+    }
+    else {
+        [System.IO.Path]::GetFullPath((Join-Path $repoRoot $EvidenceDir))
+    }
+    Join-Path $requestedEvidenceRoot "$Journey-journey"
 }
 else {
     Join-Path $repoRoot ".sdlc\evidence\$Journey-e2e-$PID"
@@ -20,6 +27,9 @@ $null = New-Item -ItemType Directory -Path $runDir -Force
 $null = New-Item -ItemType Directory -Path $evidenceDir -Force
 $containerName = "renderweave-$Journey-e2e-$PID"
 $containerId = $null
+$postgresDataDir = $null
+$postgresStarted = $false
+$postgresShutdownFailed = $false
 $apiProcess = $null
 $webProcess = $null
 $apiPort = $null
@@ -156,47 +166,96 @@ try {
         throw 'Vite is not installed. Run the web gate first.'
     }
 
-    $containerId = (& docker run --detach --rm `
-        --name $containerName `
-        --env POSTGRES_DB=renderweave `
-        --env POSTGRES_USER=renderweave `
-        --env POSTGRES_PASSWORD=renderweave-e2e `
-        --publish '127.0.0.1::5432' `
-        postgres:16-alpine).Trim()
-    if ($LASTEXITCODE -ne 0 -or -not $containerId) {
-        throw 'Unable to start the PostgreSQL E2E container.'
-    }
-
-    $databaseReady = $false
-    foreach ($attempt in 1..60) {
-        & docker exec $containerName pg_isready -U renderweave -d renderweave *> $null
-        if ($LASTEXITCODE -eq 0) {
-            $databaseReady = $true
-            break
+    $databaseUsername = 'renderweave'
+    $databasePassword = 'renderweave-e2e'
+    if ($LocalPostgresBin) {
+        $postgresBin = [System.IO.Path]::GetFullPath($LocalPostgresBin)
+        $initDb = Join-Path $postgresBin 'initdb.exe'
+        $pgCtl = Join-Path $postgresBin 'pg_ctl.exe'
+        $createDb = Join-Path $postgresBin 'createdb.exe'
+        foreach ($executable in @($initDb, $pgCtl, $createDb)) {
+            if (-not (Test-Path -LiteralPath $executable -PathType Leaf)) {
+                throw "Local PostgreSQL executable is missing: $executable"
+            }
         }
-        Start-Sleep -Milliseconds 250
+        $tempRoot = [System.IO.Path]::GetFullPath([System.IO.Path]::GetTempPath()).TrimEnd('\')
+        $postgresDataDir = Join-Path $tempRoot "renderweave-$Journey-e2e-$PID-postgres"
+        if (Test-Path -LiteralPath $postgresDataDir) {
+            throw "Refusing to reuse the local PostgreSQL E2E directory: $postgresDataDir"
+        }
+        $null = New-Item -ItemType Directory -Path $postgresDataDir
+        & $initDb -D $postgresDataDir '--auth=trust' '--username=postgres' `
+            '--encoding=UTF8' '--no-locale'
+        if ($LASTEXITCODE -ne 0) {
+            throw "Local PostgreSQL initdb failed with exit code $LASTEXITCODE."
+        }
+        $databasePort = Get-FreeTcpPort
+        & $pgCtl -D $postgresDataDir -l (Join-Path $postgresDataDir 'postgres.log') `
+            -o "-p $databasePort -h 127.0.0.1" start
+        if ($LASTEXITCODE -ne 0) {
+            throw "Local PostgreSQL start failed with exit code $LASTEXITCODE."
+        }
+        $postgresStarted = $true
+        & $createDb -h 127.0.0.1 -p $databasePort -U postgres renderweave
+        if ($LASTEXITCODE -ne 0) {
+            throw "Local PostgreSQL database creation failed with exit code $LASTEXITCODE."
+        }
+        $databaseUsername = 'postgres'
+        $databasePassword = 'unused-local-trust'
     }
-    if (-not $databaseReady) {
-        throw 'PostgreSQL E2E container did not become ready within 15 seconds.'
-    }
+    else {
+        $containerId = (& docker run --detach --rm `
+            --name $containerName `
+            --env POSTGRES_DB=renderweave `
+            --env POSTGRES_USER=renderweave `
+            --env POSTGRES_PASSWORD=renderweave-e2e `
+            --publish '127.0.0.1::5432' `
+            postgres:16-alpine).Trim()
+        if ($LASTEXITCODE -ne 0 -or -not $containerId) {
+            throw 'Unable to start the PostgreSQL E2E container.'
+        }
 
-    $portBinding = (& docker port $containerName '5432/tcp' | Select-Object -First 1).Trim()
-    $databasePort = [int]($portBinding -replace '^.*:', '')
+        $databaseReady = $false
+        foreach ($attempt in 1..60) {
+            & docker exec $containerName pg_isready -U renderweave -d renderweave *> $null
+            if ($LASTEXITCODE -eq 0) {
+                $databaseReady = $true
+                break
+            }
+            Start-Sleep -Milliseconds 250
+        }
+        if (-not $databaseReady) {
+            throw 'PostgreSQL E2E container did not become ready within 15 seconds.'
+        }
+
+        $portBinding = (& docker port $containerName '5432/tcp' | Select-Object -First 1).Trim()
+        $databasePort = [int]($portBinding -replace '^.*:', '')
+    }
     $apiPort = Get-FreeTcpPort
     $webPort = Get-FreeTcpPort
 
     foreach ($name in @(
         'RENDERWEAVE_DB_URL', 'RENDERWEAVE_DB_USERNAME', 'RENDERWEAVE_DB_PASSWORD',
         'RENDERWEAVE_API_URL', 'RENDERWEAVE_BLOB_ROOT', 'RENDERWEAVE_LIVE_E2E',
+        'RENDERWEAVE_TEMPLATE_ROUNDTRIP_LIVE',
+        'RENDERWEAVE_TEMPLATE_SINGLE_OWNER_ENABLED',
+        'RENDERWEAVE_TEMPLATE_SINGLE_OWNER_OWNER_SCOPE',
+        'RENDERWEAVE_TEMPLATE_SINGLE_OWNER_CAPABILITIES',
         'RENDERWEAVE_WEB_PORT', 'RENDERWEAVE_EVIDENCE_DIR',
         'RENDERWEAVE_PLAYWRIGHT_OUTPUT_DIR', 'RENDERWEAVE_PLAYWRIGHT_HTML_DIR'
     )) {
         $oldEnvironment[$name] = [Environment]::GetEnvironmentVariable($name, 'Process')
     }
     $env:RENDERWEAVE_DB_URL = "jdbc:postgresql://127.0.0.1:$databasePort/renderweave"
-    $env:RENDERWEAVE_DB_USERNAME = 'renderweave'
-    $env:RENDERWEAVE_DB_PASSWORD = 'renderweave-e2e'
+    $env:RENDERWEAVE_DB_USERNAME = $databaseUsername
+    $env:RENDERWEAVE_DB_PASSWORD = $databasePassword
     $env:RENDERWEAVE_BLOB_ROOT = Join-Path $runDir 'blobs'
+    if ($Journey -eq 'template-roundtrip') {
+        $env:RENDERWEAVE_TEMPLATE_SINGLE_OWNER_ENABLED = 'true'
+        $env:RENDERWEAVE_TEMPLATE_SINGLE_OWNER_OWNER_SCOPE = 'template-roundtrip-e2e'
+        $env:RENDERWEAVE_TEMPLATE_SINGLE_OWNER_CAPABILITIES = `
+            'template.create,template.read,template.update'
+    }
 
     $javaExecutable = if ($env:JAVA_HOME) {
         Join-Path $env:JAVA_HOME 'bin\java.exe'
@@ -224,10 +283,32 @@ try {
         -RedirectStandardOutput (Join-Path $runDir 'web.stdout.log') `
         -RedirectStandardError (Join-Path $runDir 'web.stderr.log') `
         -PassThru
-    $readinessPath = if ($Journey -eq 'inference') { 'inference' } else { 'schemas/new' }
+    $readinessPath = switch ($Journey) {
+        'inference' { 'inference' }
+        'template-roundtrip' { 'templates/new' }
+        default { 'schemas/new' }
+    }
     Wait-ForHttp -Uri "http://127.0.0.1:$webPort/$readinessPath" -Process $webProcess -Name 'RenderWeave web'
 
-    if ($Journey -eq 'inference') {
+    if ($Journey -eq 'template-roundtrip') {
+        $npmCommand = Join-Path $nodeDir 'npm.cmd'
+        $env:RENDERWEAVE_TEMPLATE_ROUNDTRIP_LIVE = '1'
+        $env:RENDERWEAVE_WEB_PORT = "$webPort"
+        $env:RENDERWEAVE_EVIDENCE_DIR = $evidenceDir
+        $env:RENDERWEAVE_PLAYWRIGHT_OUTPUT_DIR = Join-Path $evidenceDir 'pw'
+        $env:RENDERWEAVE_PLAYWRIGHT_HTML_DIR = Join-Path $evidenceDir 'pw-report'
+        Push-Location $webRoot
+        try {
+            & $npmCommand run test:e2e -- template-editor-roundtrip-live.spec.ts
+        }
+        finally {
+            Pop-Location
+        }
+        if ($LASTEXITCODE -ne 0) {
+            throw "Template roundtrip browser audit failed with exit code $LASTEXITCODE."
+        }
+    }
+    elseif ($Journey -eq 'inference') {
         $npmCommand = Join-Path $nodeDir 'npm.cmd'
         $env:RENDERWEAVE_LIVE_E2E = '1'
         $env:RENDERWEAVE_WEB_PORT = "$webPort"
@@ -317,11 +398,44 @@ finally {
     if ($remainingProcessIds) {
         $cleanupWarnings += "process cleanup failed for PID(s): $($remainingProcessIds -join ', ')."
     }
-    if ($containerId) {
+    if ($postgresDataDir) {
+        $postgresDataResolved = [System.IO.Path]::GetFullPath($postgresDataDir)
+        $tempResolved = [System.IO.Path]::GetFullPath(
+            [System.IO.Path]::GetTempPath()
+        ).TrimEnd('\')
+        $expectedPrefix = $tempResolved + "\renderweave-$Journey-e2e-$PID-postgres"
+        if (-not $postgresDataResolved.Equals(
+                $expectedPrefix,
+                [System.StringComparison]::OrdinalIgnoreCase
+        )) {
+            throw "Refusing unexpected local PostgreSQL cleanup target: $postgresDataResolved"
+        }
+        if ($postgresStarted) {
+            $pgCtl = Join-Path ([System.IO.Path]::GetFullPath($LocalPostgresBin)) 'pg_ctl.exe'
+            & $pgCtl -D $postgresDataResolved stop -m fast *> $null
+            if ($LASTEXITCODE -ne 0) {
+                $cleanupWarnings += 'local PostgreSQL shutdown failed'
+                $postgresShutdownFailed = $true
+            }
+        }
+        if (-not $postgresShutdownFailed -and (Test-Path -LiteralPath $postgresDataResolved)) {
+            Remove-Item -LiteralPath $postgresDataResolved -Recurse -Force
+        }
+    }
+    elseif ($containerId) {
         & docker stop $containerName *> $null
     }
     foreach ($name in $oldEnvironment.Keys) {
         [Environment]::SetEnvironmentVariable($name, $oldEnvironment[$name], 'Process')
+    }
+    $postgresCleanupFailure = if ($postgresShutdownFailed) {
+        "Local PostgreSQL cleanup failed; data directory retained at $postgresDataResolved."
+    }
+    else {
+        $null
+    }
+    if ($postgresCleanupFailure -and $null -eq $journeyFailure) {
+        $journeyResult = 'failed'
     }
     $metadata = [ordered]@{
         journey = $Journey
@@ -334,7 +448,7 @@ finally {
         finishedAt = (Get-Date).ToString('o')
         cleanupMode = if ($script:cimUnavailable) { 'owned-handles-only' } else { 'cim-sweep' }
         cleanupWarning = $cleanupWarnings -join '; '
-        failure = $journeyFailure
+        failure = if ($null -ne $journeyFailure) { $journeyFailure } else { $postgresCleanupFailure }
     }
     $encoding = New-Object System.Text.UTF8Encoding($false)
     [System.IO.File]::WriteAllText(
@@ -348,5 +462,11 @@ finally {
     }
     if ($remainingProcessIds -and $journeyFailure) {
         Write-Warning "E2E process cleanup failed for PID(s): $($remainingProcessIds -join ', '); journey failure is the primary result."
+    }
+    if ($postgresShutdownFailed -and $null -eq $journeyFailure) {
+        throw $postgresCleanupFailure
+    }
+    if ($postgresShutdownFailed -and $journeyFailure) {
+        Write-Warning "Local PostgreSQL cleanup failed; data directory retained at $postgresDataResolved; journey failure is the primary result."
     }
 }

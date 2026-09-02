@@ -36,7 +36,10 @@ final class DefinitionContractCatalog {
             "text", "decimal", "boolean", "date", "time", "imageRef", "fontRef"
     );
 
-    static final Set<String> VALUE_TYPE_MEMBERS = Set.of("type", "items", "catalogId");
+    /** Union-wide prefilter only; each discriminator branch still applies its exact member set. */
+    static final Set<String> VALUE_TYPE_UNION_MEMBERS = Set.of("type", "items", "catalogId");
+    static final Set<String> LIST_VALUE_TYPE_MEMBERS = Set.of("type", "items");
+    static final Set<String> ENUM_VALUE_TYPE_MEMBERS = Set.of("type", "catalogId");
 
     /** ValueSource closed union (ticket 07 §2). */
     static final Set<String> VALUE_SOURCE_KINDS = Set.of(

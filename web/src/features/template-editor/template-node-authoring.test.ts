@@ -152,6 +152,17 @@ function sessionWithSelectedParent(kind: string): StructuredEditorSession {
     },
     children: [],
     ...(kind === 'grid' ? { rows: [{ type: 'AUTO' }], columns: [{ type: 'AUTO' }] } : {}),
+    ...(kind === 'conditional' ? {
+      condition: { kind: 'literal', valueType: 'boolean', value: true },
+      absentPolicy: 'FALSE',
+    } : {}),
+    ...(kind === 'repeat' ? {
+      loopId: '40000000-0000-4000-8000-000000000001',
+      items: { kind: 'context', domain: 'invocation', pointer: '/items' },
+      absentPolicy: 'ERROR',
+      itemLayout: { kind: 'STACK', direction: 'ROW' },
+      instanceLayout: { kind: 'STACK', direction: 'ROW' },
+    } : {}),
   };
   const designDsl = {
     ...baseline.designDsl,

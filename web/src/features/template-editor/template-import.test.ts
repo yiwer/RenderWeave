@@ -242,6 +242,37 @@ describe('Template Editor E8 strict import boundary', () => {
       source: 'bare-design-dsl',
     }));
   });
+
+  it.each([
+    ['child identity', (malformed: JsonObject) => {
+      (malformed.designRoot as JsonObject).children = [{ kind: 'rect', bindings: [] }];
+    }],
+    ['definition item', (malformed: JsonObject) => {
+      malformed.definitions = [null];
+    }],
+    ['placement discriminator', (malformed: JsonObject) => {
+      (malformed.designRoot as JsonObject).children = [{
+        nodeId: '00000000-0000-4000-8000-000000000002',
+        kind: 'rect',
+        bindings: [],
+        placement: {},
+      }];
+    }],
+  ] as const)('routes malformed %s to Raw Repair instead of inventing a working copy', async (
+    _name,
+    mutate,
+  ) => {
+    const malformed = baseDesign();
+    mutate(malformed);
+
+    const result = await inspectTemplateImport(encoder.encode(JSON.stringify(malformed)));
+
+    expect(result).toEqual(expect.objectContaining({
+      mode: 'raw-repair',
+      code: 'UNTRUSTED_DESIGN_ROOT',
+    }));
+    expect('canonicalDesignDsl' in result).toBe(false);
+  });
 });
 
 type JsonObject = Record<string, unknown>;

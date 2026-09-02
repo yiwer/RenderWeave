@@ -171,6 +171,93 @@ class CanonicalDesignDslAuthorityTest {
     }
 
     @Test
+    void rejectsEnumCatalogMemberOnListValueTypeVariant() {
+        var raw = """
+                {
+                  "dslVersion":"renderweave-design/1.0",
+                  "expressionProfile":"renderweave-expression/1.0",
+                  "displayName":"Baseline",
+                  "definitions":[{
+                    "definitionId":"00000000-0000-4000-8000-000000000002",
+                    "kind":"custom",
+                    "displayName":"Items",
+                    "exposure":"PRIVATE",
+                    "valueType":{"type":"list","items":"text","catalogId":"not-a-list-member"},
+                    "defaultValue":[]
+                  }],
+                  "designRoot":{
+                    "nodeId":"00000000-0000-4000-8000-000000000001",
+                    "kind":"canvas",
+                    "widthMm":210,
+                    "heightMm":297,
+                    "bindings":[],
+                    "children":[]
+                  }
+                }
+                """.getBytes(StandardCharsets.UTF_8);
+
+        var rejected = assertInstanceOf(
+                DesignDslAuthority.Rejected.class,
+                authority.admit(raw)
+        );
+
+        assertEquals(DesignDslAuthority.FailureCode.DESIGN_MEMBER_UNKNOWN, rejected.code());
+        assertEquals("/definitions/0/valueType/catalogId", rejected.pointer());
+    }
+
+    @Test
+    void rejectsLoopIdMemberOnInvocationSelectorDomainVariant() {
+        var raw = """
+                {
+                  "dslVersion":"renderweave-design/1.0",
+                  "expressionProfile":"renderweave-expression/1.0",
+                  "displayName":"Baseline",
+                  "definitions":[],
+                  "designRoot":{
+                    "nodeId":"00000000-0000-4000-8000-000000000001",
+                    "kind":"canvas",
+                    "widthMm":210,
+                    "heightMm":297,
+                    "bindings":[],
+                    "children":[{
+                      "nodeId":"00000000-0000-4000-8000-000000000002",
+                      "kind":"templateUse",
+                      "bindings":[],
+                      "useId":"00000000-0000-4000-8000-000000000003",
+                      "templateRef":{"templateId":"00000000-0000-4000-8000-000000000004"},
+                      "contextSelector":{
+                        "kind":"context",
+                        "domain":{
+                          "kind":"invocation",
+                          "loopId":"00000000-0000-4000-8000-000000000005"
+                        },
+                        "pointer":"",
+                        "contextAbsentPolicy":"ERROR"
+                      },
+                      "fills":[],
+                      "placement":{
+                        "type":"ABSOLUTE",
+                        "xMm":0,
+                        "yMm":0,
+                        "widthMode":"HUG_CONTENT",
+                        "heightMode":"HUG_CONTENT"
+                      }
+                    }]
+                  }
+                }
+                """.getBytes(StandardCharsets.UTF_8);
+
+        var rejected = assertInstanceOf(
+                DesignDslAuthority.Rejected.class,
+                authority.admit(raw)
+        );
+
+        assertEquals(DesignDslAuthority.FailureCode.DESIGN_MEMBER_UNKNOWN, rejected.code());
+        assertEquals("/designRoot/children/0/contextSelector/domain/loopId",
+                rejected.pointer());
+    }
+
+    @Test
     void reservesTheRawUtf8ByteLimitBeforeParsing() {
         var raw = new byte[16 * 1024 * 1024 + 1];
         Arrays.fill(raw, (byte) ' ');

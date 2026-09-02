@@ -2453,9 +2453,9 @@ components:
       type: object
       additionalProperties: false
       description: >-
-        The real minimal DesignDSL kernel admitted by TV1-T03/T06. This schema does not register
-        renderweave-design/1.0 as an available full Profile; non-empty definitions, bindings and
-        children remain fail-closed until their semantic slices are implemented.
+        Complete closed HTTP projection of the admitted renderweave-design/1.0 authoring wire.
+        Cross-field, lexical-scope, dependency and capacity semantics remain enforced by the
+        Template-owned DesignDslAuthority.
       required: [dslVersion, expressionProfile, displayName, definitions, designRoot]
       properties:
         dslVersion:
@@ -2473,11 +2473,370 @@ components:
           maxLength: 2048
         definitions:
           type: array
-          maxItems: 0
-          items: {}
+          items:
+            $ref: '#/components/schemas/DesignDefinition'
         designRoot:
-          $ref: '#/components/schemas/DesignCanvasKernel'
-    DesignCanvasKernel:
+          $ref: '#/components/schemas/DesignCanvasNode'
+    DesignDefinition:
+      oneOf:
+        - $ref: '#/components/schemas/DesignCustomDefinition'
+        - $ref: '#/components/schemas/DesignMappingDefinition'
+        - $ref: '#/components/schemas/DesignExpressionDefinition'
+      discriminator:
+        propertyName: kind
+        mapping:
+          custom: '#/components/schemas/DesignCustomDefinition'
+          mapping: '#/components/schemas/DesignMappingDefinition'
+          expression: '#/components/schemas/DesignExpressionDefinition'
+    DesignCustomDefinition:
+      type: object
+      additionalProperties: false
+      required: [definitionId, kind, displayName, exposure, valueType, defaultValue]
+      properties:
+        definitionId:
+          $ref: '#/components/schemas/DesignUuidV4'
+        kind:
+          type: string
+          const: custom
+        displayName:
+          $ref: '#/components/schemas/DesignDisplayName'
+        exposure:
+          type: string
+          enum: [PUBLIC, PRIVATE]
+        valueType:
+          $ref: '#/components/schemas/DesignValueType'
+        defaultValue:
+          $ref: '#/components/schemas/DesignLiteralValue'
+    DesignMappingDefinition:
+      type: object
+      additionalProperties: false
+      required: [definitionId, kind, displayName, domain, output, input, cases, otherwise]
+      properties:
+        definitionId:
+          $ref: '#/components/schemas/DesignUuidV4'
+        kind:
+          type: string
+          const: mapping
+        displayName:
+          $ref: '#/components/schemas/DesignDisplayName'
+        domain:
+          $ref: '#/components/schemas/DesignDefinitionDomain'
+        output:
+          $ref: '#/components/schemas/DesignValueType'
+        input:
+          $ref: '#/components/schemas/DesignNonCapabilityValueSource'
+        cases:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/DesignMappingCase'
+        otherwise:
+          $ref: '#/components/schemas/DesignNonCapabilityValueSource'
+    DesignExpressionDefinition:
+      type: object
+      additionalProperties: false
+      required: [definitionId, kind, displayName, domain, output, inputs, source]
+      properties:
+        definitionId:
+          $ref: '#/components/schemas/DesignUuidV4'
+        kind:
+          type: string
+          const: expression
+        displayName:
+          $ref: '#/components/schemas/DesignDisplayName'
+        domain:
+          $ref: '#/components/schemas/DesignDefinitionDomain'
+        output:
+          $ref: '#/components/schemas/DesignValueType'
+        inputs:
+          type: array
+          items:
+            $ref: '#/components/schemas/DesignExpressionInput'
+        source:
+          type: string
+    DesignDefinitionDomain:
+      oneOf:
+        - type: string
+          const: invocation
+        - $ref: '#/components/schemas/DesignLoopDomain'
+    DesignLoopDomain:
+      type: object
+      additionalProperties: false
+      required: [kind, loopId]
+      properties:
+        kind:
+          type: string
+          const: loop
+        loopId:
+          $ref: '#/components/schemas/DesignUuidV4'
+    DesignValueType:
+      oneOf:
+        - $ref: '#/components/schemas/DesignBaseValueType'
+        - $ref: '#/components/schemas/DesignListValueType'
+        - $ref: '#/components/schemas/DesignEnumValueType'
+    DesignBaseValueType:
+      type: string
+      enum: [text, decimal, boolean, date, time, color, imageRef, fontRef]
+    DesignListValueType:
+      type: object
+      additionalProperties: false
+      required: [type, items]
+      properties:
+        type:
+          type: string
+          const: list
+        items:
+          type: string
+          enum: [text, decimal, boolean, date, time, imageRef, fontRef]
+    DesignEnumValueType:
+      type: object
+      additionalProperties: false
+      required: [type, catalogId]
+      properties:
+        type:
+          type: string
+          const: enum
+        catalogId:
+          type: string
+          minLength: 1
+    DesignLiteralValue:
+      oneOf:
+        - type: string
+        - type: number
+        - type: boolean
+        - $ref: '#/components/schemas/DesignAssetRef'
+        - type: array
+          items:
+            oneOf:
+              - type: string
+              - type: number
+              - type: boolean
+              - $ref: '#/components/schemas/DesignAssetRef'
+    DesignValueSource:
+      oneOf:
+        - $ref: '#/components/schemas/DesignLiteralSource'
+        - $ref: '#/components/schemas/DesignContextSource'
+        - $ref: '#/components/schemas/DesignLoopIndexSource'
+        - $ref: '#/components/schemas/DesignDefinitionSource'
+        - $ref: '#/components/schemas/DesignCapabilitySource'
+      discriminator:
+        propertyName: kind
+        mapping:
+          literal: '#/components/schemas/DesignLiteralSource'
+          context: '#/components/schemas/DesignContextSource'
+          loopIndex: '#/components/schemas/DesignLoopIndexSource'
+          definition: '#/components/schemas/DesignDefinitionSource'
+          capability: '#/components/schemas/DesignCapabilitySource'
+    DesignNonCapabilityValueSource:
+      oneOf:
+        - $ref: '#/components/schemas/DesignLiteralSource'
+        - $ref: '#/components/schemas/DesignContextSource'
+        - $ref: '#/components/schemas/DesignLoopIndexSource'
+        - $ref: '#/components/schemas/DesignDefinitionSource'
+      discriminator:
+        propertyName: kind
+        mapping:
+          literal: '#/components/schemas/DesignLiteralSource'
+          context: '#/components/schemas/DesignContextSource'
+          loopIndex: '#/components/schemas/DesignLoopIndexSource'
+          definition: '#/components/schemas/DesignDefinitionSource'
+    DesignBindingSource:
+      oneOf:
+        - $ref: '#/components/schemas/DesignContextSource'
+        - $ref: '#/components/schemas/DesignLoopIndexSource'
+        - $ref: '#/components/schemas/DesignDefinitionSource'
+      discriminator:
+        propertyName: kind
+        mapping:
+          context: '#/components/schemas/DesignContextSource'
+          loopIndex: '#/components/schemas/DesignLoopIndexSource'
+          definition: '#/components/schemas/DesignDefinitionSource'
+    DesignStructuralValueSource:
+      oneOf:
+        - $ref: '#/components/schemas/DesignLiteralSource'
+        - $ref: '#/components/schemas/DesignContextSource'
+        - $ref: '#/components/schemas/DesignDefinitionSource'
+      discriminator:
+        propertyName: kind
+        mapping:
+          literal: '#/components/schemas/DesignLiteralSource'
+          context: '#/components/schemas/DesignContextSource'
+          definition: '#/components/schemas/DesignDefinitionSource'
+    DesignLiteralSource:
+      type: object
+      additionalProperties: false
+      required: [kind, valueType, value]
+      properties:
+        kind:
+          type: string
+          const: literal
+        valueType:
+          $ref: '#/components/schemas/DesignValueType'
+        value:
+          $ref: '#/components/schemas/DesignLiteralValue'
+    DesignContextSource:
+      type: object
+      additionalProperties: false
+      required: [kind, domain, pointer]
+      properties:
+        kind:
+          type: string
+          const: context
+        domain:
+          $ref: '#/components/schemas/DesignDefinitionDomain'
+        pointer:
+          type: string
+          pattern: '^/(?:[^~/]|~[01])+(?:/(?:[^~/]|~[01])*)*$'
+          maxLength: 1024
+    DesignLoopIndexSource:
+      type: object
+      additionalProperties: false
+      required: [kind, loopId]
+      properties:
+        kind:
+          type: string
+          const: loopIndex
+        loopId:
+          $ref: '#/components/schemas/DesignUuidV4'
+    DesignDefinitionSource:
+      type: object
+      additionalProperties: false
+      required: [kind, definitionId]
+      properties:
+        kind:
+          type: string
+          const: definition
+        definitionId:
+          $ref: '#/components/schemas/DesignUuidV4'
+    DesignCapabilitySource:
+      type: object
+      additionalProperties: false
+      required: [kind, capability, operation]
+      properties:
+        kind:
+          type: string
+          const: capability
+        capability:
+          type: string
+          enum: [CLOCK, RANDOM]
+        operation:
+          type: string
+          enum: [UTC_DATE, UTC_TIME, UNIFORM_DECIMAL_0_1]
+    DesignMappingCase:
+      type: object
+      additionalProperties: false
+      required: [operator, then]
+      properties:
+        operator:
+          type: string
+          enum:
+            - IS_ABSENT
+            - IS_PRESENT
+            - EQ
+            - NOT_EQ
+            - GT
+            - GTE
+            - LT
+            - LTE
+            - CONTAINS
+            - STARTS_WITH
+            - ENDS_WITH
+            - PATTERN_MATCH
+            - IS_BLANK
+            - IS_NOT_BLANK
+        operand:
+          $ref: '#/components/schemas/DesignMappingOperand'
+        then:
+          $ref: '#/components/schemas/DesignNonCapabilityValueSource'
+    DesignMappingOperand:
+      type: object
+      additionalProperties: false
+      required: [valueType, value]
+      properties:
+        valueType:
+          $ref: '#/components/schemas/DesignValueType'
+        value:
+          $ref: '#/components/schemas/DesignLiteralValue'
+    DesignExpressionInput:
+      type: object
+      additionalProperties: false
+      required: [alias, source]
+      properties:
+        alias:
+          type: string
+          pattern: '^[A-Za-z_][A-Za-z0-9_]{0,63}$'
+        source:
+          $ref: '#/components/schemas/DesignValueSource'
+    DesignBinding:
+      type: object
+      additionalProperties: false
+      required: [bindingId, targetPropertyRef, source]
+      properties:
+        bindingId:
+          $ref: '#/components/schemas/DesignUuidV4'
+        targetPropertyRef:
+          $ref: '#/components/schemas/DesignTargetPropertyRef'
+        source:
+          $ref: '#/components/schemas/DesignBindingSource'
+    DesignTargetPropertyRef:
+      type: object
+      additionalProperties: false
+      required: [rootPropertyId, selectors]
+      properties:
+        rootPropertyId:
+          type: string
+          minLength: 1
+        selectors:
+          type: array
+          maxItems: 2
+          items:
+            $ref: '#/components/schemas/DesignPropertySelector'
+    DesignPropertySelector:
+      oneOf:
+        - $ref: '#/components/schemas/DesignMemberSelector'
+        - $ref: '#/components/schemas/DesignIndexSelector'
+      discriminator:
+        propertyName: kind
+        mapping:
+          member: '#/components/schemas/DesignMemberSelector'
+          index: '#/components/schemas/DesignIndexSelector'
+    DesignMemberSelector:
+      type: object
+      additionalProperties: false
+      required: [kind, name]
+      properties:
+        kind:
+          type: string
+          const: member
+        name:
+          type: string
+          minLength: 1
+    DesignIndexSelector:
+      type: object
+      additionalProperties: false
+      required: [kind, index]
+      properties:
+        kind:
+          type: string
+          const: index
+        index:
+          type: integer
+          minimum: 0
+    DesignUuidV4:
+      type: string
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$'
+    DesignDisplayName:
+      type: string
+      minLength: 1
+      maxLength: 128
+    DesignAssetRef:
+      type: object
+      additionalProperties: false
+      required: [assetId]
+      properties:
+        assetId:
+          $ref: '#/components/schemas/DesignUuidV4'
+    DesignCanvasNode:
       type: object
       additionalProperties: false
       required: [nodeId, kind, widthMm, heightMm, bindings, children]
@@ -2502,16 +2861,16 @@ components:
           type: string
           pattern: '^#[0-9A-F]{8}$'
         bleed:
-          $ref: '#/components/schemas/DesignBleedKernel'
+          $ref: '#/components/schemas/DesignBleed'
         bindings:
           type: array
-          maxItems: 0
-          items: {}
+          items:
+            $ref: '#/components/schemas/DesignBinding'
         children:
           type: array
-          maxItems: 0
-          items: {}
-    DesignBleedKernel:
+          items:
+            $ref: '#/components/schemas/DesignNode'
+    DesignBleed:
       type: object
       additionalProperties: false
       required: [topMm, rightMm, bottomMm, leftMm]
@@ -2528,6 +2887,791 @@ components:
         leftMm:
           type: number
           minimum: 0
+    DesignTransform:
+      type: object
+      additionalProperties: false
+      required: [rotationDeg, scaleX, scaleY, originX, originY]
+      properties:
+        rotationDeg: { type: number }
+        scaleX: { type: number }
+        scaleY: { type: number }
+        originX: { type: number, minimum: 0, maximum: 1 }
+        originY: { type: number, minimum: 0, maximum: 1 }
+    DesignFill:
+      type: object
+      additionalProperties: false
+      required: [color]
+      properties:
+        color:
+          type: string
+          pattern: '^#[0-9A-F]{8}$'
+    DesignStrokeMm:
+      type: object
+      additionalProperties: false
+      required: [color, widthMm, cap, join]
+      properties:
+        color:
+          type: string
+          pattern: '^#[0-9A-F]{8}$'
+        widthMm: { type: number, exclusiveMinimum: 0 }
+        cap: { type: string, enum: [BUTT, ROUND, SQUARE] }
+        join: { type: string, enum: [MITER, ROUND, BEVEL] }
+    DesignStrokePt:
+      type: object
+      additionalProperties: false
+      required: [color, widthPt, cap, join]
+      properties:
+        color:
+          type: string
+          pattern: '^#[0-9A-F]{8}$'
+        widthPt: { type: number, exclusiveMinimum: 0 }
+        cap: { type: string, enum: [BUTT, ROUND, SQUARE] }
+        join: { type: string, enum: [MITER, ROUND, BEVEL] }
+    DesignPadding:
+      type: object
+      additionalProperties: false
+      required: [topMm, rightMm, bottomMm, leftMm]
+      properties:
+        topMm: { type: number, minimum: 0 }
+        rightMm: { type: number, minimum: 0 }
+        bottomMm: { type: number, minimum: 0 }
+        leftMm: { type: number, minimum: 0 }
+    DesignCornerRadii:
+      type: object
+      additionalProperties: false
+      required: [topLeftMm, topRightMm, bottomRightMm, bottomLeftMm]
+      properties:
+        topLeftMm: { type: number, minimum: 0 }
+        topRightMm: { type: number, minimum: 0 }
+        bottomRightMm: { type: number, minimum: 0 }
+        bottomLeftMm: { type: number, minimum: 0 }
+    DesignPointMm:
+      type: object
+      additionalProperties: false
+      required: [xMm, yMm]
+      properties:
+        xMm: { type: number }
+        yMm: { type: number }
+    DesignPlacement:
+      oneOf:
+        - $ref: '#/components/schemas/DesignAbsolutePlacement'
+        - $ref: '#/components/schemas/DesignStackPlacement'
+        - $ref: '#/components/schemas/DesignGridPlacement'
+        - $ref: '#/components/schemas/DesignPackPlacement'
+      discriminator:
+        propertyName: type
+        mapping:
+          ABSOLUTE: '#/components/schemas/DesignAbsolutePlacement'
+          STACK: '#/components/schemas/DesignStackPlacement'
+          GRID: '#/components/schemas/DesignGridPlacement'
+          PACK: '#/components/schemas/DesignPackPlacement'
+    DesignAbsolutePlacement:
+      type: object
+      additionalProperties: false
+      required: [type, xMm, yMm, widthMode, heightMode]
+      properties:
+        type: { type: string, const: ABSOLUTE }
+        xMm: { type: number }
+        yMm: { type: number }
+        widthMode: { $ref: '#/components/schemas/DesignSizeMode' }
+        heightMode: { $ref: '#/components/schemas/DesignSizeMode' }
+        widthMm: { type: number, exclusiveMinimum: 0 }
+        heightMm: { type: number, exclusiveMinimum: 0 }
+        minWidthMm: { type: number, minimum: 0 }
+        minHeightMm: { type: number, minimum: 0 }
+        maxWidthMm: { type: number, exclusiveMinimum: 0 }
+        maxHeightMm: { type: number, exclusiveMinimum: 0 }
+        rightInsetMm: { type: number }
+        bottomInsetMm: { type: number }
+    DesignStackPlacement:
+      type: object
+      additionalProperties: false
+      required: [type, widthMode, heightMode]
+      properties:
+        type: { type: string, const: STACK }
+        widthMode: { $ref: '#/components/schemas/DesignSizeMode' }
+        heightMode: { $ref: '#/components/schemas/DesignSizeMode' }
+        widthMm: { type: number, exclusiveMinimum: 0 }
+        heightMm: { type: number, exclusiveMinimum: 0 }
+        minWidthMm: { type: number, minimum: 0 }
+        minHeightMm: { type: number, minimum: 0 }
+        maxWidthMm: { type: number, exclusiveMinimum: 0 }
+        maxHeightMm: { type: number, exclusiveMinimum: 0 }
+        marginTopMm: { type: number }
+        marginRightMm: { type: number }
+        marginBottomMm: { type: number }
+        marginLeftMm: { type: number }
+        alignSelf: { type: string, enum: [START, CENTER, END] }
+        fillWeight: { type: number, exclusiveMinimum: 0 }
+    DesignGridPlacement:
+      type: object
+      additionalProperties: false
+      required: [type, widthMode, heightMode, row, column]
+      properties:
+        type: { type: string, const: GRID }
+        widthMode: { $ref: '#/components/schemas/DesignSizeMode' }
+        heightMode: { $ref: '#/components/schemas/DesignSizeMode' }
+        widthMm: { type: number, exclusiveMinimum: 0 }
+        heightMm: { type: number, exclusiveMinimum: 0 }
+        minWidthMm: { type: number, minimum: 0 }
+        minHeightMm: { type: number, minimum: 0 }
+        maxWidthMm: { type: number, exclusiveMinimum: 0 }
+        maxHeightMm: { type: number, exclusiveMinimum: 0 }
+        row: { type: integer, minimum: 0 }
+        column: { type: integer, minimum: 0 }
+        rowSpan: { type: integer, minimum: 1 }
+        columnSpan: { type: integer, minimum: 1 }
+        marginTopMm: { type: number }
+        marginRightMm: { type: number }
+        marginBottomMm: { type: number }
+        marginLeftMm: { type: number }
+        horizontalAlignSelf: { type: string, enum: [START, CENTER, END] }
+        verticalAlignSelf: { type: string, enum: [START, CENTER, END] }
+    DesignPackPlacement:
+      type: object
+      additionalProperties: false
+      required: [type, widthMode, heightMode]
+      properties:
+        type: { type: string, const: PACK }
+        widthMode: { type: string, enum: [FIXED, HUG_CONTENT] }
+        heightMode: { type: string, enum: [FIXED, HUG_CONTENT] }
+        widthMm: { type: number, exclusiveMinimum: 0 }
+        heightMm: { type: number, exclusiveMinimum: 0 }
+        minWidthMm: { type: number, minimum: 0 }
+        minHeightMm: { type: number, minimum: 0 }
+        maxWidthMm: { type: number, exclusiveMinimum: 0 }
+        maxHeightMm: { type: number, exclusiveMinimum: 0 }
+    DesignSizeMode:
+      type: string
+      enum: [FIXED, HUG_CONTENT, FILL]
+    DesignTrack:
+      oneOf:
+        - $ref: '#/components/schemas/DesignFixedTrack'
+        - $ref: '#/components/schemas/DesignFractionTrack'
+        - $ref: '#/components/schemas/DesignAutoTrack'
+      discriminator:
+        propertyName: type
+        mapping:
+          FIXED: '#/components/schemas/DesignFixedTrack'
+          FRACTION: '#/components/schemas/DesignFractionTrack'
+          AUTO: '#/components/schemas/DesignAutoTrack'
+    DesignFixedTrack:
+      type: object
+      additionalProperties: false
+      required: [type, valueMm]
+      properties:
+        type: { type: string, const: FIXED }
+        valueMm: { type: number, exclusiveMinimum: 0 }
+    DesignFractionTrack:
+      type: object
+      additionalProperties: false
+      required: [type, weight]
+      properties:
+        type: { type: string, const: FRACTION }
+        weight: { type: number, exclusiveMinimum: 0 }
+    DesignAutoTrack:
+      type: object
+      additionalProperties: false
+      required: [type]
+      properties:
+        type: { type: string, const: AUTO }
+    DesignRepeatPackingSpec:
+      oneOf:
+        - $ref: '#/components/schemas/DesignStackPackingSpec'
+        - $ref: '#/components/schemas/DesignGridPackingSpec'
+      discriminator:
+        propertyName: kind
+        mapping:
+          STACK: '#/components/schemas/DesignStackPackingSpec'
+          GRID: '#/components/schemas/DesignGridPackingSpec'
+    DesignStackPackingSpec:
+      type: object
+      additionalProperties: false
+      required: [kind, direction]
+      properties:
+        kind: { type: string, const: STACK }
+        direction: { type: string, enum: [ROW, COLUMN] }
+        gapMm: { type: number, minimum: 0 }
+    DesignGridPackingSpec:
+      type: object
+      additionalProperties: false
+      required: [kind, columns]
+      properties:
+        kind: { type: string, const: GRID }
+        columns: { type: integer, minimum: 1 }
+        columnGapMm: { type: number, minimum: 0 }
+        rowGapMm: { type: number, minimum: 0 }
+    DesignTextRun:
+      type: object
+      additionalProperties: false
+      required: [text, fontRef, fontSizePt, color, decoration]
+      properties:
+        text: { type: string }
+        fontRef: { $ref: '#/components/schemas/DesignAssetRef' }
+        fontSizePt: { type: number, exclusiveMinimum: 0 }
+        color:
+          type: string
+          pattern: '^#[0-9A-F]{8}$'
+        decoration: { type: string, enum: [NONE, UNDERLINE, LINE_THROUGH] }
+        letterSpacingPt: { type: number }
+        letterSpacingFactor: { type: number }
+    DesignLineHeight:
+      oneOf:
+        - $ref: '#/components/schemas/DesignFactorLineHeight'
+        - $ref: '#/components/schemas/DesignFixedLineHeight'
+      discriminator:
+        propertyName: type
+        mapping:
+          FACTOR: '#/components/schemas/DesignFactorLineHeight'
+          FIXED: '#/components/schemas/DesignFixedLineHeight'
+    DesignFactorLineHeight:
+      type: object
+      additionalProperties: false
+      required: [type, factor]
+      properties:
+        type: { type: string, const: FACTOR }
+        factor: { type: number, exclusiveMinimum: 0 }
+    DesignFixedLineHeight:
+      type: object
+      additionalProperties: false
+      required: [type, valuePt]
+      properties:
+        type: { type: string, const: FIXED }
+        valuePt: { type: number, exclusiveMinimum: 0 }
+    DesignPathCommand:
+      oneOf:
+        - $ref: '#/components/schemas/DesignMoveToCommand'
+        - $ref: '#/components/schemas/DesignLineToCommand'
+        - $ref: '#/components/schemas/DesignQuadToCommand'
+        - $ref: '#/components/schemas/DesignCubicToCommand'
+        - $ref: '#/components/schemas/DesignCloseCommand'
+      discriminator:
+        propertyName: type
+        mapping:
+          MOVE_TO: '#/components/schemas/DesignMoveToCommand'
+          LINE_TO: '#/components/schemas/DesignLineToCommand'
+          QUAD_TO: '#/components/schemas/DesignQuadToCommand'
+          CUBIC_TO: '#/components/schemas/DesignCubicToCommand'
+          CLOSE: '#/components/schemas/DesignCloseCommand'
+    DesignMoveToCommand:
+      type: object
+      additionalProperties: false
+      required: [type, xMm, yMm]
+      properties:
+        type: { type: string, const: MOVE_TO }
+        xMm: { type: number }
+        yMm: { type: number }
+    DesignLineToCommand:
+      type: object
+      additionalProperties: false
+      required: [type, xMm, yMm]
+      properties:
+        type: { type: string, const: LINE_TO }
+        xMm: { type: number }
+        yMm: { type: number }
+    DesignQuadToCommand:
+      type: object
+      additionalProperties: false
+      required: [type, cxMm, cyMm, xMm, yMm]
+      properties:
+        type: { type: string, const: QUAD_TO }
+        cxMm: { type: number }
+        cyMm: { type: number }
+        xMm: { type: number }
+        yMm: { type: number }
+    DesignCubicToCommand:
+      type: object
+      additionalProperties: false
+      required: [type, c1xMm, c1yMm, c2xMm, c2yMm, xMm, yMm]
+      properties:
+        type: { type: string, const: CUBIC_TO }
+        c1xMm: { type: number }
+        c1yMm: { type: number }
+        c2xMm: { type: number }
+        c2yMm: { type: number }
+        xMm: { type: number }
+        yMm: { type: number }
+    DesignCloseCommand:
+      type: object
+      additionalProperties: false
+      required: [type]
+      properties:
+        type: { type: string, const: CLOSE }
+    DesignTemplateRef:
+      type: object
+      additionalProperties: false
+      required: [templateId]
+      properties:
+        templateId:
+          $ref: '#/components/schemas/DesignUuidV4'
+    DesignTemplateUseContextSelector:
+      oneOf:
+        - $ref: '#/components/schemas/DesignContextTemplateSelector'
+        - $ref: '#/components/schemas/DesignEmptyTemplateSelector'
+      discriminator:
+        propertyName: kind
+        mapping:
+          context: '#/components/schemas/DesignContextTemplateSelector'
+          empty: '#/components/schemas/DesignEmptyTemplateSelector'
+    DesignContextTemplateSelector:
+      type: object
+      additionalProperties: false
+      required: [kind, domain, contextAbsentPolicy]
+      properties:
+        kind: { type: string, const: context }
+        domain:
+          $ref: '#/components/schemas/DesignTemplateSelectorDomain'
+        pointer:
+          type: string
+          pattern: '^(?:|/(?:[^~/]|~[01])+(?:/(?:[^~/]|~[01])*)*)$'
+          maxLength: 1024
+        contextAbsentPolicy: { type: string, enum: [ERROR, SKIP] }
+    DesignEmptyTemplateSelector:
+      type: object
+      additionalProperties: false
+      required: [kind]
+      properties:
+        kind: { type: string, const: empty }
+    DesignTemplateSelectorDomain:
+      oneOf:
+        - $ref: '#/components/schemas/DesignInvocationSelectorDomain'
+        - $ref: '#/components/schemas/DesignLoopSelectorDomain'
+      discriminator:
+        propertyName: kind
+        mapping:
+          invocation: '#/components/schemas/DesignInvocationSelectorDomain'
+          loop: '#/components/schemas/DesignLoopSelectorDomain'
+    DesignInvocationSelectorDomain:
+      type: object
+      additionalProperties: false
+      required: [kind]
+      properties:
+        kind: { type: string, const: invocation }
+    DesignLoopSelectorDomain:
+      type: object
+      additionalProperties: false
+      required: [kind, loopId]
+      properties:
+        kind: { type: string, const: loop }
+        loopId: { $ref: '#/components/schemas/DesignUuidV4' }
+    DesignTemplateUseFill:
+      type: object
+      additionalProperties: false
+      required: [targetDefinitionId, source]
+      properties:
+        targetDefinitionId:
+          $ref: '#/components/schemas/DesignUuidV4'
+        source:
+          $ref: '#/components/schemas/DesignBindingSource'
+    DesignNode:
+      oneOf:
+        - $ref: '#/components/schemas/DesignGroupNode'
+        - $ref: '#/components/schemas/DesignFrameNode'
+        - $ref: '#/components/schemas/DesignStackNode'
+        - $ref: '#/components/schemas/DesignGridNode'
+        - $ref: '#/components/schemas/DesignRepeatNode'
+        - $ref: '#/components/schemas/DesignTextNode'
+        - $ref: '#/components/schemas/DesignImageNode'
+        - $ref: '#/components/schemas/DesignRectNode'
+        - $ref: '#/components/schemas/DesignEllipseNode'
+        - $ref: '#/components/schemas/DesignLineNode'
+        - $ref: '#/components/schemas/DesignPolygonNode'
+        - $ref: '#/components/schemas/DesignPolylineNode'
+        - $ref: '#/components/schemas/DesignPathNode'
+        - $ref: '#/components/schemas/DesignQrCodeNode'
+        - $ref: '#/components/schemas/DesignBarcodeNode'
+        - $ref: '#/components/schemas/DesignTemplateUseNode'
+        - $ref: '#/components/schemas/DesignConditionalNode'
+      discriminator:
+        propertyName: kind
+        mapping:
+          group: '#/components/schemas/DesignGroupNode'
+          frame: '#/components/schemas/DesignFrameNode'
+          stack: '#/components/schemas/DesignStackNode'
+          grid: '#/components/schemas/DesignGridNode'
+          repeat: '#/components/schemas/DesignRepeatNode'
+          text: '#/components/schemas/DesignTextNode'
+          image: '#/components/schemas/DesignImageNode'
+          rect: '#/components/schemas/DesignRectNode'
+          ellipse: '#/components/schemas/DesignEllipseNode'
+          line: '#/components/schemas/DesignLineNode'
+          polygon: '#/components/schemas/DesignPolygonNode'
+          polyline: '#/components/schemas/DesignPolylineNode'
+          path: '#/components/schemas/DesignPathNode'
+          qrCode: '#/components/schemas/DesignQrCodeNode'
+          barcode: '#/components/schemas/DesignBarcodeNode'
+          templateUse: '#/components/schemas/DesignTemplateUseNode'
+          conditional: '#/components/schemas/DesignConditionalNode'
+      x-renderweave-binding-policy:
+        commonNonCanvas:
+          - render
+          - visible
+          - opacity
+          - transform.rotationDeg
+          - transform.scaleX
+          - transform.scaleY
+          - transform.originX
+          - transform.originY
+          - placement.xMm
+          - placement.yMm
+          - placement.marginTopMm
+          - placement.marginRightMm
+          - placement.marginBottomMm
+          - placement.marginLeftMm
+          - placement.alignSelf
+          - placement.row
+          - placement.column
+          - placement.rowSpan
+          - placement.columnSpan
+          - placement.horizontalAlignSelf
+          - placement.verticalAlignSelf
+        commonNonGroup:
+          - placement.fillWeight
+          - placement.widthMm
+          - placement.heightMm
+          - placement.minWidthMm
+          - placement.minHeightMm
+          - placement.maxWidthMm
+          - placement.maxHeightMm
+          - placement.rightInsetMm
+          - placement.bottomInsetMm
+        byKind:
+          canvas: [backgroundColor]
+          group: []
+          frame: [fill.color, stroke.color, stroke.widthMm, stroke.cap, stroke.join, cornerRadii.topLeftMm, cornerRadii.topRightMm, cornerRadii.bottomRightMm, cornerRadii.bottomLeftMm, padding.topMm, padding.rightMm, padding.bottomMm, padding.leftMm, clipContent]
+          stack: [fill.color, stroke.color, stroke.widthMm, stroke.cap, stroke.join, cornerRadii.topLeftMm, cornerRadii.topRightMm, cornerRadii.bottomRightMm, cornerRadii.bottomLeftMm, padding.topMm, padding.rightMm, padding.bottomMm, padding.leftMm, clipContent, direction, gapMm, justifyContent, alignItems]
+          grid: [fill.color, stroke.color, stroke.widthMm, stroke.cap, stroke.join, cornerRadii.topLeftMm, cornerRadii.topRightMm, cornerRadii.bottomRightMm, cornerRadii.bottomLeftMm, padding.topMm, padding.rightMm, padding.bottomMm, padding.leftMm, clipContent, rowGapMm, columnGapMm, 'rows[*].valueMm', 'rows[*].weight', 'columns[*].valueMm', 'columns[*].weight']
+          repeat: [itemLayout.direction, itemLayout.gapMm, itemLayout.columns, itemLayout.columnGapMm, itemLayout.rowGapMm, instanceLayout.direction, instanceLayout.gapMm, instanceLayout.columns, instanceLayout.columnGapMm, instanceLayout.rowGapMm]
+          text: ['runs[*].text', 'runs[*].fontRef', 'runs[*].fontSizePt', 'runs[*].color', 'runs[*].letterSpacingPt', 'runs[*].letterSpacingFactor', 'runs[*].decoration', writingMode, horizontalAlign, verticalAlign, lineBreak, overflow, lineHeight.factor, lineHeight.valuePt, maxLines, padding.topMm, padding.rightMm, padding.bottomMm, padding.leftMm, stroke.color, stroke.widthPt, stroke.cap, stroke.join, minScale]
+          image: [imageRef, fit, sampling]
+          rect: [fill.color, stroke.color, stroke.widthMm, stroke.cap, stroke.join, cornerRadii.topLeftMm, cornerRadii.topRightMm, cornerRadii.bottomRightMm, cornerRadii.bottomLeftMm]
+          ellipse: [fill.color, stroke.color, stroke.widthMm, stroke.cap, stroke.join]
+          line: [start.xMm, start.yMm, end.xMm, end.yMm, stroke.color, stroke.widthMm, stroke.cap, stroke.join]
+          polygon: ['points[*].xMm', 'points[*].yMm', fill.color, stroke.color, stroke.widthMm, stroke.cap, stroke.join]
+          polyline: ['points[*].xMm', 'points[*].yMm', stroke.color, stroke.widthMm, stroke.cap, stroke.join]
+          path: ['commands[*].xMm', 'commands[*].yMm', 'commands[*].cxMm', 'commands[*].cyMm', 'commands[*].c1xMm', 'commands[*].c1yMm', 'commands[*].c2xMm', 'commands[*].c2yMm', fill.color, stroke.color, stroke.widthMm, stroke.cap, stroke.join, fillRule]
+          qrCode: [content, errorCorrectionLevel, foregroundColor, backgroundColor]
+          barcode: [format, value, foregroundColor, backgroundColor]
+          templateUse: []
+          conditional: []
+    DesignGroupNode:
+      type: object
+      additionalProperties: false
+      required: [nodeId, kind, bindings, placement, children]
+      properties:
+        nodeId: { $ref: '#/components/schemas/DesignUuidV4' }
+        kind: { type: string, const: group }
+        displayName: { $ref: '#/components/schemas/DesignDisplayName' }
+        bindings: { type: array, items: { $ref: '#/components/schemas/DesignBinding' } }
+        placement: { $ref: '#/components/schemas/DesignPlacement' }
+        render: { type: boolean }
+        visible: { type: boolean }
+        opacity: { type: number, minimum: 0, maximum: 1 }
+        transform: { $ref: '#/components/schemas/DesignTransform' }
+        children: { type: array, items: { $ref: '#/components/schemas/DesignNode' } }
+    DesignFrameNode:
+      type: object
+      additionalProperties: false
+      required: [nodeId, kind, bindings, placement, children]
+      properties:
+        nodeId: { $ref: '#/components/schemas/DesignUuidV4' }
+        kind: { type: string, const: frame }
+        displayName: { $ref: '#/components/schemas/DesignDisplayName' }
+        bindings: { type: array, items: { $ref: '#/components/schemas/DesignBinding' } }
+        placement: { $ref: '#/components/schemas/DesignPlacement' }
+        render: { type: boolean }
+        visible: { type: boolean }
+        opacity: { type: number, minimum: 0, maximum: 1 }
+        transform: { $ref: '#/components/schemas/DesignTransform' }
+        children: { type: array, items: { $ref: '#/components/schemas/DesignNode' } }
+        fill: { $ref: '#/components/schemas/DesignFill' }
+        stroke: { $ref: '#/components/schemas/DesignStrokeMm' }
+        cornerRadii: { $ref: '#/components/schemas/DesignCornerRadii' }
+        padding: { $ref: '#/components/schemas/DesignPadding' }
+        clipContent: { type: boolean }
+    DesignStackNode:
+      type: object
+      additionalProperties: false
+      required: [nodeId, kind, bindings, placement, children]
+      properties:
+        nodeId: { $ref: '#/components/schemas/DesignUuidV4' }
+        kind: { type: string, const: stack }
+        displayName: { $ref: '#/components/schemas/DesignDisplayName' }
+        bindings: { type: array, items: { $ref: '#/components/schemas/DesignBinding' } }
+        placement: { $ref: '#/components/schemas/DesignPlacement' }
+        render: { type: boolean }
+        visible: { type: boolean }
+        opacity: { type: number, minimum: 0, maximum: 1 }
+        transform: { $ref: '#/components/schemas/DesignTransform' }
+        children: { type: array, items: { $ref: '#/components/schemas/DesignNode' } }
+        fill: { $ref: '#/components/schemas/DesignFill' }
+        stroke: { $ref: '#/components/schemas/DesignStrokeMm' }
+        cornerRadii: { $ref: '#/components/schemas/DesignCornerRadii' }
+        padding: { $ref: '#/components/schemas/DesignPadding' }
+        clipContent: { type: boolean }
+        direction: { type: string, enum: [ROW, COLUMN] }
+        gapMm: { type: number, minimum: 0 }
+        justifyContent: { type: string, enum: [START, CENTER, END, SPACE_BETWEEN, SPACE_AROUND, SPACE_EVENLY] }
+        alignItems: { type: string, enum: [START, CENTER, END] }
+    DesignGridNode:
+      type: object
+      additionalProperties: false
+      required: [nodeId, kind, bindings, placement, children, rows, columns]
+      properties:
+        nodeId: { $ref: '#/components/schemas/DesignUuidV4' }
+        kind: { type: string, const: grid }
+        displayName: { $ref: '#/components/schemas/DesignDisplayName' }
+        bindings: { type: array, items: { $ref: '#/components/schemas/DesignBinding' } }
+        placement: { $ref: '#/components/schemas/DesignPlacement' }
+        render: { type: boolean }
+        visible: { type: boolean }
+        opacity: { type: number, minimum: 0, maximum: 1 }
+        transform: { $ref: '#/components/schemas/DesignTransform' }
+        children: { type: array, items: { $ref: '#/components/schemas/DesignNode' } }
+        fill: { $ref: '#/components/schemas/DesignFill' }
+        stroke: { $ref: '#/components/schemas/DesignStrokeMm' }
+        cornerRadii: { $ref: '#/components/schemas/DesignCornerRadii' }
+        padding: { $ref: '#/components/schemas/DesignPadding' }
+        clipContent: { type: boolean }
+        rows: { type: array, minItems: 1, items: { $ref: '#/components/schemas/DesignTrack' } }
+        columns: { type: array, minItems: 1, items: { $ref: '#/components/schemas/DesignTrack' } }
+        rowGapMm: { type: number, minimum: 0 }
+        columnGapMm: { type: number, minimum: 0 }
+    DesignRepeatNode:
+      type: object
+      additionalProperties: false
+      required: [nodeId, kind, bindings, placement, children, loopId, items, absentPolicy, itemLayout, instanceLayout]
+      properties:
+        nodeId: { $ref: '#/components/schemas/DesignUuidV4' }
+        kind: { type: string, const: repeat }
+        displayName: { $ref: '#/components/schemas/DesignDisplayName' }
+        bindings: { type: array, items: { $ref: '#/components/schemas/DesignBinding' } }
+        placement: { $ref: '#/components/schemas/DesignPlacement' }
+        render: { type: boolean }
+        visible: { type: boolean }
+        opacity: { type: number, minimum: 0, maximum: 1 }
+        transform: { $ref: '#/components/schemas/DesignTransform' }
+        children: { type: array, minItems: 1, items: { $ref: '#/components/schemas/DesignNode' } }
+        loopId: { $ref: '#/components/schemas/DesignUuidV4' }
+        items: { $ref: '#/components/schemas/DesignStructuralValueSource' }
+        absentPolicy: { type: string, enum: [ERROR, EMPTY] }
+        itemLayout: { $ref: '#/components/schemas/DesignRepeatPackingSpec' }
+        instanceLayout: { $ref: '#/components/schemas/DesignRepeatPackingSpec' }
+    DesignTemplateUseNode:
+      type: object
+      additionalProperties: false
+      required: [nodeId, kind, bindings, placement, useId, templateRef, contextSelector, fills]
+      properties:
+        nodeId: { $ref: '#/components/schemas/DesignUuidV4' }
+        kind: { type: string, const: templateUse }
+        displayName: { $ref: '#/components/schemas/DesignDisplayName' }
+        bindings: { type: array, items: { $ref: '#/components/schemas/DesignBinding' } }
+        placement: { $ref: '#/components/schemas/DesignPlacement' }
+        render: { type: boolean }
+        visible: { type: boolean }
+        opacity: { type: number, minimum: 0, maximum: 1 }
+        transform: { $ref: '#/components/schemas/DesignTransform' }
+        useId: { $ref: '#/components/schemas/DesignUuidV4' }
+        templateRef: { $ref: '#/components/schemas/DesignTemplateRef' }
+        contextSelector: { $ref: '#/components/schemas/DesignTemplateUseContextSelector' }
+        fills: { type: array, items: { $ref: '#/components/schemas/DesignTemplateUseFill' } }
+    DesignConditionalNode:
+      type: object
+      additionalProperties: false
+      required: [nodeId, kind, bindings, placement, condition, absentPolicy, children]
+      properties:
+        nodeId: { $ref: '#/components/schemas/DesignUuidV4' }
+        kind: { type: string, const: conditional }
+        displayName: { $ref: '#/components/schemas/DesignDisplayName' }
+        bindings: { type: array, items: { $ref: '#/components/schemas/DesignBinding' } }
+        placement: { $ref: '#/components/schemas/DesignPlacement' }
+        render: { type: boolean }
+        visible: { type: boolean }
+        opacity: { type: number, minimum: 0, maximum: 1 }
+        transform: { $ref: '#/components/schemas/DesignTransform' }
+        condition: { $ref: '#/components/schemas/DesignStructuralValueSource' }
+        absentPolicy: { type: string, enum: ['FALSE', ERROR] }
+        children: { type: array, minItems: 1, items: { $ref: '#/components/schemas/DesignNode' } }
+    DesignTextNode:
+      type: object
+      additionalProperties: false
+      required: [nodeId, kind, bindings, placement, runs]
+      properties:
+        nodeId: { $ref: '#/components/schemas/DesignUuidV4' }
+        kind: { type: string, const: text }
+        displayName: { $ref: '#/components/schemas/DesignDisplayName' }
+        bindings: { type: array, items: { $ref: '#/components/schemas/DesignBinding' } }
+        placement: { $ref: '#/components/schemas/DesignPlacement' }
+        render: { type: boolean }
+        visible: { type: boolean }
+        opacity: { type: number, minimum: 0, maximum: 1 }
+        transform: { $ref: '#/components/schemas/DesignTransform' }
+        runs: { type: array, minItems: 1, items: { $ref: '#/components/schemas/DesignTextRun' } }
+        writingMode: { type: string, enum: [HORIZONTAL_TB, VERTICAL_RL] }
+        horizontalAlign: { type: string, enum: [LEFT, CENTER, RIGHT, JUSTIFY, SPACE_EVENLY] }
+        verticalAlign: { type: string, enum: [TOP, CENTER, BOTTOM, JUSTIFY, SPACE_EVENLY] }
+        lineBreak: { type: string, enum: [NONE, WORD, CHAR] }
+        overflow: { type: string, enum: [VISIBLE, CLIP, ELLIPSIS, FAIL] }
+        lineHeight: { $ref: '#/components/schemas/DesignLineHeight' }
+        maxLines: { type: integer, minimum: 1 }
+        padding: { $ref: '#/components/schemas/DesignPadding' }
+        stroke: { $ref: '#/components/schemas/DesignStrokePt' }
+        fitMode: { type: string, enum: [NONE, SHRINK_TO_FIT] }
+        minScale: { type: number, exclusiveMinimum: 0, maximum: 1 }
+    DesignImageNode:
+      type: object
+      additionalProperties: false
+      required: [nodeId, kind, bindings, placement, imageRef]
+      properties:
+        nodeId: { $ref: '#/components/schemas/DesignUuidV4' }
+        kind: { type: string, const: image }
+        displayName: { $ref: '#/components/schemas/DesignDisplayName' }
+        bindings: { type: array, items: { $ref: '#/components/schemas/DesignBinding' } }
+        placement: { $ref: '#/components/schemas/DesignPlacement' }
+        render: { type: boolean }
+        visible: { type: boolean }
+        opacity: { type: number, minimum: 0, maximum: 1 }
+        transform: { $ref: '#/components/schemas/DesignTransform' }
+        imageRef: { $ref: '#/components/schemas/DesignAssetRef' }
+        fit: { type: string, enum: [CONTAIN, COVER, FILL] }
+        sampling: { type: string, enum: [LINEAR, NEAREST] }
+    DesignRectNode:
+      type: object
+      additionalProperties: false
+      required: [nodeId, kind, bindings, placement]
+      properties:
+        nodeId: { $ref: '#/components/schemas/DesignUuidV4' }
+        kind: { type: string, const: rect }
+        displayName: { $ref: '#/components/schemas/DesignDisplayName' }
+        bindings: { type: array, items: { $ref: '#/components/schemas/DesignBinding' } }
+        placement: { $ref: '#/components/schemas/DesignPlacement' }
+        render: { type: boolean }
+        visible: { type: boolean }
+        opacity: { type: number, minimum: 0, maximum: 1 }
+        transform: { $ref: '#/components/schemas/DesignTransform' }
+        fill: { $ref: '#/components/schemas/DesignFill' }
+        stroke: { $ref: '#/components/schemas/DesignStrokeMm' }
+        cornerRadii: { $ref: '#/components/schemas/DesignCornerRadii' }
+    DesignEllipseNode:
+      type: object
+      additionalProperties: false
+      required: [nodeId, kind, bindings, placement]
+      properties:
+        nodeId: { $ref: '#/components/schemas/DesignUuidV4' }
+        kind: { type: string, const: ellipse }
+        displayName: { $ref: '#/components/schemas/DesignDisplayName' }
+        bindings: { type: array, items: { $ref: '#/components/schemas/DesignBinding' } }
+        placement: { $ref: '#/components/schemas/DesignPlacement' }
+        render: { type: boolean }
+        visible: { type: boolean }
+        opacity: { type: number, minimum: 0, maximum: 1 }
+        transform: { $ref: '#/components/schemas/DesignTransform' }
+        fill: { $ref: '#/components/schemas/DesignFill' }
+        stroke: { $ref: '#/components/schemas/DesignStrokeMm' }
+    DesignLineNode:
+      type: object
+      additionalProperties: false
+      required: [nodeId, kind, bindings, placement, start, end, stroke]
+      properties:
+        nodeId: { $ref: '#/components/schemas/DesignUuidV4' }
+        kind: { type: string, const: line }
+        displayName: { $ref: '#/components/schemas/DesignDisplayName' }
+        bindings: { type: array, items: { $ref: '#/components/schemas/DesignBinding' } }
+        placement: { $ref: '#/components/schemas/DesignPlacement' }
+        render: { type: boolean }
+        visible: { type: boolean }
+        opacity: { type: number, minimum: 0, maximum: 1 }
+        transform: { $ref: '#/components/schemas/DesignTransform' }
+        start: { $ref: '#/components/schemas/DesignPointMm' }
+        end: { $ref: '#/components/schemas/DesignPointMm' }
+        stroke: { $ref: '#/components/schemas/DesignStrokeMm' }
+    DesignPolygonNode:
+      type: object
+      additionalProperties: false
+      required: [nodeId, kind, bindings, placement, points]
+      properties:
+        nodeId: { $ref: '#/components/schemas/DesignUuidV4' }
+        kind: { type: string, const: polygon }
+        displayName: { $ref: '#/components/schemas/DesignDisplayName' }
+        bindings: { type: array, items: { $ref: '#/components/schemas/DesignBinding' } }
+        placement: { $ref: '#/components/schemas/DesignPlacement' }
+        render: { type: boolean }
+        visible: { type: boolean }
+        opacity: { type: number, minimum: 0, maximum: 1 }
+        transform: { $ref: '#/components/schemas/DesignTransform' }
+        points: { type: array, minItems: 3, items: { $ref: '#/components/schemas/DesignPointMm' } }
+        fill: { $ref: '#/components/schemas/DesignFill' }
+        stroke: { $ref: '#/components/schemas/DesignStrokeMm' }
+    DesignPolylineNode:
+      type: object
+      additionalProperties: false
+      required: [nodeId, kind, bindings, placement, points, stroke]
+      properties:
+        nodeId: { $ref: '#/components/schemas/DesignUuidV4' }
+        kind: { type: string, const: polyline }
+        displayName: { $ref: '#/components/schemas/DesignDisplayName' }
+        bindings: { type: array, items: { $ref: '#/components/schemas/DesignBinding' } }
+        placement: { $ref: '#/components/schemas/DesignPlacement' }
+        render: { type: boolean }
+        visible: { type: boolean }
+        opacity: { type: number, minimum: 0, maximum: 1 }
+        transform: { $ref: '#/components/schemas/DesignTransform' }
+        points: { type: array, minItems: 2, items: { $ref: '#/components/schemas/DesignPointMm' } }
+        stroke: { $ref: '#/components/schemas/DesignStrokeMm' }
+    DesignPathNode:
+      type: object
+      additionalProperties: false
+      required: [nodeId, kind, bindings, placement, commands]
+      properties:
+        nodeId: { $ref: '#/components/schemas/DesignUuidV4' }
+        kind: { type: string, const: path }
+        displayName: { $ref: '#/components/schemas/DesignDisplayName' }
+        bindings: { type: array, items: { $ref: '#/components/schemas/DesignBinding' } }
+        placement: { $ref: '#/components/schemas/DesignPlacement' }
+        render: { type: boolean }
+        visible: { type: boolean }
+        opacity: { type: number, minimum: 0, maximum: 1 }
+        transform: { $ref: '#/components/schemas/DesignTransform' }
+        commands: { type: array, minItems: 1, items: { $ref: '#/components/schemas/DesignPathCommand' } }
+        fill: { $ref: '#/components/schemas/DesignFill' }
+        stroke: { $ref: '#/components/schemas/DesignStrokeMm' }
+        fillRule: { type: string, enum: [NONZERO, EVEN_ODD] }
+    DesignQrCodeNode:
+      type: object
+      additionalProperties: false
+      required: [nodeId, kind, bindings, placement, content]
+      properties:
+        nodeId: { $ref: '#/components/schemas/DesignUuidV4' }
+        kind: { type: string, const: qrCode }
+        displayName: { $ref: '#/components/schemas/DesignDisplayName' }
+        bindings: { type: array, items: { $ref: '#/components/schemas/DesignBinding' } }
+        placement: { $ref: '#/components/schemas/DesignPlacement' }
+        render: { type: boolean }
+        visible: { type: boolean }
+        opacity: { type: number, minimum: 0, maximum: 1 }
+        transform: { $ref: '#/components/schemas/DesignTransform' }
+        content: { type: string, minLength: 1 }
+        errorCorrectionLevel: { type: string, enum: [L, M, Q, H] }
+        foregroundColor: { type: string, pattern: '^#[0-9A-F]{8}$' }
+        backgroundColor: { type: string, pattern: '^#[0-9A-F]{8}$' }
+    DesignBarcodeNode:
+      type: object
+      additionalProperties: false
+      required: [nodeId, kind, bindings, placement, format, value]
+      properties:
+        nodeId: { $ref: '#/components/schemas/DesignUuidV4' }
+        kind: { type: string, const: barcode }
+        displayName: { $ref: '#/components/schemas/DesignDisplayName' }
+        bindings: { type: array, items: { $ref: '#/components/schemas/DesignBinding' } }
+        placement: { $ref: '#/components/schemas/DesignPlacement' }
+        render: { type: boolean }
+        visible: { type: boolean }
+        opacity: { type: number, minimum: 0, maximum: 1 }
+        transform: { $ref: '#/components/schemas/DesignTransform' }
+        format: { type: string, enum: [EAN_8, EAN_13, UPC_A, CODE_128] }
+        value: { type: string, minLength: 1, maxLength: 128 }
+        foregroundColor: { type: string, pattern: '^#[0-9A-F]{8}$' }
+        backgroundColor: { type: string, pattern: '^#[0-9A-F]{8}$' }
     TemplateValidationIssue:
       type: object
       additionalProperties: false

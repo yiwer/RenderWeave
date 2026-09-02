@@ -196,6 +196,29 @@ describe('Template Editor E7 Local recovery contract', () => {
     expect(rollbackResult).toMatchObject({ state: 'invalid', reason: 'BASE_REVISION_AHEAD' });
   });
 
+  it('classifies a canonical malformed closed wire as unsupported recovery', async () => {
+    const session = dirtySession('malformed recovery');
+    const record = await buildTemplateRecoveryRecord(session, EDIT_STATE, UPDATED_AT);
+    const malformed = JSON.parse(record.draftCanonical) as Record<string, unknown>;
+    const frame = (((malformed.designRoot as Record<string, unknown>)
+      .children as Record<string, unknown>[])[0]);
+    if (!frame) throw new Error('expected Frame fixture');
+    delete frame.nodeId;
+    const draftCanonical = JSON.stringify(malformed);
+    const draftContentHash = await templateContentHashOf(draftCanonical);
+    const malformedRecord = { ...record, draftCanonical, draftContentHash };
+
+    expect(await loadTemplateRecovery(
+      storageWith(malformedRecord),
+      session.baseline,
+      Date.parse(UPDATED_AT) + 1,
+    )).toMatchObject({ state: 'invalid', reason: 'DRAFT_UNSUPPORTED' });
+    expect(restoreStructuredSessionFromRecovery(
+      cleanSessionAt('7'),
+      malformedRecord,
+    )).toMatchObject({ state: 'invalid', reason: 'DRAFT_UNSUPPORTED' });
+  });
+
   it('reports unavailable storage without claiming persistence or clearing', async () => {
     const session = dirtySession('quota draft');
     const record = await buildTemplateRecoveryRecord(session, EDIT_STATE, UPDATED_AT);

@@ -1,8 +1,8 @@
 # T222 — Edit a real Canvas/Rect/Frame/Stack through the prototype interaction shell
 
 Type: task
-Status: blocked
-Blocked by: T221
+Status: ready-for-agent
+Blocked by: T221 (done)
 
 ## What to build
 

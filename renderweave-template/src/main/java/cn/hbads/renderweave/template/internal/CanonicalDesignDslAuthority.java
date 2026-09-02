@@ -26,17 +26,6 @@ final class CanonicalDesignDslAuthority implements DesignDslAuthority {
 
     private static final byte[] HASH_DOMAIN =
             "renderweave-design-content/1\0".getBytes(StandardCharsets.UTF_8);
-    private static final Set<String> ROOT_MEMBERS = Set.of(
-            "dslVersion", "expressionProfile", "displayName", "description",
-            "definitions", "designRoot"
-    );
-    private static final Set<String> CANVAS_MEMBERS = Set.of(
-            "nodeId", "kind", "displayName", "widthMm", "heightMm", "backgroundColor",
-            "bleed", "bindings", "children"
-    );
-    private static final Set<String> BLEED_MEMBERS = Set.of(
-            "topMm", "rightMm", "bottomMm", "leftMm"
-    );
     private static final List<String> BLEED_MEMBER_ORDER = List.of(
             "topMm", "rightMm", "bottomMm", "leftMm"
     );
@@ -83,7 +72,7 @@ final class CanonicalDesignDslAuthority implements DesignDslAuthority {
     private JsonValue validateAndNormalize(JsonValue parsed) throws DesignDslFailureException {
         rejectNull(parsed, "");
         var root = object(parsed, "");
-        rejectUnknown(root, ROOT_MEMBERS, "");
+        rejectUnknown(root, NodeContractCatalog.DESIGN_ROOT_MEMBERS, "");
         exactVersion(root, "dslVersion", "renderweave-design/1.0", "/dslVersion");
         exactVersion(
                 root,
@@ -111,7 +100,7 @@ final class CanonicalDesignDslAuthority implements DesignDslAuthority {
         var definitionsResult = validateDefinitions(definitions, loopIds, expressionCapacity);
 
         var canvas = object(required(root, "designRoot", "/designRoot"), "/designRoot");
-        rejectUnknown(canvas, CANVAS_MEMBERS, "/designRoot");
+        rejectUnknown(canvas, NodeContractCatalog.CANVAS_MEMBERS, "/designRoot");
         var kind = string(required(canvas, "kind", "/designRoot/kind"), "/designRoot/kind");
         if (!"canvas".equals(kind)) {
             throw failure(FailureCode.DESIGN_VALUE_INVALID, "/designRoot/kind");
@@ -137,7 +126,7 @@ final class CanonicalDesignDslAuthority implements DesignDslAuthority {
         }
         if (canvas.members().containsKey("bleed")) {
             var bleed = object(canvas.members().get("bleed"), "/designRoot/bleed");
-            rejectUnknown(bleed, BLEED_MEMBERS, "/designRoot/bleed");
+            rejectUnknown(bleed, NodeContractCatalog.BLEED_MEMBERS, "/designRoot/bleed");
             for (var member : BLEED_MEMBER_ORDER) {
                 capacityDecimal(
                         bleed,
@@ -559,10 +548,11 @@ final class CanonicalDesignDslAuthority implements DesignDslAuthority {
             return string.value();
         }
         var object = object(value, pointer);
-        rejectUnknown(object, DefinitionContractCatalog.VALUE_TYPE_MEMBERS, pointer);
+        rejectUnknown(object, DefinitionContractCatalog.VALUE_TYPE_UNION_MEMBERS, pointer);
         var type = string(required(object, "type", pointer + "/type"), pointer + "/type");
         switch (type) {
             case "list" -> {
+                rejectUnknown(object, DefinitionContractCatalog.LIST_VALUE_TYPE_MEMBERS, pointer);
                 var items = string(required(object, "items", pointer + "/items"), pointer + "/items");
                 if (!DefinitionContractCatalog.LIST_ITEM_TYPES.contains(items)) {
                     throw failure(FailureCode.DESIGN_VALUE_INVALID, pointer + "/items");
@@ -570,6 +560,7 @@ final class CanonicalDesignDslAuthority implements DesignDslAuthority {
                 return "list<" + items + ">";
             }
             case "enum" -> {
+                rejectUnknown(object, DefinitionContractCatalog.ENUM_VALUE_TYPE_MEMBERS, pointer);
                 string(required(object, "catalogId", pointer + "/catalogId"),
                         pointer + "/catalogId");
                 throw failure(FailureCode.DESIGN_VALUE_INVALID, pointer + "/catalogId");
@@ -868,7 +859,7 @@ final class CanonicalDesignDslAuthority implements DesignDslAuthority {
         if (kind == NodeContractCatalog.NodeKind.CANVAS) {
             throw failure(FailureCode.DESIGN_VALUE_INVALID, pointer + "/kind");
         }
-        rejectUnknown(node, allowedMembers(kind), pointer);
+        rejectUnknown(node, NodeContractCatalog.allowedMembers(kind), pointer);
         var nodeId = string(required(node, "nodeId", pointer + "/nodeId"), pointer + "/nodeId");
         if (!UUID_V4.matcher(nodeId).matches() || !seenNodeIds.add(nodeId)) {
             throw failure(FailureCode.DESIGN_VALUE_INVALID, pointer + "/nodeId");
@@ -1080,39 +1071,6 @@ final class CanonicalDesignDslAuthority implements DesignDslAuthority {
         if (!RGBA.matcher(color).matches()) {
             throw failure(FailureCode.DESIGN_VALUE_INVALID, pointer);
         }
-    }
-
-    private Set<String> allowedMembers(NodeContractCatalog.NodeKind kind) {
-        var members = new java.util.HashSet<>(NodeContractCatalog.COMMON_NODE_MEMBERS);
-        if (NodeContractCatalog.allowsChildren(kind)) {
-            members.addAll(NodeContractCatalog.CONTAINER_MEMBERS);
-        }
-        switch (kind) {
-            case FRAME, STACK, GRID -> members.addAll(NodeContractCatalog.APPEARANCE_MEMBERS);
-            case CANVAS, GROUP, REPEAT, TEXT, IMAGE, RECT, ELLIPSE, LINE, POLYGON, POLYLINE,
-                    PATH, QRCODE, BARCODE, TEMPLATE_USE, CONDITIONAL -> {
-            }
-        }
-        switch (kind) {
-            case STACK -> members.addAll(NodeContractCatalog.STACK_MEMBERS);
-            case GRID -> members.addAll(NodeContractCatalog.GRID_MEMBERS);
-            case REPEAT -> members.addAll(NodeContractCatalog.REPEAT_MEMBERS);
-            case TEMPLATE_USE -> members.addAll(NodeContractCatalog.TEMPLATE_USE_MEMBERS);
-            case CONDITIONAL -> members.addAll(NodeContractCatalog.CONDITIONAL_MEMBERS);
-            case TEXT -> members.addAll(NodeContractCatalog.TEXT_MEMBERS);
-            case IMAGE -> members.addAll(NodeContractCatalog.IMAGE_MEMBERS);
-            case RECT -> members.addAll(NodeContractCatalog.RECT_MEMBERS);
-            case ELLIPSE -> members.addAll(NodeContractCatalog.ELLIPSE_MEMBERS);
-            case LINE -> members.addAll(NodeContractCatalog.LINE_MEMBERS);
-            case POLYGON -> members.addAll(NodeContractCatalog.POLYGON_MEMBERS);
-            case POLYLINE -> members.addAll(NodeContractCatalog.POLYLINE_MEMBERS);
-            case PATH -> members.addAll(NodeContractCatalog.PATH_MEMBERS);
-            case QRCODE -> members.addAll(NodeContractCatalog.QRCODE_MEMBERS);
-            case BARCODE -> members.addAll(NodeContractCatalog.BARCODE_MEMBERS);
-            case CANVAS, GROUP, FRAME -> {
-            }
-        }
-        return Set.copyOf(members);
     }
 
     /** Best-effort pre-pass that collects authored Repeat loopIds (never rejects). */
@@ -1368,12 +1326,15 @@ final class CanonicalDesignDslAuthority implements DesignDslAuthority {
             Set<String> loopIds
     ) throws DesignDslFailureException {
         var domain = object(value, pointer);
-        rejectUnknown(domain, NodeContractCatalog.SELECTOR_DOMAIN_MEMBERS, pointer);
+        rejectUnknown(domain, NodeContractCatalog.SELECTOR_DOMAIN_UNION_MEMBERS, pointer);
         var kind = string(required(domain, "kind", pointer + "/kind"), pointer + "/kind");
         switch (kind) {
             case "invocation" -> {
+                rejectUnknown(domain, NodeContractCatalog.INVOCATION_SELECTOR_DOMAIN_MEMBERS,
+                        pointer);
             }
             case "loop" -> {
+                rejectUnknown(domain, NodeContractCatalog.LOOP_SELECTOR_DOMAIN_MEMBERS, pointer);
                 var loopId = string(required(domain, "loopId", pointer + "/loopId"),
                         pointer + "/loopId");
                 if (!UUID_V4.matcher(loopId).matches() || !loopIds.contains(loopId)) {

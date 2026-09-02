@@ -4,6 +4,7 @@ import {
   openTemplateEditor,
   parseReadinessRecheckResponse,
   parseTemplateCurrentResponse,
+  templateContentHashOf,
   TemplateIntegrityError,
   TemplateRequestError,
   type TemplateEditorTransport,
@@ -101,6 +102,26 @@ describe('Template Editor canonical open boundary', () => {
 
     await expect(openTemplateEditor(TEMPLATE_ID, transport))
       .rejects.toBeInstanceOf(TemplateIntegrityError);
+  });
+
+  it('rejects a malformed current before exposing its baseline or rechecking readiness', async () => {
+    const designDsl = JSON.parse(CANONICAL_DESIGN) as Record<string, unknown>;
+    delete (designDsl.designRoot as Record<string, unknown>).children;
+    const canonicalDesignDsl = JSON.stringify(designDsl);
+    const contentHash = await templateContentHashOf(canonicalDesignDsl);
+    const current = `{"templateId":"${TEMPLATE_ID}","disclosure":"READABLE","revision":7,`
+      + '"staticSchema":{"schemaKey":"system-empty","versionTag":"v1"},'
+      + `"contentHash":"${contentHash}","readiness":"STALE","designDsl":${canonicalDesignDsl}}`;
+    const onBaseline = vi.fn();
+    const transport: TemplateEditorTransport = {
+      getCurrent: vi.fn().mockResolvedValue(current),
+      recheckCurrent: vi.fn(),
+    };
+
+    await expect(openTemplateEditor(TEMPLATE_ID, transport, onBaseline))
+      .rejects.toBeInstanceOf(TemplateIntegrityError);
+    expect(onBaseline).not.toHaveBeenCalled();
+    expect(transport.recheckCurrent).not.toHaveBeenCalled();
   });
 
   it('does not retain a visible baseline after recheck hides or deletes the Template', async () => {

@@ -5,6 +5,7 @@ import {
   type CanonicalTemplateBaseline,
   type CheckedTemplateReadiness,
   type CompatibilityEditorSession,
+  MalformedDesignDslWireError,
   type PersistedTemplateReadiness,
   type StructuredEditorSession,
 } from './template-editor-model';
@@ -144,6 +145,17 @@ export async function openTemplateEditor(
     if (baseline.templateId !== templateId) {
       throw new TemplateIntegrityError('Template current identity does not match the request');
     }
+    let pendingSession: StructuredEditorSession | CompatibilityEditorSession;
+    try {
+      pendingSession = createSessionFromBaseline(baseline, { state: 'checking' });
+    } catch (error) {
+      if (error instanceof MalformedDesignDslWireError) {
+        throw new TemplateIntegrityError(
+          `Template current contains malformed DesignDSL at ${error.path}`,
+        );
+      }
+      throw error;
+    }
     onBaseline?.(baseline);
 
     let checked: ReadinessRecheckIdentity;
@@ -157,10 +169,13 @@ export async function openTemplateEditor(
       }
       if (isAbort(error)) throw error;
       if (isReadinessUnavailable(error)) {
-        return createSessionFromBaseline(baseline, {
-          state: 'unavailable',
-          message: '权威重检暂不可用；可信 current 仍可只读查看。',
-        });
+        return {
+          ...pendingSession,
+          readiness: {
+            state: 'unavailable',
+            message: '权威重检暂不可用；可信 current 仍可只读查看。',
+          },
+        };
       }
       throw error;
     }
@@ -177,10 +192,10 @@ export async function openTemplateEditor(
     ) {
       continue;
     }
-    return createSessionFromBaseline(baseline, {
-      state: 'checked',
-      value: checked.readiness,
-    });
+    return {
+      ...pendingSession,
+      readiness: { state: 'checked', value: checked.readiness },
+    };
   }
   throw new TemplateCurrentDriftError();
 }

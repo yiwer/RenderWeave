@@ -3,6 +3,8 @@ import { parse } from 'lossless-json';
 import {
   createSessionFromBaseline,
   type CanonicalTemplateBaseline,
+  type EditorReadiness,
+  MalformedDesignDslWireError,
   type StructuredEditorSession,
 } from './template-editor-model';
 import { canonicalStringifyWorkingValue, isCanonicalDirty } from './template-editor-session';
@@ -278,13 +280,13 @@ export async function loadTemplateRecovery(
 
   const parsedDraft = parseCanonicalRecord(candidate.draftCanonical);
   if (parsedDraft === null) return invalid('DRAFT_NOT_CANONICAL');
-  const compatibilityProbe = createSessionFromBaseline({
+  const compatibilityProbe = createStructuredRecoveryProbe({
     ...current,
     canonicalDesignDsl: candidate.draftCanonical,
     contentHash: candidate.draftContentHash,
     designDsl: parsedDraft,
   }, { state: 'checking' });
-  if (compatibilityProbe.mode !== 'structured') return invalid('DRAFT_UNSUPPORTED');
+  if (compatibilityProbe === null) return invalid('DRAFT_UNSUPPORTED');
   if (await templateContentHashOf(candidate.draftCanonical) !== candidate.draftContentHash) {
     return invalid('DRAFT_HASH_MISMATCH');
   }
@@ -351,13 +353,13 @@ export function restoreStructuredSessionFromRecovery(
   }
   const designDsl = parseCanonicalRecord(record.draftCanonical);
   if (designDsl === null) return { state: 'invalid', reason: 'DRAFT_UNSUPPORTED' };
-  const draftProbe = createSessionFromBaseline({
+  const draftProbe = createStructuredRecoveryProbe({
     ...current.baseline,
     canonicalDesignDsl: record.draftCanonical,
     contentHash: record.draftContentHash,
     designDsl,
   }, current.readiness);
-  if (draftProbe.mode !== 'structured') {
+  if (draftProbe === null) {
     return { state: 'invalid', reason: 'DRAFT_UNSUPPORTED' };
   }
   const session: StructuredEditorSession = Object.freeze({
@@ -368,6 +370,19 @@ export function restoreStructuredSessionFromRecovery(
   });
   if (!isCanonicalDirty(session)) return { state: 'invalid', reason: 'DRAFT_NOT_DIRTY' };
   return { state: 'restored', session };
+}
+
+function createStructuredRecoveryProbe(
+  baseline: CanonicalTemplateBaseline,
+  readiness: EditorReadiness,
+): StructuredEditorSession | null {
+  try {
+    const probe = createSessionFromBaseline(baseline, readiness);
+    return probe.mode === 'structured' ? probe : null;
+  } catch (error) {
+    if (error instanceof MalformedDesignDslWireError) return null;
+    throw error;
+  }
 }
 
 export function recoveryOverwriteOffer(
