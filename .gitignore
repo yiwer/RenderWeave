@@ -5,6 +5,8 @@ target/
 .kotlin
 
 ### RenderWeave generated/local ###
+.scratch/chrome-cdp-*/
+.scratch/chrome-profile-*/
 node_modules/
 web/dist/
 web/playwright-report/

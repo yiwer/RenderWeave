@@ -5,7 +5,7 @@
 ## 工作流
 
 ```text
-读取当前 ticket、spec、CONTEXT.md 与相关 ADR
+读取当前 ticket、spec、CONTEXT-MAP.md 路由到的领域分片与相关 ADR
 → 必要时 grill-with-docs / to-spec
 → to-tickets 提议拆分并在用户批准后发布依赖与 frontier
 → implement：在约定 seam 取得 RED、实现、运行局部检查与受影响回归
@@ -30,7 +30,7 @@
 - 只有共享合同、迁移、app wiring、跨语言协议或发布风险需要时才扩大验证范围。
 - 受影响 gate 是本仓库对 `implement` 收尾完整测试的具体绑定；只有影响跨全仓时才运行 `full`。
 - code review 的 Standards 与 Spec 发现分开处理；为满足其 fixed-point 合同，先建本地 candidate commit，阻断问题修复并 amend 后才把票记为 done。
-- 提交说明以功能结果为中心。不要为证据等级、人工标签、checkpoint 或 NOTES 广播增加工作。
+- 提交说明以功能结果为中心。不要为证据等级、人工标签、checkpoint 或历史日志广播增加工作。
 
 ## 持续 goal
 

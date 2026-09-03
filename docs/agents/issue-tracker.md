@@ -43,7 +43,7 @@ Historical Template tickets retain `resolved`, `automated_verified`, `claimed` a
 - When a skill says “publish to the issue tracker”, create one ticket file under the relevant `.scratch/<effort>/issues/` directory.
 - When a skill says “fetch the relevant ticket”, read the referenced file and its blockers.
 - `to-tickets` owns decomposition and user approval; `implement` owns one ready ticket; `code-review` follows the fixed-point order in `plans/execution-protocol.md`.
-- `map.md` may remain a navigation index for large efforts, but it is not a mandatory status ledger. `NOTES.md`, checkpoint files and `.sdlc/evidence/` updates are not ticket completion requirements.
+- `map.md` may remain a navigation index for large efforts, but it is not a mandatory status ledger. Historical logs (the archived `docs/history/NOTES-2026-09-03.md`), checkpoint files and `.sdlc/evidence/` updates are not ticket completion requirements and need no new entries.
 - Do not create GitHub/GitLab issues, comments, labels or pull requests without explicit authorization.
 
 ## Template v1

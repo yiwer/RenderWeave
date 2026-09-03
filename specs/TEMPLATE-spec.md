@@ -1,6 +1,6 @@
 # Feature spec: ____
 
-> Prefer `to-spec` to synthesize this document from an already discussed feature. Use exact vocabulary from `CONTEXT.md` and respect relevant ADRs.
+> Prefer `to-spec` to synthesize this document from an already discussed feature. Use exact vocabulary from the routed `CONTEXT-MAP.md` / `docs/context/` slices and respect relevant ADRs.
 
 Status: proposed / approved / superseded
 
