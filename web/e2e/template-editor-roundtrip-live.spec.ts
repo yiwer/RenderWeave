@@ -80,6 +80,13 @@ interface AbsoluteGeometry {
   heightMm: number;
 }
 
+interface ProjectedInlineRect {
+  left: string;
+  top: string;
+  width: string;
+  height: string;
+}
+
 test.describe('complete DesignDSL real Template round trip', () => {
   test.skip(!LIVE, 'requires the explicit local Template roundtrip environment');
 
@@ -165,7 +172,7 @@ test.describe('complete DesignDSL real Template round trip', () => {
     ))).toEqual([]);
   });
 
-  test('authors Frame, Stack and Rect through the production shell and reloads their exact tree and geometry', async ({ page }) => {
+  test('authors Frame, Stack, Grid and Rect through the production shell and reloads exact layout', async ({ page }) => {
     test.setTimeout(90_000);
     const browserErrors = captureBrowserErrors(page);
     await page.setViewportSize({ width: 1280, height: 720 });
@@ -204,6 +211,27 @@ test.describe('complete DesignDSL real Template round trip', () => {
     const stackRow = page.getByRole('treeitem', { name: /堆叠 1/ });
     const stackId = requiredAttribute(await stackRow.getAttribute('data-template-editor-node-id'));
 
+    await frameRow.click();
+    await page.getByRole('button', { name: '容器' }).click();
+    await page.getByRole('button', { name: '添加网格容器' }).click();
+    const gridRow = page.getByRole('treeitem', { name: /网格 1/ });
+    const gridId = requiredAttribute(await gridRow.getAttribute('data-template-editor-node-id'));
+    await page.getByLabel('列轨道', { exact: true }).fill('20, 1*');
+    await page.getByLabel('列轨道', { exact: true }).press('Enter');
+    await page.getByLabel('列间距', { exact: true }).fill('2');
+    await page.getByLabel('列间距', { exact: true }).press('Enter');
+
+    await page.getByRole('button', { name: '元素' }).click();
+    await page.getByRole('button', { name: '添加矩形' }).click();
+    const gridRectRow = page.getByRole('treeitem', { name: /矩形 3/ });
+    const gridRectId = requiredAttribute(
+      await gridRectRow.getAttribute('data-template-editor-node-id'),
+    );
+    await page.getByLabel('宽度模式', { exact: true }).selectOption('FILL');
+    await page.getByLabel('网格列', { exact: true }).fill('1');
+    await page.getByLabel('网格列', { exact: true }).press('Enter');
+    const gridRectProjection = await readProjectedInlineRect(page, gridRectId);
+
     await firstRectRow.press('F2');
     const rename = page.getByRole('textbox', { name: '重命名 矩形 1' });
     await rename.fill('堆叠项');
@@ -212,8 +240,7 @@ test.describe('complete DesignDSL real Template round trip', () => {
     await expect(renamedRectRow).toHaveAttribute('data-template-editor-node-id', firstRectId);
 
     // Rect 2 is still ABSOLUTE under Frame here. Exercise direct canvas geometry
-    // before moving the other Rect into Stack, whose STACK placement is not part
-    // of the T222 browser layout slice.
+    // before moving the other Rect into the live Stack layout.
     await secondRectRow.click();
     const selection = page.locator(`[data-template-canvas-selection="${secondRectId}"]`);
     await expect(selection).toBeVisible();
@@ -241,6 +268,7 @@ test.describe('complete DesignDSL real Template round trip', () => {
     await page.getByRole('button', { name: '结构' }).click();
     await dragTreeNodeInto(renamedRectRow, stackRow);
     await expect(page.getByRole('treeitem', { name: /堆叠项/ })).toHaveAttribute('aria-level', '4');
+    const stackedRectProjection = await readProjectedInlineRect(page, firstRectId);
 
     await secondRectRow.click({ button: 'right' });
     const layerMenu = page.getByRole('menu', { name: '矩形 2 操作' });
@@ -260,6 +288,8 @@ test.describe('complete DesignDSL real Template round trip', () => {
     expectCoreAuthoringResult(savedBody, {
       frameId,
       stackId,
+      gridId,
+      gridRectId,
       stackedRectId: firstRectId,
       absoluteRectId: secondRectId,
       absoluteGeometry: resizedGeometry,
@@ -272,6 +302,10 @@ test.describe('complete DesignDSL real Template round trip', () => {
     expect((await reloadResponse).status()).toBe(200);
     await expect(page.getByText('revision 1', { exact: true })).toBeVisible();
     await expect(page.getByRole('treeitem', { name: /堆叠项/ })).toBeVisible();
+    await expect(page.getByRole('treeitem', { name: /网格 1/ })).toBeVisible();
+    await expect.poll(() => readProjectedInlineRect(page, firstRectId))
+      .toEqual(stackedRectProjection);
+    await expect.poll(() => readProjectedInlineRect(page, gridRectId)).toEqual(gridRectProjection);
     const reloadedAbsoluteRect = page.getByRole('treeitem', { name: /矩形 2/ });
     await reloadedAbsoluteRect.click();
     await expect(page.locator(
@@ -287,6 +321,8 @@ test.describe('complete DesignDSL real Template round trip', () => {
     expectCoreAuthoringResult(reloaded, {
       frameId,
       stackId,
+      gridId,
+      gridRectId,
       stackedRectId: firstRectId,
       absoluteRectId: secondRectId,
       absoluteGeometry: resizedGeometry,
@@ -732,6 +768,23 @@ async function readSelectedAbsoluteGeometry(page: Page): Promise<AbsoluteGeometr
   };
 }
 
+async function readProjectedInlineRect(
+  page: Page,
+  nodeId: string,
+): Promise<ProjectedInlineRect> {
+  return page.locator(
+    `[data-template-canvas-authored-node][data-template-canvas-node-id="${nodeId}"]`,
+  ).evaluate((element) => {
+    const style = (element as HTMLElement).style;
+    return {
+      left: style.left,
+      top: style.top,
+      width: style.width,
+      height: style.height,
+    };
+  });
+}
+
 async function numericInputValue(page: Page, label: string): Promise<number> {
   const raw = await page.getByLabel(label, { exact: true }).inputValue();
   const value = Number(raw);
@@ -744,6 +797,8 @@ function expectCoreAuthoringResult(
   expected: {
     frameId: string;
     stackId: string;
+    gridId: string;
+    gridRectId: string;
     stackedRectId: string;
     absoluteRectId: string;
     absoluteGeometry: AbsoluteGeometry;
@@ -775,6 +830,7 @@ function expectCoreAuthoringResult(
   });
   expect(frame.children?.map((child) => child.nodeId)).toEqual([
     expected.stackId,
+    expected.gridId,
     expected.absoluteRectId,
   ]);
 
@@ -810,7 +866,45 @@ function expectCoreAuthoringResult(
     },
   });
 
-  expect(authoredNode(frame.children?.[1], 'absolute Rect child')).toMatchObject({
+  const grid = authoredNode(frame.children?.[1], 'Grid child');
+  expect(grid).toMatchObject({
+    nodeId: expected.gridId,
+    kind: 'grid',
+    displayName: '网格 1',
+    placement: {
+      type: 'ABSOLUTE',
+      xMm: 25.4,
+      yMm: 25.4,
+      widthMode: 'FIXED',
+      widthMm: 80,
+      heightMode: 'FIXED',
+      heightMm: 60,
+    },
+    padding: { topMm: 0, rightMm: 0, bottomMm: 0, leftMm: 0 },
+    rows: [{ type: 'FRACTION', weight: 1 }],
+    columns: [
+      { type: 'FIXED', valueMm: 20 },
+      { type: 'FRACTION', weight: 1 },
+    ],
+    rowGapMm: 0,
+    columnGapMm: 2,
+  });
+  expect(grid.children).toHaveLength(1);
+  expect(authoredNode(grid.children?.[0], 'Grid Rect child')).toMatchObject({
+    nodeId: expected.gridRectId,
+    kind: 'rect',
+    displayName: '矩形 3',
+    placement: {
+      type: 'GRID',
+      row: 0,
+      column: 1,
+      widthMode: 'FILL',
+      heightMode: 'FIXED',
+      heightMm: 25.4,
+    },
+  });
+
+  expect(authoredNode(frame.children?.[2], 'absolute Rect child')).toMatchObject({
     nodeId: expected.absoluteRectId,
     kind: 'rect',
     displayName: '矩形 2',

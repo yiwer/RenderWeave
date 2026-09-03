@@ -1,4 +1,4 @@
-import { Maximize2, Minus, Plus } from 'lucide-react';
+import { AlertTriangle, Maximize2, Minus, Plus } from 'lucide-react';
 import {
   useCallback,
   useEffect,
@@ -36,6 +36,12 @@ import {
 } from './template-editor-assets';
 import { TemplateEditorVisualNode } from './TemplateEditorVisualNode';
 import { isTemplateEditorVisualNodeKind } from './template-editor-visual-projection';
+import {
+  projectTemplateDefiniteLayout,
+  type TemplateDefiniteLayoutEntry,
+  type TemplateEditorLayoutProblem,
+  type TemplateParentLayout,
+} from './template-editor-definite-layout';
 
 export const CANVAS_PX_PER_MM = 4;
 export const TEMPLATE_NODE_DRAG_MIME = 'application/x-renderweave-template-node-kind';
@@ -44,6 +50,7 @@ const FIT_PADDING = 48;
 
 interface AuthoredCanvasNode {
   readonly nodeId: string;
+  readonly parentNodeId: string | null;
   readonly kind: string;
   readonly displayName: string;
   readonly xMm: number;
@@ -54,6 +61,9 @@ interface AuthoredCanvasNode {
   readonly yPx: number;
   readonly widthPx: number;
   readonly heightPx: number;
+  readonly parentLayout: TemplateParentLayout;
+  readonly widthMode: string;
+  readonly heightMode: string;
   readonly fill: string | null;
   readonly stroke: string | null;
   readonly strokeWidthPx: number;
@@ -70,8 +80,8 @@ export type TemplateEditorCanvasReorderOperation = 'front' | 'forward' | 'backwa
 export interface TemplateEditorCanvasGeometry {
   readonly xMm?: number;
   readonly yMm?: number;
-  readonly widthMm: number;
-  readonly heightMm: number;
+  readonly widthMm?: number;
+  readonly heightMm?: number;
 }
 
 export interface TemplateEditorCanvasProps {
@@ -96,7 +106,7 @@ export interface TemplateEditorCanvasProps {
 }
 
 export type TemplateCanvasDropKind =
-  | 'frame' | 'stack' | 'text' | 'image' | 'rect' | 'ellipse' | 'line'
+  | 'group' | 'frame' | 'stack' | 'grid' | 'text' | 'image' | 'rect' | 'ellipse' | 'line'
   | 'shape' | 'polygon' | 'polyline' | 'path' | 'qrCode' | 'barcode';
 
 interface TemplateEditorCanvasImageResource {
@@ -138,12 +148,16 @@ interface CanvasGeometryInteraction {
   readonly handle?: CanvasResizeHandle;
   readonly startClientX: number;
   readonly startClientY: number;
+  readonly descendantNodeIds: ReadonlySet<string>;
 }
 
 interface CanvasGeometryPreview {
   readonly nodeId: string;
+  readonly mode: 'move' | 'resize';
   readonly rect: CanvasRect;
   readonly geometry: TemplateEditorCanvasGeometry;
+  readonly descendantNodeIds: ReadonlySet<string>;
+  readonly translation: Readonly<{ x: number; y: number }>;
 }
 
 interface CanvasContextMenuState {
@@ -182,10 +196,10 @@ export function TemplateEditorCanvas({
     width: widthMm * CANVAS_PX_PER_MM,
     height: heightMm * CANVAS_PX_PER_MM,
   }), [heightMm, widthMm]);
-  const authoredNodes = useMemo(
-    () => projectAuthoredCanvasNodes(canvas, CANVAS_PX_PER_MM),
-    [canvas],
-  );
+  const layout = useMemo(() => projectTemplateDefiniteLayout(canvas), [canvas]);
+  const authoredNodes = useMemo(() => layout.state === 'ready'
+    ? layout.entries.slice(1).map((entry) => projectAuthoredCanvasNode(entry, CANVAS_PX_PER_MM))
+    : [], [layout]);
   const selectedIds = useMemo(
     () => new Set(selectedNodeIds ?? [selectedNodeId]),
     [selectedNodeId, selectedNodeIds],
@@ -424,13 +438,11 @@ export function TemplateEditorCanvas({
       };
     return {
       nodeId: interaction.node.nodeId,
+      mode: interaction.mode,
       rect,
-      geometry: {
-        xMm: interaction.node.xMm + (rect.x - startRect.x) / CANVAS_PX_PER_MM,
-        yMm: interaction.node.yMm + (rect.y - startRect.y) / CANVAS_PX_PER_MM,
-        widthMm: rect.width / CANVAS_PX_PER_MM,
-        heightMm: rect.height / CANVAS_PX_PER_MM,
-      },
+      geometry: authoredGeometryAtRect(interaction, startRect, rect),
+      descendantNodeIds: interaction.descendantNodeIds,
+      translation: { x: rect.x - startRect.x, y: rect.y - startRect.y },
     };
   };
 
@@ -440,6 +452,7 @@ export function TemplateEditorCanvas({
     handle?: CanvasResizeHandle,
   ) => {
     if (disabled || event.button !== 0 || activeTool !== 'select' || spacePressedRef.current) return;
+    if (handle && isLayoutContainerKind(node.kind)) return;
     closeContextMenu(false);
     event.preventDefault();
     event.stopPropagation();
@@ -454,6 +467,7 @@ export function TemplateEditorCanvas({
       handle,
       startClientX: event.clientX,
       startClientY: event.clientY,
+      descendantNodeIds: projectDescendantNodeIds(authoredNodes, node.nodeId),
     };
     geometryInteractionRef.current = interaction;
     setGeometryPreview(geometryAtPointer(interaction, event.clientX, event.clientY));
@@ -490,7 +504,9 @@ export function TemplateEditorCanvas({
       geometryInteractionRef.current = null;
       releaseGeometryPointerCapture(interaction);
       setGeometryPreview(null);
-      if (!disabled) {
+      if (!disabled
+        && !(interaction.mode === 'move' && interaction.node.parentLayout !== 'ABSOLUTE')
+        && hasCanvasGeometry(finalPreview.geometry)) {
         onGeometryCommit?.(interaction.node.nodeId, finalPreview.geometry);
       }
       return;
@@ -594,6 +610,12 @@ export function TemplateEditorCanvas({
       <p className="sr-only">
         画布是非权威本地投影。滚轮围绕指针缩放；空格加拖拽或鼠标中键平移。结构树提供完整键盘选择路径。
       </p>
+      {layout.state === 'invalid' ? (
+        <p className="te-canvas-layout-problem" role="alert">
+          <AlertTriangle aria-hidden="true" size={16} />
+          <span>{layoutProblemMessage(layout.problems[0])}</span>
+        </p>
+      ) : null}
       <div className="te-canvas-ruler is-horizontal" aria-hidden="true">
         <span>0</span><span>{formatNumber(widthMm / 2)}</span><span>{formatNumber(widthMm)} mm</span>
       </div>
@@ -637,9 +659,7 @@ export function TemplateEditorCanvas({
           }}
         >
           {authoredNodes.map((node) => {
-            const displayRect = geometryPreview?.nodeId === node.nodeId
-              ? geometryPreview.rect
-              : { x: node.xPx, y: node.yPx, width: node.widthPx, height: node.heightPx };
+            const displayRect = previewCanvasNodeRect(node, geometryPreview);
             return (
               <div
                 key={node.nodeId}
@@ -686,9 +706,7 @@ export function TemplateEditorCanvas({
         <div className="te-canvas-editor-overlay" data-template-canvas-editor-overlay="">
           {authoredNodes.filter((node) => selectedIds.has(node.nodeId)).map((node) => {
             const isPrimary = node.nodeId === selectedNodeId;
-            const displayRect = geometryPreview?.nodeId === node.nodeId
-              ? geometryPreview.rect
-              : { x: node.xPx, y: node.yPx, width: node.widthPx, height: node.heightPx };
+            const displayRect = previewCanvasNodeRect(node, geometryPreview);
             return (
               <div
                 key={node.nodeId}
@@ -709,13 +727,13 @@ export function TemplateEditorCanvas({
                 {isPrimary ? (
                   <>
                     <span className="te-canvas-node-label">{node.displayName}</span>
-                    {RESIZE_HANDLES.map((handle) => (
+                    {!isLayoutContainerKind(node.kind) ? RESIZE_HANDLES.map((handle) => (
                       <i
                         key={handle}
                         data-resize-handle={handle}
                         onPointerDown={(event) => beginGeometry(event, node, handle)}
                       />
-                    ))}
+                    )) : null}
                   </>
                 ) : null}
               </div>
@@ -817,6 +835,69 @@ export function TemplateEditorCanvas({
   );
 }
 
+function previewCanvasNodeRect(
+  node: AuthoredCanvasNode,
+  preview: CanvasGeometryPreview | null,
+): CanvasRect {
+  if (preview?.nodeId === node.nodeId) return preview.rect;
+  const base = { x: node.xPx, y: node.yPx, width: node.widthPx, height: node.heightPx };
+  if (preview?.mode !== 'move' || !preview.descendantNodeIds.has(node.nodeId)) return base;
+  return {
+    ...base,
+    x: base.x + preview.translation.x,
+    y: base.y + preview.translation.y,
+  };
+}
+
+function projectDescendantNodeIds(
+  nodes: readonly AuthoredCanvasNode[],
+  rootNodeId: string,
+): ReadonlySet<string> {
+  const subtree = new Set([rootNodeId]);
+  for (const node of nodes) {
+    if (node.parentNodeId !== null && subtree.has(node.parentNodeId)) subtree.add(node.nodeId);
+  }
+  subtree.delete(rootNodeId);
+  return subtree;
+}
+
+function isLayoutContainerKind(kind: string): boolean {
+  return kind === 'group' || kind === 'frame' || kind === 'stack' || kind === 'grid';
+}
+
+function authoredGeometryAtRect(
+  interaction: CanvasGeometryInteraction,
+  startRect: CanvasRect,
+  rect: CanvasRect,
+): TemplateEditorCanvasGeometry {
+  const node = interaction.node;
+  if (interaction.mode === 'move') {
+    if (node.parentLayout !== 'ABSOLUTE') return {};
+    return {
+      xMm: node.xMm + (rect.x - startRect.x) / CANVAS_PX_PER_MM,
+      yMm: node.yMm + (rect.y - startRect.y) / CANVAS_PX_PER_MM,
+      ...(node.widthMode === 'FIXED' ? { widthMm: rect.width / CANVAS_PX_PER_MM } : {}),
+      ...(node.heightMode === 'FIXED' ? { heightMm: rect.height / CANVAS_PX_PER_MM } : {}),
+    };
+  }
+
+  return {
+    ...(node.parentLayout === 'ABSOLUTE' && node.widthMode === 'FIXED'
+      ? { xMm: node.xMm + (rect.x - startRect.x) / CANVAS_PX_PER_MM }
+      : {}),
+    ...(node.parentLayout === 'ABSOLUTE' && node.heightMode === 'FIXED'
+      ? { yMm: node.yMm + (rect.y - startRect.y) / CANVAS_PX_PER_MM }
+      : {}),
+    ...(node.widthMode === 'FIXED' ? { widthMm: rect.width / CANVAS_PX_PER_MM } : {}),
+    ...(node.heightMode === 'FIXED' ? { heightMm: rect.height / CANVAS_PX_PER_MM } : {}),
+  };
+}
+
+function hasCanvasGeometry(geometry: TemplateEditorCanvasGeometry): boolean {
+  return geometry.xMm !== undefined || geometry.yMm !== undefined
+    || geometry.widthMm !== undefined || geometry.heightMm !== undefined;
+}
+
 /**
  * QR has one physical side length, not two independently authored dimensions.
  * Corner handles keep the opposite corner fixed and use the dominant pointer axis;
@@ -885,68 +966,59 @@ function projectZOrderAvailability(
   return result;
 }
 
-function projectAuthoredCanvasNodes(
-  canvas: Record<string, unknown> | null,
+function projectAuthoredCanvasNode(
+  entry: TemplateDefiniteLayoutEntry,
   pixelsPerMm: number,
-): AuthoredCanvasNode[] {
-  if (!canvas || !Array.isArray(canvas.children)) return [];
-  const projected: AuthoredCanvasNode[] = [];
-  const visit = (children: unknown[], originXmm: number, originYmm: number) => {
-    for (const childValue of children) {
-      const child = objectOrNull(childValue);
-      const placement = objectOrNull(child?.placement);
-      if (!child || !placement || placement.type !== 'ABSOLUTE'
-        || placement.widthMode !== 'FIXED' || placement.heightMode !== 'FIXED') {
-        continue;
-      }
-      const xMm = finiteTemplateNumber(placement.xMm);
-      const yMm = finiteTemplateNumber(placement.yMm);
-      const widthMm = positiveTemplateNumber(placement.widthMm);
-      const heightMm = positiveTemplateNumber(placement.heightMm);
-      if (xMm === null || yMm === null || widthMm === null || heightMm === null
-        || typeof child.nodeId !== 'string' || typeof child.kind !== 'string') {
-        continue;
-      }
-      const x = originXmm + xMm;
-      const y = originYmm + yMm;
-      const fill = objectOrNull(child.fill);
-      const stroke = objectOrNull(child.stroke);
-      const transform = objectOrNull(child.transform);
-      const scaleX = finiteTemplateNumber(transform?.scaleX) ?? 1;
-      const scaleY = finiteTemplateNumber(transform?.scaleY) ?? 1;
-      const rotation = finiteTemplateNumber(transform?.rotationDeg) ?? 0;
-      const originX = finiteTemplateNumber(transform?.originX) ?? 0.5;
-      const originY = finiteTemplateNumber(transform?.originY) ?? 0.5;
-      projected.push({
-        nodeId: child.nodeId,
-        kind: child.kind,
-        displayName: typeof child.displayName === 'string' && child.displayName.length > 0
-          ? child.displayName
-          : child.kind,
-        xMm,
-        yMm,
-        widthMm,
-        heightMm,
-        xPx: x * pixelsPerMm,
-        yPx: y * pixelsPerMm,
-        widthPx: widthMm * pixelsPerMm,
-        heightPx: heightMm * pixelsPerMm,
-        fill: colorValue(fill?.color),
-        stroke: colorValue(stroke?.color),
-        strokeWidthPx: (positiveTemplateNumber(stroke?.widthMm) ?? 0.25) * pixelsPerMm,
-        borderRadius: cornerRadiusValue(child.cornerRadii, pixelsPerMm, child.kind),
-        opacity: boundedOpacity(child.opacity),
-        transform: rotation !== 0 || scaleX !== 1 || scaleY !== 1
-          ? `rotate(${rotation}deg) scale(${scaleX}, ${scaleY})`
-          : undefined,
-        transformOrigin: `${originX * 100}% ${originY * 100}%`,
-        value: child,
-      });
-      if (Array.isArray(child.children)) visit(child.children, x, y);
-    }
+): AuthoredCanvasNode {
+  const child = entry.value;
+  const placement = objectOrNull(child.placement);
+  const fill = objectOrNull(child.fill);
+  const stroke = objectOrNull(child.stroke);
+  const transform = objectOrNull(child.transform);
+  const scaleX = finiteTemplateNumber(transform?.scaleX) ?? 1;
+  const scaleY = finiteTemplateNumber(transform?.scaleY) ?? 1;
+  const rotation = finiteTemplateNumber(transform?.rotationDeg) ?? 0;
+  const originX = finiteTemplateNumber(transform?.originX) ?? 0.5;
+  const originY = finiteTemplateNumber(transform?.originY) ?? 0.5;
+  return {
+    nodeId: entry.nodeId,
+    parentNodeId: entry.parentNodeId,
+    kind: entry.kind,
+    displayName: typeof child.displayName === 'string' && child.displayName.length > 0
+      ? child.displayName
+      : entry.kind,
+    xMm: finiteTemplateNumber(placement?.xMm) ?? entry.localRect.x,
+    yMm: finiteTemplateNumber(placement?.yMm) ?? entry.localRect.y,
+    widthMm: entry.worldRect.width,
+    heightMm: entry.worldRect.height,
+    xPx: entry.worldRect.x * pixelsPerMm,
+    yPx: entry.worldRect.y * pixelsPerMm,
+    widthPx: entry.worldRect.width * pixelsPerMm,
+    heightPx: entry.worldRect.height * pixelsPerMm,
+    parentLayout: entry.parentLayout,
+    widthMode: typeof placement?.widthMode === 'string' ? placement.widthMode : '',
+    heightMode: typeof placement?.heightMode === 'string' ? placement.heightMode : '',
+    fill: colorValue(fill?.color),
+    stroke: colorValue(stroke?.color),
+    strokeWidthPx: (positiveTemplateNumber(stroke?.widthMm) ?? 0.25) * pixelsPerMm,
+    borderRadius: cornerRadiusValue(child.cornerRadii, pixelsPerMm, entry.kind),
+    opacity: boundedOpacity(child.opacity),
+    transform: rotation !== 0 || scaleX !== 1 || scaleY !== 1
+      ? `rotate(${rotation}deg) scale(${scaleX}, ${scaleY})`
+      : undefined,
+    transformOrigin: `${originX * 100}% ${originY * 100}%`,
+    value: child,
   };
-  visit(canvas.children, 0, 0);
-  return projected;
+}
+
+function layoutProblemMessage(problem: TemplateEditorLayoutProblem | undefined): string {
+  if (!problem) return '布局无法确定；未生成任何临时几何。';
+  const reason = problem.code === 'EDITOR_LAYOUT_CYCLE'
+    ? '布局约束形成循环'
+    : problem.code === 'EDITOR_LAYOUT_INTRINSIC_UNSUPPORTED'
+      ? '当前编辑器不能确定 HUG_CONTENT 的固有尺寸'
+      : '布局属性无效';
+  return `${reason}：${problem.nodeId} · ${problem.property}`;
 }
 
 interface CanvasVisualResourceState {
@@ -1110,7 +1182,7 @@ function assetResolutionWarning(resolution: TemplateAssetResolution, label: stri
 }
 
 const TEMPLATE_CANVAS_DROP_KINDS: ReadonlySet<string> = new Set([
-  'frame', 'stack', 'text', 'image', 'rect', 'ellipse', 'line', 'shape',
+  'group', 'frame', 'stack', 'grid', 'text', 'image', 'rect', 'ellipse', 'line', 'shape',
   'polygon', 'polyline', 'path', 'qrCode', 'barcode',
 ]);
 

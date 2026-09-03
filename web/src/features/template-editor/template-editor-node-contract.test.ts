@@ -4,6 +4,7 @@ import {
   expectedTemplateChildPlacement,
   isCoreTemplateAuthoringKind,
   isCoreTemplateAuthoringParentKind,
+  isTemplateNodeSizeModeAllowed,
   isTemplateDesignContainerKind,
   TEMPLATE_DESIGN_NODE_KINDS,
 } from './template-editor-node-contract';
@@ -21,17 +22,33 @@ describe('Template Editor node contract projection', () => {
     expect(expectedTemplateChildPlacement('unknown')).toBeNull();
   });
 
-  it('distinguishes complete DesignDSL containers from the current core command slice', () => {
+  it('includes Group and Grid in the core container command slice', () => {
     expect(isTemplateDesignContainerKind('grid')).toBe(true);
-    expect(isCoreTemplateAuthoringKind('grid')).toBe(false);
+    expect(isCoreTemplateAuthoringKind('group')).toBe(true);
+    expect(isCoreTemplateAuthoringKind('grid')).toBe(true);
     for (const kind of [
       'text', 'image', 'rect', 'ellipse', 'line', 'polygon',
       'polyline', 'path', 'qrCode', 'barcode',
     ]) {
       expect(isCoreTemplateAuthoringKind(kind)).toBe(true);
     }
+    expect(isCoreTemplateAuthoringParentKind('group')).toBe(true);
     expect(isCoreTemplateAuthoringParentKind('stack')).toBe(true);
+    expect(isCoreTemplateAuthoringParentKind('grid')).toBe(true);
     expect(isCoreTemplateAuthoringParentKind('rect')).toBe(false);
-    expect(isCoreTemplateAuthoringParentKind('grid')).toBe(false);
+  });
+
+  it('projects the formal node-kind size-mode capability matrix', () => {
+    expect(isTemplateNodeSizeModeAllowed('group', 'HUG_CONTENT')).toBe(true);
+    expect(isTemplateNodeSizeModeAllowed('group', 'FIXED')).toBe(false);
+    expect(isTemplateNodeSizeModeAllowed('rect', 'FILL')).toBe(true);
+    expect(isTemplateNodeSizeModeAllowed('rect', 'HUG_CONTENT')).toBe(false);
+    expect(isTemplateNodeSizeModeAllowed('qrCode', 'FIXED')).toBe(true);
+    expect(isTemplateNodeSizeModeAllowed('qrCode', 'FILL')).toBe(true);
+    expect(isTemplateNodeSizeModeAllowed('qrCode', 'HUG_CONTENT')).toBe(false);
+    expect(isTemplateNodeSizeModeAllowed('grid', 'FIXED')).toBe(true);
+    expect(isTemplateNodeSizeModeAllowed('grid', 'HUG_CONTENT')).toBe(true);
+    expect(isTemplateNodeSizeModeAllowed('grid', 'FILL')).toBe(true);
+    expect(isTemplateNodeSizeModeAllowed('canvas', 'FIXED')).toBe(false);
   });
 });

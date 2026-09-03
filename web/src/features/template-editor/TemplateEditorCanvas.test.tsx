@@ -399,6 +399,287 @@ describe('Template Editor Canvas interaction surface', () => {
     expect(authored?.style.top).toBe('252px');
   });
 
+  it.each(['group', 'frame', 'stack', 'grid'])(
+    'moves the complete projected %s subtree during an ABSOLUTE preview and hides unsafe resize handles',
+    (kind) => {
+      const { workingCopy, nodes } = containerCanvasFixture(kind);
+      const onGeometryCommit = vi.fn();
+      const view = render(<TemplateEditorCanvas
+        workingCopy={workingCopy}
+        nodes={nodes}
+        selectedNodeId="container"
+        tool="select"
+        onSelectNode={vi.fn()}
+        onGeometryCommit={onGeometryCommit}
+      />);
+      const viewport = screen.getByLabelText('本地草稿画布视口');
+      const container = authoredCanvasNode(view.container, 'container');
+      const child = authoredCanvasNode(view.container, 'container-child');
+      const selection = view.container.querySelector<HTMLElement>(
+        '[data-template-canvas-selection="container"]',
+      );
+      const start = {
+        containerX: Number.parseFloat(container?.style.left ?? ''),
+        containerY: Number.parseFloat(container?.style.top ?? ''),
+        childX: Number.parseFloat(child?.style.left ?? ''),
+        childY: Number.parseFloat(child?.style.top ?? ''),
+      };
+
+      expect(selection?.querySelectorAll('[data-resize-handle]')).toHaveLength(0);
+      fireEvent.pointerDown(selection as HTMLElement, {
+        button: 0, pointerId: 110, clientX: 300, clientY: 300,
+      });
+      fireEvent.pointerMove(viewport, { pointerId: 110, clientX: 320, clientY: 312 });
+      expect(container?.style.left).toBe(`${start.containerX + 20}px`);
+      expect(container?.style.top).toBe(`${start.containerY + 12}px`);
+      expect(child?.style.left).toBe(`${start.childX + 20}px`);
+      expect(child?.style.top).toBe(`${start.childY + 12}px`);
+      fireEvent.pointerUp(viewport, { pointerId: 110, clientX: 320, clientY: 312 });
+      expect(onGeometryCommit).toHaveBeenCalledTimes(1);
+      expect(onGeometryCommit).toHaveBeenCalledWith('container', expect.objectContaining({
+        xMm: 15,
+        yMm: 18,
+      }));
+    },
+  );
+
+  it('moves a managed-owned container subtree only ephemerally and restores it on pointerup', () => {
+    const child = fixedNode('managed-child', 'rect', '子项', 2, 3, 4, 5);
+    const managedFrame = {
+      ...fixedNode('managed-frame', 'frame', '受管框架', 0, 0, 20, 20),
+      placement: {
+        type: 'STACK', widthMode: 'FIXED', widthMm: 20,
+        heightMode: 'FIXED', heightMm: 20,
+      },
+      children: [child],
+    };
+    const stack = {
+      ...fixedNode('outer-stack', 'stack', '外层堆叠', 10, 20, 100, 40),
+      padding: { topMm: 0, rightMm: 0, bottomMm: 0, leftMm: 0 },
+      direction: 'ROW', gapMm: 0, justifyContent: 'START', alignItems: 'START',
+      children: [managedFrame],
+    };
+    const designRoot: Record<string, unknown> = {
+      nodeId: 'canvas', kind: 'canvas', displayName: '画布', widthMm: 210, heightMm: 297,
+      bindings: [], children: [stack],
+    };
+    const workingCopy: CanonicalDesignWorkingCopy = {
+      canonicalDesignDsl: '{}',
+      designDsl: {
+        dslVersion: 'renderweave-design/1.0',
+        expressionProfile: 'renderweave-expression/1.0',
+        definitions: [], designRoot,
+      },
+    };
+    const onGeometryCommit = vi.fn();
+    const view = render(<TemplateEditorCanvas
+      workingCopy={workingCopy}
+      nodes={projectNodes(designRoot)}
+      selectedNodeId="managed-frame"
+      tool="select"
+      onSelectNode={vi.fn()}
+      onGeometryCommit={onGeometryCommit}
+    />);
+    const viewport = screen.getByLabelText('本地草稿画布视口');
+    const container = authoredCanvasNode(view.container, 'managed-frame');
+    const descendant = authoredCanvasNode(view.container, 'managed-child');
+    const selection = view.container.querySelector<HTMLElement>(
+      '[data-template-canvas-selection="managed-frame"]',
+    );
+    const startContainer = { left: container?.style.left, top: container?.style.top };
+    const startDescendant = { left: descendant?.style.left, top: descendant?.style.top };
+
+    fireEvent.pointerDown(selection as HTMLElement, {
+      button: 0, pointerId: 111, clientX: 300, clientY: 300,
+    });
+    fireEvent.pointerMove(viewport, { pointerId: 111, clientX: 324, clientY: 316 });
+    expect(container?.style.left).toBe(`${Number.parseFloat(startContainer.left ?? '') + 24}px`);
+    expect(container?.style.top).toBe(`${Number.parseFloat(startContainer.top ?? '') + 16}px`);
+    expect(descendant?.style.left).toBe(`${Number.parseFloat(startDescendant.left ?? '') + 24}px`);
+    expect(descendant?.style.top).toBe(`${Number.parseFloat(startDescendant.top ?? '') + 16}px`);
+
+    fireEvent.pointerUp(viewport, { pointerId: 111, clientX: 324, clientY: 316 });
+    expect(container?.style.left).toBe(startContainer.left);
+    expect(container?.style.top).toBe(startContainer.top);
+    expect(descendant?.style.left).toBe(startDescendant.left);
+    expect(descendant?.style.top).toBe(startDescendant.top);
+    expect(onGeometryCommit).not.toHaveBeenCalled();
+  });
+
+  it('previews a Stack-owned child move then restores it, while persisting a fixed resize only', () => {
+    const first = {
+      ...fixedNode('stack-first', 'rect', '首项', 0, 0, 20, 10),
+      placement: {
+        type: 'STACK', widthMode: 'FIXED', widthMm: 20,
+        heightMode: 'FIXED', heightMm: 10,
+      },
+    };
+    const second = {
+      ...fixedNode('stack-second', 'rect', '次项', 0, 0, 30, 10),
+      placement: {
+        type: 'STACK', widthMode: 'FIXED', widthMm: 30,
+        heightMode: 'FIXED', heightMm: 10,
+      },
+    };
+    const stack = {
+      ...fixedNode('managed-stack', 'stack', '横向堆叠', 10, 20, 100, 30),
+      padding: { topMm: 0, rightMm: 0, bottomMm: 0, leftMm: 0 },
+      direction: 'ROW', gapMm: 4, justifyContent: 'START', alignItems: 'START',
+      children: [first, second],
+    };
+    const designRoot: Record<string, unknown> = {
+      nodeId: 'canvas', kind: 'canvas', displayName: '画布', widthMm: 210, heightMm: 297,
+      bindings: [], children: [stack],
+    };
+    const workingCopy: CanonicalDesignWorkingCopy = {
+      canonicalDesignDsl: '{}',
+      designDsl: {
+        dslVersion: 'renderweave-design/1.0',
+        expressionProfile: 'renderweave-expression/1.0',
+        definitions: [],
+        designRoot,
+      },
+    };
+    const onGeometryCommit = vi.fn();
+    const view = render(<TemplateEditorCanvas
+      workingCopy={workingCopy}
+      nodes={projectNodes(designRoot)}
+      selectedNodeId="stack-first"
+      tool="select"
+      onSelectNode={vi.fn()}
+      onGeometryCommit={onGeometryCommit}
+    />);
+    const viewport = screen.getByLabelText('本地草稿画布视口');
+    const authored = view.container.querySelector<HTMLElement>(
+      '[data-template-canvas-authored-node][data-template-canvas-node-id="stack-first"]',
+    );
+    const selection = view.container.querySelector<HTMLElement>(
+      '[data-template-canvas-selection="stack-first"]',
+    );
+
+    expect(authored?.style.left).toBe('40px');
+    expect(authored?.style.top).toBe('80px');
+    expect(authored?.style.width).toBe('80px');
+    fireEvent.pointerDown(selection as HTMLElement, {
+      button: 0, pointerId: 91, clientX: 300, clientY: 300,
+    });
+    fireEvent.pointerMove(viewport, { pointerId: 91, clientX: 340, clientY: 320 });
+    expect(authored?.style.left).toBe('80px');
+    expect(authored?.style.top).toBe('100px');
+    fireEvent.pointerUp(viewport, { pointerId: 91, clientX: 340, clientY: 320 });
+    expect(authored?.style.left).toBe('40px');
+    expect(authored?.style.top).toBe('80px');
+    expect(onGeometryCommit).not.toHaveBeenCalled();
+
+    const eastHandle = view.container.querySelector<HTMLElement>(
+      '[data-template-canvas-selection="stack-first"] [data-resize-handle="e"]',
+    );
+    fireEvent.pointerDown(eastHandle as HTMLElement, {
+      button: 0, pointerId: 92, clientX: 300, clientY: 300,
+    });
+    fireEvent.pointerMove(viewport, { pointerId: 92, clientX: 320, clientY: 300 });
+    expect(authored?.style.width).toBe('100px');
+    fireEvent.pointerUp(viewport, { pointerId: 92, clientX: 320, clientY: 300 });
+    expect(onGeometryCommit).toHaveBeenCalledWith('stack-first', {
+      widthMm: 25,
+      heightMm: 10,
+    });
+  });
+
+  it('projects Grid tracks, cell alignment and FILL children into canvas coordinates', () => {
+    const fixedCell = {
+      ...fixedNode('grid-fixed', 'rect', '固定单元', 0, 0, 8, 5),
+      placement: {
+        type: 'GRID', row: 0, column: 0, rowSpan: 1, columnSpan: 1,
+        widthMode: 'FIXED', widthMm: 8,
+        heightMode: 'FIXED', heightMm: 5,
+        marginTopMm: 1, marginRightMm: 1, marginBottomMm: 1, marginLeftMm: 1,
+        horizontalAlignSelf: 'CENTER', verticalAlignSelf: 'START',
+      },
+    };
+    const fillCell = {
+      ...fixedNode('grid-fill', 'rect', '填充单元', 0, 0, 1, 1),
+      placement: {
+        type: 'GRID', row: 1, column: 1, rowSpan: 1, columnSpan: 1,
+        widthMode: 'FILL', heightMode: 'FILL',
+        horizontalAlignSelf: 'START', verticalAlignSelf: 'START',
+      },
+    };
+    const grid = {
+      ...fixedNode('managed-grid', 'grid', '实时网格', 5, 6, 60, 40),
+      padding: { topMm: 1, rightMm: 1, bottomMm: 1, leftMm: 1 },
+      columns: [{ type: 'FIXED', valueMm: 10 }, { type: 'FRACTION', weight: 1 }],
+      rows: [{ type: 'AUTO' }, { type: 'FRACTION', weight: 1 }],
+      columnGapMm: 2,
+      rowGapMm: 3,
+      children: [fixedCell, fillCell],
+    };
+    const designRoot: Record<string, unknown> = {
+      nodeId: 'canvas', kind: 'canvas', displayName: '画布', widthMm: 100, heightMm: 80,
+      bindings: [], children: [grid],
+    };
+    const view = render(<TemplateEditorCanvas
+      workingCopy={{
+        canonicalDesignDsl: '{}',
+        designDsl: {
+          dslVersion: 'renderweave-design/1.0',
+          expressionProfile: 'renderweave-expression/1.0',
+          definitions: [],
+          designRoot,
+        },
+      }}
+      nodes={projectNodes(designRoot)}
+      selectedNodeId="grid-fill"
+      onSelectNode={vi.fn()}
+    />);
+
+    const fixedProjected = view.container.querySelector<HTMLElement>(
+      '[data-template-canvas-authored-node][data-template-canvas-node-id="grid-fixed"]',
+    );
+    const fillProjected = view.container.querySelector<HTMLElement>(
+      '[data-template-canvas-authored-node][data-template-canvas-node-id="grid-fill"]',
+    );
+    expect(fixedProjected?.style.cssText).toContain('left: 28px');
+    expect(fixedProjected?.style.cssText).toContain('top: 32px');
+    expect(fixedProjected?.style.cssText).toContain('width: 32px');
+    expect(fixedProjected?.style.cssText).toContain('height: 20px');
+    expect(fillProjected?.style.cssText).toContain('left: 72px');
+    expect(fillProjected?.style.cssText).toContain('top: 68px');
+    expect(fillProjected?.style.cssText).toContain('width: 184px');
+    expect(fillProjected?.style.cssText).toContain('height: 112px');
+  });
+
+  it('shows a stable visible problem instead of fabricating unsupported intrinsic geometry', () => {
+    const intrinsic = {
+      ...fixedNode('intrinsic-rect', 'rect', '非法自适应矩形', 10, 20, 30, 40),
+      placement: {
+        type: 'ABSOLUTE', xMm: 10, yMm: 20,
+        widthMode: 'HUG_CONTENT', heightMode: 'FIXED', heightMm: 40,
+      },
+    };
+    const designRoot: Record<string, unknown> = {
+      nodeId: 'canvas', kind: 'canvas', displayName: '画布', widthMm: 210, heightMm: 297,
+      bindings: [], children: [intrinsic],
+    };
+    const view = render(<TemplateEditorCanvas
+      workingCopy={{
+        canonicalDesignDsl: '{}',
+        designDsl: {
+          dslVersion: 'renderweave-design/1.0',
+          expressionProfile: 'renderweave-expression/1.0',
+          definitions: [],
+          designRoot,
+        },
+      }}
+      nodes={projectNodes(designRoot)}
+      selectedNodeId="intrinsic-rect"
+      onSelectNode={vi.fn()}
+    />);
+
+    expect(view.container.querySelector('[data-template-canvas-authored-node]')).toBeNull();
+    expect(screen.getByRole('alert').textContent).toContain('HUG_CONTENT');
+  });
+
   it('keeps QR resize strictly square while preserving the opposite edge or corner anchor', () => {
     const qrCode = {
       ...fixedNode('qr-code', 'qrCode', '二维码', 10, 20, 25, 25),
@@ -775,7 +1056,7 @@ describe('Template Editor Canvas interaction surface', () => {
     };
 
     const kinds = [
-      'frame', 'stack', 'text', 'image', 'rect', 'ellipse', 'line', 'shape',
+      'group', 'frame', 'stack', 'grid', 'text', 'image', 'rect', 'ellipse', 'line', 'shape',
       'polygon', 'polyline', 'path', 'qrCode', 'barcode',
     ];
     for (const kind of kinds) {
@@ -812,7 +1093,13 @@ function canvasFixture(): {
         ...fixedNode('frame', 'frame', '框架', 50, 60, 80, 90),
         children: [nestedRect],
       },
-      fixedNode('stack', 'stack', '堆叠', 20, 100, 40, 50),
+      {
+        ...fixedNode('stack', 'stack', '堆叠', 20, 100, 40, 50),
+        children: [],
+        padding: { topMm: 0, rightMm: 0, bottomMm: 0, leftMm: 0 },
+        direction: 'COLUMN',
+        gapMm: 0,
+      },
     ],
   };
   return {
@@ -854,6 +1141,87 @@ function fixedNode(
       heightMm,
     },
   };
+}
+
+function containerCanvasFixture(kind: string): {
+  workingCopy: CanonicalDesignWorkingCopy;
+  nodes: EditorNodeProjection[];
+} {
+  const absoluteChild = fixedNode('container-child', 'rect', '容器子项', 2, 3, 4, 5);
+  const absolutePlacement = {
+    type: 'ABSOLUTE', xMm: 10, yMm: 15,
+    widthMode: 'FIXED', widthMm: 20,
+    heightMode: 'FIXED', heightMm: 20,
+  };
+  let container: Record<string, unknown>;
+  if (kind === 'group') {
+    container = {
+      nodeId: 'container', kind, displayName: '自由分组', bindings: [],
+      placement: {
+        type: 'ABSOLUTE', xMm: 10, yMm: 15,
+        widthMode: 'HUG_CONTENT', heightMode: 'HUG_CONTENT',
+      },
+      children: [absoluteChild],
+    };
+  } else if (kind === 'stack') {
+    container = {
+      nodeId: 'container', kind, displayName: '堆叠容器', bindings: [],
+      placement: absolutePlacement,
+      padding: { topMm: 0, rightMm: 0, bottomMm: 0, leftMm: 0 },
+      direction: 'ROW', gapMm: 0, justifyContent: 'START', alignItems: 'START',
+      children: [{
+        ...absoluteChild,
+        placement: {
+          type: 'STACK', widthMode: 'FIXED', widthMm: 4,
+          heightMode: 'FIXED', heightMm: 5,
+        },
+      }],
+    };
+  } else if (kind === 'grid') {
+    container = {
+      nodeId: 'container', kind, displayName: '网格容器', bindings: [],
+      placement: absolutePlacement,
+      padding: { topMm: 0, rightMm: 0, bottomMm: 0, leftMm: 0 },
+      columns: [{ type: 'FIXED', valueMm: 20 }],
+      rows: [{ type: 'FIXED', valueMm: 20 }],
+      columnGapMm: 0, rowGapMm: 0,
+      children: [{
+        ...absoluteChild,
+        placement: {
+          type: 'GRID', column: 0, row: 0, columnSpan: 1, rowSpan: 1,
+          widthMode: 'FIXED', widthMm: 4,
+          heightMode: 'FIXED', heightMm: 5,
+        },
+      }],
+    };
+  } else {
+    container = {
+      nodeId: 'container', kind: 'frame', displayName: '框架', bindings: [],
+      placement: absolutePlacement,
+      children: [absoluteChild],
+    };
+  }
+  const designRoot: Record<string, unknown> = {
+    nodeId: 'canvas', kind: 'canvas', displayName: '画布', widthMm: 100, heightMm: 80,
+    bindings: [], children: [container],
+  };
+  return {
+    workingCopy: {
+      canonicalDesignDsl: '{}',
+      designDsl: {
+        dslVersion: 'renderweave-design/1.0',
+        expressionProfile: 'renderweave-expression/1.0',
+        definitions: [], designRoot,
+      },
+    },
+    nodes: projectNodes(designRoot),
+  };
+}
+
+function authoredCanvasNode(container: HTMLElement, nodeId: string): HTMLElement | null {
+  return container.querySelector<HTMLElement>(
+    `[data-template-canvas-authored-node][data-template-canvas-node-id="${nodeId}"]`,
+  );
 }
 
 function canvasAssetDetail(

@@ -229,6 +229,104 @@ describe('Template Editor E1/E2 Product shell', () => {
     expect(screen.getByRole('treeitem', { name: /矩形 2/ })).toBeTruthy();
   });
 
+  it('reparents an ABSOLUTE child with projected world geometry instead of reusing local coordinates', () => {
+    const original = structuredBaseline();
+    const designDsl = structuredClone(original.designDsl);
+    const root = designDsl.designRoot as Record<string, unknown>;
+    const frame = (root.children as Record<string, unknown>[])[0]!;
+    const rect = (frame.children as Record<string, unknown>[])[0]!;
+    frame.placement = {
+      type: 'ABSOLUTE', xMm: 20, yMm: 30,
+      widthMode: 'FIXED', widthMm: 120,
+      heightMode: 'FIXED', heightMm: 120,
+    };
+    rect.placement = {
+      type: 'ABSOLUTE', xMm: 5, yMm: 7,
+      widthMode: 'FIXED', widthMm: 100,
+      heightMode: 'FIXED', heightMm: 100,
+    };
+    const session = createSessionFromBaseline({
+      ...original,
+      canonicalDesignDsl: JSON.stringify(designDsl),
+      designDsl,
+    }, { state: 'checked', value: 'READY' });
+    if (session.mode !== 'structured') throw new Error('expected structured session');
+    render(<TemplateEditorShell session={session} />);
+
+    const rectRow = screen.getByRole('treeitem', { name: /底色/ });
+    fireEvent.keyDown(rectRow, { key: 'F10', shiftKey: true });
+    fireEvent.click(screen.getByRole('menuitem', { name: '移动…' }));
+    fireEvent.change(screen.getByRole('combobox', { name: '目标节点' }), {
+      target: { value: 'canvas-id' },
+    });
+    fireEvent.click(screen.getByRole('radio', { name: '移入容器' }));
+    fireEvent.click(screen.getByRole('button', { name: '确认移动' }));
+
+    const movedRow = screen.getByRole('treeitem', { name: /底色/ });
+    expect(movedRow.getAttribute('aria-level')).toBe('2');
+    fireEvent.click(movedRow);
+    expect((screen.getByLabelText('X 坐标') as HTMLInputElement).value).toBe('25');
+    expect((screen.getByLabelText('Y 坐标') as HTMLInputElement).value).toBe('37');
+  });
+
+  it('preserves the current definite size when switching an axis to FIXED', () => {
+    const session = createSessionFromBaseline(
+      structuredBaseline(),
+      { state: 'checked', value: 'READY' },
+    );
+    if (session.mode !== 'structured') throw new Error('expected structured session');
+    render(<TemplateEditorShell session={session} />);
+
+    fireEvent.click(screen.getByRole('treeitem', { name: /内容区/ }));
+    expect((screen.getByLabelText('宽度模式') as HTMLSelectElement).value)
+      .toBe('HUG_CONTENT');
+    fireEvent.change(screen.getByLabelText('宽度模式'), { target: { value: 'FIXED' } });
+
+    expect((screen.getByLabelText('宽度') as HTMLInputElement).value).toBe('100');
+  });
+
+  it('fails closed when an invalid projection cannot preserve a cross-parent position', () => {
+    const original = structuredBaseline();
+    const designDsl = structuredClone(original.designDsl);
+    const root = designDsl.designRoot as Record<string, unknown>;
+    root.widthMm = 0;
+    const session = createSessionFromBaseline({
+      ...original,
+      canonicalDesignDsl: JSON.stringify(designDsl),
+      designDsl,
+    }, { state: 'checked', value: 'INVALID' });
+    if (session.mode !== 'structured') throw new Error('expected structured session');
+    render(<TemplateEditorShell session={session} />);
+
+    const rectRow = screen.getByRole('treeitem', { name: /底色/ });
+    fireEvent.keyDown(rectRow, { key: 'F10', shiftKey: true });
+    fireEvent.click(screen.getByRole('menuitem', { name: '移动…' }));
+    fireEvent.change(screen.getByRole('combobox', { name: '目标节点' }), {
+      target: { value: 'canvas-id' },
+    });
+    fireEvent.click(screen.getByRole('radio', { name: '移入容器' }));
+    fireEvent.click(screen.getByRole('button', { name: '确认移动' }));
+
+    expect(screen.getByRole('treeitem', { name: /底色/ }).getAttribute('aria-level')).toBe('3');
+    expect(screen.getByText(/无法为目标父级构造合法 placement/)).toBeTruthy();
+  });
+
+  it('exposes all four formal container kinds in the production catalog', () => {
+    const session = createSessionFromBaseline(
+      structuredBaseline(),
+      { state: 'checked', value: 'READY' },
+    );
+    render(<TemplateEditorShell session={session} />);
+
+    fireEvent.click(screen.getByRole('button', { name: '容器' }));
+
+    expect(screen.getByRole('button', { name: '添加自由分组' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: '添加框架' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: '添加堆叠容器' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: '添加网格容器' })).toBeTruthy();
+    expect(screen.getByText('4 个正式容器')).toBeTruthy();
+  });
+
   it('renders the approved Canvas Focus workbench with only real behavior', () => {
     const session = createSessionFromBaseline(
       structuredBaseline(),

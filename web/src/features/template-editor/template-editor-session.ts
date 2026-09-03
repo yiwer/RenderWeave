@@ -472,6 +472,40 @@ function replayCommand(
         designRoot: rewritten.node,
       });
     }
+    case 'replace-node-shells': {
+      const designRoot = editableDesignRoot(workingCopy);
+      if (command.replacements.length < 2) {
+        throw new Error('Replace-node-shells history must contain multiple shells');
+      }
+      const identities = new Set<string>();
+      for (const item of command.replacements) {
+        if (identities.has(item.nodeId)) {
+          throw new Error('Replace-node-shells history identity is duplicated');
+        }
+        identities.add(item.nodeId);
+        const current = findNodeRecord(designRoot, item.nodeId);
+        const expected = direction === 'forward' ? item.before : item.after;
+        if (!current || canonicalStringifyWorkingValue(nodeShell(current))
+          !== canonicalStringifyWorkingValue(expected)) {
+          throw new Error('Replace-node-shells history shell drifted');
+        }
+      }
+      let rewrittenRoot = designRoot;
+      for (const item of command.replacements) {
+        const replacement = direction === 'forward' ? item.after : item.before;
+        const rewritten = rewriteNode(rewrittenRoot, item.nodeId, (current) => {
+          const next = cloneCanonicalRecord(replacement as Record<string, unknown>);
+          if (Array.isArray(current.children)) next.children = current.children;
+          return next;
+        });
+        if (!rewritten.found) throw new Error('Replace-node-shells history identity drifted');
+        rewrittenRoot = rewritten.node;
+      }
+      return workingCopyFromDesignDsl({
+        ...workingCopy.designDsl,
+        designRoot: rewrittenRoot,
+      });
+    }
     case 'replace-definition': {
       const expected = direction === 'forward' ? command.before : command.after;
       const replacement = direction === 'forward' ? command.after : command.before;
@@ -525,6 +559,23 @@ function replayCommand(
       const source = direction === 'forward' ? command.before : command.after;
       const destination = direction === 'forward' ? command.after : command.before;
       const designRoot = editableDesignRoot(workingCopy);
+      const compensations = command.groupCompensations ?? [];
+      const compensationIdentities = new Set<string>();
+      for (const item of compensations) {
+        if (item.nodeId === command.nodeId || compensationIdentities.has(item.nodeId)) {
+          throw new Error('Move-node Group compensation identity is duplicated');
+        }
+        compensationIdentities.add(item.nodeId);
+        const current = findNodeRecord(designRoot, item.nodeId);
+        const expected = direction === 'forward' ? item.before : item.after;
+        if (!current || current.kind !== 'group'
+          || item.before.kind !== 'group' || item.after.kind !== 'group'
+          || item.before.nodeId !== item.nodeId || item.after.nodeId !== item.nodeId
+          || canonicalStringifyWorkingValue(nodeShell(current))
+          !== canonicalStringifyWorkingValue(expected)) {
+          throw new Error('Move-node Group compensation shell drifted');
+        }
+      }
       const removed = removeChildAt(
         designRoot,
         source.parentNodeId,
@@ -553,9 +604,20 @@ function replayCommand(
         moving,
       );
       if (!inserted.found) throw new Error('Move-node history destination drifted');
+      let rewrittenRoot = inserted.node;
+      for (const item of compensations) {
+        const replacement = direction === 'forward' ? item.after : item.before;
+        const rewritten = rewriteNode(rewrittenRoot, item.nodeId, (current) => {
+          const next = cloneCanonicalRecord(replacement as Record<string, unknown>);
+          if (Array.isArray(current.children)) next.children = current.children;
+          return next;
+        });
+        if (!rewritten.found) throw new Error('Move-node Group compensation identity drifted');
+        rewrittenRoot = rewritten.node;
+      }
       return workingCopyFromDesignDsl({
         ...workingCopy.designDsl,
-        designRoot: inserted.node,
+        designRoot: rewrittenRoot,
       });
     }
   }
@@ -606,6 +668,15 @@ function freezeStructuredCommand(command: StructuredEditorCommand): StructuredEd
         before: deepFreeze(cloneCanonicalRecord(command.before as Record<string, unknown>)),
         after: deepFreeze(cloneCanonicalRecord(command.after as Record<string, unknown>)),
       });
+    case 'replace-node-shells':
+      return Object.freeze({
+        ...command,
+        replacements: Object.freeze(command.replacements.map((item) => Object.freeze({
+          ...item,
+          before: deepFreeze(cloneCanonicalRecord(item.before as Record<string, unknown>)),
+          after: deepFreeze(cloneCanonicalRecord(item.after as Record<string, unknown>)),
+        }))),
+      });
     case 'replace-definition':
     case 'replace-node-binding':
       return Object.freeze({
@@ -632,6 +703,15 @@ function freezeStructuredCommand(command: StructuredEditorCommand): StructuredEd
             command.after.placement as Record<string, unknown>,
           )),
         }),
+        ...(command.groupCompensations === undefined
+          ? {}
+          : {
+            groupCompensations: Object.freeze(command.groupCompensations.map((item) => Object.freeze({
+              ...item,
+              before: deepFreeze(cloneCanonicalRecord(item.before as Record<string, unknown>)),
+              after: deepFreeze(cloneCanonicalRecord(item.after as Record<string, unknown>)),
+            }))),
+          }),
       });
     case 'set-template-display-name':
       return Object.freeze({ ...command });

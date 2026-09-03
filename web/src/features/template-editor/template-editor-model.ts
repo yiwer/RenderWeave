@@ -71,6 +71,18 @@ export interface ReplaceNodeShellCommand {
   after: Readonly<Record<string, unknown>>;
 }
 
+export interface NodeShellReplacement {
+  nodeId: string;
+  before: Readonly<Record<string, unknown>>;
+  after: Readonly<Record<string, unknown>>;
+}
+
+/** Replaces several authored node shells as one compact, reversible history step. */
+export interface ReplaceNodeShellsCommand {
+  kind: 'replace-node-shells';
+  replacements: readonly NodeShellReplacement[];
+}
+
 /** A compact reversible mutation of one set-like DesignDSL definition. */
 export interface ReplaceDefinitionCommand {
   kind: 'replace-definition';
@@ -100,6 +112,8 @@ export interface MoveNodeCommand {
   nodeId: string;
   before: NodeTreeLocation;
   after: NodeTreeLocation;
+  /** Owner Group shell changes required to keep world coordinates stable across a reparent. */
+  groupCompensations?: readonly NodeShellReplacement[];
 }
 
 export type StructuredEditorCommand =
@@ -107,6 +121,7 @@ export type StructuredEditorCommand =
   | InsertNodeCommand
   | DeleteNodeCommand
   | ReplaceNodeShellCommand
+  | ReplaceNodeShellsCommand
   | ReplaceDefinitionCommand
   | ReplaceNodeBindingCommand
   | MoveNodeCommand;

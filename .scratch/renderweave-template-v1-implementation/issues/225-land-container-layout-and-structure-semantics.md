@@ -1,8 +1,8 @@
 # T225 — Arrange Group/Frame/Stack/Grid from the persisted structure
 
 Type: task
-Status: blocked
-Blocked by: T224
+Status: in-progress
+Blocked by: T224 (done)
 
 ## What to build
 

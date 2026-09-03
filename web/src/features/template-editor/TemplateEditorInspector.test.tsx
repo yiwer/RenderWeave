@@ -97,7 +97,7 @@ describe('Template Editor Inspector', () => {
     const view = renderInspector(stackNode(), { onCommand });
 
     expect(groupOrder(view.container)).toEqual([
-      'content', 'layout-constraints', 'appearance', 'advanced',
+      'content', 'container-layout', 'padding', 'child-constraints', 'appearance', 'advanced',
     ]);
     expect(screen.queryByLabelText('X 坐标')).toBeNull();
 
@@ -117,6 +117,281 @@ describe('Template Editor Inspector', () => {
     expect(onCommand).toHaveBeenLastCalledWith({
       operation: 'set-property', nodeId: 'stack', property: 'gapMm', value: 6.25,
     });
+
+    fireEvent.change(screen.getByLabelText('主轴分布'), { target: { value: 'SPACE_BETWEEN' } });
+    expect(onCommand).toHaveBeenLastCalledWith({
+      operation: 'set-property', nodeId: 'stack', property: 'justifyContent', value: 'SPACE_BETWEEN',
+    });
+
+    fireEvent.change(screen.getByLabelText('交叉轴对齐'), { target: { value: 'CENTER' } });
+    expect(onCommand).toHaveBeenLastCalledWith({
+      operation: 'set-property', nodeId: 'stack', property: 'alignItems', value: 'CENTER',
+    });
+  });
+
+  it('orders container settings before zero-default padding and emits one semantic padding intent', () => {
+    const onCommand = vi.fn();
+    const view = renderInspector(frameNode(), { onCommand });
+
+    expect(groupOrder(view.container)).toEqual([
+      'content', 'container-layout', 'padding', 'position-size', 'appearance', 'advanced',
+    ]);
+    expect((screen.getByLabelText('上内边距') as HTMLInputElement).value).toBe('0');
+    expect((screen.getByLabelText('右内边距') as HTMLInputElement).value).toBe('0');
+    expect((screen.getByLabelText('下内边距') as HTMLInputElement).value).toBe('0');
+    expect((screen.getByLabelText('左内边距') as HTMLInputElement).value).toBe('0');
+    const paddingGroup = screen.getByText('内边距').closest('details');
+    expect(paddingGroup?.open).toBe(true);
+    fireEvent.click(screen.getByText('内边距'));
+    expect(paddingGroup?.open).toBe(false);
+    fireEvent.click(screen.getByText('内边距'));
+    expect(paddingGroup?.open).toBe(true);
+
+    fireEvent.change(screen.getByLabelText('右内边距'), { target: { value: '3.5' } });
+    fireEvent.blur(screen.getByLabelText('右内边距'));
+
+    expect(onCommand).toHaveBeenCalledOnce();
+    expect(onCommand).toHaveBeenCalledWith({
+      operation: 'set-property', nodeId: 'frame', property: 'paddingRightMm', value: 3.5,
+    });
+  });
+
+  it('edits formal Stack child size, margin, alignment and fill-weight placement fields', () => {
+    const onCommand = vi.fn();
+    const view = renderInspector(rectNode({
+      placement: {
+        type: 'STACK',
+        widthMode: 'FILL',
+        heightMode: 'FIXED', heightMm: 20,
+        minWidthMm: 10,
+        maxHeightMm: 30,
+        marginTopMm: 1,
+        marginRightMm: 2,
+        marginBottomMm: 3,
+        marginLeftMm: 4,
+        alignSelf: 'CENTER',
+        fillWeight: 2,
+      },
+    }), { onCommand, projectedSizeMm: { widthMm: 72, heightMm: 20 } });
+
+    expect(groupOrder(view.container)).toEqual([
+      'content', 'child-constraints', 'appearance', 'advanced',
+    ]);
+    expect((screen.getByLabelText('宽度模式') as HTMLSelectElement).value).toBe('FILL');
+    expect((screen.getByLabelText('高度') as HTMLInputElement).value).toBe('20');
+    expect((screen.getByLabelText('左外边距') as HTMLInputElement).value).toBe('4');
+    expect((screen.getByLabelText('主轴填充权重') as HTMLInputElement).value).toBe('2');
+
+    fireEvent.change(screen.getByLabelText('宽度模式'), { target: { value: 'FIXED' } });
+    expect(onCommand).toHaveBeenLastCalledWith({
+      operation: 'set-property', nodeId: 'rect', property: 'widthMm', value: 72,
+    });
+
+    fireEvent.change(screen.getByLabelText('左外边距'), { target: { value: '-2.5' } });
+    fireEvent.blur(screen.getByLabelText('左外边距'));
+    expect(onCommand).toHaveBeenLastCalledWith({
+      operation: 'set-property', nodeId: 'rect', property: 'marginLeftMm', value: -2.5,
+    });
+
+    fireEvent.change(screen.getByLabelText('左外边距'), { target: { value: '' } });
+    fireEvent.blur(screen.getByLabelText('左外边距'));
+    expect(onCommand).toHaveBeenLastCalledWith({
+      operation: 'set-property', nodeId: 'rect', property: 'marginLeftMm', value: null,
+    });
+
+    fireEvent.change(screen.getByLabelText('堆叠内对齐'), { target: { value: 'END' } });
+    expect(onCommand).toHaveBeenLastCalledWith({
+      operation: 'set-property', nodeId: 'rect', property: 'alignSelf', value: 'END',
+    });
+
+    fireEvent.change(screen.getByLabelText('主轴填充权重'), { target: { value: '3' } });
+    fireEvent.blur(screen.getByLabelText('主轴填充权重'));
+    expect(onCommand).toHaveBeenLastCalledWith({
+      operation: 'set-property', nodeId: 'rect', property: 'fillWeight', value: 3,
+    });
+
+    fireEvent.change(screen.getByLabelText('堆叠内对齐'), { target: { value: '' } });
+    expect(onCommand).toHaveBeenLastCalledWith({
+      operation: 'set-property', nodeId: 'rect', property: 'alignSelf', value: null,
+    });
+  });
+
+  it('adapts compact Grid track text to ordered formal track objects', () => {
+    const onCommand = vi.fn();
+    renderInspector(gridNode(), { onCommand });
+
+    expect((screen.getByLabelText('列轨道') as HTMLInputElement).value).toBe('1*, 12');
+    expect((screen.getByLabelText('行轨道') as HTMLInputElement).value).toBe('10, auto');
+    expect((screen.getByLabelText('列间距') as HTMLInputElement).value).toBe('2');
+    expect((screen.getByLabelText('行间距') as HTMLInputElement).value).toBe('3');
+
+    const columns = screen.getByLabelText('列轨道');
+    fireEvent.change(columns, { target: { value: '24, auto, 3*' } });
+    fireEvent.keyDown(columns, { key: 'Enter' });
+    expect(onCommand).toHaveBeenLastCalledWith({
+      operation: 'set-property',
+      nodeId: 'grid',
+      property: 'columns',
+      value: parse('[{"type":"FIXED","valueMm":24},{"type":"AUTO"},{"type":"FRACTION","weight":3}]'),
+    });
+
+    fireEvent.change(screen.getByLabelText('行间距'), { target: { value: '4.5' } });
+    fireEvent.blur(screen.getByLabelText('行间距'));
+    expect(onCommand).toHaveBeenLastCalledWith({
+      operation: 'set-property', nodeId: 'grid', property: 'rowGapMm', value: 4.5,
+    });
+  });
+
+  it('does not collapse adjacent exact Grid decimals through binary64 comparison', () => {
+    const onCommand = vi.fn();
+    const authored = gridNode();
+    renderInspector(node('grid', '规格网格', {
+      ...authored.value,
+      columns: parse('[{"type":"FIXED","valueMm":0.123456789012345678}]'),
+    }), { onCommand });
+
+    fireEvent.change(screen.getByLabelText('列轨道'), {
+      target: { value: '0.123456789012345679' },
+    });
+    fireEvent.blur(screen.getByLabelText('列轨道'));
+
+    expect(onCommand).toHaveBeenCalledWith(expect.objectContaining({
+      operation: 'set-property',
+      nodeId: 'grid',
+      property: 'columns',
+    }));
+  });
+
+  it('edits formal Grid cell, span, margin and alignment placement fields', () => {
+    const onCommand = vi.fn();
+    renderInspector(rectNode({
+      placement: {
+        type: 'GRID',
+        widthMode: 'FILL',
+        heightMode: 'FIXED', heightMm: 12,
+        row: 1,
+        column: 2,
+        rowSpan: 2,
+        columnSpan: 3,
+        marginTopMm: 1,
+        horizontalAlignSelf: 'CENTER',
+        verticalAlignSelf: 'END',
+      },
+    }), { onCommand });
+
+    expect((screen.getByLabelText('网格行') as HTMLInputElement).value).toBe('1');
+    expect((screen.getByLabelText('网格列') as HTMLInputElement).value).toBe('2');
+    expect((screen.getByLabelText('跨行') as HTMLInputElement).value).toBe('2');
+    expect((screen.getByLabelText('跨列') as HTMLInputElement).value).toBe('3');
+    expect((screen.getByLabelText('单元内水平对齐') as HTMLSelectElement).value).toBe('CENTER');
+    expect((screen.getByLabelText('单元内垂直对齐') as HTMLSelectElement).value).toBe('END');
+
+    fireEvent.change(screen.getByLabelText('网格列'), { target: { value: '4' } });
+    fireEvent.blur(screen.getByLabelText('网格列'));
+    expect(onCommand).toHaveBeenLastCalledWith({
+      operation: 'set-property', nodeId: 'rect', property: 'column', value: 4,
+    });
+
+    fireEvent.change(screen.getByLabelText('跨行'), { target: { value: '5' } });
+    fireEvent.blur(screen.getByLabelText('跨行'));
+    expect(onCommand).toHaveBeenLastCalledWith({
+      operation: 'set-property', nodeId: 'rect', property: 'rowSpan', value: 5,
+    });
+
+    fireEvent.change(screen.getByLabelText('跨行'), { target: { value: '' } });
+    fireEvent.blur(screen.getByLabelText('跨行'));
+    expect(onCommand).toHaveBeenLastCalledWith({
+      operation: 'set-property', nodeId: 'rect', property: 'rowSpan', value: null,
+    });
+
+    fireEvent.change(screen.getByLabelText('单元内水平对齐'), { target: { value: 'START' } });
+    expect(onCommand).toHaveBeenLastCalledWith({
+      operation: 'set-property', nodeId: 'rect', property: 'horizontalAlignSelf', value: 'START',
+    });
+
+    fireEvent.change(screen.getByLabelText('单元内垂直对齐'), { target: { value: '' } });
+    expect(onCommand).toHaveBeenLastCalledWith({
+      operation: 'set-property', nodeId: 'rect', property: 'verticalAlignSelf', value: null,
+    });
+  });
+
+  it('exposes formal size modes and min/max constraints beside absolute geometry', () => {
+    const onCommand = vi.fn();
+    renderInspector(rectNode({
+      placement: {
+        type: 'ABSOLUTE', xMm: 12, yMm: 18,
+        widthMode: 'FIXED', widthMm: 80,
+        heightMode: 'FILL',
+        minWidthMm: 10,
+        maxHeightMm: 60,
+      },
+    }), { onCommand, projectedSizeMm: { widthMm: 80, heightMm: 44 } });
+
+    expect((screen.getByLabelText('宽度模式') as HTMLSelectElement).value).toBe('FIXED');
+    expect((screen.getByLabelText('高度模式') as HTMLSelectElement).value).toBe('FILL');
+    expect((screen.getByLabelText('最小宽度') as HTMLInputElement).value).toBe('10');
+    expect((screen.getByLabelText('最大高度') as HTMLInputElement).value).toBe('60');
+    expect(screen.queryByLabelText('高度')).toBeNull();
+
+    expect(Array.from(
+      (screen.getByLabelText('高度模式') as HTMLSelectElement).options,
+      (option) => option.value,
+    )).toEqual(['FIXED', 'FILL']);
+    fireEvent.change(screen.getByLabelText('高度模式'), { target: { value: 'FIXED' } });
+    expect(onCommand).toHaveBeenLastCalledWith({
+      operation: 'set-property', nodeId: 'rect', property: 'heightMm', value: 44,
+    });
+
+    fireEvent.change(screen.getByLabelText('最小宽度'), { target: { value: '15' } });
+    fireEvent.blur(screen.getByLabelText('最小宽度'));
+    expect(onCommand).toHaveBeenLastCalledWith({
+      operation: 'set-property', nodeId: 'rect', property: 'minWidthMm', value: 15,
+    });
+
+    fireEvent.change(screen.getByLabelText('最大高度'), { target: { value: '' } });
+    fireEvent.blur(screen.getByLabelText('最大高度'));
+    expect(onCommand).toHaveBeenLastCalledWith({
+      operation: 'set-property', nodeId: 'rect', property: 'maxHeightMm', value: null,
+    });
+  });
+
+  it('requires an explicit fixed size when no definite projection is available', () => {
+    const onCommand = vi.fn();
+    renderInspector(rectNode({
+      placement: {
+        type: 'ABSOLUTE', xMm: 12, yMm: 18,
+        widthMode: 'FIXED', widthMm: 80,
+        heightMode: 'FILL',
+      },
+    }), { onCommand });
+
+    const fixedOption = Array.from(
+      (screen.getByLabelText('高度模式') as HTMLSelectElement).options,
+    ).find((option) => option.value === 'FIXED');
+    expect(fixedOption?.disabled).toBe(true);
+    fireEvent.change(screen.getByLabelText('固定高度'), { target: { value: '33' } });
+    fireEvent.blur(screen.getByLabelText('固定高度'));
+    expect(onCommand).toHaveBeenLastCalledWith({
+      operation: 'set-property', nodeId: 'rect', property: 'heightMm', value: 33,
+    });
+  });
+
+  it('keeps Group free-layout controls honest without inventing padding or appearance', () => {
+    const view = renderInspector(groupNode());
+
+    expect(groupOrder(view.container)).toEqual([
+      'content', 'position-size', 'advanced',
+    ]);
+    const widthMode = screen.getByLabelText('宽度模式') as HTMLSelectElement;
+    const heightMode = screen.getByLabelText('高度模式') as HTMLSelectElement;
+    expect(widthMode.value).toBe('HUG_CONTENT');
+    expect(heightMode.value).toBe('HUG_CONTENT');
+    expect(widthMode.disabled).toBe(true);
+    expect(heightMode.disabled).toBe(true);
+    expect(screen.queryByText('内边距')).toBeNull();
+    expect(screen.queryByLabelText('填充颜色')).toBeNull();
+    expect(screen.queryByLabelText('最小宽度')).toBeNull();
+    expect(screen.queryByLabelText('最大高度')).toBeNull();
   });
 
   it('shows exact lossless numeric tokens without emitting unchanged authored commands', () => {
@@ -600,6 +875,53 @@ function stackNode(): EditorNodeProjection {
       type: 'STACK',
       widthMode: 'FIXED', widthMm: 80,
       heightMode: 'FIXED', heightMm: 40,
+    },
+  });
+}
+
+function frameNode(): EditorNodeProjection {
+  return node('frame', '内容框架', {
+    displayName: '内容框架',
+    bindings: [],
+    children: [],
+    clipContent: false,
+    fill: { color: '#FFFFFFFF' },
+    placement: {
+      type: 'ABSOLUTE', xMm: 8, yMm: 10,
+      widthMode: 'FIXED', widthMm: 90,
+      heightMode: 'FIXED', heightMm: 54,
+    },
+  });
+}
+
+function groupNode(): EditorNodeProjection {
+  return node('group', '自由分组', {
+    displayName: '自由分组',
+    bindings: [],
+    children: [],
+    placement: {
+      type: 'ABSOLUTE', xMm: 8, yMm: 10,
+      widthMode: 'HUG_CONTENT',
+      heightMode: 'HUG_CONTENT',
+    },
+  });
+}
+
+function gridNode(): EditorNodeProjection {
+  return node('grid', '规格网格', {
+    displayName: '规格网格',
+    bindings: [],
+    children: [],
+    rows: [{ type: 'FIXED', valueMm: 10 }, { type: 'AUTO' }],
+    columns: [{ type: 'FRACTION', weight: 1 }, { type: 'FIXED', valueMm: 12 }],
+    rowGapMm: 3,
+    columnGapMm: 2,
+    clipContent: false,
+    fill: { color: '#FFFFFFFF' },
+    placement: {
+      type: 'ABSOLUTE', xMm: 8, yMm: 10,
+      widthMode: 'FIXED', widthMm: 90,
+      heightMode: 'FIXED', heightMm: 54,
     },
   });
 }

@@ -2,6 +2,7 @@ import {
   AlertTriangle,
   Barcode,
   Box,
+  Boxes,
   CheckCircle2,
   Circle,
   Database,
@@ -10,6 +11,7 @@ import {
   FlaskConical,
   FolderTree,
   Hand,
+  Grid2X2,
   Image,
   LoaderCircle,
   Minus,
@@ -67,7 +69,12 @@ import {
   executeTemplateEditorCommand,
   type CoreInsertableNodeKind,
   type TemplateEditorCommandIntent,
+  type TemplateProjectedGeometry,
 } from './template-editor-commands';
+import {
+  projectTemplateDefiniteLayout,
+  type TemplateDefiniteLayoutResult,
+} from './template-editor-definite-layout';
 import {
   defaultTemplateEditorAssetTransport,
   resolveTemplateAssetRef,
@@ -554,6 +561,9 @@ function StructuredShell({
     return () => controller.abort();
   }, [incomingBaselineKey, incomingSession, staticSchemaTransport]);
   const nodes = useMemo(() => projectStructuredNodes(session), [session]);
+  const layoutProjection = useMemo(() => projectTemplateDefiniteLayout(
+    objectOrNull(session.workingCopy.designDsl.designRoot),
+  ), [session.workingCopy.designDsl.designRoot]);
   const [entry, setEntry] = useState<EditorEntry>('structure');
   const [selectedNodeId, setSelectedNodeId] = useState(nodes[0]?.nodeId ?? '');
   const [selectedNodeIds, setSelectedNodeIds] = useState<readonly string[]>(
@@ -570,6 +580,17 @@ function StructuredShell({
     ? selectedNodeId
     : nodes[0]?.nodeId ?? '';
   const selected = nodes.find((node) => node.nodeId === effectiveSelectedNodeId) ?? nodes[0];
+  const selectedLayoutEntry = layoutProjection.state === 'ready'
+    ? layoutProjection.entries.find((candidate) => candidate.nodeId === effectiveSelectedNodeId)
+    : undefined;
+  const selectedProjectedSizeMm = selectedLayoutEntry
+    && selectedLayoutEntry.worldRect.width > 0
+    && selectedLayoutEntry.worldRect.height > 0
+    ? {
+      widthMm: selectedLayoutEntry.worldRect.width,
+      heightMm: selectedLayoutEntry.worldRect.height,
+    }
+    : undefined;
   const validSelectedNodeIds = selectedNodeIds.filter((nodeId) => (
     nodes.some((node) => node.nodeId === nodeId)
   ));
@@ -1627,9 +1648,18 @@ function StructuredShell({
                 onRenameNode={(nodeId, displayName) => dispatchEditorCommand({
                   operation: 'rename', nodeId, displayName,
                 })}
-                onMoveNode={(nodeId, targetNodeId, position) => dispatchEditorCommand({
-                  operation: 'move-tree', nodeId, targetNodeId, position,
-                })}
+                onMoveNode={(nodeId, targetNodeId, position) => {
+                  const projectedGeometry = projectedTreeMoveGeometry(
+                    layoutProjection,
+                    nodeId,
+                    targetNodeId,
+                    position,
+                  );
+                  dispatchEditorCommand({
+                    operation: 'move-tree', nodeId, targetNodeId, position,
+                    ...(projectedGeometry ? { projectedGeometry } : {}),
+                  });
+                }}
                 onReorderNode={(nodeId, order) => dispatchEditorCommand({
                   operation: 'reorder', nodeId, order,
                 })}
@@ -1721,16 +1751,10 @@ function StructuredShell({
               setSelectedNodeId(primaryNodeId);
             }}
             onGeometryCommit={(nodeId, geometry) => {
-              if (geometry.xMm === undefined || geometry.yMm === undefined) return;
               dispatchEditorCommand({
                 operation: 'set-geometry',
                 nodeId,
-                geometry: {
-                  xMm: geometry.xMm,
-                  yMm: geometry.yMm,
-                  widthMm: geometry.widthMm,
-                  heightMm: geometry.heightMm,
-                },
+                geometry,
               });
             }}
             onDeleteSelection={() => dispatchEditorCommand({
@@ -1781,6 +1805,7 @@ function StructuredShell({
             />
             <TemplateEditorInspector
               node={selected}
+              projectedSizeMm={selectedProjectedSizeMm}
               disabled={localLocked}
               onCommand={dispatchEditorCommand}
               problemFocus={inspectorProblemFocus?.request}
@@ -2678,9 +2703,24 @@ function ContainerCatalogSummary({
 }) {
   return (
     <>
-      <PanelHeading title="容器" detail="2 个已接通" />
-      <p className="te-panel-copy">Frame 保留绝对定位子级；Stack 以排列方向约束直接子级。</p>
+      <PanelHeading title="容器" detail="4 个正式容器" />
+      <p className="te-panel-copy">自由容器保留子级坐标；Stack 与 Grid 由布局属性实时排列。</p>
       <div className="te-node-library" aria-label="可添加容器">
+        <button
+          type="button"
+          aria-label="添加自由分组"
+          disabled={disabled}
+          draggable={!disabled}
+          onDragStart={(event) => {
+            event.dataTransfer.effectAllowed = 'copy';
+            event.dataTransfer.setData(TEMPLATE_NODE_DRAG_MIME, 'group');
+          }}
+          onClick={() => onInsert('group')}
+        >
+          <span className="te-node-library-icon"><Boxes aria-hidden="true" size={18} /></span>
+          <span className="te-node-library-copy"><strong>自由分组</strong><small>内容包围 · 绝对子级</small></span>
+          <span className="te-node-library-action">添加</span>
+        </button>
         <button
           type="button"
           aria-label="添加框架"
@@ -2709,6 +2749,21 @@ function ContainerCatalogSummary({
         >
           <span className="te-node-library-icon"><SquarePlus aria-hidden="true" size={18} /></span>
           <span className="te-node-library-copy"><strong>堆叠容器</strong><small>横向 / 纵向由布局属性决定</small></span>
+          <span className="te-node-library-action">添加</span>
+        </button>
+        <button
+          type="button"
+          aria-label="添加网格容器"
+          disabled={disabled}
+          draggable={!disabled}
+          onDragStart={(event) => {
+            event.dataTransfer.effectAllowed = 'copy';
+            event.dataTransfer.setData(TEMPLATE_NODE_DRAG_MIME, 'grid');
+          }}
+          onClick={() => onInsert('grid')}
+        >
+          <span className="te-node-library-icon"><Grid2X2 aria-hidden="true" size={18} /></span>
+          <span className="te-node-library-copy"><strong>网格容器</strong><small>固定 / 自动 / 比例轨道</small></span>
           <span className="te-node-library-action">添加</span>
         </button>
       </div>
@@ -3391,6 +3446,30 @@ function authoredAssetReferences(value: unknown): AuthoredAssetReference[] {
     left.expectedKind.localeCompare(right.expectedKind)
       || left.assetId.localeCompare(right.assetId)
   ));
+}
+
+function projectedTreeMoveGeometry(
+  layout: TemplateDefiniteLayoutResult,
+  nodeId: string,
+  targetNodeId: string,
+  position: 'before' | 'into' | 'after',
+): TemplateProjectedGeometry | null {
+  if (layout.state !== 'ready') return null;
+  const byId = new Map(layout.entries.map((entry) => [entry.nodeId, entry]));
+  const source = byId.get(nodeId);
+  const target = byId.get(targetNodeId);
+  if (!source || !target) return null;
+  const destinationParentId = position === 'into' ? target.nodeId : target.parentNodeId;
+  if (!destinationParentId) return null;
+  const destinationParent = byId.get(destinationParentId);
+  const destinationContent = destinationParent?.worldContentRect;
+  if (!destinationContent) return null;
+  return {
+    xMm: source.worldRect.x - destinationContent.x,
+    yMm: source.worldRect.y - destinationContent.y,
+    widthMm: source.worldRect.width,
+    heightMm: source.worldRect.height,
+  };
 }
 
 function nearestCoreParentNodeId(

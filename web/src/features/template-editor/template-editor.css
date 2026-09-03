@@ -1519,6 +1519,27 @@
   background: var(--color-hairline);
 }
 
+.te-canvas-layout-problem {
+  position: absolute;
+  z-index: 11;
+  top: 76px;
+  left: 40px;
+  display: flex;
+  max-width: min(520px, calc(100% - 80px));
+  align-items: flex-start;
+  gap: var(--space-sm);
+  margin: 0;
+  padding: 9px 11px;
+  border: 1px solid var(--color-error-border);
+  border-radius: var(--radius-sm);
+  background: color-mix(in oklab, var(--color-error-soft) 94%, transparent);
+  box-shadow: var(--shadow-pop);
+  color: var(--color-error-ink);
+  font-size: var(--text-xs);
+  line-height: 1.45;
+  backdrop-filter: blur(6px);
+}
+
 .te-canvas-ruler {
   position: absolute;
   z-index: 4;

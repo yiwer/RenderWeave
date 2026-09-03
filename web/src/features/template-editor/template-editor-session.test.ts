@@ -6,6 +6,7 @@ import {
   adoptStructuredTemplateImport,
   authoritativePreviewGuard,
   canonicalStringifyWorkingValue,
+  commitStructuredEditorCommand,
   isCanonicalDirty,
   redoStructuredCommand,
   undoStructuredCommand,
@@ -130,6 +131,147 @@ describe('Template Editor E2 canonical local session', () => {
     expect(redoStructuredCommand(branch)).toBe(branch);
   });
 
+  it('commits several node shells as one compact reversible history step', () => {
+    const initial = structuredSession();
+    const frameBefore = shell(findNodeValue(initial, 'frame-id'));
+    const rectBefore = shell(findNodeValue(initial, 'rect-id'));
+    const frameAfter = {
+      ...frameBefore,
+      placement: { ...(frameBefore.placement as Record<string, unknown>), xMm: 5 },
+    };
+    const rectAfter = {
+      ...rectBefore,
+      placement: { ...(rectBefore.placement as Record<string, unknown>), xMm: 7 },
+    };
+
+    const committed = commitStructuredEditorCommand(initial, {
+      kind: 'replace-node-shells',
+      replacements: [
+        { nodeId: 'rect-id', before: rectBefore, after: rectAfter },
+        { nodeId: 'frame-id', before: frameBefore, after: frameAfter },
+      ],
+    });
+
+    expect(committed.state).toBe('applied');
+    if (committed.state !== 'applied') {
+      throw new Error(committed.state === 'invalid' ? committed.reason : committed.state);
+    }
+    expect(committed.session.history.past).toHaveLength(1);
+    const historyCommand = committed.session.history.past[0];
+    expect(historyCommand?.kind).toBe('replace-node-shells');
+    if (historyCommand?.kind !== 'replace-node-shells') throw new Error('expected multi-shell history');
+    expect(Object.isFrozen(historyCommand.replacements)).toBe(true);
+    expect(historyCommand.replacements.every((item) => (
+      !Object.hasOwn(item.before, 'children') && !Object.hasOwn(item.after, 'children')
+    ))).toBe(true);
+    const changedCanonical = committed.session.workingCopy.canonicalDesignDsl;
+    const undone = undoStructuredCommand(committed.session);
+    expect(undone.workingCopy.canonicalDesignDsl).toBe(initial.workingCopy.canonicalDesignDsl);
+    expect(redoStructuredCommand(undone).workingCopy.canonicalDesignDsl).toBe(changedCanonical);
+  });
+
+  it('rejects a drifting multi-shell command without applying any earlier shell', () => {
+    const initial = structuredSession();
+    const frameBefore = shell(findNodeValue(initial, 'frame-id'));
+    const rectBefore = shell(findNodeValue(initial, 'rect-id'));
+
+    const committed = commitStructuredEditorCommand(initial, {
+      kind: 'replace-node-shells',
+      replacements: [
+        {
+          nodeId: 'rect-id',
+          before: rectBefore,
+          after: { ...rectBefore, displayName: '不应生效' },
+        },
+        {
+          nodeId: 'frame-id',
+          before: { ...frameBefore, displayName: '漂移的旧值' },
+          after: { ...frameBefore, displayName: '同样不应生效' },
+        },
+      ],
+    });
+
+    expect(committed).toEqual({ state: 'invalid', session: initial, reason: 'WORKING_COPY_INVALID' });
+    expect(committed.session.workingCopy.canonicalDesignDsl).toBe(initial.workingCopy.canonicalDesignDsl);
+    expect(committed.session.history.past).toHaveLength(0);
+  });
+
+  it('moves a subtree and compensates owner shells as one frozen reversible history step', () => {
+    const initial = groupOwnerSession();
+    const frameBefore = shell(findNodeValue(initial, 'frame-id'));
+    const rectBefore = shell(findNodeValue(initial, 'rect-id'));
+    const frameAfter = {
+      ...frameBefore,
+      placement: { ...(frameBefore.placement as Record<string, unknown>), xMm: 25 },
+    };
+
+    const committed = commitStructuredEditorCommand(initial, {
+      kind: 'move-node',
+      nodeId: 'rect-id',
+      before: {
+        parentNodeId: 'frame-id', childIndex: 0,
+        placement: rectBefore.placement as Record<string, unknown>,
+      },
+      after: {
+        parentNodeId: 'canvas-id', childIndex: 1,
+        placement: {
+          type: 'ABSOLUTE', xMm: 4, yMm: 5,
+          widthMode: 'FIXED', widthMm: 100,
+          heightMode: 'FIXED', heightMm: 100,
+        },
+      },
+      groupCompensations: [{
+        nodeId: 'frame-id', before: frameBefore, after: frameAfter,
+      }],
+    });
+
+    expect(committed.state).toBe('applied');
+    if (committed.state !== 'applied') throw new Error('expected applied composite move');
+    const historyCommand = committed.session.history.past[0];
+    expect(historyCommand?.kind).toBe('move-node');
+    if (historyCommand?.kind !== 'move-node') throw new Error('expected move history');
+    expect(Object.isFrozen(historyCommand.groupCompensations)).toBe(true);
+    expect(historyCommand.groupCompensations?.every((item) => (
+      !Object.hasOwn(item.before, 'children') && !Object.hasOwn(item.after, 'children')
+    ))).toBe(true);
+    const changedCanonical = committed.session.workingCopy.canonicalDesignDsl;
+    const undone = undoStructuredCommand(committed.session);
+    expect(undone.workingCopy.canonicalDesignDsl).toBe(initial.workingCopy.canonicalDesignDsl);
+    expect(redoStructuredCommand(undone).workingCopy.canonicalDesignDsl).toBe(changedCanonical);
+  });
+
+  it('rejects a drifting move compensation before changing the tree', () => {
+    const initial = groupOwnerSession();
+    const frameBefore = shell(findNodeValue(initial, 'frame-id'));
+    const rectBefore = shell(findNodeValue(initial, 'rect-id'));
+
+    const committed = commitStructuredEditorCommand(initial, {
+      kind: 'move-node',
+      nodeId: 'rect-id',
+      before: {
+        parentNodeId: 'frame-id', childIndex: 0,
+        placement: rectBefore.placement as Record<string, unknown>,
+      },
+      after: {
+        parentNodeId: 'canvas-id', childIndex: 1,
+        placement: {
+          type: 'ABSOLUTE', xMm: 4, yMm: 5,
+          widthMode: 'FIXED', widthMm: 100,
+          heightMode: 'FIXED', heightMm: 100,
+        },
+      },
+      groupCompensations: [{
+        nodeId: 'frame-id',
+        before: { ...frameBefore, displayName: 'drifted shell' },
+        after: { ...frameBefore, displayName: 'must not apply' },
+      }],
+    });
+
+    expect(committed).toEqual({ state: 'invalid', session: initial, reason: 'WORKING_COPY_INVALID' });
+    expect(committed.session.workingCopy.canonicalDesignDsl).toBe(initial.workingCopy.canonicalDesignDsl);
+    expect(committed.session.history.past).toHaveLength(0);
+  });
+
   it('bounds history at 100 structural commands', () => {
     let session = structuredSession();
     for (let index = 1; index <= 101; index += 1) {
@@ -229,6 +371,37 @@ function structuredSession(
   expect(Object.isFrozen(session.history.past)).toBe(true);
   expect(Object.isFrozen(session.history.future)).toBe(true);
   return session;
+}
+
+function groupOwnerSession(): StructuredEditorSession {
+  const canonical = structuredBaseline().canonicalDesignDsl.replace('"kind":"frame"', '"kind":"group"');
+  return structuredSession(baselineFromCanonical(canonical));
+}
+
+function findNodeValue(
+  session: StructuredEditorSession,
+  nodeId: string,
+): Record<string, unknown> {
+  const visit = (value: unknown): Record<string, unknown> | null => {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+    const node = value as Record<string, unknown>;
+    if (node.nodeId === nodeId) return node;
+    if (!Array.isArray(node.children)) return null;
+    for (const child of node.children) {
+      const found = visit(child);
+      if (found) return found;
+    }
+    return null;
+  };
+  const found = visit(session.workingCopy.designDsl.designRoot);
+  if (!found) throw new Error(`node ${nodeId} missing`);
+  return found;
+}
+
+function shell(node: Record<string, unknown>): Record<string, unknown> {
+  const value = { ...node };
+  delete value.children;
+  return value;
 }
 
 function baselineFromCanonical(canonicalDesignDsl: string): CanonicalTemplateBaseline {

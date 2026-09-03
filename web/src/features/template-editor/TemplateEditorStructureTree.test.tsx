@@ -151,7 +151,7 @@ describe('Template Editor Structure tree authoring interactions', () => {
     expect(onMoveNode).toHaveBeenLastCalledWith('rect', 'nested-rect', 'after');
   });
 
-  it('marks every DesignDSL container without offering unsupported move-into targets', () => {
+  it('offers structural reparent and sibling drops for the formal Grid container', () => {
     const onMoveNode = vi.fn();
     renderTree({ nodes: nodesWithGrid(), onMoveNode });
     const source = screen.getByRole('treeitem', { name: /底色/ });
@@ -166,22 +166,25 @@ describe('Template Editor Structure tree authoring interactions', () => {
     const transfer = dragTransfer('rect');
     fireDrag(source, 'dragstart', transfer);
     fireDrag(grid, 'dragover', transfer, 122);
-    expect(grid.dataset.dropPosition).toBe('after');
-    expect(grid.dataset.dropPosition).not.toBe('into');
+    expect(grid.dataset.dropPosition).toBe('into');
+    fireDrag(grid, 'drop', transfer, 122);
+    expect(onMoveNode).toHaveBeenLastCalledWith('rect', 'grid', 'into');
 
     vi.spyOn(gridChild, 'getBoundingClientRect').mockReturnValue(bounds(100, 44));
+    fireDrag(source, 'dragstart', transfer);
     fireDrag(gridChild, 'dragover', transfer, 122);
-    expect(gridChild.dataset.dropPosition).toBeUndefined();
+    expect(gridChild.dataset.dropPosition).toBe('after');
+    fireDrag(gridChild, 'drop', transfer, 122);
+    expect(onMoveNode).toHaveBeenLastCalledWith('rect', 'grid-child', 'after');
 
     fireEvent.keyDown(source, { key: 'F10', shiftKey: true });
     fireEvent.click(screen.getByRole('menuitem', { name: '移动…' }));
     fireEvent.change(screen.getByRole('combobox', { name: '目标节点' }), {
       target: { value: 'grid-child' },
     });
-    expect(screen.getByRole('radio', { name: '之前' }).hasAttribute('disabled')).toBe(true);
+    expect(screen.getByRole('radio', { name: '之前' }).hasAttribute('disabled')).toBe(false);
     expect(screen.getByRole('radio', { name: '移入容器' }).hasAttribute('disabled')).toBe(true);
-    expect(screen.getByRole('radio', { name: '之后' }).hasAttribute('disabled')).toBe(true);
-    expect(onMoveNode).not.toHaveBeenCalled();
+    expect(screen.getByRole('radio', { name: '之后' }).hasAttribute('disabled')).toBe(false);
   });
 
   it('moves before, into or after a chosen target from a keyboard-accessible menu', () => {

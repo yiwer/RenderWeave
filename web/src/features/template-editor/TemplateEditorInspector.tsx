@@ -20,7 +20,10 @@ import {
   objectOrNull,
   type EditorNodeProjection,
 } from './template-editor-model';
-import { isCoreTemplateAuthoringKind } from './template-editor-node-contract';
+import {
+  isCoreTemplateAuthoringKind,
+  isTemplateNodeSizeModeAllowed,
+} from './template-editor-node-contract';
 import {
   resolveTemplateAssetRef,
   type TemplateAssetResolution,
@@ -47,6 +50,13 @@ import {
   type TemplateStaticSchemaPendingReference,
   type TemplateStaticSchemaTransport,
 } from './template-editor-static-schema';
+import {
+  formatTemplateGridTracks,
+  isTemplateGridTrackList,
+  parseTemplateGridTracks,
+  type TemplateGridTrack,
+} from './template-editor-grid-tracks';
+import { canonicalTemplateDecimal } from './template-canonical-decimal';
 
 type InspectorTab = 'properties' | 'bindings';
 type DraftParse<T> = { ok: true; value: T } | { ok: false; problem: string };
@@ -55,8 +65,10 @@ const COLOR = /^#[0-9A-Fa-f]{8}$/;
 
 const KIND_LABELS: Readonly<Record<string, string>> = {
   canvas: '画布',
+  group: '自由分组',
   frame: '框架',
   stack: '堆叠',
+  grid: '网格',
   text: '文本',
   image: '图片',
   rect: '矩形',
@@ -71,6 +83,7 @@ const KIND_LABELS: Readonly<Record<string, string>> = {
 
 export interface TemplateEditorInspectorProps {
   readonly node?: EditorNodeProjection;
+  readonly projectedSizeMm?: Readonly<{ widthMm: number; heightMm: number }>;
   readonly disabled: boolean;
   readonly onCommand: (intent: TemplateEditorCommandIntent) => void;
   readonly assetTransport?: TemplateEditorAssetTransport;
@@ -99,6 +112,7 @@ export interface TemplateEditorInspectorFocusRequest {
  */
 export function TemplateEditorInspector({
   node,
+  projectedSizeMm,
   disabled,
   onCommand,
   assetTransport,
@@ -275,6 +289,7 @@ export function TemplateEditorInspector({
         >
           <PropertiesPanel
             node={node}
+            projectedSizeMm={projectedSizeMm}
             disabled={disabled}
             onCommand={onCommand}
             assetTransport={assetTransport}
@@ -328,34 +343,40 @@ export function TemplateEditorInspector({
 
 function PropertiesPanel({
   node,
+  projectedSizeMm,
   disabled,
   onCommand,
   assetTransport,
   dependencyStaleMessage,
   bindingAction,
 }: Required<Pick<TemplateEditorInspectorProps, 'node' | 'disabled' | 'onCommand'>>
-  & Pick<TemplateEditorInspectorProps, 'assetTransport' | 'dependencyStaleMessage'>
+  & Pick<TemplateEditorInspectorProps, 'assetTransport' | 'dependencyStaleMessage' | 'projectedSizeMm'>
   & { bindingAction: (path: string) => ReactNode }) {
   const value = node.value;
   const placement = objectOrNull(value.placement);
   const fill = objectOrNull(value.fill);
   const stroke = objectOrNull(value.stroke);
+  const padding = objectOrNull(value.padding);
   const runs = Array.isArray(value.runs)
     ? value.runs.map(objectOrNull).filter((run): run is Record<string, unknown> => run !== null)
     : [];
   const run = runs.length === 1 ? runs[0] : undefined;
-  const isCore = isCoreTemplateAuthoringKind(node.kind);
+  const isCore = isCoreTemplateAuthoringKind(node.kind)
+    || node.kind === 'group' || node.kind === 'grid';
   const isCanvas = node.kind === 'canvas';
+  const isGroup = node.kind === 'group';
   const isFrame = node.kind === 'frame';
   const isStack = node.kind === 'stack';
+  const isGrid = node.kind === 'grid';
   const isRect = node.kind === 'rect';
   const isText = node.kind === 'text';
   const isImage = node.kind === 'image';
   const isQrCode = node.kind === 'qrCode';
   const isBarcode = node.kind === 'barcode';
   const hasAbsoluteGeometry = placement?.type === 'ABSOLUTE' && !isCanvas;
-  const hasLayoutProperties = isFrame || isStack;
-  const hasFill = isFrame || isStack || isRect || node.kind === 'ellipse'
+  const hasManagedPlacement = placement?.type === 'STACK' || placement?.type === 'GRID';
+  const hasLayoutProperties = isFrame || isStack || isGrid;
+  const hasFill = isFrame || isStack || isGrid || isRect || node.kind === 'ellipse'
     || node.kind === 'polygon' || node.kind === 'path';
   const hasStroke = isRect || node.kind === 'ellipse' || node.kind === 'line'
     || node.kind === 'polygon' || node.kind === 'polyline' || node.kind === 'path';
@@ -500,7 +521,7 @@ function PropertiesPanel({
       ) : null}
 
       {hasLayoutProperties ? (
-        <InspectorGroup group="layout-constraints" title="布局 / 约束">
+        <InspectorGroup group="container-layout" title="布局模式与容器设置">
           {isStack ? (
             <BindablePropertyRow path="direction" action={bindingAction('direction')}>
               <label className="te-node-inspector-field">
@@ -538,6 +559,92 @@ function PropertiesPanel({
               action={bindingAction('gapMm')}
             />
           ) : null}
+          {isStack ? (
+            <>
+              <BindablePropertyRow
+                path="justifyContent"
+                action={bindingAction('justifyContent')}
+              >
+                <label className="te-node-inspector-field">
+                  <span>主轴分布</span>
+                  <select
+                    aria-label="主轴分布"
+                    value={stackJustification(value.justifyContent)}
+                    disabled={disabled}
+                    onChange={(event) => command('justifyContent', event.currentTarget.value)}
+                  >
+                    <option value="START">起始</option>
+                    <option value="CENTER">居中</option>
+                    <option value="END">末端</option>
+                    <option value="SPACE_BETWEEN">两端对齐</option>
+                    <option value="SPACE_AROUND">环绕均分</option>
+                    <option value="SPACE_EVENLY">等距均分</option>
+                  </select>
+                </label>
+              </BindablePropertyRow>
+              <BindablePropertyRow path="alignItems" action={bindingAction('alignItems')}>
+                <label className="te-node-inspector-field">
+                  <span>交叉轴对齐</span>
+                  <select
+                    aria-label="交叉轴对齐"
+                    value={selfAlignment(value.alignItems)}
+                    disabled={disabled}
+                    onChange={(event) => command('alignItems', event.currentTarget.value)}
+                  >
+                    <option value="START">起始</option>
+                    <option value="CENTER">居中</option>
+                    <option value="END">末端</option>
+                  </select>
+                </label>
+              </BindablePropertyRow>
+            </>
+          ) : null}
+          {isGrid ? (
+            <>
+              <CommitInput
+                label="列轨道"
+                initialValue={gridTrackDraft(value.columns)}
+                disabled={disabled}
+                parse={parseGridTrackDraft}
+                isUnchanged={(next) => sameGridTracks(value.columns, next)}
+                onCommit={(next) => command('columns', next)}
+              />
+              <CommitInput
+                label="行轨道"
+                initialValue={gridTrackDraft(value.rows)}
+                disabled={disabled}
+                parse={parseGridTrackDraft}
+                isUnchanged={(next) => sameGridTracks(value.rows, next)}
+                onCommit={(next) => command('rows', next)}
+              />
+              <div className="te-node-inspector-field-grid">
+                <CommitInput
+                  label="列间距"
+                  suffix="mm"
+                  inputMode="decimal"
+                  initialValue={templateNumberDraft(value.columnGapMm ?? 0)}
+                  disabled={disabled}
+                  parse={(draft) => parseNumber(draft, false, '列间距必须是非负有限数值。')}
+                  isUnchanged={(next) => sameTemplateNumber(value.columnGapMm ?? 0, next)}
+                  onCommit={(next) => command('columnGapMm', next)}
+                  propertyPath="columnGapMm"
+                  action={bindingAction('columnGapMm')}
+                />
+                <CommitInput
+                  label="行间距"
+                  suffix="mm"
+                  inputMode="decimal"
+                  initialValue={templateNumberDraft(value.rowGapMm ?? 0)}
+                  disabled={disabled}
+                  parse={(draft) => parseNumber(draft, false, '行间距必须是非负有限数值。')}
+                  isUnchanged={(next) => sameTemplateNumber(value.rowGapMm ?? 0, next)}
+                  onCommit={(next) => command('rowGapMm', next)}
+                  propertyPath="rowGapMm"
+                  action={bindingAction('rowGapMm')}
+                />
+              </div>
+            </>
+          ) : null}
           <BindablePropertyRow path="clipContent" action={bindingAction('clipContent')}>
             <label className="te-node-inspector-check">
               <span>
@@ -557,6 +664,77 @@ function PropertiesPanel({
               />
             </label>
           </BindablePropertyRow>
+        </InspectorGroup>
+      ) : null}
+
+      {hasLayoutProperties ? (
+        <InspectorGroup group="padding" title="内边距">
+          <div className="te-node-inspector-field-grid">
+            <CommitInput
+              label="上内边距"
+              suffix="mm"
+              inputMode="decimal"
+              initialValue={templateNumberDraft(padding?.topMm ?? 0)}
+              disabled={disabled}
+              parse={(draft) => parseNumber(draft, false, '上内边距必须是非负有限数值。')}
+              isUnchanged={(next) => sameTemplateNumber(padding?.topMm ?? 0, next)}
+              onCommit={(next) => command('paddingTopMm', next)}
+              propertyPath="padding.topMm"
+              action={bindingAction('padding.topMm')}
+            />
+            <CommitInput
+              label="右内边距"
+              suffix="mm"
+              inputMode="decimal"
+              initialValue={templateNumberDraft(padding?.rightMm ?? 0)}
+              disabled={disabled}
+              parse={(draft) => parseNumber(draft, false, '右内边距必须是非负有限数值。')}
+              isUnchanged={(next) => sameTemplateNumber(padding?.rightMm ?? 0, next)}
+              onCommit={(next) => command('paddingRightMm', next)}
+              propertyPath="padding.rightMm"
+              action={bindingAction('padding.rightMm')}
+            />
+            <CommitInput
+              label="下内边距"
+              suffix="mm"
+              inputMode="decimal"
+              initialValue={templateNumberDraft(padding?.bottomMm ?? 0)}
+              disabled={disabled}
+              parse={(draft) => parseNumber(draft, false, '下内边距必须是非负有限数值。')}
+              isUnchanged={(next) => sameTemplateNumber(padding?.bottomMm ?? 0, next)}
+              onCommit={(next) => command('paddingBottomMm', next)}
+              propertyPath="padding.bottomMm"
+              action={bindingAction('padding.bottomMm')}
+            />
+            <CommitInput
+              label="左内边距"
+              suffix="mm"
+              inputMode="decimal"
+              initialValue={templateNumberDraft(padding?.leftMm ?? 0)}
+              disabled={disabled}
+              parse={(draft) => parseNumber(draft, false, '左内边距必须是非负有限数值。')}
+              isUnchanged={(next) => sameTemplateNumber(padding?.leftMm ?? 0, next)}
+              onCommit={(next) => command('paddingLeftMm', next)}
+              propertyPath="padding.leftMm"
+              action={bindingAction('padding.leftMm')}
+            />
+          </div>
+        </InspectorGroup>
+      ) : null}
+
+      {hasManagedPlacement && placement ? (
+        <InspectorGroup group="child-constraints" title={placement.type === 'STACK'
+          ? '堆叠子项约束'
+          : '网格子项约束'}>
+          <ManagedPlacementFields
+            nodeId={node.nodeId}
+            nodeKind={node.kind}
+            projectedSizeMm={projectedSizeMm}
+            placement={placement}
+            disabled={disabled}
+            onCommand={onCommand}
+            bindingAction={bindingAction}
+          />
         </InspectorGroup>
       ) : null}
 
@@ -593,6 +771,18 @@ function PropertiesPanel({
         </InspectorGroup>
       ) : hasAbsoluteGeometry && placement ? (
         <InspectorGroup group="position-size" title="位置 / 尺寸">
+          <PlacementSizeConstraintFields
+            nodeId={node.nodeId}
+            nodeKind={node.kind}
+            projectedSizeMm={projectedSizeMm}
+            placement={placement}
+            disabled={disabled}
+            onCommand={onCommand}
+            bindingAction={bindingAction}
+            includeFixedSizes={false}
+            allowMinMax={!isGroup}
+            lockHugModes={isGroup}
+          />
           <GeometryFields
             nodeId={node.nodeId}
             placement={placement}
@@ -1119,6 +1309,454 @@ function GeometryFields({
   );
 }
 
+function ManagedPlacementFields({
+  nodeId,
+  nodeKind,
+  projectedSizeMm,
+  placement,
+  disabled,
+  onCommand,
+  bindingAction,
+}: {
+  nodeId: string;
+  nodeKind: string;
+  projectedSizeMm?: Readonly<{ widthMm: number; heightMm: number }>;
+  placement: Record<string, unknown>;
+  disabled: boolean;
+  onCommand: (intent: TemplateEditorCommandIntent) => void;
+  bindingAction: (path: string) => ReactNode;
+}) {
+  const command = (
+    property: Extract<TemplateEditorCommandIntent, { operation: 'set-property' }>['property'],
+    value: unknown,
+  ) => onCommand({ operation: 'set-property', nodeId, property, value });
+  return (
+    <>
+      <PlacementSizeConstraintFields
+        nodeId={nodeId}
+        nodeKind={nodeKind}
+        projectedSizeMm={projectedSizeMm}
+        placement={placement}
+        disabled={disabled}
+        onCommand={onCommand}
+        bindingAction={bindingAction}
+        allowMinMax={nodeKind !== 'group'}
+        lockHugModes={nodeKind === 'group'}
+      />
+      <div className="te-node-inspector-field-grid">
+        {([
+          ['marginTopMm', '上外边距'],
+          ['marginRightMm', '右外边距'],
+          ['marginBottomMm', '下外边距'],
+          ['marginLeftMm', '左外边距'],
+        ] as const).map(([property, label]) => (
+          <CommitInput
+            key={property}
+            label={label}
+            suffix="mm"
+            inputMode="decimal"
+            initialValue={templateNumberDraft(placement[property] ?? 0)}
+            disabled={disabled}
+            parse={(draft) => parseOptionalFiniteNumber(draft, `${label}必须是有限数值。`)}
+            isUnchanged={(next) => next === null
+              ? placement[property] === undefined
+              : sameTemplateNumber(placement[property] ?? 0, next)}
+            onCommit={(next) => command(property, next)}
+            propertyPath={`placement.${property}`}
+            action={bindingAction(`placement.${property}`)}
+          />
+        ))}
+      </div>
+      {placement.type === 'STACK' ? (
+        <>
+          <BindablePropertyRow path="placement.alignSelf" action={bindingAction('placement.alignSelf')}>
+            <label className="te-node-inspector-field">
+              <span>堆叠内对齐</span>
+              <select
+                aria-label="堆叠内对齐"
+                value={optionalSelfAlignment(placement.alignSelf)}
+                disabled={disabled}
+                onChange={(event) => command(
+                  'alignSelf',
+                  event.currentTarget.value === '' ? null : event.currentTarget.value,
+                )}
+              >
+                <option value="">默认（起始）</option>
+                <option value="START">起始</option>
+                <option value="CENTER">居中</option>
+                <option value="END">末端</option>
+              </select>
+            </label>
+          </BindablePropertyRow>
+          {nodeKind !== 'group' ? (
+            <CommitInput
+              label="主轴填充权重"
+              inputMode="decimal"
+              initialValue={templateNumberDraft(placement.fillWeight ?? 1)}
+              disabled={disabled}
+              parse={(draft) => parseOptionalNumber(
+                draft, true, '主轴填充权重必须大于 0。',
+              )}
+              isUnchanged={(next) => next === null
+                ? placement.fillWeight === undefined
+                : sameTemplateNumber(placement.fillWeight ?? 1, next)}
+              onCommit={(next) => command('fillWeight', next)}
+              propertyPath="placement.fillWeight"
+              action={bindingAction('placement.fillWeight')}
+            />
+          ) : null}
+        </>
+      ) : (
+        <>
+          <div className="te-node-inspector-field-grid">
+            <CommitInput
+              label="网格行"
+              inputMode="decimal"
+              initialValue={templateNumberDraft(placement.row)}
+              disabled={disabled}
+              parse={(draft) => parseInteger(draft, 0, '网格行必须是非负整数。')}
+              isUnchanged={(next) => sameTemplateNumber(placement.row, next)}
+              onCommit={(next) => command('row', next)}
+              propertyPath="placement.row"
+              action={bindingAction('placement.row')}
+            />
+            <CommitInput
+              label="网格列"
+              inputMode="decimal"
+              initialValue={templateNumberDraft(placement.column)}
+              disabled={disabled}
+              parse={(draft) => parseInteger(draft, 0, '网格列必须是非负整数。')}
+              isUnchanged={(next) => sameTemplateNumber(placement.column, next)}
+              onCommit={(next) => command('column', next)}
+              propertyPath="placement.column"
+              action={bindingAction('placement.column')}
+            />
+            <CommitInput
+              label="跨行"
+              inputMode="decimal"
+              initialValue={templateNumberDraft(placement.rowSpan ?? 1)}
+              disabled={disabled}
+              parse={(draft) => parseOptionalInteger(draft, 1, '跨行必须是正整数。')}
+              isUnchanged={(next) => next === null
+                ? placement.rowSpan === undefined
+                : sameTemplateNumber(placement.rowSpan ?? 1, next)}
+              onCommit={(next) => command('rowSpan', next)}
+              propertyPath="placement.rowSpan"
+              action={bindingAction('placement.rowSpan')}
+            />
+            <CommitInput
+              label="跨列"
+              inputMode="decimal"
+              initialValue={templateNumberDraft(placement.columnSpan ?? 1)}
+              disabled={disabled}
+              parse={(draft) => parseOptionalInteger(draft, 1, '跨列必须是正整数。')}
+              isUnchanged={(next) => next === null
+                ? placement.columnSpan === undefined
+                : sameTemplateNumber(placement.columnSpan ?? 1, next)}
+              onCommit={(next) => command('columnSpan', next)}
+              propertyPath="placement.columnSpan"
+              action={bindingAction('placement.columnSpan')}
+            />
+          </div>
+          <BindablePropertyRow
+            path="placement.horizontalAlignSelf"
+            action={bindingAction('placement.horizontalAlignSelf')}
+          >
+            <label className="te-node-inspector-field">
+              <span>单元内水平对齐</span>
+              <select
+                aria-label="单元内水平对齐"
+                value={optionalSelfAlignment(placement.horizontalAlignSelf)}
+                disabled={disabled}
+                onChange={(event) => command(
+                  'horizontalAlignSelf',
+                  event.currentTarget.value === '' ? null : event.currentTarget.value,
+                )}
+              >
+                <option value="">默认（起始）</option>
+                <option value="START">起始</option>
+                <option value="CENTER">居中</option>
+                <option value="END">末端</option>
+              </select>
+            </label>
+          </BindablePropertyRow>
+          <BindablePropertyRow
+            path="placement.verticalAlignSelf"
+            action={bindingAction('placement.verticalAlignSelf')}
+          >
+            <label className="te-node-inspector-field">
+              <span>单元内垂直对齐</span>
+              <select
+                aria-label="单元内垂直对齐"
+                value={optionalSelfAlignment(placement.verticalAlignSelf)}
+                disabled={disabled}
+                onChange={(event) => command(
+                  'verticalAlignSelf',
+                  event.currentTarget.value === '' ? null : event.currentTarget.value,
+                )}
+              >
+                <option value="">默认（起始）</option>
+                <option value="START">起始</option>
+                <option value="CENTER">居中</option>
+                <option value="END">末端</option>
+              </select>
+            </label>
+          </BindablePropertyRow>
+        </>
+      )}
+    </>
+  );
+}
+
+function PlacementSizeConstraintFields({
+  nodeId,
+  nodeKind,
+  projectedSizeMm,
+  placement,
+  disabled,
+  onCommand,
+  bindingAction,
+  includeFixedSizes = true,
+  allowMinMax = true,
+  lockHugModes = false,
+}: {
+  nodeId: string;
+  nodeKind: string;
+  projectedSizeMm?: Readonly<{ widthMm: number; heightMm: number }>;
+  placement: Record<string, unknown>;
+  disabled: boolean;
+  onCommand: (intent: TemplateEditorCommandIntent) => void;
+  bindingAction: (path: string) => ReactNode;
+  includeFixedSizes?: boolean;
+  allowMinMax?: boolean;
+  lockHugModes?: boolean;
+}) {
+  const command = (
+    property: Extract<TemplateEditorCommandIntent, { operation: 'set-property' }>['property'],
+    value: unknown,
+  ) => onCommand({ operation: 'set-property', nodeId, property, value });
+  const widthMode = sizeMode(placement.widthMode);
+  const heightMode = sizeMode(placement.heightMode);
+  const allowedModes = (['FIXED', 'HUG_CONTENT', 'FILL'] as const)
+    .filter((mode) => isTemplateNodeSizeModeAllowed(nodeKind, mode));
+  const projectedWidth = positiveProjectedSize(projectedSizeMm?.widthMm);
+  const projectedHeight = positiveProjectedSize(projectedSizeMm?.heightMm);
+  const fixedModeAllowed = allowedModes.includes('FIXED');
+  const changeMode = (
+    axis: 'width' | 'height',
+    current: 'FIXED' | 'HUG_CONTENT' | 'FILL',
+    next: 'FIXED' | 'HUG_CONTENT' | 'FILL',
+  ) => {
+    if (next === 'FIXED' && current !== 'FIXED') {
+      const projected = axis === 'width' ? projectedWidth : projectedHeight;
+      if (projected !== null) command(axis === 'width' ? 'widthMm' : 'heightMm', projected);
+      return;
+    }
+    command(axis === 'width' ? 'widthMode' : 'heightMode', next);
+  };
+
+  return (
+    <div className="te-node-inspector-field-grid">
+      <PlacementModeField
+        label="宽度模式"
+        value={widthMode}
+        allowedModes={allowedModes}
+        fixedUnavailable={widthMode !== 'FIXED' && projectedWidth === null}
+        disabled={disabled || lockHugModes}
+        onChange={(value) => changeMode('width', widthMode, value)}
+      />
+      <PlacementModeField
+        label="高度模式"
+        value={heightMode}
+        allowedModes={allowedModes}
+        fixedUnavailable={heightMode !== 'FIXED' && projectedHeight === null}
+        disabled={disabled || lockHugModes}
+        onChange={(value) => changeMode('height', heightMode, value)}
+      />
+      {fixedModeAllowed && widthMode !== 'FIXED' && projectedWidth === null ? (
+        <CommitInput
+          label="固定宽度"
+          suffix="mm"
+          inputMode="decimal"
+          initialValue=""
+          placeholder="输入后切换"
+          disabled={disabled}
+          parse={(draft) => parseNumber(draft, true, '固定宽度必须大于 0。')}
+          isUnchanged={() => false}
+          onCommit={(next) => command('widthMm', next)}
+          propertyPath="placement.widthMm"
+          action={bindingAction('placement.widthMm')}
+        />
+      ) : null}
+      {fixedModeAllowed && heightMode !== 'FIXED' && projectedHeight === null ? (
+        <CommitInput
+          label="固定高度"
+          suffix="mm"
+          inputMode="decimal"
+          initialValue=""
+          placeholder="输入后切换"
+          disabled={disabled}
+          parse={(draft) => parseNumber(draft, true, '固定高度必须大于 0。')}
+          isUnchanged={() => false}
+          onCommit={(next) => command('heightMm', next)}
+          propertyPath="placement.heightMm"
+          action={bindingAction('placement.heightMm')}
+        />
+      ) : null}
+      {includeFixedSizes && widthMode === 'FIXED' ? (
+        <CommitInput
+          label="宽度"
+          suffix="mm"
+          inputMode="decimal"
+          initialValue={templateNumberDraft(placement.widthMm)}
+          disabled={disabled}
+          parse={(draft) => parseNumber(draft, true, '宽度必须大于 0。')}
+          isUnchanged={(next) => sameTemplateNumber(placement.widthMm, next)}
+          onCommit={(next) => command('widthMm', next)}
+          propertyPath="placement.widthMm"
+          action={bindingAction('placement.widthMm')}
+        />
+      ) : null}
+      {includeFixedSizes && heightMode === 'FIXED' ? (
+        <CommitInput
+          label="高度"
+          suffix="mm"
+          inputMode="decimal"
+          initialValue={templateNumberDraft(placement.heightMm)}
+          disabled={disabled}
+          parse={(draft) => parseNumber(draft, true, '高度必须大于 0。')}
+          isUnchanged={(next) => sameTemplateNumber(placement.heightMm, next)}
+          onCommit={(next) => command('heightMm', next)}
+          propertyPath="placement.heightMm"
+          action={bindingAction('placement.heightMm')}
+        />
+      ) : null}
+      {allowMinMax ? (
+        <>
+          <PlacementLimitField
+            label="最小宽度"
+            property="minWidthMm"
+            value={placement.minWidthMm}
+            disabled={disabled}
+            positive={false}
+            onCommit={command}
+            bindingAction={bindingAction}
+          />
+          <PlacementLimitField
+            label="最小高度"
+            property="minHeightMm"
+            value={placement.minHeightMm}
+            disabled={disabled}
+            positive={false}
+            onCommit={command}
+            bindingAction={bindingAction}
+          />
+          <PlacementLimitField
+            label="最大宽度"
+            property="maxWidthMm"
+            value={placement.maxWidthMm}
+            disabled={disabled}
+            positive
+            onCommit={command}
+            bindingAction={bindingAction}
+          />
+          <PlacementLimitField
+            label="最大高度"
+            property="maxHeightMm"
+            value={placement.maxHeightMm}
+            disabled={disabled}
+            positive
+            onCommit={command}
+            bindingAction={bindingAction}
+          />
+        </>
+      ) : null}
+    </div>
+  );
+}
+
+function PlacementModeField({
+  label,
+  value,
+  allowedModes,
+  fixedUnavailable,
+  disabled,
+  onChange,
+}: {
+  label: string;
+  value: 'FIXED' | 'HUG_CONTENT' | 'FILL';
+  allowedModes: readonly ('FIXED' | 'HUG_CONTENT' | 'FILL')[];
+  fixedUnavailable: boolean;
+  disabled: boolean;
+  onChange: (value: 'FIXED' | 'HUG_CONTENT' | 'FILL') => void;
+}) {
+  return (
+    <label className="te-node-inspector-field">
+      <span>{label}</span>
+      <select
+        aria-label={label}
+        value={value}
+        disabled={disabled}
+        onChange={(event) => onChange(event.currentTarget.value as typeof value)}
+      >
+        {allowedModes.map((mode) => (
+          <option key={mode} value={mode} disabled={mode === 'FIXED' && fixedUnavailable}>
+            {SIZE_MODE_LABELS[mode]}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+}
+
+const SIZE_MODE_LABELS = {
+  FIXED: '固定',
+  HUG_CONTENT: '适应内容',
+  FILL: '填充可用空间',
+} as const;
+
+function PlacementLimitField({
+  label,
+  property,
+  value,
+  disabled,
+  positive,
+  onCommit,
+  bindingAction,
+}: {
+  label: string;
+  property: 'minWidthMm' | 'minHeightMm' | 'maxWidthMm' | 'maxHeightMm';
+  value: unknown;
+  disabled: boolean;
+  positive: boolean;
+  onCommit: (
+    property: Extract<TemplateEditorCommandIntent, { operation: 'set-property' }>['property'],
+    value: unknown,
+  ) => void;
+  bindingAction: (path: string) => ReactNode;
+}) {
+  return (
+    <CommitInput
+      label={label}
+      suffix="mm"
+      inputMode="decimal"
+      initialValue={templateNumberDraft(value)}
+      disabled={disabled}
+      parse={(draft) => parseOptionalNumber(
+        draft,
+        positive,
+        `${label}${positive ? '必须大于 0' : '必须是非负有限数值'}。`,
+      )}
+      isUnchanged={(next) => next === null
+        ? value === undefined
+        : sameTemplateNumber(value, next)}
+      onCommit={(next) => onCommit(property, next)}
+      propertyPath={`placement.${property}`}
+      action={bindingAction(`placement.${property}`)}
+    />
+  );
+}
+
 function BindingEditorDialog({
   property,
   designDsl,
@@ -1376,8 +2014,8 @@ function sameGeometry(
   geometry: Extract<TemplateEditorCommandIntent, { operation: 'set-geometry' }>['geometry'],
   placement: Record<string, unknown>,
 ): boolean {
-  return sameTemplateNumber(placement.xMm, geometry.xMm)
-    && sameTemplateNumber(placement.yMm, geometry.yMm)
+  return (geometry.xMm === undefined || sameTemplateNumber(placement.xMm, geometry.xMm))
+    && (geometry.yMm === undefined || sameTemplateNumber(placement.yMm, geometry.yMm))
     && (geometry.widthMm === undefined
       || sameTemplateNumber(placement.widthMm, geometry.widthMm))
     && (geometry.heightMm === undefined
@@ -1415,10 +2053,83 @@ function parseColor(draft: string): DraftParse<string> {
     : { ok: false, problem: '请输入 #RRGGBBAA 格式的颜色。' };
 }
 
+function parseGridTrackDraft(draft: string): DraftParse<readonly TemplateGridTrack[]> {
+  const parsed = parseTemplateGridTracks(draft);
+  return parsed.state === 'parsed'
+    ? { ok: true, value: parsed.tracks }
+    : { ok: false, problem: parsed.message };
+}
+
+function gridTrackDraft(value: unknown): string {
+  return isTemplateGridTrackList(value) ? formatTemplateGridTracks(value) : '';
+}
+
+function sameGridTracks(value: unknown, next: readonly TemplateGridTrack[]): boolean {
+  if (!isTemplateGridTrackList(value) || value.length !== next.length) return false;
+  return value.every((track, index) => {
+    const candidate = next[index];
+    if (!candidate || track.type !== candidate.type) return false;
+    if (track.type === 'AUTO' || candidate.type === 'AUTO') return true;
+    return track.type === 'FIXED' && candidate.type === 'FIXED'
+      ? sameTemplateNumericValue(track.valueMm, candidate.valueMm)
+      : track.type === 'FRACTION' && candidate.type === 'FRACTION'
+        && sameTemplateNumericValue(track.weight, candidate.weight);
+  });
+}
+
+function sameTemplateNumericValue(value: unknown, candidate: unknown): boolean {
+  const authored = templateNumberDraft(value);
+  const next = templateNumberDraft(candidate);
+  if (!authored || !next) return false;
+  try {
+    return canonicalTemplateDecimal(authored) === canonicalTemplateDecimal(next);
+  } catch {
+    return false;
+  }
+}
+
 function parseNumber(draft: string, positive: boolean, problem: string): DraftParse<number> {
   const value = finiteDraft(draft);
   if (value === null || (positive ? value <= 0 : value < 0)) return { ok: false, problem };
   return { ok: true, value };
+}
+
+function parseOptionalNumber(
+  draft: string,
+  positive: boolean,
+  problem: string,
+): DraftParse<number | null> {
+  if (draft.trim().length === 0) return { ok: true, value: null };
+  return parseNumber(draft, positive, problem);
+}
+
+function parseOptionalFiniteNumber(
+  draft: string,
+  problem: string,
+): DraftParse<number | null> {
+  if (draft.trim().length === 0) return { ok: true, value: null };
+  return parseFiniteNumber(draft, problem);
+}
+
+function parseFiniteNumber(draft: string, problem: string): DraftParse<number> {
+  const value = finiteDraft(draft);
+  return value === null ? { ok: false, problem } : { ok: true, value };
+}
+
+function parseInteger(draft: string, minimum: number, problem: string): DraftParse<number> {
+  const value = finiteDraft(draft);
+  return value === null || !Number.isSafeInteger(value) || value < minimum
+    ? { ok: false, problem }
+    : { ok: true, value };
+}
+
+function parseOptionalInteger(
+  draft: string,
+  minimum: number,
+  problem: string,
+): DraftParse<number | null> {
+  if (draft.trim().length === 0) return { ok: true, value: null };
+  return parseInteger(draft, minimum, problem);
 }
 
 function finiteDraft(draft: string): number | null {
@@ -1430,6 +2141,10 @@ function finiteDraft(draft: string): number | null {
 function positiveDraft(draft: string): number | null {
   const value = finiteDraft(draft);
   return value !== null && value > 0 ? value : null;
+}
+
+function positiveProjectedSize(value: unknown): number | null {
+  return typeof value === 'number' && Number.isFinite(value) && value > 0 ? value : null;
 }
 
 function bindingRecords(value: unknown): readonly Record<string, unknown>[] {
@@ -1487,4 +2202,23 @@ function bindingSchemaIdentityKey(identity: { readonly schemaKey: string; readon
 
 function stringValue(value: unknown, fallback = ''): string {
   return typeof value === 'string' ? value : fallback;
+}
+
+function stackJustification(value: unknown): string {
+  return value === 'CENTER' || value === 'END' || value === 'SPACE_BETWEEN'
+    || value === 'SPACE_AROUND' || value === 'SPACE_EVENLY'
+    ? value
+    : 'START';
+}
+
+function selfAlignment(value: unknown): string {
+  return value === 'CENTER' || value === 'END' ? value : 'START';
+}
+
+function optionalSelfAlignment(value: unknown): string {
+  return value === 'START' || value === 'CENTER' || value === 'END' ? value : '';
+}
+
+function sizeMode(value: unknown): 'FIXED' | 'HUG_CONTENT' | 'FILL' {
+  return value === 'HUG_CONTENT' || value === 'FILL' ? value : 'FIXED';
 }
