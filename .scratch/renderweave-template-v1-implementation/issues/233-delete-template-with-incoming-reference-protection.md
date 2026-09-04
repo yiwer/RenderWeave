@@ -36,4 +36,3 @@ history remain intact.
   certification or unrelated gate/hash/backtest expansion.
 
 ## Resolution
-

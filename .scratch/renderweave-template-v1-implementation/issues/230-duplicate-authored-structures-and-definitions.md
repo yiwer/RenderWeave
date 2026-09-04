@@ -33,4 +33,3 @@ identity/domain/target reference needed to preserve the copied intent. It never 
   autosave, collaboration or generic graph-cloning infrastructure.
 
 ## Resolution
-

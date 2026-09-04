@@ -34,4 +34,3 @@ to their actual disclosure and certainty so an uncertain response never becomes 
   server contract expansion or broad backend gates.
 
 ## Resolution
-

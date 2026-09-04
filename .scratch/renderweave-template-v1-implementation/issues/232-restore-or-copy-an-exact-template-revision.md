@@ -34,4 +34,3 @@ same-owner Template at revision 0 from an exact source revision, including a sou
   source lineage, semantic diff, server idempotency keys or broad replay gates.
 
 ## Resolution
-

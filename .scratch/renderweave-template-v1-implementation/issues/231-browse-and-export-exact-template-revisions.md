@@ -35,4 +35,3 @@ implemented.
   hash-registry replay or unrelated full gates.
 
 ## Resolution
-

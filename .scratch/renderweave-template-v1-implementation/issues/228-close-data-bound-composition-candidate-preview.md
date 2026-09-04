@@ -35,4 +35,3 @@ rather than expanding the Renderer profile.
   production rollout, IMAGE_ONLY admission, hash replay or historical backtests.
 
 ## Resolution
-
