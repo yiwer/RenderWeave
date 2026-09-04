@@ -10,6 +10,7 @@ import {
   Download,
   FileCode2,
   Layers3,
+  LayoutTemplate,
   List,
   ListTree,
   LockKeyhole,
@@ -167,7 +168,17 @@ function StaticSchemaDetailContent({ schemaKey, versionTag }: { schemaKey: strin
         { label: '数据结构资产', to: '/static-schemas' },
         { label: snapshot.data?.definition.displayName ?? `${schemaKey}@${versionTag}` },
       ]}
-      actions={snapshot.data ? <CopyStaticDialog sourceSchemaKey={schemaKey} versionTag={versionTag} defaultName={snapshot.data.definition.displayName} /> : undefined}
+      actions={snapshot.data ? (
+        <>
+          <Link
+            className="button primary-button"
+            to={`/templates/new?schemaKey=${encodeURIComponent(schemaKey)}&versionTag=${encodeURIComponent(versionTag)}`}
+          >
+            <LayoutTemplate aria-hidden="true" size={15} />基于此结构新建模板
+          </Link>
+          <CopyStaticDialog sourceSchemaKey={schemaKey} versionTag={versionTag} defaultName={snapshot.data.definition.displayName} />
+        </>
+      ) : undefined}
     >
       {snapshot.isPending && <ResourceLoading label="正在读取不可变产物" />}
       {snapshot.isError && <ResourceError error={snapshot.error} onRetry={() => void snapshot.refetch()} />}

@@ -133,6 +133,58 @@
   margin-top: var(--space-xl);
 }
 
+.template-schema-browser {
+  display: grid;
+  width: min(760px, 100%);
+  grid-template-columns: minmax(260px, 1fr) auto;
+  align-items: center;
+  gap: var(--space-md);
+  margin: 0 auto var(--space-lg);
+}
+
+.template-schema-browser .resource-search {
+  width: 100%;
+}
+
+.template-schema-browser .resource-pagination {
+  grid-column: 1 / -1;
+}
+
+.template-create-outcome {
+  display: grid;
+  width: min(760px, 100%);
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: start;
+  gap: var(--space-lg);
+  margin: 0 auto var(--space-lg);
+  padding: var(--space-xl);
+  border: 1px solid var(--color-success-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-success-soft);
+  color: var(--color-success-ink);
+}
+
+.template-create-outcome.is-unknown {
+  border-color: var(--color-warning-border);
+  background: var(--color-warning-soft);
+  color: var(--color-warning-ink);
+}
+
+.template-create-outcome strong,
+.template-create-outcome p,
+.template-create-outcome small {
+  display: block;
+}
+
+.template-create-outcome p {
+  margin: var(--space-xs) 0 var(--space-sm);
+  color: var(--color-body);
+}
+
+.template-create-outcome code {
+  overflow-wrap: anywhere;
+}
+
 .template-create-form {
   width: min(760px, 100%);
   margin: 0 auto;

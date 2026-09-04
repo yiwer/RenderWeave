@@ -71,6 +71,68 @@ test.describe('formal Template final product', () => {
     expect(browserErrors).toEqual([]);
   });
 
+  test('carries an exact StaticSchema through keyboard creation and keeps every result class safe', async ({ page }) => {
+    const browserErrors = captureBrowserErrors(page);
+    const contract = await installTemplateHttpContract(page, [
+      'OPAQUE',
+      'TRANSPORT_UNKNOWN',
+      'READABLE',
+    ]);
+    await page.setViewportSize({ width: 1280, height: 720 });
+
+    await page.goto('/static-schemas/archived-price/v7');
+    await page.getByRole('link', { name: '基于此结构新建模板' }).click();
+    await expect(page).toHaveURL(/\/templates\/new\?schemaKey=archived-price&versionTag=v7$/);
+    await expect(page.getByRole('button', { name: 'StaticSchema' }))
+      .toContainText('Archived price · archived-price@v7');
+
+    await page.getByRole('searchbox', { name: '搜索 StaticSchema' }).fill('catalog');
+    await expect(page.getByText('共 18 项 · 第 1 页')).toBeVisible();
+    await page.getByRole('button', { name: '下一页' }).click();
+    await expect(page.getByText('共 18 项 · 第 2 页')).toBeVisible();
+    const schemaPicker = page.getByRole('button', { name: 'StaticSchema' });
+    await schemaPicker.focus();
+    await page.keyboard.press('Enter');
+    await page.keyboard.press('End');
+    await page.keyboard.press('Enter');
+    await expect(schemaPicker).toContainText('Catalog Beta · catalog-beta@v2');
+
+    await page.getByRole('textbox', { name: 'Template 名称' }).fill('Opaque attempt');
+    await page.getByRole('button', { name: '创建并打开' }).click();
+    await expect(page.getByText('Template 已提交')).toBeVisible();
+    await expect(page.getByText(TEMPLATE_ID)).toBeVisible();
+    await expect(page.getByText(/不具备读取权限/)).toBeVisible();
+    await expect(page).toHaveURL(/\/templates\/new/);
+
+    await page.goto('/templates/new?schemaKey=archived-price&versionTag=v7');
+    await page.getByRole('textbox', { name: 'Template 名称' }).fill('Preserved intent');
+    await page.getByRole('button', { name: '创建并打开' }).click();
+    await expect(page.getByRole('alert')).toContainText('创建结果未知');
+    await expect(page.getByRole('alert')).toContainText('再次创建可能创建重复 Template');
+    await expect(page.getByRole('textbox', { name: 'Template 名称' })).toHaveValue('Preserved intent');
+    await expect(page.getByText('Template 目录已刷新，请先检查是否已创建。')).toBeVisible();
+    expect(contract.catalogRequests).toBeGreaterThan(0);
+
+    await page.getByRole('button', { name: '我已检查目录，仍要再次创建' }).click();
+    await expect(page).toHaveURL(new RegExp(`/templates/${TEMPLATE_ID}$`));
+    await expect(page.getByRole('main', { name: 'Template 编辑工作区' })).toBeVisible();
+    expect(contract.createRequests).toBe(3);
+    expect(contract.createSchemaRefs).toEqual([
+      'catalog-beta@v2',
+      'archived-price@v7',
+      'archived-price@v7',
+    ]);
+    expect(contract.createDisplayNames).toEqual([
+      'Opaque attempt',
+      'Preserved intent',
+      'Preserved intent',
+    ]);
+    await expectNoHorizontalOverflow(page);
+    await expectNoSeriousOrCriticalAxe(page, '.template-editor-root');
+    expect(browserErrors.some((error) => error.includes('ERR_CONNECTION_RESET'))).toBe(true);
+    expect(browserErrors.filter((error) => !error.includes('ERR_CONNECTION_RESET'))).toEqual([]);
+  });
+
   test('creates a Rect in the formal editor, saves its canonical wire and keeps it after reopen', async ({ page }) => {
     const browserErrors = captureBrowserErrors(page);
     const contract = await installTemplateHttpContract(page);
@@ -151,9 +213,17 @@ test.describe('formal Template final product', () => {
   });
 });
 
-async function installTemplateHttpContract(page: Page) {
+type CreateOutcome = 'READABLE' | 'OPAQUE' | 'TRANSPORT_UNKNOWN';
+
+async function installTemplateHttpContract(
+  page: Page,
+  createOutcomes: CreateOutcome[] = ['READABLE'],
+) {
   const observations = {
+    catalogRequests: 0,
     createRequests: 0,
+    createDisplayNames: [] as string[],
+    createSchemaRefs: [] as string[],
     previewRequests: 0,
     saveRequests: 0,
     savedCanonical: CANONICAL_DESIGN,
@@ -165,6 +235,7 @@ async function installTemplateHttpContract(page: Page) {
     const method = request.method();
 
     if (method === 'GET' && url.pathname === '/api/v1/templates') {
+      observations.catalogRequests += 1;
       await json(route, {
         items: [{
           templateId: TEMPLATE_ID,
@@ -178,32 +249,53 @@ async function installTemplateHttpContract(page: Page) {
       return;
     }
     if (method === 'GET' && url.pathname === '/api/v1/static-schemas') {
+      const search = url.searchParams.get('search') ?? '';
+      const pageNumber = Number(url.searchParams.get('page') ?? '1');
+      const catalogItem = pageNumber === 1
+        ? staticSchemaSummary('catalog-alpha', 'v1', 'Catalog Alpha')
+        : staticSchemaSummary('catalog-beta', 'v2', 'Catalog Beta');
       await json(route, {
-        items: [{
-          schemaKey: 'system-empty',
-          versionTag: 'v1',
-          origin: 'SYSTEM',
-          displayName: '正式产品结构',
-          fieldCount: 0,
-          referenceDepth: 0,
-          publishedAt: '2026-08-26T07:00:00Z',
-        }],
-        page: 1,
-        size: 50,
-        total: 1,
+        items: search === 'catalog'
+          ? [catalogItem]
+          : [staticSchemaSummary('system-empty', 'v1', '正式产品结构', 'SYSTEM')],
+        page: pageNumber,
+        size: Number(url.searchParams.get('size') ?? '9'),
+        total: search === 'catalog' ? 18 : 1,
       });
+      return;
+    }
+    const exactStatic = url.pathname.match(/^\/api\/v1\/static-schemas\/([^/]+)\/([^/]+)$/);
+    if (method === 'GET' && exactStatic) {
+      const schemaKey = decodeURIComponent(exactStatic[1] ?? '');
+      const versionTag = decodeURIComponent(exactStatic[2] ?? '');
+      await json(route, staticSchemaSnapshot(
+        schemaKey,
+        versionTag,
+        schemaKey === 'archived-price' ? 'Archived price' : '正式产品结构',
+      ));
       return;
     }
     if (method === 'POST' && url.pathname === '/api/v1/templates') {
       observations.createRequests += 1;
-      expect(url.searchParams.get('schemaKey')).toBe('system-empty');
-      expect(url.searchParams.get('versionTag')).toBe('v1');
-      expect(request.postDataJSON()).toMatchObject({
+      observations.createSchemaRefs.push(
+        `${url.searchParams.get('schemaKey')}@${url.searchParams.get('versionTag')}`,
+      );
+      const createBody = request.postDataJSON();
+      observations.createDisplayNames.push(String(createBody.displayName));
+      expect(createBody).toMatchObject({
         dslVersion: 'renderweave-design/1.0',
-        displayName: 'API template',
         designRoot: { kind: 'canvas', widthMm: 210, heightMm: 297 },
       });
-      await json(route, { templateId: TEMPLATE_ID, disclosure: 'OPAQUE' });
+      const outcome = createOutcomes.shift() ?? 'READABLE';
+      if (outcome === 'TRANSPORT_UNKNOWN') {
+        await route.abort('connectionreset');
+        return;
+      }
+      if (outcome === 'OPAQUE') {
+        await json(route, { templateId: TEMPLATE_ID, disclosure: 'OPAQUE' });
+        return;
+      }
+      await json(route, JSON.parse(currentTemplateBody(CANONICAL_DESIGN, 0, 'READY')));
       return;
     }
     if (method === 'GET' && url.pathname === `/api/v1/templates/${TEMPLATE_ID}`) {
@@ -272,6 +364,41 @@ async function installTemplateHttpContract(page: Page) {
     await route.fulfill({ status: 501, contentType: 'text/plain', body: `${method} ${url.pathname}` });
   });
   return observations;
+}
+
+function staticSchemaSummary(
+  schemaKey: string,
+  versionTag: string,
+  displayName: string,
+  origin: 'DRAFT' | 'SYSTEM' = 'DRAFT',
+) {
+  return {
+    schemaKey,
+    versionTag,
+    origin,
+    displayName,
+    fieldCount: 0,
+    referenceDepth: 1,
+    publishedAt: '2026-08-26T07:00:00Z',
+  };
+}
+
+function staticSchemaSnapshot(schemaKey: string, versionTag: string, displayName: string) {
+  return {
+    schemaKey,
+    versionTag,
+    origin: schemaKey.startsWith('system-') ? 'SYSTEM' : 'DRAFT',
+    sourceDraftRevision: schemaKey.startsWith('system-') ? null : 4,
+    definition: {
+      dslVersion: 'renderweave-schema/1.0',
+      displayName,
+      fields: [],
+    },
+    compilerVersion: 'renderweave-schema-compiler/1.0',
+    releaseNote: null,
+    referenceDepth: 1,
+    publishedAt: '2026-08-26T07:00:00Z',
+  };
 }
 
 function contentHashOf(canonicalDesignDsl: string): string {

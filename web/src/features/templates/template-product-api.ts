@@ -3,7 +3,8 @@ import {
   listTemplates,
   type DesignDslKernel,
   type TemplateCatalogResponse,
-  type TemplateCommitResponse,
+  type TemplateOpaqueCommitResponse,
+  type TemplateReadableResponse,
 } from '../../api/generated';
 
 export interface CreateTemplateInput {
@@ -13,6 +14,11 @@ export interface CreateTemplateInput {
   widthMm: number;
   heightMm: number;
 }
+
+export type CreateTemplateOutcome =
+  | { readonly kind: 'READABLE'; readonly template: TemplateReadableResponse }
+  | { readonly kind: 'OPAQUE'; readonly receipt: TemplateOpaqueCommitResponse }
+  | { readonly kind: 'TRANSPORT_UNKNOWN' };
 
 export class TemplateProductRequestError extends Error {
   readonly causePayload: unknown;
@@ -42,7 +48,7 @@ export async function listTemplatesRequest(
 
 export async function createTemplateRequest(
   input: CreateTemplateInput,
-): Promise<TemplateCommitResponse> {
+): Promise<CreateTemplateOutcome> {
   const body: DesignDslKernel = {
     dslVersion: 'renderweave-design/1.0',
     expressionProfile: 'renderweave-expression/1.0',
@@ -57,11 +63,25 @@ export async function createTemplateRequest(
       children: [],
     },
   };
-  const result = await createTemplate({
-    query: { schemaKey: input.schemaKey, versionTag: input.versionTag },
-    body,
-  });
-  return unwrap(result.data, result.error, '创建 Template');
+  let result: Awaited<ReturnType<typeof createTemplate>>;
+  try {
+    result = await createTemplate({
+      query: { schemaKey: input.schemaKey, versionTag: input.versionTag },
+      body,
+    });
+  } catch {
+    return { kind: 'TRANSPORT_UNKNOWN' };
+  }
+  if (result.error !== undefined) {
+    if (isTemplateProblem(result.error)) {
+      throw new TemplateProductRequestError('创建 Template', result.error);
+    }
+    return { kind: 'TRANSPORT_UNKNOWN' };
+  }
+  if (result.data === undefined) return { kind: 'TRANSPORT_UNKNOWN' };
+  return result.data.disclosure === 'READABLE'
+    ? { kind: 'READABLE', template: result.data }
+    : { kind: 'OPAQUE', receipt: result.data };
 }
 
 function unwrap<T>(data: T | undefined, error: unknown, operation: string): T {
@@ -76,4 +96,14 @@ function templateProblemMessage(value: unknown): string | undefined {
   if (typeof problem.detail === 'string' && problem.detail.trim()) return problem.detail;
   if (typeof problem.title === 'string' && problem.title.trim()) return problem.title;
   return undefined;
+}
+
+function isTemplateProblem(value: unknown): value is Record<string, unknown> {
+  if (typeof value !== 'object' || value === null || value instanceof Error) return false;
+  const problem = value as Record<string, unknown>;
+  return typeof problem.type === 'string'
+    && typeof problem.title === 'string'
+    && typeof problem.status === 'number'
+    && typeof problem.code === 'string'
+    && typeof problem.traceId === 'string';
 }

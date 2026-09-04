@@ -1,6 +1,14 @@
-import { useInfiniteQuery, useMutation, useQuery } from '@tanstack/react-query';
+import {
+  keepPreviousData,
+  useInfiniteQuery,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query';
 import {
   ArrowRight,
+  CheckCircle2,
+  CircleAlert,
   FileStack,
   LoaderCircle,
   Plus,
@@ -15,18 +23,21 @@ import { TemplateEditorSurface } from '../template-editor/TemplateEditorShell';
 import { localCandidateTemplatePreviewTransport } from '../template-editor/template-preview';
 import { ResourceError, ResourceLoading } from '../resources/DraftListPage';
 import { ResourceFrame } from '../resources/ResourceFrame';
-import { ResourceSearchInput } from '../resources/ResourceListControls';
+import { ResourcePagination, ResourceSearchInput } from '../resources/ResourceListControls';
 import { formatDateTime } from '../resources/resource-format';
 import { useDebouncedValue } from '../resources/resource-list-hooks';
 import { listStaticSchemasRequest } from '../resources/resource-api';
+import { getStaticSnapshotRequest } from '../schema-studio/lossless-api';
 import {
   createTemplateRequest,
   listTemplatesRequest,
   type CreateTemplateInput,
+  type CreateTemplateOutcome,
 } from './template-product-api';
 import './template-product.css';
 
 const TEMPLATE_PAGE_SIZE = 20;
+const TEMPLATE_CREATE_SCHEMA_PAGE_SIZE = 9;
 
 export function TemplateListPage() {
   const [search, setSearch] = useState('');
@@ -140,28 +151,88 @@ export function TemplateListPage() {
 
 export function TemplateCreatePage() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const [searchParams] = useSearchParams();
+  const requestedSchema = requestedStaticSchema(searchParams);
   const [displayName, setDisplayName] = useState('未命名模板');
   const [widthMm, setWidthMm] = useState('210');
   const [heightMm, setHeightMm] = useState('297');
-  const [selectedSchema, setSelectedSchema] = useState('');
+  const [schemaSearch, setSchemaSearch] = useState('');
+  const [schemaPage, setSchemaPage] = useState(1);
+  const [schemaPageSize, setSchemaPageSize] = useState(TEMPLATE_CREATE_SCHEMA_PAGE_SIZE);
+  const [selectedSchema, setSelectedSchema] = useState<SchemaOption>();
   const [validationError, setValidationError] = useState<string>();
+  const [createOutcome, setCreateOutcome] = useState<CreateTemplateOutcome>();
+  const [catalogRefresh, setCatalogRefresh] = useState<CatalogRefreshState>('idle');
+  const debouncedSchemaSearch = useDebouncedValue(schemaSearch.trim());
   const schemas = useQuery({
-    queryKey: ['static-schemas', 'template-create'],
-    queryFn: () => listStaticSchemasRequest(1, 50, '', 'PUBLISHED_DESC', 'ALL'),
+    queryKey: [
+      'static-schemas',
+      'template-create',
+      schemaPage,
+      schemaPageSize,
+      debouncedSchemaSearch,
+    ],
+    queryFn: () => listStaticSchemasRequest(
+      schemaPage,
+      schemaPageSize,
+      debouncedSchemaSearch,
+      'PUBLISHED_DESC',
+      'ALL',
+    ),
+    placeholderData: keepPreviousData,
   });
-  const schemaOptions = (schemas.data?.items ?? []).map((item) => ({
+  const exactSchema = useQuery({
+    queryKey: [
+      'static-schema',
+      requestedSchema?.schemaKey,
+      requestedSchema?.versionTag,
+      'template-create',
+    ],
+    queryFn: () => getStaticSnapshotRequest(
+      requestedSchema!.schemaKey,
+      requestedSchema!.versionTag,
+    ),
+    enabled: requestedSchema !== undefined,
+  });
+  const catalogOptions: SchemaOption[] = (schemas.data?.items ?? []).map((item) => ({
     value: schemaIdentity(item.schemaKey, item.versionTag),
     label: `${item.displayName} · ${item.schemaKey}@${item.versionTag}`,
   }));
-  const effectiveSchema = selectedSchema || schemaOptions[0]?.value || '';
+  const exactOption: SchemaOption | undefined = requestedSchema && exactSchema.data
+    ? {
+        value: schemaIdentity(requestedSchema.schemaKey, requestedSchema.versionTag),
+        label: `${exactSchema.data.definition.displayName} · ${requestedSchema.schemaKey}@${requestedSchema.versionTag}`,
+      }
+    : undefined;
+  const schemaOptions = uniqueSchemaOptions(selectedSchema, exactOption, ...catalogOptions);
+  const effectiveSchema = selectedSchema
+    ?? (requestedSchema && !exactSchema.isError ? exactOption : catalogOptions[0]);
   const mutation = useMutation({
     mutationFn: (input: CreateTemplateInput) => createTemplateRequest(input),
-    onSuccess: (created) => navigate(`/templates/${encodeURIComponent(created.templateId)}`),
+    retry: false,
+    onSuccess: (outcome) => {
+      if (outcome.kind === 'READABLE') {
+        navigate(`/templates/${encodeURIComponent(outcome.template.templateId)}`);
+        return;
+      }
+      setCreateOutcome(outcome);
+      if (outcome.kind === 'TRANSPORT_UNKNOWN') {
+        setCatalogRefresh('refreshing');
+        void listTemplatesRequest('', undefined, TEMPLATE_PAGE_SIZE).then((catalog) => {
+          queryClient.setQueryData(
+            ['templates', 'catalog', ''],
+            { pages: [catalog], pageParams: [null] },
+          );
+          setCatalogRefresh('refreshed');
+        }).catch(() => setCatalogRefresh('failed'));
+      }
+    },
   });
 
   const submit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const selected = schemaFromIdentity(effectiveSchema);
+    const selected = schemaFromIdentity(effectiveSchema?.value ?? '');
     const normalizedName = displayName.trim();
     const parsedWidth = Number(widthMm);
     const parsedHeight = Number(heightMm);
@@ -185,19 +256,82 @@ export function TemplateCreatePage() {
       detail
       breadcrumbs={[{ label: '模板', to: '/templates' }, { label: '新建模板' }]}
     >
+      {createOutcome?.kind === 'OPAQUE' ? (
+        <section className="template-create-outcome is-opaque" role="status" aria-live="polite">
+          <CheckCircle2 aria-hidden="true" size={24} />
+          <div>
+            <strong>Template 已提交</strong>
+            <p>当前调用者不具备读取权限，因此只显示服务端允许的不透明回执，不会打开编辑器。</p>
+            <code>{createOutcome.receipt.templateId}</code>
+          </div>
+          <Link className="button ghost-button" to="/templates">返回 Template 目录</Link>
+        </section>
+      ) : null}
+      {createOutcome?.kind !== 'OPAQUE' ? (
+        <>
       {schemas.isPending ? <ResourceLoading label="正在读取可用 StaticSchema" /> : null}
       {schemas.isError ? (
         <ResourceError error={schemas.error} onRetry={() => void schemas.refetch()} />
       ) : null}
-      {schemas.data && schemas.data.items.length === 0 ? (
+      {exactSchema.isError ? (
+        <p className="template-form-error" role="alert">
+          无法读取导航指定的精确 StaticSchema；请从下方可见目录重新选择。
+        </p>
+      ) : null}
+      {schemas.data ? (
+        <section className="template-schema-browser" aria-label="StaticSchema 目录">
+          <ResourceSearchInput
+            id="template-static-schema-search"
+            value={schemaSearch}
+            label="搜索 StaticSchema"
+            placeholder="搜索 schemaKey、版本或显示名称"
+            maxLength={128}
+            onChange={(value) => {
+              setSchemaSearch(value);
+              setSchemaPage(1);
+            }}
+          />
+          <span className="resource-summary" aria-live="polite">
+            {schemas.isFetching && !schemas.isPending ? (
+              <LoaderCircle className="spin" aria-hidden="true" size={13} />
+            ) : null}
+            共 {schemas.data.total} 项 · 第 {schemaPage} 页
+          </span>
+          <ResourcePagination
+            label="可绑定 StaticSchema"
+            page={schemaPage}
+            size={schemaPageSize}
+            total={schemas.data.total}
+            onPageChange={setSchemaPage}
+            onSizeChange={(size) => {
+              setSchemaPageSize(size);
+              setSchemaPage(1);
+            }}
+          />
+        </section>
+      ) : null}
+      {schemas.data && schemas.data.items.length === 0 && !effectiveSchema ? (
         <section className="resource-empty template-empty" role="status">
           <FileStack aria-hidden="true" size={25} />
-          <strong>没有可绑定的 StaticSchema</strong>
-          <span>先发布一份 StaticSchema；Template 不会绑定可变 Draft。</span>
+          <strong>{debouncedSchemaSearch ? '没有匹配的 StaticSchema' : '没有可绑定的 StaticSchema'}</strong>
+          <span>{debouncedSchemaSearch
+            ? '缩短关键词，或搜索精确 schemaKey 与版本。'
+            : '先发布一份 StaticSchema；Template 不会绑定可变 Draft。'}</span>
           <Link className="button ghost-button" to="/static-schemas">查看数据结构资产</Link>
         </section>
       ) : null}
-      {schemas.data && schemas.data.items.length > 0 ? (
+      {createOutcome?.kind === 'TRANSPORT_UNKNOWN' ? (
+        <section className="template-create-outcome is-unknown" role="alert">
+          <CircleAlert aria-hidden="true" size={24} />
+          <div>
+            <strong>创建结果未知</strong>
+            <p>响应在确认结果前中断。已保留全部输入并刷新 Template 目录；再次创建可能创建重复 Template。</p>
+            <small>{catalogRefreshLabel(catalogRefresh)}</small>
+          </div>
+          <Link className="button ghost-button" to="/templates">检查 Template 目录</Link>
+        </section>
+      ) : null}
+      {schemas.data && effectiveSchema ? (
         <form className="template-create-form" onSubmit={submit} noValidate>
           <header>
             <span>最小可保存 Canvas</span>
@@ -209,9 +343,12 @@ export function TemplateCreatePage() {
               <span>StaticSchema</span>
               <SelectField
                 ariaLabel="StaticSchema"
-                value={effectiveSchema}
+                value={effectiveSchema.value}
                 options={schemaOptions}
-                onChange={setSelectedSchema}
+                onChange={(value) => {
+                  const option = schemaOptions.find((candidate) => candidate.value === value);
+                  if (option) setSelectedSchema(option);
+                }}
                 disabled={mutation.isPending}
               />
               <small>创建后不可重新绑定。</small>
@@ -262,10 +399,16 @@ export function TemplateCreatePage() {
             <Link className="button ghost-button" to="/templates">取消</Link>
             <button className="button primary-button" type="submit" disabled={mutation.isPending}>
               {mutation.isPending ? <LoaderCircle className="spin" aria-hidden="true" size={15} /> : <Plus aria-hidden="true" size={15} />}
-              {mutation.isPending ? '正在创建' : '创建并打开'}
+              {mutation.isPending
+                ? '正在创建'
+                : createOutcome?.kind === 'TRANSPORT_UNKNOWN'
+                  ? '我已检查目录，仍要再次创建'
+                  : '创建并打开'}
             </button>
           </footer>
         </form>
+      ) : null}
+        </>
       ) : null}
     </ResourceFrame>
   );
@@ -297,6 +440,38 @@ function schemaFromIdentity(value: string): { schemaKey: string; versionTag: str
   const separator = value.lastIndexOf('@');
   if (separator <= 0 || separator === value.length - 1) return undefined;
   return { schemaKey: value.slice(0, separator), versionTag: value.slice(separator + 1) };
+}
+
+interface SchemaOption {
+  readonly value: string;
+  readonly label: string;
+}
+
+type CatalogRefreshState = 'idle' | 'refreshing' | 'refreshed' | 'failed';
+
+function uniqueSchemaOptions(...options: Array<SchemaOption | undefined>): SchemaOption[] {
+  return options.filter((option, index, all): option is SchemaOption =>
+    option !== undefined && all.findIndex((candidate) => candidate?.value === option.value) === index);
+}
+
+function requestedStaticSchema(
+  searchParams: URLSearchParams,
+): { schemaKey: string; versionTag: string } | undefined {
+  const schemaKeys = searchParams.getAll('schemaKey');
+  const versionTags = searchParams.getAll('versionTag');
+  if (schemaKeys.length !== 1 || versionTags.length !== 1) return undefined;
+  const schemaKey = schemaKeys[0]?.trim() ?? '';
+  const versionTag = versionTags[0]?.trim() ?? '';
+  return schemaKey && versionTag ? { schemaKey, versionTag } : undefined;
+}
+
+function catalogRefreshLabel(state: CatalogRefreshState): string {
+  switch (state) {
+    case 'refreshing': return '正在刷新 Template 目录…';
+    case 'refreshed': return 'Template 目录已刷新，请先检查是否已创建。';
+    case 'failed': return 'Template 目录刷新失败，请手动打开目录检查。';
+    case 'idle': return '';
+  }
 }
 
 function validateCreateInput(

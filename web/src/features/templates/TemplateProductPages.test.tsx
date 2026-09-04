@@ -18,9 +18,13 @@ const api = vi.hoisted(() => ({
 const resources = vi.hoisted(() => ({
   listStaticSchemasRequest: vi.fn(),
 }));
+const schemaStudio = vi.hoisted(() => ({
+  getStaticSnapshotRequest: vi.fn(),
+}));
 
 vi.mock('./template-product-api', () => api);
 vi.mock('../resources/resource-api', () => resources);
+vi.mock('../schema-studio/lossless-api', () => schemaStudio);
 vi.mock('../template-editor/TemplateEditorShell', () => ({
   TemplateEditorSurface: ({
     templateId,
@@ -73,24 +77,85 @@ describe('Template final-product page substrate', () => {
     });
   });
 
-  it('creates from a real StaticSchema selection and navigates to the exact editor URL', async () => {
+  it('searches and pages the complete visible StaticSchema catalog', async () => {
+    resources.listStaticSchemasRequest.mockImplementation((page: number, size: number, search: string) =>
+      Promise.resolve({
+        items: [staticSchemaSummary(
+          page === 1 ? 'archive-alpha' : 'archive-beta',
+          page === 1 ? 'Archive Alpha' : 'Archive Beta',
+        )],
+        page,
+        size,
+        total: search === 'archive' ? 18 : 1,
+      }));
+
+    renderCreateRoute();
+
+    const search = await screen.findByRole('searchbox', { name: '搜索 StaticSchema' });
+    fireEvent.change(search, { target: { value: ' archive ' } });
+    await waitFor(() => expect(resources.listStaticSchemasRequest).toHaveBeenCalledWith(
+      1,
+      9,
+      'archive',
+      'PUBLISHED_DESC',
+      'ALL',
+    ));
+    fireEvent.click(await screen.findByRole('button', { name: '下一页' }));
+    await waitFor(() => expect(resources.listStaticSchemasRequest).toHaveBeenCalledWith(
+      2,
+      9,
+      'archive',
+      'PUBLISHED_DESC',
+      'ALL',
+    ));
+    expect(await screen.findByText(/Archive Beta/)).toBeTruthy();
+  });
+
+  it('preselects the exact StaticSchema handed off by product navigation', async () => {
     resources.listStaticSchemasRequest.mockResolvedValue({
-      items: [{
-        schemaKey: 'price-tag',
-        versionTag: 'v1',
-        origin: 'DRAFT',
-        displayName: '门店价签结构',
-        fieldCount: 5,
-        referenceDepth: 0,
-        publishedAt: '2026-08-25T05:00:00Z',
-      }],
+      items: [staticSchemaSummary('newest', 'Newest schema')],
       page: 1,
-      size: 50,
+      size: 9,
+      total: 1,
+    });
+    schemaStudio.getStaticSnapshotRequest.mockResolvedValue({
+      definition: { displayName: 'Exact archived schema' },
+    });
+
+    renderCreateRoute('/templates/new?schemaKey=archived-price&versionTag=v7');
+
+    expect((await screen.findByRole('button', { name: 'StaticSchema' })).textContent)
+      .toContain('Exact archived schema · archived-price@v7');
+    expect(schemaStudio.getStaticSnapshotRequest).toHaveBeenCalledWith('archived-price', 'v7');
+  });
+
+  it('keeps the visible catalog selectable when an exact handoff is no longer readable', async () => {
+    resources.listStaticSchemasRequest.mockResolvedValue({
+      items: [staticSchemaSummary('visible-fallback', 'Visible fallback')],
+      page: 1,
+      size: 9,
+      total: 1,
+    });
+    schemaStudio.getStaticSnapshotRequest.mockRejectedValue(new Error('not visible'));
+
+    renderCreateRoute('/templates/new?schemaKey=hidden&versionTag=v1');
+
+    expect((await screen.findByRole('alert')).textContent)
+      .toContain('无法读取导航指定的精确 StaticSchema');
+    expect((await screen.findByRole('button', { name: 'StaticSchema' })).textContent)
+      .toContain('Visible fallback · visible-fallback@v1');
+  });
+
+  it('opens the exact editor only for a readable create commit', async () => {
+    resources.listStaticSchemasRequest.mockResolvedValue({
+      items: [staticSchemaSummary('price-tag', '门店价签结构')],
+      page: 1,
+      size: 9,
       total: 1,
     });
     api.createTemplateRequest.mockResolvedValue({
-      templateId: 'template-new',
-      disclosure: 'OPAQUE',
+      kind: 'READABLE',
+      template: { templateId: 'template-new', disclosure: 'READABLE' },
     });
 
     renderCreateRoute();
@@ -118,6 +183,54 @@ describe('Template final-product page substrate', () => {
     }));
     expect(await screen.findByRole('main', { name: 'created Template route' })).toBeTruthy();
     expect(screen.getByText('template-new')).toBeTruthy();
+  });
+
+  it('shows only an opaque receipt and never opens an unreadable editor baseline', async () => {
+    resources.listStaticSchemasRequest.mockResolvedValue({
+      items: [staticSchemaSummary('price-tag', '门店价签结构')],
+      page: 1,
+      size: 9,
+      total: 1,
+    });
+    api.createTemplateRequest.mockResolvedValue({
+      kind: 'OPAQUE',
+      receipt: { templateId: 'template-opaque', disclosure: 'OPAQUE' },
+    });
+
+    renderCreateRoute();
+    fireEvent.click(await screen.findByRole('button', { name: '创建并打开' }));
+
+    const receipt = (await screen.findByText('Template 已提交')).closest('section');
+    expect(receipt).not.toBeNull();
+    expect(receipt?.textContent).toContain('template-opaque');
+    expect(receipt?.textContent).toContain('不具备读取权限');
+    expect(screen.queryByRole('main', { name: 'created Template route' })).toBeNull();
+    expect(screen.queryByRole('textbox', { name: 'Template 名称' })).toBeNull();
+  });
+
+  it('preserves intent and refreshes the Template catalog after a transport-unknown create', async () => {
+    resources.listStaticSchemasRequest.mockResolvedValue({
+      items: [staticSchemaSummary('price-tag', '门店价签结构')],
+      page: 1,
+      size: 9,
+      total: 1,
+    });
+    api.createTemplateRequest.mockResolvedValue({ kind: 'TRANSPORT_UNKNOWN' });
+    api.listTemplatesRequest.mockResolvedValue({ items: [] });
+
+    renderCreateRoute();
+    const name = await screen.findByRole('textbox', { name: 'Template 名称' });
+    fireEvent.change(name, { target: { value: '保留这个创建意图' } });
+    fireEvent.click(screen.getByRole('button', { name: '创建并打开' }));
+
+    const warning = await screen.findByRole('alert');
+    expect(warning.textContent).toContain('结果未知');
+    expect(warning.textContent).toContain('可能创建重复 Template');
+    expect((screen.getByRole('textbox', { name: 'Template 名称' }) as HTMLInputElement).value)
+      .toBe('保留这个创建意图');
+    expect(screen.getByRole('button', { name: '我已检查目录，仍要再次创建' })).toBeTruthy();
+    await waitFor(() => expect(api.listTemplatesRequest).toHaveBeenCalledWith('', undefined, 20));
+    expect(api.createTemplateRequest).toHaveBeenCalledOnce();
   });
 
   it('passes the opaque route identity directly to the real editor surface', () => {
@@ -158,13 +271,13 @@ function renderRoute(path: string, pattern: string, element: React.ReactNode) {
   );
 }
 
-function renderCreateRoute() {
+function renderCreateRoute(path = '/templates/new') {
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   });
   render(
     <QueryClientProvider client={client}>
-      <MemoryRouter initialEntries={['/templates/new']}>
+      <MemoryRouter initialEntries={[path]}>
         <Routes>
           <Route path="/templates/new" element={<TemplateCreatePage />} />
           <Route
@@ -175,6 +288,18 @@ function renderCreateRoute() {
       </MemoryRouter>
     </QueryClientProvider>,
   );
+}
+
+function staticSchemaSummary(schemaKey: string, displayName: string) {
+  return {
+    schemaKey,
+    versionTag: 'v1',
+    origin: 'DRAFT',
+    displayName,
+    fieldCount: 5,
+    referenceDepth: 1,
+    publishedAt: '2026-08-25T05:00:00Z',
+  };
 }
 
 function catalogEntry(templateId: string, displayName: string, updatedAt: string) {
