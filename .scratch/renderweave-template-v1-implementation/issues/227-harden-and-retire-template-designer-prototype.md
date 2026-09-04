@@ -1,8 +1,8 @@
 # T227 — Preserve editor safety paths and retire the throwaway prototype
 
 Type: task
-Status: blocked
-Blocked by: T226
+Status: in-progress
+Blocked by: T226 (done)
 
 ## What to build
 

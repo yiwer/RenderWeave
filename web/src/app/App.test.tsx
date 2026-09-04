@@ -12,6 +12,14 @@ vi.mock('../features/templates/TemplateProductPages', () => ({
   TemplateEditorPage: () => <main aria-label="Template editor route">editor</main>,
 }));
 
+vi.mock('../features/resources/DraftListPage', () => ({
+  DraftListPage: () => <main aria-label="Schema catalog route">schemas</main>,
+}));
+
+vi.mock('../prototype/schema-studio/SchemaStudioPrototype', () => ({
+  SchemaStudioPrototype: () => <main aria-label="Schema Studio prototype route">prototype</main>,
+}));
+
 afterEach(cleanup);
 
 describe('formal Template product routes', () => {
@@ -27,5 +35,28 @@ describe('formal Template product routes', () => {
     );
 
     expect(await screen.findByRole('main', { name: accessibleName })).toBeTruthy();
+  });
+
+  it('keeps the Schema Studio prototype available', async () => {
+    render(
+      <MemoryRouter initialEntries={['/prototype/schema-studio?variant=A']}>
+        <App />
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByRole('main', { name: 'Schema Studio prototype route' })).toBeTruthy();
+  });
+
+  it.each([
+    '/prototype/template-designer?variant=A',
+    '/prototype/editor-state-model',
+  ])('retires obsolete prototype route %s from normal navigation', async (path) => {
+    render(
+      <MemoryRouter initialEntries={[path]}>
+        <App />
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByRole('main', { name: 'Schema catalog route' })).toBeTruthy();
   });
 });

@@ -488,6 +488,83 @@ describe('Template Editor E1/E2 Product shell', () => {
     expect(screen.queryByRole('button', { name: /保存|预览|恢复/ })).toBeNull();
   });
 
+  it('provides scoped save, undo and redo keyboard equivalents for the Structured Editor', async () => {
+    const session = dirtySession('快捷键草稿');
+    const putCurrent = vi.fn().mockResolvedValue({
+      status: 200,
+      body: await saveResponse(session, '8'),
+    });
+    render(<TemplateEditorShell
+      session={session}
+      saveTransport={saveTransport({ putCurrent })}
+    />);
+
+    const workspace = screen.getByRole('main', { name: 'Template 编辑工作区' });
+    expect(fireEvent.keyDown(workspace, { key: 'z', ctrlKey: true })).toBe(false);
+    expect(screen.getByRole('heading', { level: 1, name: '门店价签' })).toBeTruthy();
+
+    expect(fireEvent.keyDown(workspace, { key: 'y', ctrlKey: true })).toBe(false);
+    expect(screen.getByRole('heading', { level: 1, name: '快捷键草稿' })).toBeTruthy();
+
+    fireEvent.keyDown(workspace, { key: 'z', ctrlKey: true });
+    expect(fireEvent.keyDown(workspace, { key: 'z', ctrlKey: true, shiftKey: true })).toBe(false);
+    expect(screen.getByRole('heading', { level: 1, name: '快捷键草稿' })).toBeTruthy();
+
+    fireEvent.keyDown(workspace, { key: 'z', metaKey: true });
+    expect(fireEvent.keyDown(workspace, { key: 'z', metaKey: true, shiftKey: true })).toBe(false);
+    expect(screen.getByRole('heading', { level: 1, name: '快捷键草稿' })).toBeTruthy();
+
+    const nameInput = screen.getByRole('textbox', { name: 'Template 名称' });
+    fireEvent.change(nameInput, { target: { value: '尚未应用的输入' } });
+    expect(fireEvent.keyDown(nameInput, { key: 'z', ctrlKey: true })).toBe(true);
+    expect(screen.getByRole('heading', { level: 1, name: '快捷键草稿' })).toBeTruthy();
+
+    expect(fireEvent.keyDown(nameInput, { key: 's', ctrlKey: true })).toBe(false);
+    expect(fireEvent.keyDown(nameInput, { key: 's', metaKey: true })).toBe(false);
+    await waitFor(() => expect(putCurrent).toHaveBeenCalledTimes(1));
+  });
+
+  it('deletes the selection only from the canvas viewport or a focused Structure row', () => {
+    const session = createSessionFromBaseline(
+      structuredBaseline(),
+      { state: 'checked', value: 'READY' },
+    );
+    render(<TemplateEditorShell session={session} />);
+
+    const bottom = screen.getByRole('treeitem', { name: /底色/ });
+    fireEvent.click(bottom);
+    const nameInput = screen.getByRole('textbox', { name: 'Template 名称' });
+    nameInput.focus();
+    expect(fireEvent.keyDown(nameInput, { key: 'Delete' })).toBe(true);
+    expect(screen.getByRole('treeitem', { name: /底色/ })).toBeTruthy();
+
+    const editorRoot = document.querySelector<HTMLElement>('.template-editor-root');
+    expect(editorRoot).not.toBeNull();
+    for (const editable of [
+      document.createElement('textarea'),
+      document.createElement('select'),
+      Object.assign(document.createElement('div'), { contentEditable: 'true' }),
+    ]) {
+      editorRoot?.append(editable);
+      editable.focus();
+      expect(fireEvent.keyDown(editable, { key: 'Backspace' })).toBe(true);
+      expect(screen.getByRole('treeitem', { name: /底色/ })).toBeTruthy();
+      editable.remove();
+    }
+
+    const viewport = document.querySelector<HTMLElement>('[data-template-canvas-viewport]');
+    expect(viewport).not.toBeNull();
+    viewport?.focus();
+    expect(fireEvent.keyDown(viewport as HTMLElement, { key: 'Delete' })).toBe(false);
+    expect(screen.queryByRole('treeitem', { name: /底色/ })).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: '撤销本地编辑' }));
+    const restoredBottom = screen.getByRole('treeitem', { name: /底色/ });
+    restoredBottom.focus();
+    expect(fireEvent.keyDown(restoredBottom, { key: 'Backspace' })).toBe(false);
+    expect(screen.queryByRole('treeitem', { name: /底色/ })).toBeNull();
+  });
+
   it('validates the local name without changing canonical state', () => {
     const session = createSessionFromBaseline(
       structuredBaseline(),

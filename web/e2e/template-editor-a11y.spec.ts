@@ -74,6 +74,72 @@ test.describe('Template Editor E9 browser accessibility', () => {
     expect(browserErrors).toEqual([]);
   });
 
+  test('keeps the production authoring and recovery journey keyboard-complete', async ({ page }) => {
+    const browserErrors = captureBrowserErrors(page);
+    await page.setViewportSize({ width: 1280, height: 720 });
+    await page.goto(`${FIXTURE}?initial=clean`);
+
+    const elementsEntry = page.getByRole('button', { name: '元素' });
+    await elementsEntry.focus();
+    await page.keyboard.press('Enter');
+    const addRect = page.getByRole('button', { name: '添加矩形' });
+    await addRect.focus();
+    await page.keyboard.press('Enter');
+
+    const row = page.getByRole('treeitem', { name: /矩形 2/ });
+    await row.focus();
+    await expect(row).toBeFocused();
+    await page.keyboard.press('F2');
+    const rename = page.getByRole('textbox', { name: '重命名 矩形 2' });
+    await rename.fill('键盘矩形');
+    await page.keyboard.press('Enter');
+    await expect(page.getByRole('treeitem', { name: /键盘矩形/ })).toBeVisible();
+
+    const xCoordinate = page.getByRole('textbox', { name: 'X 坐标', exact: true });
+    await xCoordinate.focus();
+    await page.keyboard.press('Control+A');
+    await page.keyboard.type('18');
+    await page.keyboard.press('Enter');
+    await expect(xCoordinate).toHaveValue('18');
+
+    const bindX = page.getByRole('button', { name: '绑定X 坐标' });
+    await bindX.focus();
+    await page.keyboard.press('Enter');
+    await expect(page.getByRole('dialog', { name: '绑定X 坐标' })).toBeVisible();
+    const offsetSource = page.getByRole('radio', { name: /水平偏移.*\/offset.*数值/ });
+    await offsetSource.focus();
+    await offsetSource.press('Space');
+    await expect(offsetSource).toBeChecked();
+    const createBinding = page.getByRole('button', { name: '创建绑定' });
+    await createBinding.focus();
+    await page.keyboard.press('Enter');
+    const bindingsTab = page.getByRole('tab', { name: /绑定.*1 个绑定/ });
+    await expect(bindingsTab).toBeVisible();
+    await bindingsTab.focus();
+
+    await page.keyboard.press('Control+S');
+    await expect(page.getByRole('heading', { name: '确认仍保存为 INVALID' })).toBeVisible();
+    const cancelInvalid = page.getByRole('button', { name: '取消 INVALID 保存' });
+    await cancelInvalid.focus();
+    await page.keyboard.press('Enter');
+    await expect(page.getByRole('heading', { name: '确认仍保存为 INVALID' })).toHaveCount(0);
+    await expect.poll(() => page.evaluate(() => Object.keys(localStorage)
+      .some((key) => key.startsWith('renderweave.template-local-recovery.v1:')))).toBe(true);
+
+    await page.reload();
+    await expect(page.getByRole('heading', { name: '发现此设备上的本地恢复草稿' })).toBeVisible();
+    const restore = page.getByRole('button', { name: '恢复本地草稿' });
+    await restore.focus();
+    await expect(restore).toBeFocused();
+    await page.keyboard.press('Enter');
+    await expect(page.getByText('已恢复此设备上的本地草稿')).toBeVisible();
+    await expect(page.getByRole('treeitem', { name: /键盘矩形/ })).toBeVisible();
+    await expect(page.getByRole('textbox', { name: 'X 坐标', exact: true })).toHaveValue('18');
+    await expect(page.getByRole('tab', { name: /绑定.*1 个绑定/ })).toBeVisible();
+    await expectNoSeriousOrCriticalAxe(page);
+    expect(browserErrors).toEqual([]);
+  });
+
   test('holds the 1024 CSS-pixel layout at 2x device scale as the automated 200% equivalent', async ({ browser }) => {
     const context = await browser.newContext({
       viewport: { width: 1024, height: 768 },

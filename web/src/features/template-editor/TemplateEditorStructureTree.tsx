@@ -538,6 +538,7 @@ function TreeRow({
       aria-level={row.depth + 1}
       aria-selected={selected}
       aria-expanded={hasChildren ? expanded : undefined}
+      aria-keyshortcuts={root ? undefined : 'Delete Backspace'}
       className={`te-tree-row${root ? ' is-root' : ''}${isContainer ? ' is-container' : ''}`}
       data-template-editor-node-id={row.nodeId}
       data-selected={selected}

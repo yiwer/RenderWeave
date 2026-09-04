@@ -9,14 +9,6 @@ const SchemaStudioPage = lazyRoute(async () => ({
 const SchemaStudioPrototype = lazyRoute(async () => ({
   default: (await import('../prototype/schema-studio/SchemaStudioPrototype')).SchemaStudioPrototype,
 }));
-// Throwaway research route; it does not enable Template product behavior.
-const TemplateDesignerPrototype = lazyRoute(async () => ({
-  default: (await import('../prototype/template-designer/TemplateDesignerPrototype')).TemplateDesignerPrototype,
-}));
-// Throwaway T09 route; it does not enable Editor product behavior.
-const EditorStateModelPrototype = lazyRoute(async () => ({
-  default: (await import('../prototype/editor-state-model/EditorStateModelPrototype')).EditorStateModelPrototype,
-}));
 const DraftListPage = lazyRoute(async () => ({
   default: (await import('../features/resources/DraftListPage')).DraftListPage,
 }));
@@ -73,8 +65,6 @@ export function App() {
         <Route path="/templates/new" element={<TemplateCreatePage />} />
         <Route path="/templates/:templateId" element={<TemplateEditorPage />} />
         <Route path="/prototype/schema-studio" element={<SchemaStudioPrototype />} />
-        <Route path="/prototype/template-designer" element={<TemplateDesignerPrototype />} />
-        <Route path="/prototype/editor-state-model" element={<EditorStateModelPrototype />} />
         <Route path="*" element={<Navigate replace to="/schemas" />} />
       </Routes>
     </Suspense>

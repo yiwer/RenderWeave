@@ -588,6 +588,7 @@ export function TemplateEditorCanvas({
       data-canvas-tool={activeTool}
       tabIndex={0}
       aria-label="本地草稿画布视口"
+      aria-keyshortcuts="Delete Backspace"
       onBlur={() => {
         spacePressedRef.current = false;
         panRef.current = null;

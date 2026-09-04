@@ -1904,9 +1904,39 @@ function StructuredShell({
     );
   }
 
+  const handleStructuredShortcut = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    if (event.repeat || event.altKey) return;
+    const key = event.key.toLowerCase();
+    const commandModifier = event.ctrlKey || event.metaKey;
+    if (commandModifier && key === 's') {
+      event.preventDefault();
+      if (!localLocked && dirty && saveTransport) save();
+      return;
+    }
+    if (isTemplateEditorEditableTarget(event.target)) return;
+    if (commandModifier && key === 'z') {
+      event.preventDefault();
+      if (event.shiftKey) redo();
+      else undo();
+      return;
+    }
+    if (event.ctrlKey && !event.metaKey && key === 'y') {
+      event.preventDefault();
+      redo();
+      return;
+    }
+    if (!commandModifier && !event.shiftKey
+      && (key === 'delete' || key === 'backspace')
+      && isTemplateEditorDeleteShortcutTarget(event.target)) {
+      event.preventDefault();
+      dispatchEditorCommand({ operation: 'delete', nodeId: effectiveSelectedNodeId });
+    }
+  };
+
   return (
     <EditorFrame
       rootRef={editorRootRef}
+      onKeyDown={handleStructuredShortcut}
       baseline={session.baseline}
       documentName={workingName}
       modeLabel="Structured Editor"
@@ -2239,6 +2269,7 @@ function TemplateCatalogLink() {
 
 function EditorFrame({
   rootRef,
+  onKeyDown,
   baseline,
   documentName,
   modeLabel,
@@ -2248,6 +2279,7 @@ function EditorFrame({
   children,
 }: {
   rootRef?: React.Ref<HTMLDivElement>;
+  onKeyDown?: React.KeyboardEventHandler<HTMLDivElement>;
   baseline: CanonicalTemplateBaseline;
   documentName?: string;
   modeLabel: string;
@@ -2257,7 +2289,7 @@ function EditorFrame({
   children: React.ReactNode;
 }) {
   return (
-    <div className="template-editor-root" ref={rootRef}>
+    <div className="template-editor-root" ref={rootRef} onKeyDown={onKeyDown}>
       <a className="skip-link" href="#main-content">跳到主要内容</a>
       <header className="te-chrome">
         <TemplateCatalogLink />
@@ -2313,10 +2345,22 @@ function StructuredHeaderTools({
       >
         {dirty ? 'Canonical 本地草稿' : 'Canonical current'}
       </span>
-      <button type="button" onClick={onUndo} disabled={localLocked || !canUndo} aria-label="撤销本地编辑">
+      <button
+        type="button"
+        onClick={onUndo}
+        disabled={localLocked || !canUndo}
+        aria-label="撤销本地编辑"
+        aria-keyshortcuts="Control+Z Meta+Z"
+      >
         <Undo2 aria-hidden="true" size={16} />
       </button>
-      <button type="button" onClick={onRedo} disabled={localLocked || !canRedo} aria-label="重做本地编辑">
+      <button
+        type="button"
+        onClick={onRedo}
+        disabled={localLocked || !canRedo}
+        aria-label="重做本地编辑"
+        aria-keyshortcuts="Control+Y Control+Shift+Z Meta+Shift+Z"
+      >
         <Redo2 aria-hidden="true" size={16} />
       </button>
       {canSave || localLocked ? (
@@ -2326,6 +2370,7 @@ function StructuredHeaderTools({
           onClick={onSave}
           disabled={localLocked}
           aria-label="保存 canonical 本地草稿"
+          aria-keyshortcuts="Control+S Meta+S"
         >
           {saving ? (
             <LoaderCircle className="te-loading-icon" aria-hidden="true" size={16} />
@@ -3935,6 +3980,21 @@ function downloadBareCanonical(
 
 function encoderByteLength(value: string): number {
   return new TextEncoder().encode(value).byteLength;
+}
+
+function isTemplateEditorEditableTarget(target: EventTarget | null): boolean {
+  if (!(target instanceof Element)) return false;
+  return target.closest([
+    'input',
+    'textarea',
+    'select',
+    '[contenteditable]:not([contenteditable="false"])',
+  ].join(',')) !== null;
+}
+
+function isTemplateEditorDeleteShortcutTarget(target: EventTarget | null): boolean {
+  if (!(target instanceof Element)) return false;
+  return target.matches('[data-template-canvas-viewport], [role="tree"], [role="treeitem"]');
 }
 
 function isAbort(error: unknown): boolean {

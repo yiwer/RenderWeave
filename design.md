@@ -160,15 +160,18 @@ transform/opacity only.
   On dark panels the text hierarchy is `--color-surface-soft` (primary) →
   `--color-dark-ink` (secondary/muted); `--color-muted` and `--color-body`
   are paper-only and fail WCAG there.
-- Prototype routes (`/prototype/*`) are throwaway and inherit the shared
-  tokens. `/prototype/template-designer` is the one research exception: it
-  may use a **professional Studio calibration** (48px compact chrome, 4–8px
-  tool radii, square segmented controls, hairline panel boundaries and a
-  neutral canvas field) to compare editor information architectures. It must
-  keep the Hum font stacks and semantic colour ownership, reserve spring green
-  for action/selection, and avoid card-in-card, universal pills, hover lifts
-  and explanatory copy as permanent chrome. This allowance does not change
-  product pages and expires with the throwaway prototype.
+- The remaining `/prototype/schema-studio` route is throwaway and inherits the
+  shared tokens. Template authoring lives only at the production
+  `/templates/:templateId` route; its Canvas Focus shell shares one canonical
+  EditorSession across the catalog, Structure tree, canvas and inspector.
+  Save, undo and redo expose Ctrl/Cmd keyboard equivalents, while
+  Delete/Backspace applies only from the focused canvas or Structure row so
+  form fields retain native editing behavior.
+- Template safety states stay visibly distinct: conflict reconciliation and
+  INVALID confirmation preserve the local draft, Local recovery and import
+  require explicit adoption, and Compatibility Read-only never collapses into
+  Raw Repair. Autosave, collaboration, plugins and controlled SVG import remain
+  deferred rather than appearing as disabled product chrome.
 - Inference run pages are strictly split: the monitor page owns the execution
   log (timeline main column + telemetry rail at ≥1260px, stacked below it
   otherwise); the review page owns Candidate proofreading only, with core

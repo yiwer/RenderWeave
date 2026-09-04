@@ -14,7 +14,7 @@ Maven 模块），Web 为 React + TypeScript strict（`web/`），正式渲染�
   其余 `image-only-*` 门控服务于停泊中的 admission 工作。
 - 构建/打包：`mvn -B -ntp verify`；`npm --prefix web run build`
 - UI 本地运行：`powershell -ExecutionPolicy Bypass -File tools/dev-web.ps1`，
-  原型入口 `/prototype/schema-studio?variant=A|B|C`、`/prototype/template-designer?variant=A|B|C`
+  保留的原型入口 `/prototype/schema-studio?variant=A|B|C`
 - 环境事实优先看环境本身：`pom.xml`、`web/package.json`、`tools/`、`openapi/`、`compose.yaml`。
 
 ## Agent skills
