@@ -1,7 +1,7 @@
 # T228 — Close data-bound composition through Candidate Preview
 
 Type: task
-Status: in-progress
+Status: blocked
 Blocked by: T227 (done)
 
 ## What to build
@@ -35,3 +35,16 @@ rather than expanding the Renderer profile.
   production rollout, IMAGE_ONLY admission, hash replay or historical backtests.
 
 ## Resolution
+
+## Blocker
+
+- The executable T228 canary is implemented in `be46ac25` and passes its TypeScript strict check, targeted ESLint,
+  Playwright discovery, focused Preview tests (2 files / 35 tests), PowerShell parsing and diff checks.
+- The real canary stops before service startup because Docker volume `rw-t217-final-20260901-b` and its pinned build
+  image are no longer present after external Docker cleanup. The diagnostic is captured at
+  `.sdlc/evidence/20260904-t228-red-diagnostic/metadata.json`.
+- Recreating the old candidate requires restaging roughly 3.4 GB and rebuilding 573 targets; a smaller substitute would
+  require a new raster feature plus a new native JPEG seam. Neither replay was started because both exceed this fast
+  validation ticket.
+- Resume when the known T217 candidate artifact is restored or an equivalent already-built candidate is supplied. No
+  product failure, certification result or fixed-point Spec PASS is claimed while the native GREEN is absent.
