@@ -10,6 +10,7 @@ import {
   type ReactNode,
 } from 'react';
 
+import { SelectField, type SelectFieldOption } from '../../components/SelectField';
 import type { TemplateEditorCommandIntent } from './template-editor-commands';
 import { normalizeTemplateEditorDisplayName } from './template-editor-display-name';
 import {
@@ -62,6 +63,26 @@ type InspectorTab = 'properties' | 'bindings';
 type DraftParse<T> = { ok: true; value: T } | { ok: false; problem: string };
 
 const COLOR = /^#[0-9A-Fa-f]{8}$/;
+
+const STACK_JUSTIFICATION_OPTIONS: SelectFieldOption[] = [
+  { value: 'START', label: '起始' },
+  { value: 'CENTER', label: '居中' },
+  { value: 'END', label: '末端' },
+  { value: 'SPACE_BETWEEN', label: '两端对齐' },
+  { value: 'SPACE_AROUND', label: '环绕均分' },
+  { value: 'SPACE_EVENLY', label: '等距均分' },
+];
+
+const SELF_ALIGNMENT_OPTIONS: SelectFieldOption[] = [
+  { value: 'START', label: '起始' },
+  { value: 'CENTER', label: '居中' },
+  { value: 'END', label: '末端' },
+];
+
+const OPTIONAL_SELF_ALIGNMENT_OPTIONS: SelectFieldOption[] = [
+  { value: '', label: '默认（起始）' },
+  ...SELF_ALIGNMENT_OPTIONS,
+];
 
 const KIND_LABELS: Readonly<Record<string, string>> = {
   canvas: '画布',
@@ -361,8 +382,7 @@ function PropertiesPanel({
     ? value.runs.map(objectOrNull).filter((run): run is Record<string, unknown> => run !== null)
     : [];
   const run = runs.length === 1 ? runs[0] : undefined;
-  const isCore = isCoreTemplateAuthoringKind(node.kind)
-    || node.kind === 'group' || node.kind === 'grid';
+  const isCore = isCoreTemplateAuthoringKind(node.kind);
   const isCanvas = node.kind === 'canvas';
   const isGroup = node.kind === 'group';
   const isFrame = node.kind === 'frame';
@@ -567,34 +587,25 @@ function PropertiesPanel({
               >
                 <label className="te-node-inspector-field">
                   <span>主轴分布</span>
-                  <select
-                    aria-label="主轴分布"
+                  <SelectField
+                    ariaLabel="主轴分布"
                     value={stackJustification(value.justifyContent)}
                     disabled={disabled}
-                    onChange={(event) => command('justifyContent', event.currentTarget.value)}
-                  >
-                    <option value="START">起始</option>
-                    <option value="CENTER">居中</option>
-                    <option value="END">末端</option>
-                    <option value="SPACE_BETWEEN">两端对齐</option>
-                    <option value="SPACE_AROUND">环绕均分</option>
-                    <option value="SPACE_EVENLY">等距均分</option>
-                  </select>
+                    options={STACK_JUSTIFICATION_OPTIONS}
+                    onChange={(next) => command('justifyContent', next)}
+                  />
                 </label>
               </BindablePropertyRow>
               <BindablePropertyRow path="alignItems" action={bindingAction('alignItems')}>
                 <label className="te-node-inspector-field">
                   <span>交叉轴对齐</span>
-                  <select
-                    aria-label="交叉轴对齐"
+                  <SelectField
+                    ariaLabel="交叉轴对齐"
                     value={selfAlignment(value.alignItems)}
                     disabled={disabled}
-                    onChange={(event) => command('alignItems', event.currentTarget.value)}
-                  >
-                    <option value="START">起始</option>
-                    <option value="CENTER">居中</option>
-                    <option value="END">末端</option>
-                  </select>
+                    options={SELF_ALIGNMENT_OPTIONS}
+                    onChange={(next) => command('alignItems', next)}
+                  />
                 </label>
               </BindablePropertyRow>
             </>
@@ -1372,20 +1383,16 @@ function ManagedPlacementFields({
           <BindablePropertyRow path="placement.alignSelf" action={bindingAction('placement.alignSelf')}>
             <label className="te-node-inspector-field">
               <span>堆叠内对齐</span>
-              <select
-                aria-label="堆叠内对齐"
+              <SelectField
+                ariaLabel="堆叠内对齐"
                 value={optionalSelfAlignment(placement.alignSelf)}
                 disabled={disabled}
-                onChange={(event) => command(
+                options={OPTIONAL_SELF_ALIGNMENT_OPTIONS}
+                onChange={(next) => command(
                   'alignSelf',
-                  event.currentTarget.value === '' ? null : event.currentTarget.value,
+                  next === '' ? null : next,
                 )}
-              >
-                <option value="">默认（起始）</option>
-                <option value="START">起始</option>
-                <option value="CENTER">居中</option>
-                <option value="END">末端</option>
-              </select>
+              />
             </label>
           </BindablePropertyRow>
           {nodeKind !== 'group' ? (
@@ -1464,20 +1471,16 @@ function ManagedPlacementFields({
           >
             <label className="te-node-inspector-field">
               <span>单元内水平对齐</span>
-              <select
-                aria-label="单元内水平对齐"
+              <SelectField
+                ariaLabel="单元内水平对齐"
                 value={optionalSelfAlignment(placement.horizontalAlignSelf)}
                 disabled={disabled}
-                onChange={(event) => command(
+                options={OPTIONAL_SELF_ALIGNMENT_OPTIONS}
+                onChange={(next) => command(
                   'horizontalAlignSelf',
-                  event.currentTarget.value === '' ? null : event.currentTarget.value,
+                  next === '' ? null : next,
                 )}
-              >
-                <option value="">默认（起始）</option>
-                <option value="START">起始</option>
-                <option value="CENTER">居中</option>
-                <option value="END">末端</option>
-              </select>
+              />
             </label>
           </BindablePropertyRow>
           <BindablePropertyRow
@@ -1486,20 +1489,16 @@ function ManagedPlacementFields({
           >
             <label className="te-node-inspector-field">
               <span>单元内垂直对齐</span>
-              <select
-                aria-label="单元内垂直对齐"
+              <SelectField
+                ariaLabel="单元内垂直对齐"
                 value={optionalSelfAlignment(placement.verticalAlignSelf)}
                 disabled={disabled}
-                onChange={(event) => command(
+                options={OPTIONAL_SELF_ALIGNMENT_OPTIONS}
+                onChange={(next) => command(
                   'verticalAlignSelf',
-                  event.currentTarget.value === '' ? null : event.currentTarget.value,
+                  next === '' ? null : next,
                 )}
-              >
-                <option value="">默认（起始）</option>
-                <option value="START">起始</option>
-                <option value="CENTER">居中</option>
-                <option value="END">末端</option>
-              </select>
+              />
             </label>
           </BindablePropertyRow>
         </>
@@ -1693,18 +1692,17 @@ function PlacementModeField({
   return (
     <label className="te-node-inspector-field">
       <span>{label}</span>
-      <select
-        aria-label={label}
+      <SelectField
+        ariaLabel={label}
         value={value}
         disabled={disabled}
-        onChange={(event) => onChange(event.currentTarget.value as typeof value)}
-      >
-        {allowedModes.map((mode) => (
-          <option key={mode} value={mode} disabled={mode === 'FIXED' && fixedUnavailable}>
-            {SIZE_MODE_LABELS[mode]}
-          </option>
-        ))}
-      </select>
+        options={allowedModes.map((mode) => ({
+          value: mode,
+          label: SIZE_MODE_LABELS[mode],
+          disabled: mode === 'FIXED' && fixedUnavailable,
+        }))}
+        onChange={(next) => onChange(next as typeof value)}
+      />
     </label>
   );
 }

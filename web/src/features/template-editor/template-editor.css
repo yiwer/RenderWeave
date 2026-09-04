@@ -1529,7 +1529,7 @@
   align-items: flex-start;
   gap: var(--space-sm);
   margin: 0;
-  padding: 9px 11px;
+  padding: 8px 12px;
   border: 1px solid var(--color-error-border);
   border-radius: var(--radius-sm);
   background: color-mix(in oklab, var(--color-error-soft) 94%, transparent);
@@ -2849,7 +2849,8 @@
 }
 
 .te-node-inspector-field input[type="text"],
-.te-node-inspector-field select {
+.te-node-inspector-field select,
+.te-node-inspector-field .select-field {
   width: 100%;
   min-width: 0;
   min-height: 40px;
@@ -2862,7 +2863,8 @@
   font-weight: 600;
 }
 
-.te-node-inspector-field select {
+.te-node-inspector-field select,
+.te-node-inspector-field .select-field {
   cursor: pointer;
 }
 
@@ -2886,6 +2888,7 @@
 
 .te-node-inspector-field input:disabled,
 .te-node-inspector-field select:disabled,
+.te-node-inspector-field .select-field:disabled,
 .te-node-inspector-check input:disabled {
   cursor: not-allowed;
   opacity: 0.55;
@@ -3112,6 +3115,7 @@
 .te-node-inspector-group > summary:focus-visible,
 .te-node-inspector-field input:focus-visible,
 .te-node-inspector-field select:focus-visible,
+.te-node-inspector-field .select-field:focus-visible,
 .te-node-inspector-check input:focus-visible {
   outline: 2px solid var(--color-focus);
   outline-offset: 2px;

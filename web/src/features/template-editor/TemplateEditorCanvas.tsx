@@ -36,6 +36,7 @@ import {
 } from './template-editor-assets';
 import { TemplateEditorVisualNode } from './TemplateEditorVisualNode';
 import { isTemplateEditorVisualNodeKind } from './template-editor-visual-projection';
+import { isTemplateDesignContainerKind } from './template-editor-node-contract';
 import {
   projectTemplateDefiniteLayout,
   type TemplateDefiniteLayoutEntry,
@@ -452,7 +453,7 @@ export function TemplateEditorCanvas({
     handle?: CanvasResizeHandle,
   ) => {
     if (disabled || event.button !== 0 || activeTool !== 'select' || spacePressedRef.current) return;
-    if (handle && isLayoutContainerKind(node.kind)) return;
+    if (handle && isTemplateDesignContainerKind(node.kind)) return;
     closeContextMenu(false);
     event.preventDefault();
     event.stopPropagation();
@@ -727,7 +728,7 @@ export function TemplateEditorCanvas({
                 {isPrimary ? (
                   <>
                     <span className="te-canvas-node-label">{node.displayName}</span>
-                    {!isLayoutContainerKind(node.kind) ? RESIZE_HANDLES.map((handle) => (
+                    {!isTemplateDesignContainerKind(node.kind) ? RESIZE_HANDLES.map((handle) => (
                       <i
                         key={handle}
                         data-resize-handle={handle}
@@ -859,10 +860,6 @@ function projectDescendantNodeIds(
   }
   subtree.delete(rootNodeId);
   return subtree;
-}
-
-function isLayoutContainerKind(kind: string): boolean {
-  return kind === 'group' || kind === 'frame' || kind === 'stack' || kind === 'grid';
 }
 
 function authoredGeometryAtRect(
