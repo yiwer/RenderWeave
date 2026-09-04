@@ -994,31 +994,18 @@ function allocateStackFill(
       allocatedBeforeLast += share;
     }
 
-    const maximumViolations = activeIndices.filter((index) => {
+    const activeBounds: Array<{ readonly index: number; readonly bound: number }> = [];
+    for (const index of activeIndices) {
       const child = children[index]!;
       const axis = row ? 'width' : 'height';
-      return provisional.get(index)! > axisBounds(child.placement, axis, child.nodeId).maximum;
-    });
-    if (maximumViolations.length > 0) {
-      for (const index of maximumViolations) {
-        const child = children[index]!;
-        const axis = row ? 'width' : 'height';
-        allocations.set(index, axisBounds(child.placement, axis, child.nodeId).maximum);
-        active.delete(index);
-      }
-      continue;
+      const { minimum, maximum } = axisBounds(child.placement, axis, child.nodeId);
+      const share = provisional.get(index)!;
+      if (share < minimum) activeBounds.push({ index, bound: minimum });
+      else if (share > maximum) activeBounds.push({ index, bound: maximum });
     }
-
-    const minimumViolations = activeIndices.filter((index) => {
-      const child = children[index]!;
-      const axis = row ? 'width' : 'height';
-      return provisional.get(index)! < axisBounds(child.placement, axis, child.nodeId).minimum;
-    });
-    if (minimumViolations.length > 0) {
-      for (const index of minimumViolations) {
-        const child = children[index]!;
-        const axis = row ? 'width' : 'height';
-        allocations.set(index, axisBounds(child.placement, axis, child.nodeId).minimum);
+    if (activeBounds.length > 0) {
+      for (const { index, bound } of activeBounds) {
+        allocations.set(index, bound);
         active.delete(index);
       }
       continue;

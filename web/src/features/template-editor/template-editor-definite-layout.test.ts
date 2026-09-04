@@ -453,10 +453,10 @@ describe('projectTemplateDefiniteLayout', () => {
     ]);
   });
 
-  it('redistributes bounded Stack FILL space after opposite min and max violations', () => {
+  it('freezes opposite Stack FILL min and max violations in the same round', () => {
     const stack: Node = {
       nodeId: 'bounded-stack', kind: 'stack', placement: fixed(0, 0, 100, 20),
-      direction: 'ROW', gapMm: 0, justifyContent: 'START', alignItems: 'START',
+      direction: 'ROW', gapMm: 0, justifyContent: 'END', alignItems: 'START',
       children: [
         rect('minimum', stackPlacement({
           widthMode: 'FILL', widthMm: undefined, minWidthMm: 80,
@@ -472,7 +472,7 @@ describe('projectTemplateDefiniteLayout', () => {
     expect(result.state).toBe('ready');
     if (result.state !== 'ready') throw new Error('expected ready layout');
     expect(result.entries.find(({ nodeId }) => nodeId === 'minimum')?.worldRect).toEqual({
-      x: 0, y: 0, width: 90, height: 5,
+      x: 10, y: 0, width: 80, height: 5,
     });
     expect(result.entries.find(({ nodeId }) => nodeId === 'maximum')?.worldRect).toEqual({
       x: 90, y: 0, width: 10, height: 5,
