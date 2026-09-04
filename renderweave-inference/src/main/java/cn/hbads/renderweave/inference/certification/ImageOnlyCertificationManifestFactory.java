@@ -20,8 +20,20 @@ public final class ImageOnlyCertificationManifestFactory {
             List<CertificationCanaryCase> canaryCases,
             String assignmentSeed
     ) {
-        var profile = new InferenceProfileRegistry().require(
-                ProfileRunBudgetPolicy.IMAGE_ONLY_V46_PROFILE_ID);
+        return create(ProfileRunBudgetPolicy.IMAGE_ONLY_V46_PROFILE_ID, profileSha256,
+                canaryCases, assignmentSeed);
+    }
+
+    public FrozenImageOnlyCertificationManifest create(
+            String profileId,
+            String profileSha256,
+            List<CertificationCanaryCase> canaryCases,
+            String assignmentSeed
+    ) {
+        if (!ProfileRunBudgetPolicy.isImageOnlyCertificationProfile(profileId)) {
+            throw new IllegalArgumentException("CERTIFICATION_PROFILE_ID_INVALID");
+        }
+        var profile = new InferenceProfileRegistry().require(profileId);
         if (!profile.canonicalSha256().equals(profileSha256)) {
             throw new IllegalArgumentException("CERTIFICATION_PROFILE_SHA_DRIFT");
         }
@@ -52,13 +64,13 @@ public final class ImageOnlyCertificationManifestFactory {
         }
         var material = new ArrayList<String>();
         material.add(FrozenImageOnlyCertificationManifest.VERSION);
-        material.add(ProfileRunBudgetPolicy.IMAGE_ONLY_V46_PROFILE_ID);
+        material.add(profileId);
         material.add(profileSha256);
         material.add(corpus.corpusIdentity());
         material.add(LayeredR1Evaluation.VERSION);
         material.add(evaluatorIdentity);
         material.add(assignmentSeed);
-        for (var stage : CertificationStage.values()) {
+        for (var stage : CertificationStage.scoredStages()) {
             material.add("threshold|" + stage.name() + "|" + stage.caseCount()
                     + "|" + stage.acceptanceThreshold());
         }
@@ -68,7 +80,8 @@ public final class ImageOnlyCertificationManifestFactory {
                 + "|" + item.caseId() + "|" + item.caseSha256() + "|" + item.caseIdentity()));
         var identity = FrozenImageOnlyCertificationManifest.VERSION + ":"
                 + CertificationIdentity.sha256(material);
-        return new FrozenImageOnlyCertificationManifest(identity, profileSha256, corpus.corpusIdentity(),
+        return new FrozenImageOnlyCertificationManifest(identity, profileId, profileSha256,
+                corpus.corpusIdentity(),
                 evaluatorIdentity, LayeredR1Evaluation.VERSION, assignmentSeed,
                 orderedCanaries, assignments);
     }

@@ -33,6 +33,7 @@ import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Random;
 import java.util.UUID;
@@ -61,6 +62,15 @@ class LiveInferenceApiTest {
     @ServiceConnection
     static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>("postgres:16-alpine");
 
+    @org.junit.jupiter.api.io.TempDir
+    static Path egressPermitDirectory;
+
+    @org.springframework.test.context.DynamicPropertySource
+    static void egressPermitProperties(org.springframework.test.context.DynamicPropertyRegistry registry) {
+        registry.add("renderweave.inference.egress-permit-file",
+                () -> DualSwitchTestFixtures.writeEgressPermit(egressPermitDirectory).toString());
+    }
+
     @Autowired
     private MockMvc mockMvc;
 
@@ -74,13 +84,29 @@ class LiveInferenceApiTest {
     private MultipartProperties multipartProperties;
 
     @Autowired
+    private cn.hbads.renderweave.inference.admission.ImageOnlyAdmissionPolicyStore admissionPolicyStore;
+
+    @Autowired
     private tools.jackson.databind.ObjectMapper json;
 
     @BeforeEach
     void clearData() {
+        setAppendOnlyTriggers(false);
+        jdbcClient.sql("delete from provider_call_authorization").update();
+        jdbcClient.sql("delete from live_admission_audit_event").update();
         jdbcClient.sql("delete from inference_provider_reservation").update();
         jdbcClient.sql("delete from inference_run").update();
         jdbcClient.sql("delete from inference_artifact").update();
+        setAppendOnlyTriggers(true);
+        DualSwitchTestFixtures.enableAdmissionPolicy(admissionPolicyStore);
+    }
+
+    private void setAppendOnlyTriggers(boolean enabled) {
+        var action = enabled ? "enable" : "disable";
+        jdbcClient.sql("alter table provider_call_authorization " + action
+                + " trigger provider_call_authorization_append_only").update();
+        jdbcClient.sql("alter table live_admission_audit_event " + action
+                + " trigger live_admission_audit_event_append_only").update();
     }
 
     @Test
@@ -126,7 +152,9 @@ class LiveInferenceApiTest {
                 && runs.find(runId).orElseThrow().state() != InferenceRunState.REVIEW_REQUIRED) {
             Thread.sleep(20);
         }
-        assertThat(runs.find(runId).orElseThrow().state()).isEqualTo(InferenceRunState.REVIEW_REQUIRED);
+        assertThat(runs.find(runId).orElseThrow().state())
+                .as("failureCode=%s", runs.find(runId).orElseThrow().failureCode())
+                .isEqualTo(InferenceRunState.REVIEW_REQUIRED);
         mockMvc.perform(get("/api/v1/inference-runs/{runId}/candidate", runId))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.run.sourceReference").value("user-upload"))

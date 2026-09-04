@@ -17,7 +17,7 @@ public record FrozenCertificationCycle(
 ) {
     public FrozenCertificationCycle {
         Objects.requireNonNull(cycleId, "cycleId");
-        if (!ProfileRunBudgetPolicy.IMAGE_ONLY_V46_PROFILE_ID.equals(profileId)) {
+        if (!ProfileRunBudgetPolicy.isImageOnlyCertificationProfile(profileId)) {
             throw new IllegalArgumentException("PROFILE_CERTIFICATION_PROFILE_INVALID");
         }
         requireSha256(profileSha256, "PROFILE_CERTIFICATION_PROFILE_SHA_INVALID");

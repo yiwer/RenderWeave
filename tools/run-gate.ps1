@@ -1,7 +1,9 @@
 [CmdletBinding()]
 param(
-    [ValidateSet('fast', 'server', 'web', 'template', 'asset', 'render', 'eval', 'e2e', 'draft-e2e', 'inference-e2e', 'compose', 'runtime', 'document-vision', 'observation-r0', 'layered-r1', 'image-only-p0', 'capacity', 'full')]
-    [string]$Gate = 'fast'
+    [ValidateSet('fast', 'server', 'web', 'template', 'asset', 'render', 'eval', 'e2e', 'draft-e2e', 'inference-e2e', 'compose', 'runtime', 'document-vision', 'observation-r0', 'layered-r1', 'image-only-p0', 'image-only-p1-preflight', 'image-only-p1-live', 'image-only-successor', 'image-only-successor-diagnostic-live', 'image-only-v48-successor', 'image-only-v48-successor-diagnostic-live', 'image-only-v49-provenance', 'image-only-v49-envelope', 'image-only-v49-correction', 'image-only-v49-successor', 'image-only-v49-diagnostic-preparation', 'image-only-v49-successor-diagnostic-live', 'image-only-v49-diagnostic-postclose', 'image-only-v50-successor', 'image-only-v50-diagnostic-preparation', 'image-only-v50-successor-diagnostic-live', 'image-only-v50-diagnostic-postclose', 'image-only-v51-successor', 'image-only-v51-diagnostic-preparation', 'image-only-v51-successor-diagnostic-live', 'image-only-v51-diagnostic-postclose', 'image-only-v52-successor', 'image-only-v52-diagnostic-preparation', 'image-only-v52-successor-diagnostic-live', 'image-only-v52-diagnostic-postclose', 'image-only-p2-admission', 'image-only-p2-confirmation', 'image-only-p2-encryption', 'image-only-p2-payload-lifecycle', 'image-only-p2-audit-dual-switch', 'image-only-p2-ocr-sidecar', 'capacity', 'full')]
+    [string]$Gate = 'fast',
+
+    [string]$ImageOnlyCanaryInputDirectory
 )
 
 $ErrorActionPreference = 'Stop'
@@ -117,6 +119,37 @@ try {
         'observation-r0' { @('document-observation-r0') }
         'layered-r1' { @('document-observation-r0', 'layered-evaluation-r1') }
         'image-only-p0' { @('image-only-certification-p0') }
+        'image-only-p1-preflight' { @('image-only-certification-p1-preflight') }
+        'image-only-p1-live' { @('image-only-certification-p1-live') }
+        'image-only-successor' { @('image-only-v48-successor') }
+        'image-only-successor-diagnostic-live' { @('image-only-v47-successor-diagnostic-live') }
+        'image-only-v48-successor' { @('image-only-v48-successor') }
+        'image-only-v48-successor-diagnostic-live' { @('image-only-v48-successor-diagnostic-live') }
+        'image-only-v49-provenance' { @('image-only-v49-provenance') }
+        'image-only-v49-envelope' { @('image-only-v49-envelope') }
+        'image-only-v49-correction' { @('image-only-v49-correction') }
+        'image-only-v49-successor' { @('image-only-v49-successor') }
+        'image-only-v49-diagnostic-preparation' { @('image-only-v49-diagnostic-preparation') }
+        'image-only-v49-successor-diagnostic-live' { @('image-only-v49-successor-diagnostic-live') }
+        'image-only-v49-diagnostic-postclose' { @('image-only-v49-diagnostic-postclose') }
+        'image-only-v50-successor' { @('image-only-v50-successor') }
+        'image-only-v50-diagnostic-preparation' { @('image-only-v50-diagnostic-preparation') }
+        'image-only-v50-successor-diagnostic-live' { @('image-only-v50-successor-diagnostic-live') }
+        'image-only-v50-diagnostic-postclose' { @('image-only-v50-diagnostic-postclose') }
+        'image-only-v51-successor' { @('image-only-v51-successor') }
+        'image-only-v51-diagnostic-preparation' { @('image-only-v51-diagnostic-preparation') }
+        'image-only-v51-successor-diagnostic-live' { @('image-only-v51-successor-diagnostic-live') }
+        'image-only-v51-diagnostic-postclose' { @('image-only-v51-diagnostic-postclose') }
+        'image-only-v52-successor' { @('image-only-v52-successor') }
+        'image-only-v52-diagnostic-preparation' { @('image-only-v52-diagnostic-preparation') }
+        'image-only-v52-successor-diagnostic-live' { @('image-only-v52-successor-diagnostic-live') }
+        'image-only-v52-diagnostic-postclose' { @('image-only-v52-diagnostic-postclose') }
+        'image-only-p2-admission' { @('image-only-p2-admission') }
+        'image-only-p2-confirmation' { @('image-only-p2-confirmation') }
+        'image-only-p2-encryption' { @('image-only-p2-encryption') }
+        'image-only-p2-payload-lifecycle' { @('image-only-p2-payload-lifecycle') }
+        'image-only-p2-audit-dual-switch' { @('image-only-p2-audit-dual-switch') }
+        'image-only-p2-ocr-sidecar' { @('image-only-p2-ocr-sidecar') }
         'capacity' { @('capacity-baseline') }
         'full' { @('repository-diff', 'template-kernel-replay', 'template-static-replay', 'asset-kernel-replay', 'renderer-process-replay', 'server-verify', 'web-node24', 'offline-eval', 'document-observation-r0', 'layered-evaluation-r1', 'image-only-certification-p0', 'compose-config', 'runtime-canary', 'document-vision-adapter-tests', 'prototype-e2e', 'draft-browser-e2e', 'inference-browser-e2e') }
     }
@@ -224,14 +257,36 @@ try {
             }
             'document-vision-adapter-tests' {
                 Invoke-GateStep $step {
+                    $pythonExecutable = Join-Path $repoRoot `
+                        '.sdlc\toolchains\document-vision-venv\Scripts\python.exe'
+                    if (-not (Test-Path -LiteralPath $pythonExecutable -PathType Leaf)) {
+                        throw 'Frozen document-vision Python executable is unavailable.'
+                    }
                     Invoke-ZeroPaidAiCommand `
-                        'python.exe tools\document-vision\test_rapidocr_adapter.py'
+                        ('"' + $pythonExecutable + '" tools\document-vision\test_rapidocr_adapter.py')
                 }
             }
             'document-vision-canary' {
                 Invoke-GateStep $step {
-                    Invoke-ZeroPaidAiCommand `
-                        'set "RENDERWEAVE_RUN_DOCUMENT_VISION_CANARY=true" && mvn.cmd -B -ntp -pl renderweave-app -am -Dtest=DocumentVisionRuntimeCanaryTest -Dsurefire.failIfNoSpecifiedTests=false test'
+                    $pythonExecutable = Join-Path $repoRoot `
+                        '.sdlc\toolchains\document-vision-venv\Scripts\python.exe'
+                    $adapterScript = Join-Path $repoRoot `
+                        'tools\document-vision\rapidocr_adapter.py'
+                    $modelRoot = Join-Path $repoRoot `
+                        '.sdlc\toolchains\document-vision-venv\Lib\site-packages\rapidocr\models'
+                    if (-not (Test-Path -LiteralPath $pythonExecutable -PathType Leaf) -or
+                            -not (Test-Path -LiteralPath $adapterScript -PathType Leaf) -or
+                            -not (Test-Path -LiteralPath $modelRoot -PathType Container)) {
+                        throw 'Frozen RapidOCR/OpenVINO toolchain is unavailable.'
+                    }
+                    $command = 'set "RENDERWEAVE_RUN_DOCUMENT_VISION_CANARY=true" && ' +
+                        'set "RENDERWEAVE_DOCUMENT_VISION_EXECUTABLE=' + $pythonExecutable + '" && ' +
+                        'set "RENDERWEAVE_DOCUMENT_VISION_ADAPTER_SCRIPT=' + $adapterScript + '" && ' +
+                        'set "RENDERWEAVE_DOCUMENT_VISION_MODEL_ROOT=' + $modelRoot + '" && ' +
+                        'mvn.cmd -B -ntp -pl renderweave-app -am ' +
+                        '-Dtest=DocumentVisionRuntimeCanaryTest ' +
+                        '-Dsurefire.failIfNoSpecifiedTests=false test'
+                    Invoke-ZeroPaidAiCommand $command
                 }
             }
             'document-observation-r0' {
@@ -269,6 +324,509 @@ try {
                     if ($LASTEXITCODE -eq 0 -and -not (
                             Test-Path -LiteralPath $independentSummary -PathType Leaf)) {
                         throw 'IMAGE_ONLY P0 gate completed without producing its independent summary.'
+                    }
+                }
+            }
+            'image-only-certification-p1-preflight' {
+                Invoke-GateStep $step {
+                    if ([string]::IsNullOrWhiteSpace($ImageOnlyCanaryInputDirectory) -or
+                            $ImageOnlyCanaryInputDirectory.Contains('"')) {
+                        throw 'IMAGE_ONLY P1 preflight requires a safe -ImageOnlyCanaryInputDirectory.'
+                    }
+                    $command = 'powershell.exe -NoProfile -ExecutionPolicy Bypass ' +
+                        '-File tools\run-image-only-certification-p1-preflight.ps1 ' +
+                        '-EvidenceDir "' + $evidenceDir + '" ' +
+                        '-InputDirectory "' + $ImageOnlyCanaryInputDirectory + '"'
+                    Invoke-ZeroPaidAiCommand $command
+                    $summary = Join-Path $evidenceDir 'image-only-p1-preflight-summary.json'
+                    if ($LASTEXITCODE -eq 0 -and -not (
+                            Test-Path -LiteralPath $summary -PathType Leaf)) {
+                        throw 'IMAGE_ONLY P1 preflight completed without its summary.'
+                    }
+                }
+            }
+            'image-only-certification-p1-live' {
+                Invoke-GateStep $step {
+                    if ([string]::IsNullOrWhiteSpace($ImageOnlyCanaryInputDirectory)) {
+                        throw 'IMAGE_ONLY P1 live gate requires -ImageOnlyCanaryInputDirectory.'
+                    }
+                    # This is the sole paid path. It deliberately inherits the caller's credential
+                    # environment without inspecting or printing it; the exact J1 is revalidated
+                    # inside the dedicated runner before any Provider bytes can leave.
+                    & powershell.exe -NoProfile -ExecutionPolicy Bypass `
+                        -File tools\run-image-only-certification-canary-live.ps1 `
+                        -EvidenceDir $evidenceDir `
+                        -InputDirectory $ImageOnlyCanaryInputDirectory
+                    if ($LASTEXITCODE -eq 0) {
+                        $summary = Join-Path $evidenceDir 'image-only-canary-live-summary.json'
+                        if (-not (Test-Path -LiteralPath $summary -PathType Leaf)) {
+                            throw 'IMAGE_ONLY P1 live gate completed without its summary.'
+                        }
+                    }
+                }
+            }
+            'image-only-v47-successor' {
+                Invoke-GateStep $step {
+                    if ([string]::IsNullOrWhiteSpace($ImageOnlyCanaryInputDirectory) -or
+                            $ImageOnlyCanaryInputDirectory.Contains('"')) {
+                        throw 'IMAGE_ONLY v47 successor gate requires a safe input directory.'
+                    }
+                    $command = 'powershell.exe -NoProfile -ExecutionPolicy Bypass ' +
+                        '-File tools\run-image-only-v47-successor.ps1 ' +
+                        '-EvidenceDir "' + $evidenceDir + '" ' +
+                        '-InputDirectory "' + $ImageOnlyCanaryInputDirectory + '"'
+                    Invoke-ZeroPaidAiCommand $command
+                    $summary = Join-Path $evidenceDir 'image-only-v47-successor-summary.json'
+                    if ($LASTEXITCODE -eq 0 -and -not (
+                            Test-Path -LiteralPath $summary -PathType Leaf)) {
+                        throw 'IMAGE_ONLY v47 successor gate completed without its summary.'
+                    }
+                }
+            }
+            'image-only-v48-successor' {
+                Invoke-GateStep $step {
+                    if ([string]::IsNullOrWhiteSpace($ImageOnlyCanaryInputDirectory) -or
+                            $ImageOnlyCanaryInputDirectory.Contains('"')) {
+                        throw 'IMAGE_ONLY v48 successor gate requires a safe input directory.'
+                    }
+                    $command = 'powershell.exe -NoProfile -ExecutionPolicy Bypass ' +
+                        '-File tools\run-image-only-v48-successor.ps1 ' +
+                        '-EvidenceDir "' + $evidenceDir + '" ' +
+                        '-InputDirectory "' + $ImageOnlyCanaryInputDirectory + '"'
+                    Invoke-ZeroPaidAiCommand $command
+                    $summary = Join-Path $evidenceDir 'image-only-v48-successor-summary.json'
+                    if ($LASTEXITCODE -eq 0 -and -not (
+                            Test-Path -LiteralPath $summary -PathType Leaf)) {
+                        throw 'IMAGE_ONLY v48 successor gate completed without its summary.'
+                    }
+                }
+            }
+            'image-only-v47-successor-diagnostic-live' {
+                Invoke-GateStep $step {
+                    throw 'IMAGE_ONLY v47 diagnostic authorization is CLOSED; automatic rerun is forbidden.'
+                }
+            }
+            'image-only-v48-successor-diagnostic-live' {
+                Invoke-GateStep $step {
+                    if ([string]::IsNullOrWhiteSpace($ImageOnlyCanaryInputDirectory)) {
+                        throw 'IMAGE_ONLY v48 diagnostic live gate requires an input directory.'
+                    }
+                    # This explicit paid path inherits, but never inspects or prints, the caller's
+                    # credential environment. The dedicated runner revalidates the exact J1 and
+                    # one-case input before the Provider boundary can issue a permit.
+                    & powershell.exe -NoProfile -ExecutionPolicy Bypass `
+                        -File tools\run-image-only-v48-profile-successor-diagnostic-live.ps1 `
+                        -EvidenceDir $evidenceDir `
+                        -InputDirectory $ImageOnlyCanaryInputDirectory
+                    if ($LASTEXITCODE -eq 0) {
+                        $summary = Join-Path $evidenceDir `
+                            'image-only-v48-diagnostic-live-summary.json'
+                        if (-not (Test-Path -LiteralPath $summary -PathType Leaf)) {
+                            throw 'IMAGE_ONLY v48 diagnostic live gate completed without its summary.'
+                        }
+                    }
+                }
+            }
+            'image-only-v49-provenance' {
+                Invoke-GateStep $step {
+                    $command = 'powershell.exe -NoProfile -ExecutionPolicy Bypass ' +
+                        '-File tools\run-image-only-v49-provenance.ps1 ' +
+                        '-EvidenceDir "' + $evidenceDir + '"'
+                    Invoke-ZeroPaidAiCommand $command
+                    $summary = Join-Path $evidenceDir `
+                        'image-only-v49-provenance-summary.json'
+                    if ($LASTEXITCODE -eq 0 -and -not (
+                            Test-Path -LiteralPath $summary -PathType Leaf)) {
+                        throw 'IMAGE_ONLY v49 provenance gate completed without its summary.'
+                    }
+                }
+            }
+            'image-only-v49-envelope' {
+                Invoke-GateStep $step {
+                    $command = 'powershell.exe -NoProfile -ExecutionPolicy Bypass ' +
+                        '-File tools\run-image-only-v49-envelope.ps1 ' +
+                        '-EvidenceDir "' + $evidenceDir + '"'
+                    Invoke-ZeroPaidAiCommand $command
+                    $summary = Join-Path $evidenceDir `
+                        'image-only-v49-envelope-summary.json'
+                    if ($LASTEXITCODE -eq 0 -and -not (
+                            Test-Path -LiteralPath $summary -PathType Leaf)) {
+                        throw 'IMAGE_ONLY v49 envelope gate completed without its summary.'
+                    }
+                }
+            }
+            'image-only-v49-correction' {
+                Invoke-GateStep $step {
+                    $command = 'powershell.exe -NoProfile -ExecutionPolicy Bypass ' +
+                        '-File tools\run-image-only-v49-correction.ps1 ' +
+                        '-EvidenceDir "' + $evidenceDir + '"'
+                    Invoke-ZeroPaidAiCommand $command
+                    $summary = Join-Path $evidenceDir `
+                        'image-only-v49-correction-summary.json'
+                    if ($LASTEXITCODE -eq 0 -and -not (
+                            Test-Path -LiteralPath $summary -PathType Leaf)) {
+                        throw 'IMAGE_ONLY v49 correction gate completed without its summary.'
+                    }
+                }
+            }
+            'image-only-v49-successor' {
+                Invoke-GateStep $step {
+                    $command = 'powershell.exe -NoProfile -ExecutionPolicy Bypass ' +
+                        '-File tools\run-image-only-v49-successor.ps1 ' +
+                        '-EvidenceDir "' + $evidenceDir + '"'
+                    Invoke-ZeroPaidAiCommand $command
+                    $summary = Join-Path $evidenceDir `
+                        'image-only-v49-successor-summary.json'
+                    if ($LASTEXITCODE -eq 0 -and -not (
+                            Test-Path -LiteralPath $summary -PathType Leaf)) {
+                        throw 'IMAGE_ONLY v49 successor gate completed without its summary.'
+                    }
+                }
+            }
+            'image-only-v50-successor' {
+                Invoke-GateStep $step {
+                    $command = 'powershell.exe -NoProfile -ExecutionPolicy Bypass ' +
+                        '-File tools\run-image-only-v50-successor.ps1 ' +
+                        '-EvidenceDir "' + $evidenceDir + '"'
+                    Invoke-ZeroPaidAiCommand $command
+                    $summary = Join-Path $evidenceDir `
+                        'image-only-v50-successor-summary.json'
+                    if ($LASTEXITCODE -eq 0 -and -not (
+                            Test-Path -LiteralPath $summary -PathType Leaf)) {
+                        throw 'IMAGE_ONLY v50 successor gate completed without its summary.'
+                    }
+                }
+            }
+            'image-only-v51-successor' {
+                Invoke-GateStep $step {
+                    $command = 'powershell.exe -NoProfile -ExecutionPolicy Bypass ' +
+                        '-File tools\run-image-only-v51-successor.ps1 ' +
+                        '-EvidenceDir "' + $evidenceDir + '"'
+                    Invoke-ZeroPaidAiCommand $command
+                    $summary = Join-Path $evidenceDir `
+                        'image-only-v51-successor-summary.json'
+                    if ($LASTEXITCODE -eq 0 -and -not (
+                            Test-Path -LiteralPath $summary -PathType Leaf)) {
+                        throw 'IMAGE_ONLY v51 successor gate completed without its summary.'
+                    }
+                }
+            }
+            'image-only-v52-successor' {
+                Invoke-GateStep $step {
+                    $command = 'powershell.exe -NoProfile -ExecutionPolicy Bypass ' +
+                        '-File tools\run-image-only-v52-successor.ps1 ' +
+                        '-EvidenceDir "' + $evidenceDir + '"'
+                    Invoke-ZeroPaidAiCommand $command
+                    $summary = Join-Path $evidenceDir `
+                        'image-only-v52-successor-summary.json'
+                    if ($LASTEXITCODE -eq 0 -and -not (
+                            Test-Path -LiteralPath $summary -PathType Leaf)) {
+                        throw 'IMAGE_ONLY v52 successor gate completed without its summary.'
+                    }
+                }
+            }
+            'image-only-v52-diagnostic-preparation' {
+                Invoke-GateStep $step {
+                    if ([string]::IsNullOrWhiteSpace($ImageOnlyCanaryInputDirectory) -or
+                            $ImageOnlyCanaryInputDirectory.Contains('"')) {
+                        throw 'IMAGE_ONLY v52 diagnostic preparation requires a safe input directory.'
+                    }
+                    $command = 'powershell.exe -NoProfile -ExecutionPolicy Bypass ' +
+                        '-File tools\run-image-only-v52-diagnostic-preparation.ps1 ' +
+                        '-EvidenceDir "' + $evidenceDir + '" ' +
+                        '-InputDirectory "' + $ImageOnlyCanaryInputDirectory + '"'
+                    Invoke-ZeroPaidAiCommand $command
+                    $summary = Join-Path $evidenceDir `
+                        'image-only-v52-diagnostic-preparation-summary.json'
+                    if ($LASTEXITCODE -eq 0 -and -not (
+                            Test-Path -LiteralPath $summary -PathType Leaf)) {
+                        throw 'IMAGE_ONLY v52 diagnostic preparation completed without its summary.'
+                    }
+                }
+            }
+            'image-only-v52-successor-diagnostic-live' {
+                Invoke-GateStep $step {
+                    if ([string]::IsNullOrWhiteSpace($ImageOnlyCanaryInputDirectory)) {
+                        throw 'IMAGE_ONLY v52 diagnostic live gate requires an input directory.'
+                    }
+                    & powershell.exe -NoProfile -ExecutionPolicy Bypass `
+                        -File tools\run-image-only-v52-profile-successor-diagnostic-live.ps1 `
+                        -EvidenceDir $evidenceDir `
+                        -InputDirectory $ImageOnlyCanaryInputDirectory
+                    if ($LASTEXITCODE -eq 0) {
+                        $summary = Join-Path $evidenceDir `
+                            'image-only-v52-diagnostic-live-summary.json'
+                        if (-not (Test-Path -LiteralPath $summary -PathType Leaf)) {
+                            throw 'IMAGE_ONLY v52 diagnostic live gate completed without its summary.'
+                        }
+                    }
+                }
+            }
+            'image-only-v52-diagnostic-postclose' {
+                Invoke-GateStep $step {
+                    if ([string]::IsNullOrWhiteSpace($ImageOnlyCanaryInputDirectory) -or
+                            $ImageOnlyCanaryInputDirectory.Contains('"')) {
+                        throw 'IMAGE_ONLY v52 post-close gate requires a safe input directory.'
+                    }
+                    $command = 'powershell.exe -NoProfile -ExecutionPolicy Bypass ' +
+                        '-File tools\run-image-only-v52-diagnostic-postclose.ps1 ' +
+                        '-EvidenceDir "' + $evidenceDir + '" ' +
+                        '-InputDirectory "' + $ImageOnlyCanaryInputDirectory + '"'
+                    Invoke-ZeroPaidAiCommand $command
+                    $summary = Join-Path $evidenceDir `
+                        'image-only-v52-diagnostic-postclose-summary.json'
+                    if ($LASTEXITCODE -eq 0 -and -not (
+                            Test-Path -LiteralPath $summary -PathType Leaf)) {
+                        throw 'IMAGE_ONLY v52 post-close gate completed without its summary.'
+                    }
+                }
+            }
+            'image-only-p2-admission' {
+                Invoke-GateStep $step {
+                    $command = 'powershell.exe -NoProfile -ExecutionPolicy Bypass ' +
+                        '-File tools\run-image-only-p2-admission.ps1 ' +
+                        '-EvidenceDir "' + $evidenceDir + '"'
+                    Invoke-ZeroPaidAiCommand $command
+                    $summary = Join-Path $evidenceDir 'image-only-p2-admission-summary.json'
+                    if ($LASTEXITCODE -eq 0 -and -not (
+                            Test-Path -LiteralPath $summary -PathType Leaf)) {
+                        throw 'IMAGE_ONLY P2 admission gate completed without its summary.'
+                    }
+                }
+            }
+            'image-only-p2-confirmation' {
+                Invoke-GateStep $step {
+                    $command = 'powershell.exe -NoProfile -ExecutionPolicy Bypass ' +
+                        '-File tools\run-image-only-p2-confirmation.ps1 ' +
+                        '-EvidenceDir "' + $evidenceDir + '"'
+                    Invoke-ZeroPaidAiCommand $command
+                    $summary = Join-Path $evidenceDir 'image-only-p2-confirmation-summary.json'
+                    if ($LASTEXITCODE -eq 0 -and -not (
+                            Test-Path -LiteralPath $summary -PathType Leaf)) {
+                        throw 'IMAGE_ONLY P2 confirmation gate completed without its summary.'
+                    }
+                }
+            }
+            'image-only-p2-encryption' {
+                Invoke-GateStep $step {
+                    $command = 'powershell.exe -NoProfile -ExecutionPolicy Bypass ' +
+                        '-File tools\run-image-only-p2-encryption.ps1 ' +
+                        '-EvidenceDir "' + $evidenceDir + '"'
+                    Invoke-ZeroPaidAiCommand $command
+                    $summary = Join-Path $evidenceDir 'image-only-p2-encryption-summary.json'
+                    if ($LASTEXITCODE -eq 0 -and -not (
+                            Test-Path -LiteralPath $summary -PathType Leaf)) {
+                        throw 'IMAGE_ONLY P2 encryption gate completed without its summary.'
+                    }
+                }
+            }
+            'image-only-p2-payload-lifecycle' {
+                Invoke-GateStep $step {
+                    $command = 'powershell.exe -NoProfile -ExecutionPolicy Bypass ' +
+                        '-File tools\run-image-only-p2-payload-lifecycle.ps1 ' +
+                        '-EvidenceDir "' + $evidenceDir + '"'
+                    Invoke-ZeroPaidAiCommand $command
+                    $summary = Join-Path $evidenceDir `
+                        'image-only-p2-payload-lifecycle-summary.json'
+                    if ($LASTEXITCODE -eq 0 -and -not (
+                            Test-Path -LiteralPath $summary -PathType Leaf)) {
+                        throw 'IMAGE_ONLY P2 payload lifecycle gate completed without its summary.'
+                    }
+                }
+            }
+            'image-only-p2-audit-dual-switch' {
+                Invoke-GateStep $step {
+                    $command = 'powershell.exe -NoProfile -ExecutionPolicy Bypass ' +
+                        '-File tools\run-image-only-p2-audit-dual-switch.ps1 ' +
+                        '-EvidenceDir "' + $evidenceDir + '"'
+                    Invoke-ZeroPaidAiCommand $command
+                    $summary = Join-Path $evidenceDir `
+                        'image-only-p2-audit-dual-switch-summary.json'
+                    if ($LASTEXITCODE -eq 0 -and -not (
+                            Test-Path -LiteralPath $summary -PathType Leaf)) {
+                        throw 'IMAGE_ONLY P2 audit/dual-switch gate completed without its summary.'
+                    }
+                }
+            }
+            'image-only-p2-ocr-sidecar' {
+                Invoke-GateStep $step {
+                    $command = 'powershell.exe -NoProfile -ExecutionPolicy Bypass ' +
+                        '-File tools\run-image-only-p2-ocr-sidecar.ps1 ' +
+                        '-EvidenceDir "' + $evidenceDir + '"'
+                    Invoke-ZeroPaidAiCommand $command
+                    $summary = Join-Path $evidenceDir `
+                        'image-only-p2-ocr-sidecar-summary.json'
+                    if ($LASTEXITCODE -eq 0 -and -not (
+                            Test-Path -LiteralPath $summary -PathType Leaf)) {
+                        throw 'IMAGE_ONLY P2 OCR sidecar gate completed without its summary.'
+                    }
+                }
+            }
+            'image-only-v51-diagnostic-preparation' {
+                Invoke-GateStep $step {
+                    if ([string]::IsNullOrWhiteSpace($ImageOnlyCanaryInputDirectory) -or
+                            $ImageOnlyCanaryInputDirectory.Contains('"')) {
+                        throw 'IMAGE_ONLY v51 diagnostic preparation requires a safe input directory.'
+                    }
+                    $command = 'powershell.exe -NoProfile -ExecutionPolicy Bypass ' +
+                        '-File tools\run-image-only-v51-diagnostic-preparation.ps1 ' +
+                        '-EvidenceDir "' + $evidenceDir + '" ' +
+                        '-InputDirectory "' + $ImageOnlyCanaryInputDirectory + '"'
+                    Invoke-ZeroPaidAiCommand $command
+                    $summary = Join-Path $evidenceDir `
+                        'image-only-v51-diagnostic-preparation-summary.json'
+                    if ($LASTEXITCODE -eq 0 -and -not (
+                            Test-Path -LiteralPath $summary -PathType Leaf)) {
+                        throw 'IMAGE_ONLY v51 diagnostic preparation completed without its summary.'
+                    }
+                }
+            }
+            'image-only-v51-successor-diagnostic-live' {
+                Invoke-GateStep $step {
+                    if ([string]::IsNullOrWhiteSpace($ImageOnlyCanaryInputDirectory)) {
+                        throw 'IMAGE_ONLY v51 diagnostic live gate requires an input directory.'
+                    }
+                    & powershell.exe -NoProfile -ExecutionPolicy Bypass `
+                        -File tools\run-image-only-profile-successor-diagnostic-live.ps1 `
+                        -EvidenceDir $evidenceDir `
+                        -InputDirectory $ImageOnlyCanaryInputDirectory
+                    if ($LASTEXITCODE -eq 0) {
+                        $summary = Join-Path $evidenceDir `
+                            'image-only-v51-diagnostic-live-summary.json'
+                        if (-not (Test-Path -LiteralPath $summary -PathType Leaf)) {
+                            throw 'IMAGE_ONLY v51 diagnostic live gate completed without its summary.'
+                        }
+                    }
+                }
+            }
+            'image-only-v51-diagnostic-postclose' {
+                Invoke-GateStep $step {
+                    if ([string]::IsNullOrWhiteSpace($ImageOnlyCanaryInputDirectory) -or
+                            $ImageOnlyCanaryInputDirectory.Contains('"')) {
+                        throw 'IMAGE_ONLY v51 post-close gate requires a safe input directory.'
+                    }
+                    $command = 'powershell.exe -NoProfile -ExecutionPolicy Bypass ' +
+                        '-File tools\run-image-only-v51-diagnostic-postclose.ps1 ' +
+                        '-EvidenceDir "' + $evidenceDir + '" ' +
+                        '-InputDirectory "' + $ImageOnlyCanaryInputDirectory + '"'
+                    Invoke-ZeroPaidAiCommand $command
+                    $summary = Join-Path $evidenceDir `
+                        'image-only-v51-diagnostic-postclose-summary.json'
+                    if ($LASTEXITCODE -eq 0 -and -not (
+                            Test-Path -LiteralPath $summary -PathType Leaf)) {
+                        throw 'IMAGE_ONLY v51 post-close gate completed without its summary.'
+                    }
+                }
+            }
+            'image-only-v50-diagnostic-preparation' {
+                Invoke-GateStep $step {
+                    if ([string]::IsNullOrWhiteSpace($ImageOnlyCanaryInputDirectory) -or
+                            $ImageOnlyCanaryInputDirectory.Contains('"')) {
+                        throw 'IMAGE_ONLY v50 diagnostic preparation requires a safe input directory.'
+                    }
+                    $command = 'powershell.exe -NoProfile -ExecutionPolicy Bypass ' +
+                        '-File tools\run-image-only-v50-diagnostic-preparation.ps1 ' +
+                        '-EvidenceDir "' + $evidenceDir + '" ' +
+                        '-InputDirectory "' + $ImageOnlyCanaryInputDirectory + '"'
+                    Invoke-ZeroPaidAiCommand $command
+                    $summary = Join-Path $evidenceDir `
+                        'image-only-v50-diagnostic-preparation-summary.json'
+                    if ($LASTEXITCODE -eq 0 -and -not (
+                            Test-Path -LiteralPath $summary -PathType Leaf)) {
+                        throw 'IMAGE_ONLY v50 diagnostic preparation completed without its summary.'
+                    }
+                }
+            }
+            'image-only-v50-successor-diagnostic-live' {
+                Invoke-GateStep $step {
+                    if ([string]::IsNullOrWhiteSpace($ImageOnlyCanaryInputDirectory)) {
+                        throw 'IMAGE_ONLY v50 diagnostic live gate requires an input directory.'
+                    }
+                    & powershell.exe -NoProfile -ExecutionPolicy Bypass `
+                        -File tools\run-image-only-v50-profile-successor-diagnostic-live.ps1 `
+                        -EvidenceDir $evidenceDir `
+                        -InputDirectory $ImageOnlyCanaryInputDirectory
+                    if ($LASTEXITCODE -eq 0) {
+                        $summary = Join-Path $evidenceDir `
+                            'image-only-v50-diagnostic-live-summary.json'
+                        if (-not (Test-Path -LiteralPath $summary -PathType Leaf)) {
+                            throw 'IMAGE_ONLY v50 diagnostic live gate completed without its summary.'
+                        }
+                    }
+                }
+            }
+            'image-only-v50-diagnostic-postclose' {
+                Invoke-GateStep $step {
+                    if ([string]::IsNullOrWhiteSpace($ImageOnlyCanaryInputDirectory) -or
+                            $ImageOnlyCanaryInputDirectory.Contains('"')) {
+                        throw 'IMAGE_ONLY v50 post-close gate requires a safe input directory.'
+                    }
+                    $command = 'powershell.exe -NoProfile -ExecutionPolicy Bypass ' +
+                        '-File tools\run-image-only-v50-diagnostic-postclose.ps1 ' +
+                        '-EvidenceDir "' + $evidenceDir + '" ' +
+                        '-InputDirectory "' + $ImageOnlyCanaryInputDirectory + '"'
+                    Invoke-ZeroPaidAiCommand $command
+                    $summary = Join-Path $evidenceDir `
+                        'image-only-v50-diagnostic-postclose-summary.json'
+                    if ($LASTEXITCODE -eq 0 -and -not (
+                            Test-Path -LiteralPath $summary -PathType Leaf)) {
+                        throw 'IMAGE_ONLY v50 post-close gate completed without its summary.'
+                    }
+                }
+            }
+            'image-only-v49-diagnostic-preparation' {
+                Invoke-GateStep $step {
+                    if ([string]::IsNullOrWhiteSpace($ImageOnlyCanaryInputDirectory) -or
+                            $ImageOnlyCanaryInputDirectory.Contains('"')) {
+                        throw 'IMAGE_ONLY v49 diagnostic preparation requires a safe input directory.'
+                    }
+                    $command = 'powershell.exe -NoProfile -ExecutionPolicy Bypass ' +
+                        '-File tools\run-image-only-v49-diagnostic-preparation.ps1 ' +
+                        '-EvidenceDir "' + $evidenceDir + '" ' +
+                        '-InputDirectory "' + $ImageOnlyCanaryInputDirectory + '"'
+                    Invoke-ZeroPaidAiCommand $command
+                    $summary = Join-Path $evidenceDir `
+                        'image-only-v49-diagnostic-preparation-summary.json'
+                    if ($LASTEXITCODE -eq 0 -and -not (
+                            Test-Path -LiteralPath $summary -PathType Leaf)) {
+                        throw 'IMAGE_ONLY v49 diagnostic preparation completed without its summary.'
+                    }
+                }
+            }
+            'image-only-v49-successor-diagnostic-live' {
+                Invoke-GateStep $step {
+                    if ([string]::IsNullOrWhiteSpace($ImageOnlyCanaryInputDirectory)) {
+                        throw 'IMAGE_ONLY v49 diagnostic live gate requires an input directory.'
+                    }
+                    & powershell.exe -NoProfile -ExecutionPolicy Bypass `
+                        -File tools\run-image-only-v49-profile-successor-diagnostic-live.ps1 `
+                        -EvidenceDir $evidenceDir `
+                        -InputDirectory $ImageOnlyCanaryInputDirectory
+                    if ($LASTEXITCODE -eq 0) {
+                        $summary = Join-Path $evidenceDir `
+                            'image-only-v49-diagnostic-live-summary.json'
+                        if (-not (Test-Path -LiteralPath $summary -PathType Leaf)) {
+                            throw 'IMAGE_ONLY v49 diagnostic live gate completed without its summary.'
+                        }
+                    }
+                }
+            }
+            'image-only-v49-diagnostic-postclose' {
+                Invoke-GateStep $step {
+                    if ([string]::IsNullOrWhiteSpace($ImageOnlyCanaryInputDirectory) -or
+                            $ImageOnlyCanaryInputDirectory.Contains('"')) {
+                        throw 'IMAGE_ONLY v49 post-close gate requires a safe input directory.'
+                    }
+                    $command = 'powershell.exe -NoProfile -ExecutionPolicy Bypass ' +
+                        '-File tools\run-image-only-v49-diagnostic-postclose.ps1 ' +
+                        '-EvidenceDir "' + $evidenceDir + '" ' +
+                        '-InputDirectory "' + $ImageOnlyCanaryInputDirectory + '"'
+                    Invoke-ZeroPaidAiCommand $command
+                    $summary = Join-Path $evidenceDir `
+                        'image-only-v49-diagnostic-postclose-summary.json'
+                    if ($LASTEXITCODE -eq 0 -and -not (
+                            Test-Path -LiteralPath $summary -PathType Leaf)) {
+                        throw 'IMAGE_ONLY v49 post-close gate completed without its summary.'
                     }
                 }
             }

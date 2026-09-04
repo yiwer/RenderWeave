@@ -365,6 +365,83 @@ class InferencePromptRegistryTest {
     }
 
     @Test
+    void visualV47PinsTheBoundedSuccessorResponseContract() {
+        var prompt = new InferencePromptRegistry().requireVisualStage(
+                InferencePromptRegistry.VISUAL_ELEMENTS_V13,
+                InferencePromptRegistry.VISUAL_HINT_GENERIC_V1
+        ).text();
+        var normalized = prompt.replaceAll("\\s+", " ");
+
+        assertTrue(normalized.contains("at most 32 regions and at most 32 elements"));
+        assertTrue(normalized.contains("at most three representative"));
+        assertTrue(normalized.contains("snake_case"));
+        assertTrue(prompt.contains("VISUAL_GROUNDING_OUTPUT_TRUNCATED"));
+        assertTrue(normalized.contains("regenerate one complete, smaller JSON object"));
+        assertTrue(normalized.contains("Keep only high-confidence reusable structure"));
+        assertFalse(prompt.matches("(?is).*\\b(bus|station|route|stop|fare)\\b.*"));
+    }
+
+    @Test
+    void visualV48PinsFieldSpecificRegionCorrectionAndFailClosedFallback() {
+        var prompt = new InferencePromptRegistry().requireVisualStage(
+                InferencePromptRegistry.VISUAL_ELEMENTS_V14,
+                InferencePromptRegistry.VISUAL_HINT_GENERIC_V1
+        ).text();
+
+        assertTrue(prompt.contains("VISUAL_GROUNDING_REGION_ENTRY_INVALID"));
+        assertTrue(prompt.contains("VISUAL_GROUNDING_REGION_ID_INVALID"));
+        assertTrue(prompt.contains("VISUAL_GROUNDING_REGION_PARENT_ID_INVALID"));
+        assertTrue(prompt.contains("VISUAL_GROUNDING_REGION_MULTIPLICITY_INVALID"));
+        assertTrue(prompt.contains("VISUAL_GROUNDING_REGION_READING_ORDER_INVALID"));
+        assertTrue(prompt.contains("VISUAL_GROUNDING_REGION_REPEAT_GROUP_ID_INVALID"));
+        assertTrue(prompt.contains("VISUAL_GROUNDING_REGION_EVIDENCE_INVALID"));
+        assertTrue(prompt.contains("Generic, unknown, and unlisted rejection codes are not retryable"));
+        assertFalse(prompt.contains("VISUAL_GROUNDING_REGION_INVALID:"));
+        assertFalse(prompt.matches("(?is).*\\b(bus|station|route|stop|fare)\\b.*"));
+    }
+
+    @Test
+    void visualV49PinsMixedEnvelopeCorrectionWithoutPayloadEcho() {
+        var prompt = new InferencePromptRegistry().requireVisualStage(
+                InferencePromptRegistry.VISUAL_ELEMENTS_V15,
+                InferencePromptRegistry.VISUAL_HINT_GENERIC_V1
+        ).text();
+
+        assertTrue(prompt.contains("VISUAL_GROUNDING_REGION_FIELDS_INVALID"));
+        assertTrue(prompt.contains("VISUAL_GROUNDING_REGION_UNCLASSIFIED"));
+        assertTrue(prompt.contains("canonical detail set"));
+        assertTrue(prompt.contains("Correct every listed detail code together"));
+        assertTrue(prompt.contains("Never echo field values, coordinates, local ids, or a prior response"));
+        assertTrue(prompt.contains("VISUAL_GROUNDING_REGION_ENTRY_INVALID"));
+        assertTrue(prompt.contains("VISUAL_GROUNDING_REGION_ID_INVALID"));
+        assertTrue(prompt.contains("VISUAL_GROUNDING_REGION_PARENT_ID_INVALID"));
+        assertTrue(prompt.contains("VISUAL_GROUNDING_REGION_MULTIPLICITY_INVALID"));
+        assertTrue(prompt.contains("VISUAL_GROUNDING_REGION_READING_ORDER_INVALID"));
+        assertTrue(prompt.contains("VISUAL_GROUNDING_REGION_REPEAT_GROUP_ID_INVALID"));
+        assertTrue(prompt.contains("VISUAL_GROUNDING_REGION_EVIDENCE_INVALID"));
+        assertFalse(prompt.matches("(?is).*\\b(bus|station|route|stop|fare)\\b.*"));
+    }
+
+    @Test
+    void visualV50DefinesOpaqueLocalIdsAndLosslessCanonicalization() {
+        var prompt = new InferencePromptRegistry().requireVisualStage(
+                InferencePromptRegistry.VISUAL_ELEMENTS_V16,
+                InferencePromptRegistry.VISUAL_HINT_GENERIC_V1
+        ).text();
+
+        assertTrue(prompt.contains("Pipeline 4.32"));
+        assertTrue(prompt.contains("stage-local opaque"));
+        assertTrue(prompt.contains("successor adapter deterministically"));
+        assertTrue(prompt.contains("canonicalizes this"));
+        assertTrue(prompt.contains("local-id graph before the unchanged strict validator"));
+        assertTrue(prompt.contains("unique nonblank local-id declarations with exact references"));
+        assertTrue(prompt.contains("Never echo field values, coordinates, local ids, or a prior response"));
+        assertFalse(prompt.contains("Pipeline 4.31"));
+        assertFalse(prompt.contains("Local ids must be lowercase"));
+        assertFalse(prompt.matches("(?is).*\\b(bus|station|route|stop|fare)\\b.*"));
+    }
+
+    @Test
     void visualV14PinsFieldSpecificHierarchyRepairWithoutStructuralCrops() {
         var prompt = new InferencePromptRegistry().requireVisualStage(
                 InferencePromptRegistry.VISUAL_HIERARCHY_V5,

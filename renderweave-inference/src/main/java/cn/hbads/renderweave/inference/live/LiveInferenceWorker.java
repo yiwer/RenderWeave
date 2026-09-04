@@ -1,6 +1,12 @@
 package cn.hbads.renderweave.inference.live;
 
+import cn.hbads.renderweave.inference.admission.LiveAdmissionProblem;
+import cn.hbads.renderweave.inference.admission.LiveProviderCallGate;
+import cn.hbads.renderweave.inference.admission.ProviderCallAuthorizationCommand;
+import cn.hbads.renderweave.inference.admission.ProviderCallOutcomeCommand;
+import cn.hbads.renderweave.inference.admission.ProviderCallPermit;
 import cn.hbads.renderweave.inference.candidate.CandidateBundle;
+import cn.hbads.renderweave.inference.certification.CertificationStageLedgerViolation;
 import cn.hbads.renderweave.inference.candidate.CandidateJsonCodec;
 import cn.hbads.renderweave.inference.candidate.CandidateProblem;
 import cn.hbads.renderweave.inference.candidate.CandidateProblemJsonCodec;
@@ -21,6 +27,7 @@ import cn.hbads.renderweave.inference.profile.JsonStructuralProfile;
 import cn.hbads.renderweave.inference.profile.JsonStructuralProfiler;
 import cn.hbads.renderweave.inference.provider.InferenceProvider;
 import cn.hbads.renderweave.inference.provider.ProviderBudgetExceededException;
+import cn.hbads.renderweave.inference.provider.ProviderBudgetReservation;
 import cn.hbads.renderweave.inference.provider.ProviderBudgetStore;
 import cn.hbads.renderweave.inference.provider.ProviderCallException;
 import cn.hbads.renderweave.inference.provider.ProviderCostEstimator;
@@ -32,7 +39,11 @@ import cn.hbads.renderweave.inference.provider.ProfileRunBudgetPolicy;
 import cn.hbads.renderweave.inference.replay.InferenceAttempt;
 import cn.hbads.renderweave.inference.replay.InferenceAttemptProblemTaxonomy;
 import cn.hbads.renderweave.inference.replay.InferenceAttemptStatus;
+import cn.hbads.renderweave.inference.replay.InferenceRejectionEnvelope;
 import cn.hbads.renderweave.inference.replay.InferenceReplayStore;
+import cn.hbads.renderweave.inference.retention.PayloadAccess;
+import cn.hbads.renderweave.inference.retention.PayloadAccessGuard;
+import cn.hbads.renderweave.inference.retention.PayloadLifecycleException;
 import cn.hbads.renderweave.inference.run.InferenceLeaseLostException;
 import cn.hbads.renderweave.inference.run.InferenceRunSnapshot;
 import cn.hbads.renderweave.inference.run.InferenceRunState;
@@ -122,6 +133,19 @@ public final class LiveInferenceWorker {
             "renderweave-inference-pipeline/4.27";
     private static final String EARLY_RELATIONSHIP_GROUP_PREREQUISITE_HYBRID_VISUAL_PIPELINE =
             "renderweave-inference-pipeline/4.28";
+    private static final String EQUIVALENT_REJECT_BREAKER_HYBRID_VISUAL_PIPELINE =
+            "renderweave-inference-pipeline/4.29";
+    private static final String REGION_RECOVERY_HYBRID_VISUAL_PIPELINE =
+            VisualObservationCorrectionPolicy.PIPELINE_VERSION;
+    private static final String MIXED_REGION_RECOVERY_HYBRID_VISUAL_PIPELINE =
+            VisualObservationCorrectionPolicy.MIXED_ENVELOPE_PIPELINE_VERSION;
+    private static final String LOCAL_ID_CANONICALIZATION_HYBRID_VISUAL_PIPELINE =
+            VisualObservationCorrectionPolicy.LOCAL_ID_CANONICALIZATION_PIPELINE_VERSION;
+    private static final String PARENT_CONTAINMENT_PROVENANCE_HYBRID_VISUAL_PIPELINE =
+            VisualObservationCorrectionPolicy.PARENT_CONTAINMENT_PROVENANCE_PIPELINE_VERSION;
+    private static final String ITEM_PARENT_ENVELOPE_NORMALIZATION_HYBRID_VISUAL_PIPELINE =
+            VisualObservationCorrectionPolicy.ITEM_PARENT_ENVELOPE_NORMALIZATION_PIPELINE_VERSION;
+    private static final int MAX_EQUIVALENT_REJECTED_ATTEMPTS = 3;
     private static final int MAX_STAGE_ADVANCES = 24;
     private static final int MAX_RETRY_PROBLEM_CODES = 16;
 
@@ -151,8 +175,10 @@ public final class LiveInferenceWorker {
     private final VisualGroundingJsonCodec visualGroundingCodec;
     private final VisualEvidenceAcquisition visualEvidenceAcquisition;
     private final Optional<AcquisitionPolicy> acquisitionPolicy;
+    private final Optional<LiveProviderCallGate> callGate;
     private final DocumentObservationCompatibilityProjection documentObservationProjection;
     private final Optional<DocumentObservationSuccessorIdentity> documentObservationSuccessorIdentity;
+    private final PayloadAccessGuard payloadAccessGuard;
 
     public LiveInferenceWorker(
             InferenceRunStore runStore,
@@ -169,7 +195,51 @@ public final class LiveInferenceWorker {
                 new JsonCandidateProfiler(), new JsonGroundedCandidateComposer(),
                 new CandidateValidator(), new CandidateJsonCodec(), new CandidateProblemJsonCodec(),
                 new LiveWorkflowJsonCodec(), new LiveTaskJsonCodec(),
-                VisualEvidenceAcquisition.unavailable("DOCUMENT_VISION_DISABLED"), Optional.empty()
+                VisualEvidenceAcquisition.unavailable("DOCUMENT_VISION_DISABLED"), Optional.empty(),
+                PayloadAccessGuard.allowAll()
+        );
+    }
+
+    public LiveInferenceWorker(
+            InferenceRunStore runStore,
+            InferenceReplayStore workflowStore,
+            ProviderBudgetStore budgetStore,
+            InferenceProvider provider,
+            BlobStore blobStore,
+            Clock clock,
+            Duration leaseDuration,
+            PayloadAccessGuard payloadAccessGuard
+    ) {
+        this(
+                runStore, workflowStore, budgetStore, provider, blobStore, clock, leaseDuration,
+                new InferenceProfileRegistry(), new InferencePromptRegistry(), new JsonStructuralProfiler(),
+                new JsonCandidateProfiler(), new JsonGroundedCandidateComposer(),
+                new CandidateValidator(), new CandidateJsonCodec(), new CandidateProblemJsonCodec(),
+                new LiveWorkflowJsonCodec(), new LiveTaskJsonCodec(),
+                VisualEvidenceAcquisition.unavailable("DOCUMENT_VISION_DISABLED"), Optional.empty(),
+                payloadAccessGuard
+        );
+    }
+
+    public LiveInferenceWorker(
+            InferenceRunStore runStore,
+            InferenceReplayStore workflowStore,
+            ProviderBudgetStore budgetStore,
+            InferenceProvider provider,
+            BlobStore blobStore,
+            Clock clock,
+            Duration leaseDuration,
+            PayloadAccessGuard payloadAccessGuard,
+            LiveProviderCallGate callGate
+    ) {
+        this(
+                runStore, workflowStore, budgetStore, provider, blobStore, clock, leaseDuration,
+                new InferenceProfileRegistry(), new InferencePromptRegistry(), new JsonStructuralProfiler(),
+                new JsonCandidateProfiler(), new JsonGroundedCandidateComposer(),
+                new CandidateValidator(), new CandidateJsonCodec(), new CandidateProblemJsonCodec(),
+                new LiveWorkflowJsonCodec(), new LiveTaskJsonCodec(),
+                VisualEvidenceAcquisition.unavailable("DOCUMENT_VISION_DISABLED"), Optional.empty(),
+                payloadAccessGuard, Optional.of(Objects.requireNonNull(callGate, "callGate"))
         );
     }
 
@@ -190,7 +260,55 @@ public final class LiveInferenceWorker {
                 new JsonCandidateProfiler(), new JsonGroundedCandidateComposer(),
                 new CandidateValidator(), new CandidateJsonCodec(), new CandidateProblemJsonCodec(),
                 new LiveWorkflowJsonCodec(), new LiveTaskJsonCodec(), visualEvidenceAcquisition,
-                Optional.of(Objects.requireNonNull(acquisitionPolicy, "acquisitionPolicy"))
+                Optional.of(Objects.requireNonNull(acquisitionPolicy, "acquisitionPolicy")),
+                PayloadAccessGuard.allowAll()
+        );
+    }
+
+    public LiveInferenceWorker(
+            InferenceRunStore runStore,
+            InferenceReplayStore workflowStore,
+            ProviderBudgetStore budgetStore,
+            InferenceProvider provider,
+            BlobStore blobStore,
+            Clock clock,
+            Duration leaseDuration,
+            VisualEvidenceAcquisition visualEvidenceAcquisition,
+            AcquisitionPolicy acquisitionPolicy,
+            PayloadAccessGuard payloadAccessGuard
+    ) {
+        this(
+                runStore, workflowStore, budgetStore, provider, blobStore, clock, leaseDuration,
+                new InferenceProfileRegistry(), new InferencePromptRegistry(), new JsonStructuralProfiler(),
+                new JsonCandidateProfiler(), new JsonGroundedCandidateComposer(),
+                new CandidateValidator(), new CandidateJsonCodec(), new CandidateProblemJsonCodec(),
+                new LiveWorkflowJsonCodec(), new LiveTaskJsonCodec(), visualEvidenceAcquisition,
+                Optional.of(Objects.requireNonNull(acquisitionPolicy, "acquisitionPolicy")),
+                payloadAccessGuard
+        );
+    }
+
+    public LiveInferenceWorker(
+            InferenceRunStore runStore,
+            InferenceReplayStore workflowStore,
+            ProviderBudgetStore budgetStore,
+            InferenceProvider provider,
+            BlobStore blobStore,
+            Clock clock,
+            Duration leaseDuration,
+            VisualEvidenceAcquisition visualEvidenceAcquisition,
+            AcquisitionPolicy acquisitionPolicy,
+            PayloadAccessGuard payloadAccessGuard,
+            LiveProviderCallGate callGate
+    ) {
+        this(
+                runStore, workflowStore, budgetStore, provider, blobStore, clock, leaseDuration,
+                new InferenceProfileRegistry(), new InferencePromptRegistry(), new JsonStructuralProfiler(),
+                new JsonCandidateProfiler(), new JsonGroundedCandidateComposer(),
+                new CandidateValidator(), new CandidateJsonCodec(), new CandidateProblemJsonCodec(),
+                new LiveWorkflowJsonCodec(), new LiveTaskJsonCodec(), visualEvidenceAcquisition,
+                Optional.of(Objects.requireNonNull(acquisitionPolicy, "acquisitionPolicy")),
+                payloadAccessGuard, Optional.of(Objects.requireNonNull(callGate, "callGate"))
         );
     }
 
@@ -214,6 +332,67 @@ public final class LiveInferenceWorker {
             LiveTaskJsonCodec taskCodec,
             VisualEvidenceAcquisition visualEvidenceAcquisition,
             Optional<AcquisitionPolicy> acquisitionPolicy
+    ) {
+        this(
+                runStore, workflowStore, budgetStore, provider, blobStore, clock, leaseDuration,
+                profiles, prompts, structuralProfiler, jsonCandidateProfiler, groundedComposer,
+                candidateValidator, candidateCodec, problemCodec, workflowCodec, taskCodec,
+                visualEvidenceAcquisition, acquisitionPolicy, PayloadAccessGuard.allowAll()
+        );
+    }
+
+    LiveInferenceWorker(
+            InferenceRunStore runStore,
+            InferenceReplayStore workflowStore,
+            ProviderBudgetStore budgetStore,
+            InferenceProvider provider,
+            BlobStore blobStore,
+            Clock clock,
+            Duration leaseDuration,
+            InferenceProfileRegistry profiles,
+            InferencePromptRegistry prompts,
+            JsonStructuralProfiler structuralProfiler,
+            JsonCandidateProfiler jsonCandidateProfiler,
+            JsonGroundedCandidateComposer groundedComposer,
+            CandidateValidator candidateValidator,
+            CandidateJsonCodec candidateCodec,
+            CandidateProblemJsonCodec problemCodec,
+            LiveWorkflowJsonCodec workflowCodec,
+            LiveTaskJsonCodec taskCodec,
+            VisualEvidenceAcquisition visualEvidenceAcquisition,
+            Optional<AcquisitionPolicy> acquisitionPolicy,
+            PayloadAccessGuard payloadAccessGuard
+    ) {
+        this(
+                runStore, workflowStore, budgetStore, provider, blobStore, clock, leaseDuration,
+                profiles, prompts, structuralProfiler, jsonCandidateProfiler, groundedComposer,
+                candidateValidator, candidateCodec, problemCodec, workflowCodec, taskCodec,
+                visualEvidenceAcquisition, acquisitionPolicy, payloadAccessGuard, Optional.empty()
+        );
+    }
+
+    LiveInferenceWorker(
+            InferenceRunStore runStore,
+            InferenceReplayStore workflowStore,
+            ProviderBudgetStore budgetStore,
+            InferenceProvider provider,
+            BlobStore blobStore,
+            Clock clock,
+            Duration leaseDuration,
+            InferenceProfileRegistry profiles,
+            InferencePromptRegistry prompts,
+            JsonStructuralProfiler structuralProfiler,
+            JsonCandidateProfiler jsonCandidateProfiler,
+            JsonGroundedCandidateComposer groundedComposer,
+            CandidateValidator candidateValidator,
+            CandidateJsonCodec candidateCodec,
+            CandidateProblemJsonCodec problemCodec,
+            LiveWorkflowJsonCodec workflowCodec,
+            LiveTaskJsonCodec taskCodec,
+            VisualEvidenceAcquisition visualEvidenceAcquisition,
+            Optional<AcquisitionPolicy> acquisitionPolicy,
+            PayloadAccessGuard payloadAccessGuard,
+            Optional<LiveProviderCallGate> callGate
     ) {
         this.runStore = Objects.requireNonNull(runStore, "runStore");
         this.workflowStore = Objects.requireNonNull(workflowStore, "workflowStore");
@@ -246,6 +425,8 @@ public final class LiveInferenceWorker {
         this.documentObservationProjection = new DocumentObservationCompatibilityProjection();
         this.documentObservationSuccessorIdentity = acquisitionPolicy
                 .map(DocumentObservationSuccessorIdentity::new);
+        this.payloadAccessGuard = Objects.requireNonNull(payloadAccessGuard, "payloadAccessGuard");
+        this.callGate = Objects.requireNonNull(callGate, "callGate");
         if (leaseDuration.isZero() || leaseDuration.isNegative()
                 || leaseDuration.compareTo(Duration.ofMinutes(15)) > 0) {
             throw new IllegalArgumentException("leaseDuration must be positive and no longer than 15 minutes");
@@ -278,9 +459,27 @@ public final class LiveInferenceWorker {
             return Optional.of(failIfOwned(initial, unavailable.code()));
         } catch (VisualEvidenceAcquisitionException unavailable) {
             return Optional.of(failIfOwned(initial, unavailable.code()));
+        } catch (CertificationStageLedgerViolation denied) {
+            return Optional.of(failIfOwned(initial, denied.reasonCode()));
+        } catch (PayloadLifecycleException denied) {
+            return Optional.of(failIfOwned(initial, denied.code()));
+        } catch (LiveAdmissionProblem denied) {
+            recordDrainIfSwitchClosed(initial, denied.code());
+            return Optional.of(failIfOwned(initial, denied.code()));
         } catch (RuntimeException failure) {
             return Optional.of(failIfOwned(initial, "LIVE_WORKFLOW_FAILED"));
         }
+    }
+
+    private void recordDrainIfSwitchClosed(InferenceRunSnapshot run, String code) {
+        if (callGate.isEmpty()) return;
+        var eventCode = switch (code) {
+            case "LIVE_POLICY_DISABLED" -> "RUN_DRAINED_POLICY";
+            case "EGRESS_DISABLED" -> "RUN_DRAINED_EGRESS";
+            default -> null;
+        };
+        if (eventCode == null) return;
+        callGate.orElseThrow().recordDrain(run.runId(), eventCode, clock.instant());
     }
 
     public InferenceRunSnapshot drain(InferenceRunSnapshot claimed) {
@@ -289,9 +488,17 @@ public final class LiveInferenceWorker {
             return runStore.acknowledgeCancellation(current.runId(), token(current), clock.instant());
         }
         var profile = validateRun(current);
+        var persistedTerminalRejection = persistedTerminalRejection(current, profile);
+        if (persistedTerminalRejection.isPresent()) {
+            return runStore.fail(
+                    current.runId(), token(current),
+                    persistedTerminalRejection.orElseThrow().primaryCode(), clock.instant()
+            );
+        }
         var documentVision = hybridVisual(profile) && visualProviderStage(current.stage())
                 ? documentVision(current, profile) : null;
         for (var advance = 0; advance < MAX_STAGE_ADVANCES && current.state() == InferenceRunState.RUNNING; advance++) {
+            requireGateEligible(current);
             current = advance(current, documentVision);
         }
         if (current.state() == InferenceRunState.RUNNING) {
@@ -300,14 +507,28 @@ public final class LiveInferenceWorker {
         return current;
     }
 
+    private void requireGateEligible(InferenceRunSnapshot run) {
+        if (callGate.isPresent()) {
+            callGate.orElseThrow().requireDispatchEligible(run);
+        }
+    }
+
     public InferenceRunSnapshot advance(InferenceRunSnapshot current) {
         current = requireRunningLease(current);
         if (current.cancellationRequested()) {
             return runStore.acknowledgeCancellation(current.runId(), token(current), clock.instant());
         }
         var profile = validateRun(current);
+        var persistedTerminalRejection = persistedTerminalRejection(current, profile);
+        if (persistedTerminalRejection.isPresent()) {
+            return runStore.fail(
+                    current.runId(), token(current),
+                    persistedTerminalRejection.orElseThrow().primaryCode(), clock.instant()
+            );
+        }
         var documentVision = hybridVisual(profile) && visualProviderStage(current.stage())
                 ? documentVision(current, profile) : null;
+        requireGateEligible(current);
         return advance(current, documentVision);
     }
 
@@ -439,6 +660,7 @@ public final class LiveInferenceWorker {
         }
         if (!provider.configured()) throw new ProviderNotConfiguredException("DASHSCOPE_NOT_CONFIGURED");
 
+        payloadAccessGuard.require(current.runId(), PayloadAccess.PROVIDER_CALL);
         var request = request(current, profile, checkpoint, attemptOrdinal, documentVision);
         var maximumRequestCost = ProviderCostEstimator.maximumRequestCostMicrosCny(request);
         if (maximumRequestCost > profile.maximumEstimatedCostMicrosCny()) {
@@ -450,18 +672,39 @@ public final class LiveInferenceWorker {
         )) {
             throw new InferenceLeaseLostException(current.runId());
         }
-        var reservation = budgetStore.reserve(
-                budgetKey(profile), current.runId(), attemptOrdinal,
-                maximumRequestCost,
-                ProfileRunBudgetPolicy.effectiveRunCostLimit(profile, current.costLimitMicrosCny()),
-                invocationNow
-        );
+        final ProviderCallPermit permit;
+        final ProviderBudgetReservation reservation;
+        if (callGate.isPresent()) {
+            permit = callGate.orElseThrow().authorizeCall(new ProviderCallAuthorizationCommand(
+                    current.runId(), current.mode(), attemptOrdinal, budgetKey(profile),
+                    profile.profileId(), profiles.require(profile.profileId()).canonicalSha256(),
+                    profile.providerEndpoint(), current.inputFingerprint(), maximumRequestCost,
+                    ProfileRunBudgetPolicy.effectiveRunCostLimit(profile, current.costLimitMicrosCny()),
+                    invocationNow
+            ));
+            reservation = null;
+        } else {
+            permit = null;
+            reservation = budgetStore.reserve(
+                    budgetKey(profile), current.runId(), attemptOrdinal,
+                    maximumRequestCost,
+                    ProfileRunBudgetPolicy.effectiveRunCostLimit(profile, current.costLimitMicrosCny()),
+                    invocationNow
+            );
+        }
         var started = System.nanoTime();
         final ProviderInferenceResponse response;
         try {
+            payloadAccessGuard.require(current.runId(), PayloadAccess.PROVIDER_CALL);
             response = provider.complete(request);
         } catch (ProviderCallException failure) {
             var now = clock.instant();
+            if (permit != null) {
+                callGate.orElseThrow().recordDispatchOutcome(new ProviderCallOutcomeCommand(
+                        permit, ProviderCallOutcomeCommand.Outcome.DISPATCH_FAILED,
+                        failure.code(), null, null, null, now
+                ));
+            }
             var recorded = workflowStore.recordAttempt(
                     current.runId(), token(current),
                     new InferenceAttempt(
@@ -481,7 +724,15 @@ public final class LiveInferenceWorker {
         }
 
         var estimatedCost = ProviderCostEstimator.estimateMicrosCny(profile, response.usage());
-        budgetStore.settle(reservation.reservationId(), estimatedCost, clock.instant());
+        if (permit != null) {
+            callGate.orElseThrow().recordDispatchOutcome(new ProviderCallOutcomeCommand(
+                    permit, ProviderCallOutcomeCommand.Outcome.DISPATCH_SUCCEEDED,
+                    null, response.usage().inputTokens(), response.usage().outputTokens(),
+                    estimatedCost, clock.instant()
+            ));
+        } else {
+            budgetStore.settle(reservation.reservationId(), estimatedCost, clock.instant());
+        }
         if (!profile.model().equals(response.model())) {
             var now = clock.instant();
             var failed = workflowStore.recordAttempt(
@@ -737,9 +988,14 @@ public final class LiveInferenceWorker {
                             response.candidateJson(),
                             visualViewPlan(current, checkpoint, retryProblemCodes),
                             imageArtifactIds(current), observationNormalizationPolicy(profile),
-                            observationSemanticPolicy(profile)
+                            observationSemanticPolicy(profile), regionDiagnosticPolicy(profile),
+                            localIdCanonicalizationPolicy(profile)
                     );
                     if (InferencePromptRegistry.VISUAL_ELEMENTS_V12.equals(
+                            profile.elementPromptVersion())
+                            || InferencePromptRegistry.VISUAL_ELEMENTS_V13.equals(
+                            profile.elementPromptVersion())
+                            || InferencePromptRegistry.VISUAL_ELEMENTS_V14.equals(
                             profile.elementPromptVersion())) {
                         var coverageIssues = new VisualSemanticVerifier()
                                 .verifyDocumentVisionCoverage(
@@ -798,13 +1054,40 @@ public final class LiveInferenceWorker {
             }
         } catch (InvalidVisualAnalysisException invalid) {
             var now = clock.instant();
-            var counts = InferenceAttemptProblemTaxonomy.count(List.of(invalid.diagnosticCode()));
+            var rejectionEnvelope = invalid.rejectionEnvelope();
+            var counts = rejectionEnvelope
+                    .map(cn.hbads.renderweave.inference.replay.InferenceRejectionEnvelope
+                            ::detailCodeCounts)
+                    .orElseGet(() -> InferenceAttemptProblemTaxonomy.count(
+                            List.of(invalid.diagnosticCode())
+                    ));
             var rejectedAttempt = attempt(
                     current, attemptOrdinal, InferenceAttemptStatus.REJECTED,
                     "LIVE_VISUAL_ANALYSIS_REJECTED", response, estimatedCost,
-                    durationMillis, counts, now
+                    durationMillis, counts, rejectionEnvelope, now
             );
             var earliestStage = invalid.earliestStage().orElse(current.stage());
+            if (!VisualObservationCorrectionPolicy.permitsRetry(
+                    profile.pipelineVersion(), earliestStage, invalid.diagnosticCode(),
+                    rejectionEnvelope
+            )) {
+                var recorded = workflowStore.recordAttempt(
+                        current.runId(), token(current), rejectedAttempt, now
+                );
+                return runStore.fail(
+                        current.runId(), token(recorded), invalid.diagnosticCode(), clock.instant()
+                );
+            }
+            if (equivalentRejectLimitReached(
+                    current, profile, invalid.diagnosticCode(), rejectionEnvelope
+            )) {
+                var recorded = workflowStore.recordAttempt(
+                        current.runId(), token(current), rejectedAttempt, now
+                );
+                return runStore.fail(
+                        current.runId(), token(recorded), invalid.diagnosticCode(), clock.instant()
+                );
+            }
             if (attemptOrdinal + 1 < profile.maximumTotalCalls()
                     && earliestStage != current.stage()) {
                 final LiveWorkflowCheckpoint rewind;
@@ -1156,7 +1439,8 @@ public final class LiveInferenceWorker {
             InferenceProfile profile
     ) {
         if (EARLY_RELATIONSHIP_GROUP_PREREQUISITE_HYBRID_VISUAL_PIPELINE.equals(
-                profile.pipelineVersion())) {
+                profile.pipelineVersion())
+                || equivalentRejectBreakerPipeline(profile)) {
             return VisualHierarchyPrerequisitePolicy
                     .RELATIONSHIP_GROUP_REQUIRED_BEFORE_SUPPORT;
         }
@@ -1224,7 +1508,8 @@ public final class LiveInferenceWorker {
                 || READING_ORDER_DIAGNOSTIC_HYBRID_VISUAL_PIPELINE.equals(
                 profile.pipelineVersion())
                 || EARLY_RELATIONSHIP_GROUP_PREREQUISITE_HYBRID_VISUAL_PIPELINE.equals(
-                profile.pipelineVersion())) {
+                profile.pipelineVersion())
+                || equivalentRejectBreakerPipeline(profile)) {
             return VisualRelationshipSupportIdPolicy
                     .CANONICALIZE_EXACT_DUPLICATES_AND_UNIQUE_CONNECTED_GROUP_OWNER_WITH_EMPTY_OR_UNKNOWN_SUPPORT_AND_EMPTY_SOURCE_ANCESTOR;
         }
@@ -1359,9 +1644,15 @@ public final class LiveInferenceWorker {
     private static VisualObservationNormalizationPolicy observationNormalizationPolicy(
             InferenceProfile profile
     ) {
+        if (VisualObservationCorrectionPolicy.itemParentEnvelopeNormalization(
+                profile.pipelineVersion())) {
+            return VisualObservationNormalizationPolicy
+                    .BOUNDED_CONSTRAINT_UNIQUE_KIND_ANCESTOR_PARENT_GAPPED_READING_ORDER_DIAGNOSTIC_EVIDENCE_ITEM_PARENT_ENVELOPE_AND_ITEM_SLOT_OWNER;
+        }
         if (READING_ORDER_DIAGNOSTIC_HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion())
                 || EARLY_RELATIONSHIP_GROUP_PREREQUISITE_HYBRID_VISUAL_PIPELINE.equals(
-                profile.pipelineVersion())) {
+                profile.pipelineVersion())
+                || equivalentRejectBreakerPipeline(profile)) {
             return VisualObservationNormalizationPolicy
                     .BOUNDED_CONSTRAINT_UNIQUE_KIND_ANCESTOR_PARENT_GAPPED_READING_ORDER_DIAGNOSTIC_EVIDENCE_AND_ITEM_SLOT_OWNER;
         }
@@ -1515,6 +1806,12 @@ public final class LiveInferenceWorker {
                     grounded.normalizedRegionParents()
             );
         }
+        if (grounded.normalizedRepeatedGroupEnvelopes() > 0) {
+            telemetry.put(
+                    "VISUAL_GROUNDING_REPEATED_GROUP_ENVELOPE_NORMALIZED",
+                    grounded.normalizedRepeatedGroupEnvelopes()
+            );
+        }
         if (grounded.normalizedReadingOrders() > 0) {
             telemetry.put(
                     "VISUAL_GROUNDING_READING_ORDER_NORMALIZED",
@@ -1531,6 +1828,12 @@ public final class LiveInferenceWorker {
             telemetry.put(
                     "VISUAL_GROUNDING_REPEATED_ITEM_SLOT_OWNER_NORMALIZED",
                     grounded.normalizedRepeatedItemSlotOwners()
+            );
+        }
+        if (grounded.canonicalizedLocalIdClasses() > 0) {
+            telemetry.put(
+                    "VISUAL_GROUNDING_LOCAL_ID_CLASSES_CANONICALIZED",
+                    grounded.canonicalizedLocalIdClasses()
             );
         }
         return Map.copyOf(telemetry);
@@ -1573,7 +1876,8 @@ public final class LiveInferenceWorker {
                 || READING_ORDER_DIAGNOSTIC_HYBRID_VISUAL_PIPELINE.equals(
                 profile.pipelineVersion())
                 || EARLY_RELATIONSHIP_GROUP_PREREQUISITE_HYBRID_VISUAL_PIPELINE.equals(
-                profile.pipelineVersion());
+                profile.pipelineVersion())
+                || equivalentRejectBreakerPipeline(profile);
     }
 
     private static boolean visualProviderStage(InferenceStage stage) {
@@ -1626,7 +1930,12 @@ public final class LiveInferenceWorker {
                 .toList();
         if (jsonInputs.isEmpty()) return null;
         if (jsonInputs.size() != 1) throw new IllegalStateException("A run may contain one JSON profile artifact");
-        return structuralProfiler.profile(blobStore.read(jsonInputs.getFirst().artifact().locator()));
+        return structuralProfiler.profile(readPayload(current, jsonInputs.getFirst().artifact().locator()));
+    }
+
+    private byte[] readPayload(InferenceRunSnapshot current, String locator) {
+        payloadAccessGuard.require(current.runId(), PayloadAccess.READ);
+        return blobStore.read(locator);
     }
 
     private List<ProviderImage> providerImages(InferenceRunSnapshot current) {
@@ -1635,7 +1944,7 @@ public final class LiveInferenceWorker {
                 .sorted(Comparator.comparingInt(input -> input.ordinal()))
                 .map(input -> new ProviderImage(
                         input.artifact().artifactId(), input.artifact().mediaType(),
-                        blobStore.read(input.artifact().locator()),
+                        readPayload(current, input.artifact().locator()),
                         input.artifact().width(), input.artifact().height()
                 ))
                 .toList();
@@ -1654,6 +1963,102 @@ public final class LiveInferenceWorker {
                 .toList();
     }
 
+    private boolean equivalentRejectLimitReached(
+            InferenceRunSnapshot current,
+            InferenceProfile profile,
+            String diagnosticCode,
+            Optional<InferenceRejectionEnvelope> rejectionEnvelope
+    ) {
+        if (!equivalentRejectBreakerPipeline(profile)) {
+            return false;
+        }
+        var previous = equivalentRejectedAttemptCount(
+                workflowStore.attempts(current.runId()), current.stage(),
+                diagnosticCode, rejectionEnvelope
+        );
+        return previous + 1 >= MAX_EQUIVALENT_REJECTED_ATTEMPTS;
+    }
+
+    private static long equivalentRejectedAttemptCount(
+            List<InferenceAttempt> attempts,
+            InferenceStage stage,
+            String diagnosticCode,
+            Optional<InferenceRejectionEnvelope> rejectionEnvelope
+    ) {
+        return attempts.stream()
+                .filter(attempt -> attempt.status() == InferenceAttemptStatus.REJECTED)
+                .filter(attempt -> attempt.stage() == stage)
+                .filter(attempt -> rejectionEnvelope
+                        .map(envelope -> attempt.rejectionEnvelope()
+                                .filter(envelope::equals).isPresent())
+                        .orElseGet(() -> attempt.problemCodeCounts().getOrDefault(
+                                diagnosticCode, 0) > 0))
+                .count();
+    }
+
+    private Optional<InferenceRejectionEnvelope> persistedTerminalRejection(
+            InferenceRunSnapshot current,
+            InferenceProfile profile
+    ) {
+        if (!VisualObservationCorrectionPolicy.mixedRegionDiagnostics(
+                profile.pipelineVersion())) {
+            return Optional.empty();
+        }
+        var attempts = workflowStore.attempts(current.runId());
+        if (attempts.isEmpty()) return Optional.empty();
+        var latest = attempts.getLast();
+        if (latest.status() != InferenceAttemptStatus.REJECTED
+                || latest.stage() != current.stage()) {
+            return Optional.empty();
+        }
+        return latest.rejectionEnvelope().filter(envelope -> {
+            if (!VisualObservationCorrectionPolicy.permitsRetry(
+                    profile.pipelineVersion(), envelope.earliestStage(),
+                    envelope.primaryCode(), Optional.of(envelope)
+            )) {
+                return true;
+            }
+            return equivalentRejectedAttemptCount(
+                    attempts, current.stage(), envelope.primaryCode(), Optional.of(envelope)
+            ) >= MAX_EQUIVALENT_REJECTED_ATTEMPTS;
+        });
+    }
+
+    private static boolean equivalentRejectBreakerPipeline(InferenceProfile profile) {
+        return EQUIVALENT_REJECT_BREAKER_HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion())
+                || REGION_RECOVERY_HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion())
+                || MIXED_REGION_RECOVERY_HYBRID_VISUAL_PIPELINE.equals(profile.pipelineVersion())
+                || LOCAL_ID_CANONICALIZATION_HYBRID_VISUAL_PIPELINE.equals(
+                profile.pipelineVersion())
+                || PARENT_CONTAINMENT_PROVENANCE_HYBRID_VISUAL_PIPELINE.equals(
+                profile.pipelineVersion())
+                || ITEM_PARENT_ENVELOPE_NORMALIZATION_HYBRID_VISUAL_PIPELINE.equals(
+                profile.pipelineVersion());
+    }
+
+    private static VisualRegionDiagnosticPolicy regionDiagnosticPolicy(InferenceProfile profile) {
+        if (VisualObservationCorrectionPolicy.parentContainmentDiagnostics(
+                profile.pipelineVersion())) {
+            return VisualRegionDiagnosticPolicy.MIXED_PROVENANCE_AND_CONTAINMENT;
+        }
+        if (VisualObservationCorrectionPolicy.mixedRegionDiagnostics(
+                profile.pipelineVersion())) {
+            return VisualRegionDiagnosticPolicy.MIXED_PROVENANCE;
+        }
+        return VisualObservationCorrectionPolicy.fieldSpecificRegionDiagnostics(
+                profile.pipelineVersion()) ? VisualRegionDiagnosticPolicy.FIELD_SPECIFIC
+                : VisualRegionDiagnosticPolicy.LEGACY_GENERIC;
+    }
+
+    private static VisualLocalIdCanonicalizationPolicy localIdCanonicalizationPolicy(
+            InferenceProfile profile
+    ) {
+        return VisualObservationCorrectionPolicy.losslessLocalIdCanonicalization(
+                profile.pipelineVersion()
+        ) ? VisualLocalIdCanonicalizationPolicy.LOSSLESS_OPAQUE_LABELS
+                : VisualLocalIdCanonicalizationPolicy.STRICT;
+    }
+
     private VisualViewPlan visualViewPlan(
             InferenceRunSnapshot current,
             LiveWorkflowCheckpoint checkpoint,
@@ -1663,7 +2068,7 @@ public final class LiveInferenceWorker {
                 .filter(input -> input.kind() == NormalizedArtifact.Kind.IMAGE)
                 .sorted(Comparator.comparingInt(input -> input.ordinal()))
                 .map(input -> new VisualSourceImage(
-                        input.artifact().artifactId(), blobStore.read(input.artifact().locator()),
+                        input.artifact().artifactId(), readPayload(current, input.artifact().locator()),
                         Objects.requireNonNull(input.artifact().width(), "image width"),
                         Objects.requireNonNull(input.artifact().height(), "image height")
                 ))
@@ -1694,7 +2099,7 @@ public final class LiveInferenceWorker {
                     .sorted(Comparator.comparingInt(input -> input.ordinal()))
                     .map(input -> new ArtifactSet.Artifact(
                             input.artifact().artifactId(), input.ordinal(), input.artifact().mediaType(),
-                            blobStore.read(input.artifact().locator()),
+                            readPayload(current, input.artifact().locator()),
                             Objects.requireNonNull(input.artifact().width(), "image width"),
                             Objects.requireNonNull(input.artifact().height(), "image height"),
                             true
@@ -1800,11 +2205,30 @@ public final class LiveInferenceWorker {
             Map<String, Integer> problemCodeCounts,
             java.time.Instant now
     ) {
+        return attempt(
+                current, attemptOrdinal, status, outcomeCode, response, estimatedCost,
+                durationMillis, problemCodeCounts, Optional.empty(), now
+        );
+    }
+
+    private static InferenceAttempt attempt(
+            InferenceRunSnapshot current,
+            int attemptOrdinal,
+            InferenceAttemptStatus status,
+            String outcomeCode,
+            ProviderInferenceResponse response,
+            long estimatedCost,
+            long durationMillis,
+            Map<String, Integer> problemCodeCounts,
+            Optional<cn.hbads.renderweave.inference.replay.InferenceRejectionEnvelope>
+                    rejectionEnvelope,
+            java.time.Instant now
+    ) {
         return new InferenceAttempt(
                 current.runId(), attemptOrdinal, current.stage(), status, outcomeCode,
                 Optional.of(response.providerRequestId()), Optional.of(response.model()),
                 response.usage().inputTokens(), response.usage().outputTokens(),
-                estimatedCost, durationMillis, problemCodeCounts, now
+                estimatedCost, durationMillis, problemCodeCounts, rejectionEnvelope, now
         );
     }
 

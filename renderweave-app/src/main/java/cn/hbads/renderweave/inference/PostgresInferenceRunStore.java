@@ -22,7 +22,10 @@ import cn.hbads.renderweave.inference.run.NewInferenceRun;
 import cn.hbads.renderweave.inference.replay.InferenceAttempt;
 import cn.hbads.renderweave.inference.replay.InferenceAttemptProblemTaxonomyJsonCodec;
 import cn.hbads.renderweave.inference.replay.InferenceAttemptStatus;
+import cn.hbads.renderweave.inference.replay.InferenceRejectionEnvelopeJsonCodec;
 import cn.hbads.renderweave.inference.replay.InferenceReplayStore;
+import cn.hbads.renderweave.inference.retention.PayloadAccess;
+import cn.hbads.renderweave.inference.retention.PayloadDeletionReason;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
@@ -47,11 +50,18 @@ public class PostgresInferenceRunStore implements InferenceRunStore, InferenceRe
     private static final int MAX_EVENT_PAGE = 1000;
     private static final InferenceAttemptProblemTaxonomyJsonCodec ATTEMPT_PROBLEM_CODEC =
             new InferenceAttemptProblemTaxonomyJsonCodec();
+    private static final InferenceRejectionEnvelopeJsonCodec REJECTION_ENVELOPE_CODEC =
+            new InferenceRejectionEnvelopeJsonCodec();
 
     private final JdbcClient jdbcClient;
+    private final PostgresPayloadLifecycleStore payloadLifecycle;
 
-    public PostgresInferenceRunStore(JdbcClient jdbcClient) {
+    public PostgresInferenceRunStore(
+            JdbcClient jdbcClient,
+            PostgresPayloadLifecycleStore payloadLifecycle
+    ) {
         this.jdbcClient = jdbcClient;
+        this.payloadLifecycle = payloadLifecycle;
     }
 
     @Override
@@ -173,6 +183,28 @@ public class PostgresInferenceRunStore implements InferenceRunStore, InferenceRe
                         where (profile_snapshot ->> 'networkAllowed')::boolean = :networkAllowed
                           and (state = 'QUEUED'
                            or (state = 'RUNNING' and lease_expires_at <= :now))
+                          and (
+                              :networkAllowed = false
+                              or not exists (
+                                  select 1 from external_transfer_confirmation confirmation
+                                  where confirmation.run_id = inference_run.run_id
+                              )
+                              or (
+                                  not exists (
+                                      select 1 from payload_deletion_tombstone tombstone
+                                      where tombstone.run_id = inference_run.run_id
+                                  )
+                                  and exists (
+                                      select 1 from inference_payload_retention retention
+                                      where retention.run_id = inference_run.run_id
+                                  )
+                                  and not exists (
+                                      select 1 from inference_payload_retention retention
+                                      where retention.run_id = inference_run.run_id
+                                        and retention.payload_expires_at <= :now
+                                  )
+                              )
+                          )
                         order by created_at, run_id
                         for update skip locked
                         fetch first 1 row only
@@ -230,6 +262,28 @@ public class PostgresInferenceRunStore implements InferenceRunStore, InferenceRe
                         from inference_run
                         where run_id = :runId
                           and (state = 'QUEUED' or (state = 'RUNNING' and lease_expires_at <= :now))
+                          and (
+                              coalesce((profile_snapshot ->> 'networkAllowed')::boolean, false) = false
+                              or not exists (
+                                  select 1 from external_transfer_confirmation confirmation
+                                  where confirmation.run_id = inference_run.run_id
+                              )
+                              or (
+                                  not exists (
+                                      select 1 from payload_deletion_tombstone tombstone
+                                      where tombstone.run_id = inference_run.run_id
+                                  )
+                                  and exists (
+                                      select 1 from inference_payload_retention retention
+                                      where retention.run_id = inference_run.run_id
+                                  )
+                                  and not exists (
+                                      select 1 from inference_payload_retention retention
+                                      where retention.run_id = inference_run.run_id
+                                        and retention.payload_expires_at <= :now
+                                  )
+                              )
+                          )
                         for update
                         """)
                 .param("runId", runId)
@@ -286,6 +340,10 @@ public class PostgresInferenceRunStore implements InferenceRunStore, InferenceRe
                           and lease_token = :leaseToken
                           and lease_expires_at > :now
                           and not cancellation_requested
+                          and not exists (
+                              select 1 from payload_deletion_tombstone tombstone
+                              where tombstone.run_id = inference_run.run_id
+                          )
                         """)
                 .param("expiresAt", offset(expiresAt))
                 .param("now", offset(now))
@@ -480,6 +538,9 @@ public class PostgresInferenceRunStore implements InferenceRunStore, InferenceRe
         if (source.state() != InferenceRunState.FAILED && source.state() != InferenceRunState.CANCELLED) {
             throw new InvalidInferenceRunTransitionException(sourceRunId, "only FAILED or CANCELLED runs can be retried");
         }
+        if (payloadLifecycle.isManaged(sourceRunId)) {
+            payloadLifecycle.requireAt(sourceRunId, PayloadAccess.RETRY, now);
+        }
         var requestFingerprint = retryFingerprint(sourceRunId);
         lockIdempotencyKey(idempotencyKey);
         var existing = findByIdempotencyKey(idempotencyKey);
@@ -535,6 +596,10 @@ public class PostgresInferenceRunStore implements InferenceRunStore, InferenceRe
         var current = lockAndRequire(runId);
         if (current.state() == InferenceRunState.APPLYING) {
             throw new InvalidInferenceRunTransitionException(runId, "APPLYING run cannot be deleted");
+        }
+        if (payloadLifecycle.isManaged(runId)) {
+            payloadLifecycle.tombstone(runId, PayloadDeletionReason.USER_REQUESTED);
+            return List.of();
         }
         var artifactIds = jdbcClient.sql("""
                         select distinct artifact_id from inference_run_input where run_id = :runId
@@ -932,7 +997,7 @@ public class PostgresInferenceRunStore implements InferenceRunStore, InferenceRe
                         select run_id, attempt_ordinal, stage, status, outcome_code,
                                provider_request_id, provider_model, input_tokens, output_tokens,
                                estimated_cost_micros_cny, duration_millis,
-                               problem_code_counts, completed_at
+                               problem_code_counts, rejection_envelope, completed_at
                         from inference_attempt
                         where run_id = :runId
                         order by attempt_ordinal
@@ -948,12 +1013,13 @@ public class PostgresInferenceRunStore implements InferenceRunStore, InferenceRe
                             run_id, attempt_ordinal, stage, status, outcome_code,
                             provider_request_id, provider_model, input_tokens, output_tokens,
                             estimated_cost_micros_cny, duration_millis,
-                            problem_code_counts, completed_at
+                            problem_code_counts, rejection_envelope, completed_at
                         ) values (
                             :runId, :attemptOrdinal, :stage, :status, :outcomeCode,
                             :providerRequestId, :providerModel, :inputTokens, :outputTokens,
                             :estimatedCostMicrosCny, :durationMillis,
-                            cast(:problemCodeCounts as jsonb), :completedAt
+                            cast(:problemCodeCounts as jsonb), cast(:rejectionEnvelope as jsonb),
+                            :completedAt
                         )
                         """)
                 .param("runId", attempt.runId())
@@ -968,6 +1034,8 @@ public class PostgresInferenceRunStore implements InferenceRunStore, InferenceRe
                 .param("estimatedCostMicrosCny", attempt.estimatedCostMicrosCny())
                 .param("durationMillis", attempt.durationMillis())
                 .param("problemCodeCounts", ATTEMPT_PROBLEM_CODEC.write(attempt.problemCodeCounts()))
+                .param("rejectionEnvelope", attempt.rejectionEnvelope()
+                        .map(REJECTION_ENVELOPE_CODEC::write).orElse(null))
                 .param("completedAt", offset(attempt.completedAt()))
                 .update();
     }
@@ -1004,7 +1072,9 @@ public class PostgresInferenceRunStore implements InferenceRunStore, InferenceRe
             throw new IllegalStateException("Content-addressed artifact metadata does not match " + artifact.artifactId());
         }
         jdbcClient.sql("""
-                        update inference_artifact set deletion_pending = false where artifact_id = :artifactId
+                        update inference_artifact
+                        set deletion_pending = false, payload_deleted_at = null
+                        where artifact_id = :artifactId
                         """)
                 .param("artifactId", artifact.artifactId())
                 .update();
@@ -1225,6 +1295,8 @@ public class PostgresInferenceRunStore implements InferenceRunStore, InferenceRe
                 resultSet.getLong("estimated_cost_micros_cny"),
                 resultSet.getLong("duration_millis"),
                 ATTEMPT_PROBLEM_CODEC.parse(resultSet.getString("problem_code_counts")),
+                Optional.ofNullable(resultSet.getString("rejection_envelope"))
+                        .map(REJECTION_ENVELOPE_CODEC::parse),
                 instant(resultSet, "completed_at").orElseThrow()
         );
     }

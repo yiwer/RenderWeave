@@ -15,10 +15,14 @@ import cn.hbads.renderweave.inference.profile.InferenceProfileRegistry;
 import cn.hbads.renderweave.inference.profile.JsonStructuralProfiler;
 import cn.hbads.renderweave.inference.provider.InferenceProvider;
 import cn.hbads.renderweave.inference.replay.InferenceReplayStore;
+import cn.hbads.renderweave.inference.retention.PayloadAccess;
+import cn.hbads.renderweave.inference.retention.PayloadAccessGuard;
+import cn.hbads.renderweave.inference.retention.PayloadLifecycleReadiness;
 import cn.hbads.renderweave.inference.run.InferenceRunService;
 import cn.hbads.renderweave.inference.run.InferenceRunSnapshot;
 import cn.hbads.renderweave.inference.run.InferenceRunStore;
 import cn.hbads.renderweave.inference.vision.DocumentVisionPreprocessor;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.CacheControl;
 import org.springframework.http.MediaType;
@@ -63,6 +67,11 @@ final class InferenceController {
     private final ObjectMapper json;
     private final DocumentVisionPreprocessor documentVisionPreprocessor;
     private final boolean liveUploadsEnabled;
+    private final PayloadAccessGuard payloadAccessGuard;
+    private final PayloadLifecycleReadiness payloadLifecycleReadiness;
+    private final cn.hbads.renderweave.inference.admission.ImageOnlyAdmissionPolicyStore admissionPolicyStore;
+    private final cn.hbads.renderweave.inference.admission.ProviderEgressPermit egressPermit;
+    private final cn.hbads.renderweave.inference.audit.AuditIntegrityProbe auditIntegrityProbe;
     private final CandidateJsonCodec candidateCodec = new CandidateJsonCodec();
     private final InferenceProfileRegistry profiles = new InferenceProfileRegistry();
     private final JsonStructuralProfiler structuralProfiler = new JsonStructuralProfiler();
@@ -83,6 +92,11 @@ final class InferenceController {
             BlobStore blobStore,
             ObjectMapper json,
             DocumentVisionPreprocessor documentVisionPreprocessor,
+            PayloadAccessGuard payloadAccessGuard,
+            PayloadLifecycleReadiness payloadLifecycleReadiness,
+            cn.hbads.renderweave.inference.admission.ImageOnlyAdmissionPolicyStore admissionPolicyStore,
+            cn.hbads.renderweave.inference.admission.ProviderEgressPermit egressPermit,
+            cn.hbads.renderweave.inference.audit.AuditIntegrityProbe auditIntegrityProbe,
             @Value("${renderweave.inference.live-upload-enabled:false}") boolean liveUploadsEnabled
     ) {
         this.runService = runService;
@@ -96,6 +110,11 @@ final class InferenceController {
         this.blobStore = blobStore;
         this.json = json;
         this.documentVisionPreprocessor = documentVisionPreprocessor;
+        this.payloadAccessGuard = payloadAccessGuard;
+        this.payloadLifecycleReadiness = payloadLifecycleReadiness;
+        this.admissionPolicyStore = admissionPolicyStore;
+        this.egressPermit = egressPermit;
+        this.auditIntegrityProbe = auditIntegrityProbe;
         this.liveUploadsEnabled = liveUploadsEnabled;
     }
 
@@ -215,6 +234,7 @@ final class InferenceController {
         } catch (IllegalArgumentException exception) {
             throw new InvalidInferenceApiRequestException("Unsupported inference mode", exception);
         }
+        requireDualSwitches(mode);
         final InferenceProfileRegistry.ProfileResource profile;
         try {
             profile = profiles.require(request.profileId());
@@ -276,7 +296,12 @@ final class InferenceController {
                         attempt.outcomeCode(), attempt.providerModel().orElse(null),
                         attempt.inputTokens(), attempt.outputTokens(),
                         attempt.estimatedCostMicrosCny(), attempt.durationMillis(),
-                        attempt.problemCodeCounts(), attempt.completedAt()
+                        attempt.problemCodeCounts(), attempt.rejectionEnvelope()
+                                .map(envelope -> new InferenceRejectionEnvelopeResponse(
+                                        envelope.primaryCode(), envelope.earliestStage().name(),
+                                        envelope.detailCodes(), envelope.detailCodeCount()
+                                )).orElse(null),
+                        attempt.completedAt()
                 )).toList(),
                 truncated
         );
@@ -301,7 +326,9 @@ final class InferenceController {
         var live = sourceProfile.networkAllowed();
         if (live) {
             requireLiveAuthorization();
+            requireDualSwitches(source.mode());
             requireProfileReady(sourceProfile);
+            payloadAccessGuard.require(runId, PayloadAccess.RETRY);
         }
         var retried = runService.retry(runId, idempotencyKey);
         var run = retried.run();
@@ -321,6 +348,13 @@ final class InferenceController {
     }
 
     private void requireLiveAuthorization() {
+        var deletionReadiness = payloadLifecycleReadiness.snapshot();
+        if (!deletionReadiness.healthy()) {
+            throw new LiveInferenceUnavailableException(
+                    deletionReadiness.reasonCode(),
+                    "Live payload admission is closed while deletion exceeds its hard SLO"
+            );
+        }
         if (!coordinator.liveEnabled()) {
             throw new LiveInferenceUnavailableException(
                     "LIVE_INFERENCE_DISABLED", "Live inference is disabled by deployment policy"
@@ -335,6 +369,29 @@ final class InferenceController {
         if (!provider.configured()) {
             throw new LiveInferenceUnavailableException(
                     "DASHSCOPE_NOT_CONFIGURED", "DashScope credential is not configured"
+            );
+        }
+        var auditReadiness = auditIntegrityProbe.snapshot();
+        if (!auditReadiness.healthy()) {
+            throw new LiveInferenceUnavailableException(
+                    auditReadiness.reasonCode(),
+                    "Live admission is closed while the audit chain cannot be verified"
+            );
+        }
+    }
+
+    private void requireDualSwitches(cn.hbads.renderweave.inference.input.InferenceMode mode) {
+        if (mode == cn.hbads.renderweave.inference.input.InferenceMode.IMAGE_ONLY
+                && !admissionPolicyStore.current().enabled()) {
+            throw new LiveInferenceUnavailableException(
+                    cn.hbads.renderweave.inference.admission.ImageOnlyAdmissionPolicy.DISABLED_REASON_CODE,
+                    "IMAGE_ONLY live admission is closed by the persisted application policy"
+            );
+        }
+        if (!egressPermit.snapshot().enabled()) {
+            throw new LiveInferenceUnavailableException(
+                    cn.hbads.renderweave.inference.admission.ProviderEgressPermit.DISABLED_REASON_CODE,
+                    "Provider egress is closed by the external orchestrator authority"
             );
         }
     }
@@ -352,6 +409,25 @@ final class InferenceController {
     private ProfileReadiness profileReadiness(
             cn.hbads.renderweave.inference.profile.InferenceProfile profile
     ) {
+        var auditReadiness = auditIntegrityProbe.snapshot();
+        if (!auditReadiness.healthy()) {
+            return new ProfileReadiness(false, auditReadiness.reasonCode());
+        }
+        if (profile.networkAllowed()
+                && profile.supportedModes().contains(
+                        cn.hbads.renderweave.inference.input.InferenceMode.IMAGE_ONLY)
+                && !admissionPolicyStore.current().enabled()) {
+            return new ProfileReadiness(
+                    false,
+                    cn.hbads.renderweave.inference.admission.ImageOnlyAdmissionPolicy.DISABLED_REASON_CODE
+            );
+        }
+        if (profile.networkAllowed() && !egressPermit.snapshot().enabled()) {
+            return new ProfileReadiness(
+                    false,
+                    cn.hbads.renderweave.inference.admission.ProviderEgressPermit.DISABLED_REASON_CODE
+            );
+        }
         if (profile.documentVisionCapabilityId() == null) {
             return new ProfileReadiness(true, null);
         }
@@ -429,6 +505,7 @@ final class InferenceController {
                 .filter(item -> item.artifactId().equals(artifactId))
                 .findFirst()
                 .orElseThrow(() -> new cn.hbads.renderweave.inference.candidate.InferenceCandidateNotFoundException(runId));
+        payloadAccessGuard.require(runId, PayloadAccess.READ);
         return ResponseEntity.ok()
                 .contentType(MediaType.IMAGE_PNG)
                 .cacheControl(CacheControl.noStore())
@@ -573,6 +650,7 @@ final class InferenceController {
                 .toList();
         if (jsonInputs.isEmpty()) return 0;
         if (jsonInputs.size() > 1) throw new IllegalStateException("A run may contain one JSON profile artifact");
+        payloadAccessGuard.require(run.runId(), PayloadAccess.READ);
         return structuralProfiler.profile(
                 blobStore.read(jsonInputs.getFirst().artifact().locator())
         ).sampleCount();
@@ -736,7 +814,16 @@ final class InferenceController {
             long costMicrosCny,
             long durationMillis,
             Map<String, Integer> problemCodeCounts,
+            @JsonInclude(JsonInclude.Include.NON_NULL)
+            InferenceRejectionEnvelopeResponse rejectionEnvelope,
             Instant completedAt
+    ) { }
+
+    record InferenceRejectionEnvelopeResponse(
+            String primaryCode,
+            String earliestStage,
+            List<String> detailCodes,
+            int detailCodeCount
     ) { }
 
     record CandidateReviewResponse(

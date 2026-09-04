@@ -541,6 +541,72 @@ public record InferenceProfile(
                 && profileId.endsWith("-product-v45-hybrid-generic");
         var productPromptV46 = productPromptV45OrV46
                 && profileId.endsWith("-product-v46-hybrid-generic");
+        var productPromptV47 = InferencePromptRegistry.SCHEMA_CANDIDATE_V5.equals(promptVersion)
+                && InferencePromptRegistry.VISUAL_ELEMENTS_V13.equals(elementPromptVersion)
+                && InferencePromptRegistry.VISUAL_HIERARCHY_V7.equals(hierarchyPromptVersion)
+                && InferencePromptRegistry.VISUAL_BINDINGS_V4.equals(bindingPromptVersion)
+                && InferencePromptRegistry.VISUAL_HINT_GENERIC_V1.equals(visualHintPackVersion)
+                && InferencePromptRegistry.DOCUMENT_VISION_OBSERVATIONS_V1.equals(
+                        documentVisionPromptVersion
+                )
+                && documentVisionCapabilityId != null
+                && documentVisionCapabilityId.matches("[a-z0-9][a-z0-9._:-]{0,190}")
+                && profileId.endsWith("-product-v47-hybrid-generic");
+        var productPromptV48 = InferencePromptRegistry.SCHEMA_CANDIDATE_V5.equals(promptVersion)
+                && InferencePromptRegistry.VISUAL_ELEMENTS_V14.equals(elementPromptVersion)
+                && InferencePromptRegistry.VISUAL_HIERARCHY_V7.equals(hierarchyPromptVersion)
+                && InferencePromptRegistry.VISUAL_BINDINGS_V4.equals(bindingPromptVersion)
+                && InferencePromptRegistry.VISUAL_HINT_GENERIC_V1.equals(visualHintPackVersion)
+                && InferencePromptRegistry.DOCUMENT_VISION_OBSERVATIONS_V1.equals(
+                        documentVisionPromptVersion
+                )
+                && documentVisionCapabilityId != null
+                && documentVisionCapabilityId.matches("[a-z0-9][a-z0-9._:-]{0,190}")
+                && profileId.endsWith("-product-v48-hybrid-generic");
+        var productPromptV49 = InferencePromptRegistry.SCHEMA_CANDIDATE_V5.equals(promptVersion)
+                && InferencePromptRegistry.VISUAL_ELEMENTS_V15.equals(elementPromptVersion)
+                && InferencePromptRegistry.VISUAL_HIERARCHY_V7.equals(hierarchyPromptVersion)
+                && InferencePromptRegistry.VISUAL_BINDINGS_V4.equals(bindingPromptVersion)
+                && InferencePromptRegistry.VISUAL_HINT_GENERIC_V1.equals(visualHintPackVersion)
+                && InferencePromptRegistry.DOCUMENT_VISION_OBSERVATIONS_V1.equals(
+                        documentVisionPromptVersion
+                )
+                && documentVisionCapabilityId != null
+                && documentVisionCapabilityId.matches("[a-z0-9][a-z0-9._:-]{0,190}")
+                && profileId.endsWith("-product-v49-hybrid-generic");
+        var productPromptV50 = InferencePromptRegistry.SCHEMA_CANDIDATE_V5.equals(promptVersion)
+                && InferencePromptRegistry.VISUAL_ELEMENTS_V16.equals(elementPromptVersion)
+                && InferencePromptRegistry.VISUAL_HIERARCHY_V7.equals(hierarchyPromptVersion)
+                && InferencePromptRegistry.VISUAL_BINDINGS_V4.equals(bindingPromptVersion)
+                && InferencePromptRegistry.VISUAL_HINT_GENERIC_V1.equals(visualHintPackVersion)
+                && InferencePromptRegistry.DOCUMENT_VISION_OBSERVATIONS_V1.equals(
+                        documentVisionPromptVersion
+                )
+                && documentVisionCapabilityId != null
+                && documentVisionCapabilityId.matches("[a-z0-9][a-z0-9._:-]{0,190}")
+                && profileId.endsWith("-product-v50-hybrid-generic");
+        var productPromptV51 = InferencePromptRegistry.SCHEMA_CANDIDATE_V5.equals(promptVersion)
+                && InferencePromptRegistry.VISUAL_ELEMENTS_V16.equals(elementPromptVersion)
+                && InferencePromptRegistry.VISUAL_HIERARCHY_V7.equals(hierarchyPromptVersion)
+                && InferencePromptRegistry.VISUAL_BINDINGS_V4.equals(bindingPromptVersion)
+                && InferencePromptRegistry.VISUAL_HINT_GENERIC_V1.equals(visualHintPackVersion)
+                && InferencePromptRegistry.DOCUMENT_VISION_OBSERVATIONS_V1.equals(
+                        documentVisionPromptVersion
+                )
+                && documentVisionCapabilityId != null
+                && documentVisionCapabilityId.matches("[a-z0-9][a-z0-9._:-]{0,190}")
+                && profileId.endsWith("-product-v51-hybrid-generic");
+        var productPromptV52 = InferencePromptRegistry.SCHEMA_CANDIDATE_V5.equals(promptVersion)
+                && InferencePromptRegistry.VISUAL_ELEMENTS_V16.equals(elementPromptVersion)
+                && InferencePromptRegistry.VISUAL_HIERARCHY_V7.equals(hierarchyPromptVersion)
+                && InferencePromptRegistry.VISUAL_BINDINGS_V4.equals(bindingPromptVersion)
+                && InferencePromptRegistry.VISUAL_HINT_GENERIC_V1.equals(visualHintPackVersion)
+                && InferencePromptRegistry.DOCUMENT_VISION_OBSERVATIONS_V1.equals(
+                        documentVisionPromptVersion
+                )
+                && documentVisionCapabilityId != null
+                && documentVisionCapabilityId.matches("[a-z0-9][a-z0-9._:-]{0,190}")
+                && profileId.endsWith("-product-v52-hybrid-generic");
         var serialVisualPipeline = "renderweave-inference-pipeline/3.0".equals(pipelineVersion)
                 || "renderweave-inference-pipeline/4.0".equals(pipelineVersion)
                 || "renderweave-inference-pipeline/4.1".equals(pipelineVersion)
@@ -570,7 +636,13 @@ public record InferenceProfile(
                 || "renderweave-inference-pipeline/4.25".equals(pipelineVersion)
                 || "renderweave-inference-pipeline/4.26".equals(pipelineVersion)
                 || "renderweave-inference-pipeline/4.27".equals(pipelineVersion)
-                || "renderweave-inference-pipeline/4.28".equals(pipelineVersion);
+                || "renderweave-inference-pipeline/4.28".equals(pipelineVersion)
+                || "renderweave-inference-pipeline/4.29".equals(pipelineVersion)
+                || "renderweave-inference-pipeline/4.30".equals(pipelineVersion)
+                || "renderweave-inference-pipeline/4.31".equals(pipelineVersion)
+                || "renderweave-inference-pipeline/4.32".equals(pipelineVersion)
+                || "renderweave-inference-pipeline/4.33".equals(pipelineVersion)
+                || "renderweave-inference-pipeline/4.34".equals(pipelineVersion);
         if (!serialVisualPipeline
                 && (elementPromptVersion != null || hierarchyPromptVersion != null || bindingPromptVersion != null)) {
             throw new IllegalArgumentException("Serial visual prompts are exclusive to visual pipelines 3 and 4");
@@ -602,7 +674,13 @@ public record InferenceProfile(
                 || "renderweave-inference-pipeline/4.25".equals(pipelineVersion)
                 || "renderweave-inference-pipeline/4.26".equals(pipelineVersion)
                 || "renderweave-inference-pipeline/4.27".equals(pipelineVersion)
-                || "renderweave-inference-pipeline/4.28".equals(pipelineVersion))
+                || "renderweave-inference-pipeline/4.28".equals(pipelineVersion)
+                || "renderweave-inference-pipeline/4.29".equals(pipelineVersion)
+                || "renderweave-inference-pipeline/4.30".equals(pipelineVersion)
+                || "renderweave-inference-pipeline/4.31".equals(pipelineVersion)
+                || "renderweave-inference-pipeline/4.32".equals(pipelineVersion)
+                || "renderweave-inference-pipeline/4.33".equals(pipelineVersion)
+                || "renderweave-inference-pipeline/4.34".equals(pipelineVersion))
                 && visualHintPackVersion != null) {
             throw new IllegalArgumentException("Visual hint packs are exclusive to grounded visual pipelines");
         }
@@ -625,7 +703,13 @@ public record InferenceProfile(
                 || "renderweave-inference-pipeline/4.25".equals(pipelineVersion)
                 || "renderweave-inference-pipeline/4.26".equals(pipelineVersion)
                 || "renderweave-inference-pipeline/4.27".equals(pipelineVersion)
-                || "renderweave-inference-pipeline/4.28".equals(pipelineVersion);
+                || "renderweave-inference-pipeline/4.28".equals(pipelineVersion)
+                || "renderweave-inference-pipeline/4.29".equals(pipelineVersion)
+                || "renderweave-inference-pipeline/4.30".equals(pipelineVersion)
+                || "renderweave-inference-pipeline/4.31".equals(pipelineVersion)
+                || "renderweave-inference-pipeline/4.32".equals(pipelineVersion)
+                || "renderweave-inference-pipeline/4.33".equals(pipelineVersion)
+                || "renderweave-inference-pipeline/4.34".equals(pipelineVersion);
         var documentVisionIdentityPresent = documentVisionCapabilityId != null
                 || documentVisionPromptVersion != null;
         if (documentVisionPipeline != documentVisionIdentityPresent
@@ -700,7 +784,19 @@ public record InferenceProfile(
                 && productPromptV40)
                 || ("renderweave-inference-pipeline/4.28".equals(pipelineVersion)
                 && (productPromptV41 || productPromptV42 || productPromptV43 || productPromptV44
-                || productPromptV45 || productPromptV46)));
+                || productPromptV45 || productPromptV46))
+                || ("renderweave-inference-pipeline/4.29".equals(pipelineVersion)
+                && productPromptV47)
+                || ("renderweave-inference-pipeline/4.30".equals(pipelineVersion)
+                && productPromptV48)
+                || ("renderweave-inference-pipeline/4.31".equals(pipelineVersion)
+                && productPromptV49)
+                || ("renderweave-inference-pipeline/4.32".equals(pipelineVersion)
+                && productPromptV50)
+                || ("renderweave-inference-pipeline/4.33".equals(pipelineVersion)
+                && productPromptV51)
+                || ("renderweave-inference-pipeline/4.34".equals(pipelineVersion)
+                && productPromptV52));
         if (!(legacySyntheticPrompt || productPrompt)
                 || !"JSON_OBJECT".equals(responseFormat)
                 || thinkingEnabled || toolsAllowed || remoteMediaAllowed) {
@@ -710,7 +806,8 @@ public record InferenceProfile(
                 || "USER_CONFIRMED".equals(inputClassification))) {
             throw new IllegalArgumentException("Live input classification is not approved");
         }
-        var maximumApprovedCalls = productPromptV46 ? 12
+        var maximumApprovedCalls = productPromptV46 || productPromptV47 || productPromptV48
+                || productPromptV49 || productPromptV50 || productPromptV51 || productPromptV52 ? 12
                 : productPromptV42 || productPromptV43 || productPromptV44 || productPromptV45
                 ? 7 : serialVisualPipeline ? 5 : 3;
         if (maximumTotalCalls > maximumApprovedCalls || maximumEstimatedCostMicrosCny <= 0
@@ -748,7 +845,13 @@ public record InferenceProfile(
                 || productPromptV43 && stageTimeoutSeconds != 360
                 || productPromptV44 && stageTimeoutSeconds != 360
                 || productPromptV45 && stageTimeoutSeconds != 360
-                || productPromptV46 && stageTimeoutSeconds != 360) {
+                || productPromptV46 && stageTimeoutSeconds != 360
+                || productPromptV47 && stageTimeoutSeconds != 360
+                || productPromptV48 && stageTimeoutSeconds != 360
+                || productPromptV49 && stageTimeoutSeconds != 360
+                || productPromptV50 && stageTimeoutSeconds != 360
+                || productPromptV51 && stageTimeoutSeconds != 360
+                || productPromptV52 && stageTimeoutSeconds != 360) {
             throw new IllegalArgumentException("Product serial profile timeout must match its immutable version");
         }
         if (!pricingEffectiveDate.matches("\\d{4}-\\d{2}-\\d{2}")) {

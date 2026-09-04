@@ -35,13 +35,13 @@ public record ProfileCertificationRecord(
         acceptedCases = Map.copyOf(acceptedCases);
         acceptanceThresholds = Map.copyOf(acceptanceThresholds);
         stageEvidenceIdentities = Map.copyOf(stageEvidenceIdentities);
-        var stages = java.util.Set.copyOf(Arrays.asList(CertificationStage.values()));
+        var stages = java.util.Set.copyOf(Arrays.asList(CertificationStage.scoredStages()));
         if (!acceptedCases.keySet().equals(stages)
                 || !acceptanceThresholds.keySet().equals(stages)
                 || !stageEvidenceIdentities.keySet().equals(stages)) {
             throw new IllegalArgumentException("PROFILE_CERTIFICATION_RECORD_STAGE_SET_INVALID");
         }
-        for (var stage : CertificationStage.values()) {
+        for (var stage : CertificationStage.scoredStages()) {
             if (!acceptanceThresholds.get(stage).equals(stage.acceptanceThreshold())
                     || acceptedCases.get(stage) < stage.acceptanceThreshold()
                     || acceptedCases.get(stage) > stage.caseCount()

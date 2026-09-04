@@ -13,7 +13,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class ProfileCertificationServiceTest {
     private static final Instant T0 = Instant.parse("2026-08-17T06:30:00Z");
-    private static final String SHA = "22f561c88b30fabbf3ba660bcfe203fb570975f770ff122f2ce1c7216454ac0c";
+    private static final String SHA = "a9fe98e1cfa4b7cc126db1f74601fdebe60526a1c999924daf189ed5f1ac5eb0";
 
     @Test
     void stagesAreOrderedAndAnyFailureClosesTheCycleWithoutPatchRerun() {
@@ -83,6 +83,30 @@ class ProfileCertificationServiceTest {
     }
 
     @Test
+    void historicalV46CanNeverReceiveANewProductionGrant() {
+        var store = new MemoryStore();
+        var service = new ProfileCertificationService(store);
+        var manifest = manifest(
+                cn.hbads.renderweave.inference.provider.ProfileRunBudgetPolicy
+                        .IMAGE_ONLY_V46_PROFILE_ID,
+                "22f561c88b30fabbf3ba660bcfe203fb570975f770ff122f2ce1c7216454ac0c");
+        var cycle = cycle(manifest);
+        service.start(cycle, manifest);
+        service.recordStage(cycle.cycleId(), outcome(CertificationStage.CANARY_5, 5),
+                T0.plusSeconds(1));
+        service.recordStage(cycle.cycleId(), outcome(CertificationStage.DEV_20, 18),
+                T0.plusSeconds(2));
+        service.recordStage(cycle.cycleId(), outcome(CertificationStage.FINAL_60, 54),
+                T0.plusSeconds(3));
+
+        assertReason("PROFILE_CERTIFICATION_PROFILE_SUPERSEDED", () -> service.grant(
+                cycle.cycleId(), "production-policy-j1:owner-20260817",
+                grantEvidence(), T0.plusSeconds(4)));
+        assertEquals(ProfileCertificationStatus.READY_TO_GRANT,
+                service.status(cycle.cycleId()));
+    }
+
+    @Test
     void startBindsTheCanonicalInventoryAndManifestAndReplayRejectsIdentityDrift() {
         var manifest = manifest();
         var store = new MemoryStore();
@@ -117,13 +141,23 @@ class ProfileCertificationServiceTest {
     }
 
     private static FrozenImageOnlyCertificationManifest manifest() {
+        return manifest(
+                cn.hbads.renderweave.inference.provider.ProfileRunBudgetPolicy
+                        .IMAGE_ONLY_V47_PROFILE_ID,
+                SHA);
+    }
+
+    private static FrozenImageOnlyCertificationManifest manifest(
+            String profileId,
+            String profileSha256
+    ) {
         var canaries = new ArrayList<CertificationCanaryCase>();
         for (var index = 1; index <= 5; index++) {
             canaries.add(new CertificationCanaryCase("owner-canary-" + index,
                     String.format("%064x", index)));
         }
         return new ImageOnlyCertificationManifestFactory().create(
-                SHA, canaries, "image-only-certification-seed-v1");
+                profileId, profileSha256, canaries, "image-only-certification-seed-v1");
     }
 
     private static CertificationStageOutcome outcome(CertificationStage stage, int accepted) {
@@ -137,6 +171,8 @@ class ProfileCertificationServiceTest {
                     case CANARY_5 -> "a".repeat(64);
                     case DEV_20 -> "b".repeat(64);
                     case FINAL_60 -> "c".repeat(64);
+                    case PROFILE_SUCCESSOR_DIAGNOSTIC_1 ->
+                            throw new IllegalArgumentException("diagnostic is not scored");
                 };
     }
 

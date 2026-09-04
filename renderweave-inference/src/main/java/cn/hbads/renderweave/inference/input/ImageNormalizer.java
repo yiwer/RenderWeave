@@ -17,7 +17,7 @@ public final class ImageNormalizer {
     public static final int MAX_LONG_EDGE = 4096;
     public static final long MAX_NORMALIZED_PIXELS = 16_000_000L;
     public static final int MAX_SOURCE_LONG_EDGE = 65_535;
-    public static final long MAX_SOURCE_PIXELS = 268_435_456L;
+    public static final long MAX_SOURCE_PIXELS = 25_000_000L;
     private static final long MAX_DECODE_PIXELS = 20_000_000L;
     private static final int PNG_SIGNATURE_BYTES = 8;
 

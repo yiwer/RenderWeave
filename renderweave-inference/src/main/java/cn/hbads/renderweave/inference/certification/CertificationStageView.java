@@ -10,6 +10,9 @@ public record CertificationStageView(
 ) {
     public CertificationStageView {
         Objects.requireNonNull(stage, "stage");
+        if (!stage.scored()) {
+            throw new IllegalArgumentException("CERTIFICATION_STAGE_NOT_SCORING");
+        }
         if (acceptanceThreshold != stage.acceptanceThreshold()) {
             throw new IllegalArgumentException("CERTIFICATION_STAGE_THRESHOLD_DRIFT");
         }

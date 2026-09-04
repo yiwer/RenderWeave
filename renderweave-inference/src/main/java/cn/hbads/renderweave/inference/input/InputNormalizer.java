@@ -13,7 +13,7 @@ import java.util.Map;
 public final class InputNormalizer {
     public static final int MAX_IMAGES = 10;
     public static final int MAX_IMAGE_BYTES = 10 * 1024 * 1024;
-    public static final int MAX_IMAGE_BATCH_BYTES = 30 * 1024 * 1024;
+    public static final int MAX_IMAGE_BATCH_BYTES = 32 * 1024 * 1024;
     public static final int MAX_JSON_SAMPLES = 20;
     public static final int MAX_JSON_SAMPLE_BYTES = 256 * 1024;
     public static final int MAX_JSON_BATCH_BYTES = 2 * 1024 * 1024;

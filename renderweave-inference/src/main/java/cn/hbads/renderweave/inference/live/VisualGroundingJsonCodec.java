@@ -2,9 +2,12 @@ package cn.hbads.renderweave.inference.live;
 
 import cn.hbads.renderweave.inference.candidate.CandidateBoundingBox;
 import cn.hbads.renderweave.inference.candidate.CandidateEvidence;
+import cn.hbads.renderweave.inference.replay.InferenceRejectionEnvelope;
+import cn.hbads.renderweave.inference.run.InferenceStage;
 import tools.jackson.core.StreamReadFeature;
 import tools.jackson.core.json.JsonFactory;
 import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.MapperFeature;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.SerializationFeature;
@@ -19,16 +22,22 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
 /** Strict decoders for region-grounded visual contracts; view evidence is canonicalized before persistence. */
 final class VisualGroundingJsonCodec {
     private static final int MAX_BYTES = 256 * 1024;
+    static final String LOCAL_ID_CANONICALIZATION_ID =
+            "renderweave-image-only-local-id-canonicalizer/1.0";
+    private static final int MAX_CANONICAL_LOCAL_IDS = 32;
     private static final int MAX_NORMALIZED_REGION_PARENTS = 8;
+    private static final int MAX_NORMALIZED_REPEATED_GROUP_ENVELOPES = 8;
     private static final int MAX_NORMALIZED_READING_ORDERS = 8;
     private static final VisualSemanticVerifier SEMANTIC_VERIFIER = new VisualSemanticVerifier();
     private static final ObjectMapper JSON = JsonMapper.builder(
@@ -74,16 +83,55 @@ final class VisualGroundingJsonCodec {
             VisualObservationNormalizationPolicy normalizationPolicy,
             VisualObservationSemanticPolicy semanticPolicy
     ) {
+        return parseElements(
+                value, views, sourceArtifactIds, normalizationPolicy, semanticPolicy,
+                VisualRegionDiagnosticPolicy.LEGACY_GENERIC
+        );
+    }
+
+    GroundedElementInventory parseElements(
+            String value,
+            VisualViewPlan views,
+            List<String> sourceArtifactIds,
+            VisualObservationNormalizationPolicy normalizationPolicy,
+            VisualObservationSemanticPolicy semanticPolicy,
+            VisualRegionDiagnosticPolicy regionDiagnosticPolicy
+    ) {
+        return parseElements(
+                value, views, sourceArtifactIds, normalizationPolicy, semanticPolicy,
+                regionDiagnosticPolicy, VisualLocalIdCanonicalizationPolicy.STRICT
+        );
+    }
+
+    GroundedElementInventory parseElements(
+            String value,
+            VisualViewPlan views,
+            List<String> sourceArtifactIds,
+            VisualObservationNormalizationPolicy normalizationPolicy,
+            VisualObservationSemanticPolicy semanticPolicy,
+            VisualRegionDiagnosticPolicy regionDiagnosticPolicy,
+            VisualLocalIdCanonicalizationPolicy localIdCanonicalizationPolicy
+    ) {
         try {
             Objects.requireNonNull(normalizationPolicy, "normalizationPolicy");
             Objects.requireNonNull(semanticPolicy, "semanticPolicy");
-            var response = decode(value, GroundingOutput.class, "VISUAL_GROUNDING");
+            Objects.requireNonNull(regionDiagnosticPolicy, "regionDiagnosticPolicy");
+            Objects.requireNonNull(localIdCanonicalizationPolicy, "localIdCanonicalizationPolicy");
+            var decoded = decode(value, GroundingOutput.class, "VISUAL_GROUNDING");
+            var canonicalized = classified(
+                    "VISUAL_GROUNDING_LOCAL_ID_CANONICALIZATION_INVALID",
+                    () -> canonicalizeLocalIds(
+                            value, decoded, localIdCanonicalizationPolicy
+                    )
+            );
+            var response = canonicalized.output();
             if (!VisualGroundingPlan.VERSION.equals(response.contractVersion())) {
                 throw invalid("VISUAL_GROUNDING_VERSION_INVALID", null);
             }
             var classifiedRegions = classified("VISUAL_GROUNDING_REGION_INVALID", () ->
                     observationRegions(
-                            response.regions(), response.elements(), views, normalizationPolicy
+                            response.regions(), response.elements(), views, normalizationPolicy,
+                            regionDiagnosticPolicy
                     )
             );
             var elements = classified("VISUAL_GROUNDING_ELEMENT_INVALID", () ->
@@ -97,7 +145,8 @@ final class VisualGroundingJsonCodec {
                     new VisualElementInventory(VisualElementInventory.VERSION, elements)
             );
             var initialGrounding = classifiedGroundingShape(
-                    classifiedRegions.regions(), normalizationPolicy, () ->
+                    classifiedRegions.regions(), normalizationPolicy,
+                    regionDiagnosticPolicy, () ->
                     new VisualGroundingPlan(
                     VisualGroundingPlan.VERSION, classifiedRegions.regions(),
                     response.elements().stream().map(element -> new VisualElementRegionOwnership(
@@ -128,8 +177,10 @@ final class VisualGroundingJsonCodec {
                     classifiedRegions.normalizedItemParents(),
                     classifiedRegions.normalizedRegionParents(),
                     classifiedRegions.normalizedReadingOrders(),
+                    classifiedRegions.normalizedRepeatedGroupEnvelopes(),
                     normalizedOwnerships.normalizedElements(),
-                    normalizedItemSlotOwnerships.normalizedElements()
+                    normalizedItemSlotOwnerships.normalizedElements(),
+                    canonicalized.canonicalizedLocalIdClasses()
             );
         } catch (InvalidVisualAnalysisException failure) {
             throw failure;
@@ -1307,6 +1358,7 @@ final class VisualGroundingJsonCodec {
     private static <T> T classifiedGroundingShape(
             List<VisualRegion> regions,
             VisualObservationNormalizationPolicy normalizationPolicy,
+            VisualRegionDiagnosticPolicy regionDiagnosticPolicy,
             CheckedSupplier<T> supplier
     ) {
         try {
@@ -1318,6 +1370,15 @@ final class VisualGroundingJsonCodec {
             if ("VISUAL_GROUNDING_READING_ORDER_GAP".equals(code)
                     && readingOrderDiagnosticPolicy(normalizationPolicy)) {
                 code = boundedReadingOrderDiagnosticCode(regions);
+            }
+            if ("VISUAL_GROUNDING_PARENT_CONTAINMENT_INVALID".equals(code)
+                    && regionDiagnosticPolicy
+                    == VisualRegionDiagnosticPolicy.MIXED_PROVENANCE_AND_CONTAINMENT) {
+                var classification = VisualParentContainmentClassifier.classify(regions);
+                throw invalid(new InferenceRejectionEnvelope(
+                        InferenceRejectionEnvelope.PARENT_CONTAINMENT_PRIMARY_CODE,
+                        InferenceStage.OBSERVE, classification.detailCodes()
+                ), failure);
             }
             throw invalid(code, failure);
         }
@@ -1514,15 +1575,42 @@ final class VisualGroundingJsonCodec {
             List<RegionOutput> output,
             List<ElementOutput> elements,
             VisualViewPlan views,
-            VisualObservationNormalizationPolicy normalizationPolicy
+            VisualObservationNormalizationPolicy normalizationPolicy,
+            VisualRegionDiagnosticPolicy regionDiagnosticPolicy
     ) {
+        if (mixedProvenancePolicy(regionDiagnosticPolicy)) {
+            var inputs = new ArrayList<VisualRegionFallbackClassifier.RegionInput>();
+            for (var region : output) {
+                inputs.add(region == null ? null : regionInput(region));
+            }
+            var provenance = VisualRegionFallbackClassifier.classify(
+                    inputs, evidence -> validatedRegionEvidence(evidence, views)
+            );
+            if (!provenance.valid()) {
+                if (provenance.disposition()
+                        == VisualRegionFallbackClassifier.Disposition.KNOWN_MIXED
+                        || provenance.disposition()
+                        == VisualRegionFallbackClassifier.Disposition.UNCLASSIFIED) {
+                    throw invalid(new InferenceRejectionEnvelope(
+                            provenance.primaryCode(), InferenceStage.OBSERVE,
+                            provenance.detailCodes()
+                    ), null);
+                }
+                throw invalid(provenance.primaryCode(), null);
+            }
+        }
         var classified = new ArrayList<ClassifiedRegionOutput>();
         for (var region : output) {
+            if (region == null && fieldSpecificRegionPolicy(regionDiagnosticPolicy)) {
+                throw invalid("VISUAL_GROUNDING_REGION_ENTRY_INVALID", null);
+            }
             var classifiedKind = lexicalRegionKind(region.kind(), normalizationPolicy);
             if (classifiedKind == null && !structuralKindPolicy(normalizationPolicy)) {
                 throw invalid("VISUAL_GROUNDING_JSON_ENUM_INVALID_REGION_KIND", null);
             }
-            var evidence = originalEvidence(region.evidence(), views);
+            var evidence = fieldSpecificRegionPolicy(regionDiagnosticPolicy)
+                    ? fieldClassifiedEvidence(region, views)
+                    : originalEvidence(region.evidence(), views);
             classifiedKind = structurallyClassifiedRegionKind(
                     region, evidence, normalizationPolicy, classifiedKind
             );
@@ -1539,15 +1627,17 @@ final class VisualGroundingJsonCodec {
             }
             if (item.kind().normalized()) normalizedRegionKinds++;
             var region = item.region();
-            regions.add(new VisualRegion(
-                    region.regionId(), region.parentRegionId(), item.kind().kind(),
-                    region.multiplicity(), region.readingOrder(), region.repeatGroupId(),
-                    item.evidence()
-            ));
+            regions.add(fieldSpecificRegionPolicy(regionDiagnosticPolicy)
+                    ? fieldClassifiedRegion(region, item.kind().kind(), item.evidence())
+                    : new VisualRegion(
+                            region.regionId(), region.parentRegionId(), item.kind().kind(),
+                            region.multiplicity(), region.readingOrder(), region.repeatGroupId(),
+                            item.evidence()
+                    ));
         }
         if (normalizationPolicy == VisualObservationNormalizationPolicy.STRICT) {
             return new ClassifiedObservationRegions(
-                    List.copyOf(regions), normalizedRegionKinds, 0, 0, 0
+                    List.copyOf(regions), normalizedRegionKinds, 0, 0, 0, 0
             );
         }
         var itemParents = normalizeUniqueItemParents(regions, normalizedRegionKinds);
@@ -1555,8 +1645,268 @@ final class VisualGroundingJsonCodec {
                 ? normalizeUniqueCompatibleParents(
                         itemParents, ancestorParentPolicy(normalizationPolicy)
                 ) : itemParents;
+        var envelopeNormalized = itemParentEnvelopePolicy(normalizationPolicy)
+                ? normalizeRepeatedGroupItemParentEnvelopes(parentNormalized)
+                : parentNormalized;
         return gappedReadingOrderPolicy(normalizationPolicy)
-                ? normalizeUniqueGappedReadingOrders(parentNormalized) : parentNormalized;
+                ? normalizeUniqueGappedReadingOrders(envelopeNormalized) : envelopeNormalized;
+    }
+
+    private static VisualRegion fieldClassifiedRegion(
+            RegionOutput region,
+            VisualRegionKind kind,
+            List<CandidateEvidence> evidence
+    ) {
+        var regionId = classified("VISUAL_GROUNDING_REGION_ID_INVALID", () ->
+                VisualAnalysisValidation.localId(region.regionId(), "regionId")
+        );
+        var parentRegionId = region.parentRegionId() == null ? null
+                : classified("VISUAL_GROUNDING_REGION_PARENT_ID_INVALID", () ->
+                        VisualAnalysisValidation.localId(region.parentRegionId(), "parentRegionId")
+                );
+        var multiplicity = classified("VISUAL_GROUNDING_REGION_MULTIPLICITY_INVALID", () ->
+                Objects.requireNonNull(region.multiplicity(), "multiplicity")
+        );
+        var readingOrder = classified("VISUAL_GROUNDING_REGION_READING_ORDER_INVALID", () -> {
+            if (region.readingOrder() < 0 || region.readingOrder() > 127) {
+                throw new IllegalArgumentException("readingOrder must be 0..127");
+            }
+            return region.readingOrder();
+        });
+        var repeatGroupId = region.repeatGroupId() == null ? null
+                : classified("VISUAL_GROUNDING_REGION_REPEAT_GROUP_ID_INVALID", () ->
+                        VisualAnalysisValidation.localId(region.repeatGroupId(), "repeatGroupId")
+                );
+        var validatedEvidence = classified("VISUAL_GROUNDING_REGION_EVIDENCE_INVALID", () -> {
+            var result = VisualAnalysisValidation.imageEvidence(evidence, "region evidence");
+            if (result.size() != 1) {
+                throw new IllegalArgumentException("A visual region requires one direct box");
+            }
+            return result;
+        });
+        return new VisualRegion(
+                regionId, parentRegionId, kind, multiplicity, readingOrder, repeatGroupId,
+                validatedEvidence
+        );
+    }
+
+    private static List<CandidateEvidence> fieldClassifiedEvidence(
+            RegionOutput region,
+            VisualViewPlan views
+    ) {
+        var failures = new ArrayList<String>();
+        if (!validRegionField(() -> VisualAnalysisValidation.localId(
+                region.regionId(), "regionId"))) {
+            failures.add("VISUAL_GROUNDING_REGION_ID_INVALID");
+        }
+        if (region.parentRegionId() != null && !validRegionField(() ->
+                VisualAnalysisValidation.localId(region.parentRegionId(), "parentRegionId"))) {
+            failures.add("VISUAL_GROUNDING_REGION_PARENT_ID_INVALID");
+        }
+        if (region.multiplicity() == null) {
+            failures.add("VISUAL_GROUNDING_REGION_MULTIPLICITY_INVALID");
+        }
+        if (region.readingOrder() < 0 || region.readingOrder() > 127) {
+            failures.add("VISUAL_GROUNDING_REGION_READING_ORDER_INVALID");
+        }
+        if (region.repeatGroupId() != null && !validRegionField(() ->
+                VisualAnalysisValidation.localId(region.repeatGroupId(), "repeatGroupId"))) {
+            failures.add("VISUAL_GROUNDING_REGION_REPEAT_GROUP_ID_INVALID");
+        }
+        List<CandidateEvidence> evidence = null;
+        try {
+            evidence = originalEvidence(region.evidence(), views);
+            evidence = VisualAnalysisValidation.imageEvidence(evidence, "region evidence");
+            if (evidence.size() != 1) {
+                throw new IllegalArgumentException("A visual region requires one direct box");
+            }
+        } catch (Exception failure) {
+            failures.add("VISUAL_GROUNDING_REGION_EVIDENCE_INVALID");
+        }
+        if (failures.size() > 1) {
+            throw invalid("VISUAL_GROUNDING_REGION_INVALID", null);
+        }
+        if (failures.size() == 1) {
+            throw invalid(failures.getFirst(), null);
+        }
+        return List.copyOf(Objects.requireNonNull(evidence, "evidence"));
+    }
+
+    private static boolean validRegionField(CheckedSupplier<?> supplier) {
+        try {
+            supplier.get();
+            return true;
+        } catch (Exception failure) {
+            return false;
+        }
+    }
+
+    private static CanonicalizedGroundingOutput canonicalizeLocalIds(
+            String rawValue,
+            GroundingOutput source,
+            VisualLocalIdCanonicalizationPolicy policy
+    ) throws Exception {
+        if (policy == VisualLocalIdCanonicalizationPolicy.STRICT) {
+            return new CanonicalizedGroundingOutput(source, 0);
+        }
+        requireCanonicalizableLocalIdShapes(rawValue);
+        var regionIds = new LinkedHashMap<String, String>();
+        for (var region : source.regions()) {
+            if (region == null) throw new IllegalArgumentException("Region declaration is null");
+            putDeclaration(regionIds, region.regionId(), "r");
+        }
+        var elementIds = new LinkedHashMap<String, String>();
+        for (var element : source.elements()) {
+            if (element == null) throw new IllegalArgumentException("Element declaration is null");
+            putDeclaration(elementIds, element.elementId(), "e");
+        }
+        var repeatGroupIds = new LinkedHashMap<String, String>();
+        var regions = source.regions().stream().map(region -> {
+            var repeatGroupId = region.repeatGroupId() == null ? null
+                    : mapEqualityClass(repeatGroupIds, region.repeatGroupId(), "g");
+            return new RegionOutput(
+                    regionIds.get(region.regionId()),
+                    region.parentRegionId() == null ? null
+                            : requireReference(regionIds, region.parentRegionId()),
+                    region.kind(), region.multiplicity(), region.readingOrder(), repeatGroupId,
+                    region.evidence()
+            );
+        }).toList();
+        var elements = source.elements().stream().map(element -> new ElementOutput(
+                elementIds.get(element.elementId()), element.kind(), element.proposedKey(),
+                element.displayName(), element.multiplicity(), element.valueHint(),
+                Objects.requireNonNull(element.regionIds(), "element regionIds").stream()
+                        .map(regionId -> requireReference(regionIds, regionId)).toList(),
+                element.evidence()
+        )).toList();
+        return new CanonicalizedGroundingOutput(
+                new GroundingOutput(source.contractVersion(), regions, elements),
+                regionIds.size() + elementIds.size() + repeatGroupIds.size()
+        );
+    }
+
+    private static void putDeclaration(
+            Map<String, String> declarations,
+            String rawId,
+            String canonicalPrefix
+    ) {
+        requireOpaqueLabel(rawId);
+        if (declarations.size() >= MAX_CANONICAL_LOCAL_IDS) {
+            throw new IllegalArgumentException("Too many local-id declarations");
+        }
+        var canonical = canonicalPrefix + (declarations.size() + 1);
+        if (declarations.putIfAbsent(rawId, canonical) != null) {
+            throw new IllegalArgumentException("Duplicate local-id declaration");
+        }
+    }
+
+    private static String mapEqualityClass(
+            Map<String, String> classes,
+            String rawId,
+            String canonicalPrefix
+    ) {
+        requireOpaqueLabel(rawId);
+        var existing = classes.get(rawId);
+        if (existing != null) return existing;
+        if (classes.size() >= MAX_CANONICAL_LOCAL_IDS) {
+            throw new IllegalArgumentException("Too many local-id equality classes");
+        }
+        var canonical = canonicalPrefix + (classes.size() + 1);
+        classes.put(rawId, canonical);
+        return canonical;
+    }
+
+    private static String requireReference(Map<String, String> declarations, String rawId) {
+        requireOpaqueLabel(rawId);
+        var canonical = declarations.get(rawId);
+        if (canonical == null) throw new IllegalArgumentException("Unknown local-id reference");
+        return canonical;
+    }
+
+    private static void requireOpaqueLabel(String rawId) {
+        if (rawId == null || rawId.isBlank()) {
+            throw new IllegalArgumentException("Local-id label is blank");
+        }
+    }
+
+    private static void requireCanonicalizableLocalIdShapes(String rawValue) throws Exception {
+        var root = JSON.readTree(rawValue);
+        var regions = root.get("regions");
+        if (regions != null && regions.isArray()) {
+            for (var region : regions.values()) {
+                if (region == null || !region.isObject()) continue;
+                requireStringOrNullShape(
+                        region, "regionId", false,
+                        "VISUAL_GROUNDING_JSON_SHAPE_INVALID_REGION_ID"
+                );
+                requireStringOrNullShape(
+                        region, "parentRegionId", true,
+                        "VISUAL_GROUNDING_JSON_SHAPE_INVALID_REGION_PARENT_ID"
+                );
+                requireStringOrNullShape(
+                        region, "repeatGroupId", true,
+                        "VISUAL_GROUNDING_JSON_SHAPE_INVALID_REGION_REPEAT_GROUP_ID"
+                );
+            }
+        }
+        var elements = root.get("elements");
+        if (elements != null && elements.isArray()) {
+            for (var element : elements.values()) {
+                if (element == null || !element.isObject()) continue;
+                requireStringOrNullShape(
+                        element, "elementId", false,
+                        "VISUAL_GROUNDING_JSON_SHAPE_INVALID_ELEMENT_ID"
+                );
+                var regionIds = element.get("regionIds");
+                if (regionIds == null || regionIds.isNull()) continue;
+                if (!regionIds.isArray()
+                        || regionIds.values().stream().anyMatch(value -> !value.isTextual())) {
+                    throw invalid(
+                            "VISUAL_GROUNDING_JSON_SHAPE_INVALID_ELEMENT_REGION_IDS", null
+                    );
+                }
+            }
+        }
+    }
+
+    private static void requireStringOrNullShape(
+            JsonNode owner,
+            String field,
+            boolean nullable,
+            String code
+    ) {
+        var value = owner.get(field);
+        if (value == null || nullable && value.isNull()) return;
+        if (!value.isTextual()) throw invalid(code, null);
+    }
+
+    private static VisualRegionFallbackClassifier.RegionInput regionInput(RegionOutput region) {
+        return new VisualRegionFallbackClassifier.RegionInput(
+                region.regionId(), region.parentRegionId(), region.multiplicity(),
+                region.readingOrder(), region.repeatGroupId(), region.evidence()
+        );
+    }
+
+    private static List<CandidateEvidence> validatedRegionEvidence(
+            List<VisualViewEvidence> evidence,
+            VisualViewPlan views
+    ) {
+        var result = originalEvidence(evidence, views);
+        result = VisualAnalysisValidation.imageEvidence(result, "region evidence");
+        if (result.size() != 1) {
+            throw new IllegalArgumentException("A visual region requires one direct box");
+        }
+        return result;
+    }
+
+    private static boolean fieldSpecificRegionPolicy(VisualRegionDiagnosticPolicy policy) {
+        return policy == VisualRegionDiagnosticPolicy.FIELD_SPECIFIC
+                || mixedProvenancePolicy(policy);
+    }
+
+    private static boolean mixedProvenancePolicy(VisualRegionDiagnosticPolicy policy) {
+        return policy == VisualRegionDiagnosticPolicy.MIXED_PROVENANCE
+                || policy == VisualRegionDiagnosticPolicy.MIXED_PROVENANCE_AND_CONTAINMENT;
     }
 
     private static boolean structuralKindPolicy(
@@ -1607,7 +1957,15 @@ final class VisualGroundingJsonCodec {
             VisualObservationNormalizationPolicy normalizationPolicy
     ) {
         return normalizationPolicy == VisualObservationNormalizationPolicy
-                .BOUNDED_CONSTRAINT_UNIQUE_KIND_ANCESTOR_PARENT_GAPPED_READING_ORDER_DIAGNOSTIC_EVIDENCE_AND_ITEM_SLOT_OWNER;
+                .BOUNDED_CONSTRAINT_UNIQUE_KIND_ANCESTOR_PARENT_GAPPED_READING_ORDER_DIAGNOSTIC_EVIDENCE_AND_ITEM_SLOT_OWNER
+                || itemParentEnvelopePolicy(normalizationPolicy);
+    }
+
+    private static boolean itemParentEnvelopePolicy(
+            VisualObservationNormalizationPolicy normalizationPolicy
+    ) {
+        return normalizationPolicy == VisualObservationNormalizationPolicy
+                .BOUNDED_CONSTRAINT_UNIQUE_KIND_ANCESTOR_PARENT_GAPPED_READING_ORDER_DIAGNOSTIC_EVIDENCE_ITEM_PARENT_ENVELOPE_AND_ITEM_SLOT_OWNER;
     }
 
     private static ClassifiedRegionKind structurallyClassifiedRegionKind(
@@ -1753,7 +2111,7 @@ final class VisualGroundingJsonCodec {
         for (var region : regions) {
             if (byId.putIfAbsent(region.regionId(), region) != null) {
                 return new ClassifiedObservationRegions(
-                        List.copyOf(regions), normalizedRegionKinds, 0, 0, 0
+                        List.copyOf(regions), normalizedRegionKinds, 0, 0, 0, 0
                 );
             }
         }
@@ -1787,7 +2145,7 @@ final class VisualGroundingJsonCodec {
         var normalizedReadingOrders = normalizeReadingOrders(regions, affectedParents);
         return new ClassifiedObservationRegions(
                 List.copyOf(regions), normalizedRegionKinds,
-                normalizedItemParents, 0, normalizedReadingOrders
+                normalizedItemParents, 0, normalizedReadingOrders, 0
         );
     }
 
@@ -1849,7 +2207,68 @@ final class VisualGroundingJsonCodec {
         return new ClassifiedObservationRegions(
                 List.copyOf(regions), source.normalizedRegionKinds(),
                 source.normalizedItemParents(), replacements.size(),
-                source.normalizedReadingOrders() + normalizedReadingOrders
+                source.normalizedReadingOrders() + normalizedReadingOrders,
+                source.normalizedRepeatedGroupEnvelopes()
+        );
+    }
+
+    private static ClassifiedObservationRegions normalizeRepeatedGroupItemParentEnvelopes(
+            ClassifiedObservationRegions source
+    ) {
+        var regions = new ArrayList<>(source.regions());
+        var byId = new HashMap<String, VisualRegion>();
+        for (var region : regions) {
+            if (byId.putIfAbsent(region.regionId(), region) != null) return source;
+        }
+        var replacements = new LinkedHashMap<String, CandidateBoundingBox>();
+        for (var item : regions) {
+            if (item.kind() != VisualRegionKind.ITEM || item.parentRegionId() == null) continue;
+            var parent = byId.get(item.parentRegionId());
+            if (parent == null || parent.regionId().equals(item.regionId())
+                    || parent.kind() != VisualRegionKind.REPEATED_GROUP
+                    || !Objects.equals(parent.repeatGroupId(), item.repeatGroupId())
+                    || contains(parent, item)) {
+                continue;
+            }
+            var parentEvidence = parent.evidence().getFirst();
+            var itemEvidence = item.evidence().getFirst();
+            if (!parentEvidence.artifactId().equals(itemEvidence.artifactId())) return source;
+            if (!replacements.containsKey(parent.regionId())
+                    && replacements.size() >= MAX_NORMALIZED_REPEATED_GROUP_ENVELOPES) {
+                return source;
+            }
+            var current = replacements.getOrDefault(
+                    parent.regionId(), parentEvidence.boundingBox()
+            );
+            var child = itemEvidence.boundingBox();
+            replacements.put(parent.regionId(), new CandidateBoundingBox(
+                    Math.min(current.left(), child.left()),
+                    Math.min(current.top(), child.top()),
+                    Math.max(current.right(), child.right()),
+                    Math.max(current.bottom(), child.bottom())
+            ));
+        }
+        if (replacements.isEmpty()) return source;
+        for (var index = 0; index < regions.size(); index++) {
+            var region = regions.get(index);
+            var replacement = replacements.get(region.regionId());
+            if (replacement == null) continue;
+            var evidence = region.evidence().getFirst();
+            regions.set(index, new VisualRegion(
+                    region.regionId(), region.parentRegionId(), region.kind(),
+                    region.multiplicity(), region.readingOrder(), region.repeatGroupId(),
+                    List.of(CandidateEvidence.image(evidence.artifactId(), replacement))
+            ));
+        }
+        try {
+            new VisualGroundingPlan(VisualGroundingPlan.VERSION, regions, List.of());
+        } catch (IllegalArgumentException ignored) {
+            return source;
+        }
+        return new ClassifiedObservationRegions(
+                List.copyOf(regions), source.normalizedRegionKinds(),
+                source.normalizedItemParents(), source.normalizedRegionParents(),
+                source.normalizedReadingOrders(), replacements.size()
         );
     }
 
@@ -1940,7 +2359,8 @@ final class VisualGroundingJsonCodec {
         return new ClassifiedObservationRegions(
                 List.copyOf(regions), source.normalizedRegionKinds(),
                 source.normalizedItemParents(), source.normalizedRegionParents(),
-                source.normalizedReadingOrders() + normalizedReadingOrders
+                source.normalizedReadingOrders() + normalizedReadingOrders,
+                source.normalizedRepeatedGroupEnvelopes()
         );
     }
 
@@ -2281,6 +2701,15 @@ final class VisualGroundingJsonCodec {
     }
 
     private static InvalidVisualAnalysisException invalid(
+            InferenceRejectionEnvelope envelope,
+            Throwable cause
+    ) {
+        return new InvalidVisualAnalysisException(
+                envelope, "Visual grounding output is invalid", cause
+        );
+    }
+
+    private static InvalidVisualAnalysisException invalid(
             VisualSemanticIssue issue,
             Throwable cause
     ) {
@@ -2305,8 +2734,23 @@ final class VisualGroundingJsonCodec {
             List<ElementOutput> elements
     ) {
         private GroundingOutput {
-            regions = List.copyOf(Objects.requireNonNull(regions, "regions"));
+            regions = java.util.Collections.unmodifiableList(new ArrayList<>(
+                    Objects.requireNonNull(regions, "regions")
+            ));
             elements = List.copyOf(Objects.requireNonNull(elements, "elements"));
+        }
+    }
+
+    private record CanonicalizedGroundingOutput(
+            GroundingOutput output,
+            int canonicalizedLocalIdClasses
+    ) {
+        private CanonicalizedGroundingOutput {
+            Objects.requireNonNull(output, "output");
+            if (canonicalizedLocalIdClasses < 0
+                    || canonicalizedLocalIdClasses > MAX_CANONICAL_LOCAL_IDS * 3) {
+                throw new IllegalArgumentException("Canonical local-id class count is invalid");
+            }
         }
     }
 
@@ -2343,7 +2787,8 @@ final class VisualGroundingJsonCodec {
             int normalizedRegionKinds,
             int normalizedItemParents,
             int normalizedRegionParents,
-            int normalizedReadingOrders
+            int normalizedReadingOrders,
+            int normalizedRepeatedGroupEnvelopes
     ) { }
 
     private record ElementOutput(
@@ -2404,8 +2849,10 @@ record GroundedElementInventory(
         int normalizedItemParents,
         int normalizedRegionParents,
         int normalizedReadingOrders,
+        int normalizedRepeatedGroupEnvelopes,
         int normalizedElementRegionOwners,
-        int normalizedRepeatedItemSlotOwners
+        int normalizedRepeatedItemSlotOwners,
+        int canonicalizedLocalIdClasses
 ) {
     GroundedElementInventory {
         Objects.requireNonNull(inventory, "inventory");
@@ -2416,13 +2863,22 @@ record GroundedElementInventory(
                 || normalizedRegionParents > grounding.regions().size()
                 || normalizedReadingOrders < 0
                 || normalizedReadingOrders > grounding.regions().size()
+                || normalizedRepeatedGroupEnvelopes < 0
+                || normalizedRepeatedGroupEnvelopes > grounding.regions().size()
                 || normalizedElementRegionOwners < 0
                 || normalizedElementRegionOwners > inventory.elements().size()
                 || normalizedRepeatedItemSlotOwners < 0
-                || normalizedRepeatedItemSlotOwners > inventory.elements().size()) {
+                || normalizedRepeatedItemSlotOwners > inventory.elements().size()
+                || canonicalizedLocalIdClasses < 0
+                || canonicalizedLocalIdClasses > 96) {
             throw new IllegalArgumentException("Observation normalization count is invalid");
         }
     }
+}
+
+enum VisualLocalIdCanonicalizationPolicy {
+    STRICT,
+    LOSSLESS_OPAQUE_LABELS
 }
 
 record GroundedHierarchyPlan(
@@ -2515,6 +2971,13 @@ enum VisualRelationshipRegionPolicy {
     UNIQUE_CARDINALITY_AND_CONNECTION_COMPATIBLE_GROUP_REGION
 }
 
+enum VisualRegionDiagnosticPolicy {
+    LEGACY_GENERIC,
+    FIELD_SPECIFIC,
+    MIXED_PROVENANCE,
+    MIXED_PROVENANCE_AND_CONTAINMENT
+}
+
 enum VisualObservationNormalizationPolicy {
     STRICT,
     BOUNDED_ENUM_AND_UNIQUE_ITEM_PARENT,
@@ -2525,5 +2988,6 @@ enum VisualObservationNormalizationPolicy {
     BOUNDED_CONSTRAINT_UNIQUE_KIND_PARENT_EVIDENCE_AND_ITEM_SLOT_OWNER,
     BOUNDED_CONSTRAINT_UNIQUE_KIND_ANCESTOR_PARENT_EVIDENCE_AND_ITEM_SLOT_OWNER,
     BOUNDED_CONSTRAINT_UNIQUE_KIND_ANCESTOR_PARENT_GAPPED_READING_ORDER_EVIDENCE_AND_ITEM_SLOT_OWNER,
-    BOUNDED_CONSTRAINT_UNIQUE_KIND_ANCESTOR_PARENT_GAPPED_READING_ORDER_DIAGNOSTIC_EVIDENCE_AND_ITEM_SLOT_OWNER
+    BOUNDED_CONSTRAINT_UNIQUE_KIND_ANCESTOR_PARENT_GAPPED_READING_ORDER_DIAGNOSTIC_EVIDENCE_AND_ITEM_SLOT_OWNER,
+    BOUNDED_CONSTRAINT_UNIQUE_KIND_ANCESTOR_PARENT_GAPPED_READING_ORDER_DIAGNOSTIC_EVIDENCE_ITEM_PARENT_ENVELOPE_AND_ITEM_SLOT_OWNER
 }

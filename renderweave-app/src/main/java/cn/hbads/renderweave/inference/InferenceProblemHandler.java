@@ -11,6 +11,7 @@ import cn.hbads.renderweave.inference.input.InvalidInferenceInputException;
 import cn.hbads.renderweave.inference.run.InferenceIdempotencyConflictException;
 import cn.hbads.renderweave.inference.run.InferenceRunNotFoundException;
 import cn.hbads.renderweave.inference.run.InvalidInferenceRunTransitionException;
+import cn.hbads.renderweave.inference.retention.PayloadLifecycleException;
 import cn.hbads.renderweave.schema.ApiProblem;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
@@ -141,6 +142,17 @@ final class InferenceProblemHandler {
             HttpServletRequest request
     ) {
         return problem(HttpStatus.CONFLICT, "Inference state conflict", "INFERENCE_STATE_CONFLICT",
+                exception.getMessage(), request, null, null);
+    }
+
+    @ExceptionHandler(PayloadLifecycleException.class)
+    ResponseEntity<ApiProblem> payloadLifecycle(
+            PayloadLifecycleException exception,
+            HttpServletRequest request
+    ) {
+        var status = "PAYLOAD_DELETION_UNHEALTHY".equals(exception.code())
+                ? HttpStatus.SERVICE_UNAVAILABLE : HttpStatus.CONFLICT;
+        return problem(status, "Inference payload unavailable", exception.code(),
                 exception.getMessage(), request, null, null);
     }
 

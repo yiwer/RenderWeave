@@ -1,0 +1,169 @@
+{
+  "version": "renderweave-image-only-v49-region-fallback-provenance/1.0",
+  "closedDetailCodes": [
+    "VISUAL_GROUNDING_REGION_ENTRY_INVALID",
+    "VISUAL_GROUNDING_REGION_ID_INVALID",
+    "VISUAL_GROUNDING_REGION_PARENT_ID_INVALID",
+    "VISUAL_GROUNDING_REGION_MULTIPLICITY_INVALID",
+    "VISUAL_GROUNDING_REGION_READING_ORDER_INVALID",
+    "VISUAL_GROUNDING_REGION_REPEAT_GROUP_ID_INVALID",
+    "VISUAL_GROUNDING_REGION_EVIDENCE_INVALID"
+  ],
+  "fixtures": [
+    {
+      "fixtureId": "valid-region-collection",
+      "mode": "KNOWN",
+      "regionFailureCodes": [[]],
+      "expectedDisposition": "VALID",
+      "expectedPrimaryCode": null,
+      "expectedDetailCodes": [],
+      "expectedKnownFieldFamilyCount": 0
+    },
+    {
+      "fixtureId": "single-entry",
+      "mode": "KNOWN",
+      "regionFailureCodes": [["VISUAL_GROUNDING_REGION_ENTRY_INVALID"]],
+      "expectedDisposition": "KNOWN_SINGLE",
+      "expectedPrimaryCode": "VISUAL_GROUNDING_REGION_ENTRY_INVALID",
+      "expectedDetailCodes": [],
+      "expectedKnownFieldFamilyCount": 1
+    },
+    {
+      "fixtureId": "single-id",
+      "mode": "KNOWN",
+      "regionFailureCodes": [["VISUAL_GROUNDING_REGION_ID_INVALID"]],
+      "expectedDisposition": "KNOWN_SINGLE",
+      "expectedPrimaryCode": "VISUAL_GROUNDING_REGION_ID_INVALID",
+      "expectedDetailCodes": [],
+      "expectedKnownFieldFamilyCount": 1
+    },
+    {
+      "fixtureId": "single-parent-id",
+      "mode": "KNOWN",
+      "regionFailureCodes": [["VISUAL_GROUNDING_REGION_PARENT_ID_INVALID"]],
+      "expectedDisposition": "KNOWN_SINGLE",
+      "expectedPrimaryCode": "VISUAL_GROUNDING_REGION_PARENT_ID_INVALID",
+      "expectedDetailCodes": [],
+      "expectedKnownFieldFamilyCount": 1
+    },
+    {
+      "fixtureId": "single-multiplicity",
+      "mode": "KNOWN",
+      "regionFailureCodes": [["VISUAL_GROUNDING_REGION_MULTIPLICITY_INVALID"]],
+      "expectedDisposition": "KNOWN_SINGLE",
+      "expectedPrimaryCode": "VISUAL_GROUNDING_REGION_MULTIPLICITY_INVALID",
+      "expectedDetailCodes": [],
+      "expectedKnownFieldFamilyCount": 1
+    },
+    {
+      "fixtureId": "single-reading-order",
+      "mode": "KNOWN",
+      "regionFailureCodes": [["VISUAL_GROUNDING_REGION_READING_ORDER_INVALID"]],
+      "expectedDisposition": "KNOWN_SINGLE",
+      "expectedPrimaryCode": "VISUAL_GROUNDING_REGION_READING_ORDER_INVALID",
+      "expectedDetailCodes": [],
+      "expectedKnownFieldFamilyCount": 1
+    },
+    {
+      "fixtureId": "single-repeat-group-id",
+      "mode": "KNOWN",
+      "regionFailureCodes": [["VISUAL_GROUNDING_REGION_REPEAT_GROUP_ID_INVALID"]],
+      "expectedDisposition": "KNOWN_SINGLE",
+      "expectedPrimaryCode": "VISUAL_GROUNDING_REGION_REPEAT_GROUP_ID_INVALID",
+      "expectedDetailCodes": [],
+      "expectedKnownFieldFamilyCount": 1
+    },
+    {
+      "fixtureId": "single-evidence-view-conversion",
+      "mode": "KNOWN",
+      "regionFailureCodes": [["VISUAL_GROUNDING_REGION_EVIDENCE_INVALID"]],
+      "expectedDisposition": "KNOWN_SINGLE",
+      "expectedPrimaryCode": "VISUAL_GROUNDING_REGION_EVIDENCE_INVALID",
+      "expectedDetailCodes": [],
+      "expectedKnownFieldFamilyCount": 1
+    },
+    {
+      "fixtureId": "mixed-id-parent-id",
+      "mode": "KNOWN",
+      "regionFailureCodes": [[
+        "VISUAL_GROUNDING_REGION_PARENT_ID_INVALID",
+        "VISUAL_GROUNDING_REGION_ID_INVALID"
+      ]],
+      "expectedDisposition": "KNOWN_MIXED",
+      "expectedPrimaryCode": "VISUAL_GROUNDING_REGION_FIELDS_INVALID",
+      "expectedDetailCodes": [
+        "VISUAL_GROUNDING_REGION_ID_INVALID",
+        "VISUAL_GROUNDING_REGION_PARENT_ID_INVALID"
+      ],
+      "expectedKnownFieldFamilyCount": 2
+    },
+    {
+      "fixtureId": "mixed-order-and-duplicate-stability",
+      "mode": "KNOWN",
+      "regionFailureCodes": [
+        [
+          "VISUAL_GROUNDING_REGION_EVIDENCE_INVALID",
+          "VISUAL_GROUNDING_REGION_READING_ORDER_INVALID",
+          "VISUAL_GROUNDING_REGION_ID_INVALID"
+        ],
+        [
+          "VISUAL_GROUNDING_REGION_ID_INVALID",
+          "VISUAL_GROUNDING_REGION_EVIDENCE_INVALID"
+        ]
+      ],
+      "expectedDisposition": "KNOWN_MIXED",
+      "expectedPrimaryCode": "VISUAL_GROUNDING_REGION_FIELDS_INVALID",
+      "expectedDetailCodes": [
+        "VISUAL_GROUNDING_REGION_ID_INVALID",
+        "VISUAL_GROUNDING_REGION_READING_ORDER_INVALID",
+        "VISUAL_GROUNDING_REGION_EVIDENCE_INVALID"
+      ],
+      "expectedKnownFieldFamilyCount": 3
+    },
+    {
+      "fixtureId": "mixed-all-closed-detail-codes",
+      "mode": "KNOWN",
+      "regionFailureCodes": [
+        ["VISUAL_GROUNDING_REGION_ENTRY_INVALID"],
+        [
+          "VISUAL_GROUNDING_REGION_EVIDENCE_INVALID",
+          "VISUAL_GROUNDING_REGION_REPEAT_GROUP_ID_INVALID",
+          "VISUAL_GROUNDING_REGION_READING_ORDER_INVALID",
+          "VISUAL_GROUNDING_REGION_MULTIPLICITY_INVALID",
+          "VISUAL_GROUNDING_REGION_PARENT_ID_INVALID",
+          "VISUAL_GROUNDING_REGION_ID_INVALID"
+        ]
+      ],
+      "expectedDisposition": "KNOWN_MIXED",
+      "expectedPrimaryCode": "VISUAL_GROUNDING_REGION_FIELDS_INVALID",
+      "expectedDetailCodes": [
+        "VISUAL_GROUNDING_REGION_ENTRY_INVALID",
+        "VISUAL_GROUNDING_REGION_ID_INVALID",
+        "VISUAL_GROUNDING_REGION_PARENT_ID_INVALID",
+        "VISUAL_GROUNDING_REGION_MULTIPLICITY_INVALID",
+        "VISUAL_GROUNDING_REGION_READING_ORDER_INVALID",
+        "VISUAL_GROUNDING_REGION_REPEAT_GROUP_ID_INVALID",
+        "VISUAL_GROUNDING_REGION_EVIDENCE_INVALID"
+      ],
+      "expectedKnownFieldFamilyCount": 7
+    },
+    {
+      "fixtureId": "unclassified-region-collection",
+      "mode": "UNCLASSIFIED_COLLECTION",
+      "regionFailureCodes": [],
+      "expectedDisposition": "UNCLASSIFIED",
+      "expectedPrimaryCode": "VISUAL_GROUNDING_REGION_UNCLASSIFIED",
+      "expectedDetailCodes": [],
+      "expectedKnownFieldFamilyCount": 0
+    },
+    {
+      "fixtureId": "unclassified-constructor-or-runtime",
+      "mode": "UNCLASSIFIED_VALIDATOR_EXCEPTION",
+      "regionFailureCodes": [[]],
+      "expectedDisposition": "UNCLASSIFIED",
+      "expectedPrimaryCode": "VISUAL_GROUNDING_REGION_UNCLASSIFIED",
+      "expectedDetailCodes": [],
+      "expectedKnownFieldFamilyCount": 0
+    }
+  ]
+}

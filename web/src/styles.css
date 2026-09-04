@@ -5931,6 +5931,10 @@ button.readonly-tree-field:focus-visible {
 .inference-attempt-facts span,
 .inference-attempt-facts code { padding: 3px 7px; border: 1px solid var(--color-info-border); border-radius: 10px; background: var(--color-surface); color: var(--color-info); font-size: 9px; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
 .inference-attempt-facts code { border-color: var(--color-hairline); background: var(--color-surface-strong); color: var(--color-body); }
+.inference-rejection-envelope { display: grid; min-width: 0; grid-template-columns: minmax(160px, .8fr) minmax(220px, 1.4fr) auto; align-items: center; gap: 8px; margin-top: 8px; padding: 7px 9px; border: 1px solid var(--color-error-border); border-radius: 12px; background: var(--color-accent-wash); }
+.inference-rejection-envelope span { color: var(--color-body); font-size: 10px; }
+.inference-rejection-envelope code { min-width: 0; overflow-wrap: anywhere; color: var(--color-error); font-size: 9px; }
+.inference-rejection-envelope strong { color: var(--color-error); font-size: 10px; font-variant-numeric: tabular-nums; }
 .inference-attempt-problems { display: grid; gap: 5px; margin: 8px 0 0; padding: 0; list-style: none; }
 .inference-attempt-problems li { display: grid; min-width: 0; grid-template-columns: minmax(140px, .8fr) minmax(180px, 1.4fr) auto; align-items: center; gap: 8px; padding: 6px 8px; border: 1px solid var(--color-error-border); border-radius: 12px; background: var(--color-accent-wash); }
 .inference-attempt-problems span { color: var(--color-body); font-size: 10px; }
@@ -7008,6 +7012,8 @@ button.readonly-tree-field:focus-visible {
   .inference-issue-telemetry li code { grid-column: 2 / -1; }
   .inference-attempt-problems li { grid-template-columns: minmax(0, 1fr) auto; }
   .inference-attempt-problems code { grid-column: 1 / -1; }
+  .inference-rejection-envelope { grid-template-columns: minmax(0, 1fr) auto; }
+  .inference-rejection-envelope code { grid-column: 1 / -1; }
 
   .candidate-gate-summary {
     grid-template-columns: 22px minmax(0, 1fr);

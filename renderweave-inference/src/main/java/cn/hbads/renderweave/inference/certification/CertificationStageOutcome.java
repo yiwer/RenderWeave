@@ -10,6 +10,9 @@ public record CertificationStageOutcome(
 ) {
     public CertificationStageOutcome {
         Objects.requireNonNull(stage, "stage");
+        if (!stage.scored()) {
+            throw new IllegalArgumentException("PROFILE_CERTIFICATION_STAGE_NOT_SCORING");
+        }
         if (totalCases != stage.caseCount() || acceptedCases < 0 || acceptedCases > totalCases) {
             throw new IllegalArgumentException("PROFILE_CERTIFICATION_STAGE_COUNTS_INVALID");
         }

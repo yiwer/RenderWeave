@@ -105,11 +105,15 @@ class InputNormalizerTest {
         var imageSize = assertThrows(InvalidInferenceInputException.class, () -> normalizeImage(largeImage));
         assertEquals("INFERENCE_IMAGE_SIZE_INVALID", imageSize.code());
 
-        var batchImages = java.util.stream.IntStream.range(0, 4)
+        var batchImages = new java.util.ArrayList<InferenceInput.BinaryInput>();
+        batchImages.add(binary(
+                "batch-0.png", "image/png", new byte[8 * 1024 * 1024 + 1]
+        ));
+        java.util.stream.IntStream.range(1, 4)
                 .mapToObj(index -> binary(
                         "batch-" + index + ".png", "image/png", new byte[8 * 1024 * 1024]
                 ))
-                .toList();
+                .forEach(batchImages::add);
         var imageBatch = assertThrows(InvalidInferenceInputException.class, () -> new InputNormalizer(
                 new MemoryBlobStore()).normalize(input(InferenceMode.IMAGE_ONLY, true, batchImages, List.of())));
         assertEquals("INFERENCE_IMAGE_BATCH_TOO_LARGE", imageBatch.code());

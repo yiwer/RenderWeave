@@ -289,6 +289,16 @@ function AttemptLogItem({ attempt }: { attempt: InferenceAttempt }) {
           <span>{formatCost(attempt.costMicrosCny)}</span>
           <code>{attempt.outcomeCode}</code>
         </div>
+        {attempt.rejectionEnvelope && (
+          <div
+            className="inference-rejection-envelope"
+            aria-label={`模型调用 ${attempt.attemptOrdinal + 1} 的拒绝分类`}
+          >
+            <span>拒绝分类 · 最早阶段 {inferenceStageLabel(attempt.rejectionEnvelope.earliestStage)}</span>
+            <code>{attempt.rejectionEnvelope.primaryCode}</code>
+            <strong>{attempt.rejectionEnvelope.detailCodeCount} 项固定字段诊断</strong>
+          </div>
+        )}
         {problems.length > 0 && (
           <ul className="inference-attempt-problems" aria-label={`模型调用 ${attempt.attemptOrdinal + 1} 的校验问题`}>
             {problems.map(([code, count]) => (

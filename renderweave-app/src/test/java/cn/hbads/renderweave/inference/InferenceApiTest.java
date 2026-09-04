@@ -303,7 +303,7 @@ class InferenceApiTest {
                         .value("dashscope-qwen37-plus-product-v45-hybrid-generic"))
                 .andExpect(jsonPath("$.profiles[0].available").value(false))
                 .andExpect(jsonPath("$.profiles[0].unavailabilityCode")
-                        .value("DOCUMENT_VISION_DISABLED"))
+                        .value("LIVE_POLICY_DISABLED"))
                 .andExpect(jsonPath("$.profiles[0].maximumTotalCalls").value(7))
                 .andExpect(jsonPath("$.profiles[0].maximumOutputTokens").value(16_384))
                 .andExpect(jsonPath("$.profiles[0].maximumEstimatedCostMicrosCny")
@@ -455,7 +455,56 @@ class InferenceApiTest {
                 .andExpect(jsonPath("$.attempts[0].stage").value("STRUCTURE"))
                 .andExpect(jsonPath("$.attempts[0].providerRequestId").doesNotExist())
                 .andExpect(jsonPath("$.attempts[0].problemCodeCounts").isMap())
+                .andExpect(jsonPath("$.attempts[0].rejectionEnvelope").doesNotExist())
                 .andExpect(jsonPath("$.truncated").value(false));
+    }
+
+    @Test
+    void executionLogProjectsOnlyTheBoundedMixedRejectionEnvelope() throws Exception {
+        var createdBody = mockMvc.perform(post("/api/v1/inference-runs")
+                        .header("Idempotency-Key", "api-mixed-rejection-envelope")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"fixtureId":"image-01-product-card","externalTransferConfirmed":true}
+                                """))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        var runId = json.readTree(createdBody).path("runId").asText();
+        jdbcClient.sql("""
+                        update inference_attempt
+                        set stage = 'OBSERVE', status = 'REJECTED',
+                            outcome_code = 'LIVE_VISUAL_ANALYSIS_REJECTED',
+                            problem_code_counts = cast(:counts as jsonb),
+                            rejection_envelope = cast(:envelope as jsonb)
+                        where run_id = cast(:runId as uuid) and attempt_ordinal = 0
+                        """)
+                .param("counts", """
+                        {"VISUAL_GROUNDING_REGION_ID_INVALID":1,
+                         "VISUAL_GROUNDING_REGION_PARENT_ID_INVALID":1}
+                        """)
+                .param("envelope", """
+                        {"primaryCode":"VISUAL_GROUNDING_REGION_FIELDS_INVALID",
+                         "earliestStage":"OBSERVE",
+                         "detailCodes":["VISUAL_GROUNDING_REGION_ID_INVALID",
+                                        "VISUAL_GROUNDING_REGION_PARENT_ID_INVALID"],
+                         "detailCodeCount":2}
+                        """)
+                .param("runId", runId)
+                .update();
+
+        mockMvc.perform(get("/api/v1/inference-runs/{runId}/execution-log", runId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.attempts[0].rejectionEnvelope.primaryCode")
+                        .value("VISUAL_GROUNDING_REGION_FIELDS_INVALID"))
+                .andExpect(jsonPath("$.attempts[0].rejectionEnvelope.earliestStage")
+                        .value("OBSERVE"))
+                .andExpect(jsonPath("$.attempts[0].rejectionEnvelope.detailCodes.length()")
+                        .value(2))
+                .andExpect(jsonPath("$.attempts[0].rejectionEnvelope.detailCodeCount")
+                        .value(2))
+                .andExpect(jsonPath("$.attempts[0].rejectionEnvelope.rawValue")
+                        .doesNotExist())
+                .andExpect(jsonPath("$.attempts[0].providerRequestId").doesNotExist());
     }
 
     @Test

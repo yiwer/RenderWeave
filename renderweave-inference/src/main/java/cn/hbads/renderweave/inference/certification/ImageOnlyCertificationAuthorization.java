@@ -17,6 +17,7 @@ public record ImageOnlyCertificationAuthorization(
         String profileSha256,
         String manifestIdentity,
         String evaluatorIdentity,
+        String normalizationIdentity,
         String provider,
         String model,
         String providerBaseUrl,
@@ -27,6 +28,8 @@ public record ImageOnlyCertificationAuthorization(
         int maximumProviderCalls,
         long maximumModelTokens,
         long maximumCostMicrosCny,
+        int maximumProviderCallsPerRun,
+        long maximumCostPerRunMicrosCny,
         Instant effectiveAt,
         Instant expiresAt,
         String approvedBy,
@@ -50,6 +53,11 @@ public record ImageOnlyCertificationAuthorization(
         CertificationCanaryCase.requireSha(profileSha256);
         requireText(manifestIdentity, "manifestIdentity");
         requireText(evaluatorIdentity, "evaluatorIdentity");
+        if (normalizationIdentity != null && !normalizationIdentity.matches(
+                "renderweave-image-only-fresh-normalization/1\\.0:[0-9a-f]{64}")) {
+            throw new IllegalArgumentException(
+                    "CERTIFICATION_AUTHORIZATION_normalizationIdentity_INVALID");
+        }
         requireText(provider, "provider");
         requireText(model, "model");
         requireText(providerBaseUrl, "providerBaseUrl");
@@ -64,7 +72,10 @@ public record ImageOnlyCertificationAuthorization(
         if (maximumRuns < 1 || maximumRuns > 60
                 || maximumProviderCalls < 1 || maximumProviderCalls > 720
                 || maximumModelTokens < 1 || maximumModelTokens > 10_000_000
-                || maximumCostMicrosCny < 1 || maximumCostMicrosCny > 360_000_000L) {
+                || maximumCostMicrosCny < 1 || maximumCostMicrosCny > 360_000_000L
+                || maximumProviderCallsPerRun < 1 || maximumProviderCallsPerRun > 12
+                || maximumCostPerRunMicrosCny < 1
+                || maximumCostPerRunMicrosCny > 6_000_000L) {
             throw new IllegalArgumentException("CERTIFICATION_AUTHORIZATION_BOUNDS_INVALID");
         }
         Objects.requireNonNull(effectiveAt, "effectiveAt");

@@ -9,6 +9,7 @@ public final class FrozenImageOnlyCertificationManifest {
     public static final String VERSION = "renderweave-image-only-certification-manifest/1.0";
 
     private final String manifestIdentity;
+    private final String profileId;
     private final String profileSha256;
     private final String corpusIdentity;
     private final String evaluatorIdentity;
@@ -19,6 +20,7 @@ public final class FrozenImageOnlyCertificationManifest {
 
     FrozenImageOnlyCertificationManifest(
             String manifestIdentity,
+            String profileId,
             String profileSha256,
             String corpusIdentity,
             String evaluatorIdentity,
@@ -28,6 +30,10 @@ public final class FrozenImageOnlyCertificationManifest {
             List<CertificationCaseAssignment> assignments
     ) {
         this.manifestIdentity = requireIdentity(manifestIdentity, VERSION);
+        if (!ProfileRunBudgetPolicy.isImageOnlyCertificationProfile(profileId)) {
+            throw new IllegalArgumentException("CERTIFICATION_PROFILE_ID_INVALID");
+        }
+        this.profileId = profileId;
         CertificationCanaryCase.requireSha(profileSha256);
         this.profileSha256 = profileSha256;
         this.corpusIdentity = requireIdentity(corpusIdentity, "renderweave-visual-stage-corpus/2.0");
@@ -49,7 +55,7 @@ public final class FrozenImageOnlyCertificationManifest {
     }
 
     public String manifestIdentity() { return manifestIdentity; }
-    public String profileId() { return ProfileRunBudgetPolicy.IMAGE_ONLY_V46_PROFILE_ID; }
+    public String profileId() { return profileId; }
     public String profileSha256() { return profileSha256; }
     public String corpusIdentity() { return corpusIdentity; }
     public String evaluatorIdentity() { return evaluatorIdentity; }

@@ -226,7 +226,13 @@ class InferenceProfileRegistryTest {
                 "dashscope-qwen37-flash-product-v45-hybrid-generic",
                 "dashscope-qwen37-plus-product-v45-hybrid-generic",
                 "dashscope-qwen38-max-product-v45-hybrid-generic",
-                "dashscope-qwen38-max-product-v46-hybrid-generic"
+                "dashscope-qwen38-max-product-v46-hybrid-generic",
+                "dashscope-qwen38-max-product-v47-hybrid-generic",
+                "dashscope-qwen38-max-product-v48-hybrid-generic",
+                "dashscope-qwen38-max-product-v49-hybrid-generic",
+                "dashscope-qwen38-max-product-v50-hybrid-generic",
+                "dashscope-qwen38-max-product-v51-hybrid-generic",
+                "dashscope-qwen38-max-product-v52-hybrid-generic"
         ), registry.profileIds());
         assertEquals(java.util.List.of(
                 "dashscope-qwen37-plus-product-v45-hybrid-generic",
@@ -237,10 +243,23 @@ class InferenceProfileRegistryTest {
                 "qwen3.7-plus", "qwen3.8-max", "qwen3.7-flash"
         ), registry.productLiveProfiles().stream().map(item -> item.profile().model()).toList());
         assertEquals(java.util.List.of(
-                "dashscope-qwen38-max-product-v46-hybrid-generic"
+                "dashscope-qwen38-max-product-v47-hybrid-generic",
+                "dashscope-qwen38-max-product-v48-hybrid-generic",
+                "dashscope-qwen38-max-product-v49-hybrid-generic",
+                "dashscope-qwen38-max-product-v50-hybrid-generic",
+                "dashscope-qwen38-max-product-v51-hybrid-generic",
+                "dashscope-qwen38-max-product-v52-hybrid-generic"
         ), registry.certificationCandidateProfiles().stream()
                 .map(item -> item.profile().profileId()).toList());
         assertFalse(registry.isProductLiveProfile("dashscope-qwen38-max-product-v46-hybrid-generic"));
+        assertFalse(registry.isCertificationCandidateProfile(
+                "dashscope-qwen38-max-product-v46-hybrid-generic"));
+        assertFalse(registry.isProductLiveProfile("dashscope-qwen38-max-product-v47-hybrid-generic"));
+        assertFalse(registry.isProductLiveProfile("dashscope-qwen38-max-product-v48-hybrid-generic"));
+        assertFalse(registry.isProductLiveProfile("dashscope-qwen38-max-product-v49-hybrid-generic"));
+        assertFalse(registry.isProductLiveProfile("dashscope-qwen38-max-product-v50-hybrid-generic"));
+        assertFalse(registry.isProductLiveProfile("dashscope-qwen38-max-product-v51-hybrid-generic"));
+        assertFalse(registry.isProductLiveProfile("dashscope-qwen38-max-product-v52-hybrid-generic"));
         assertEquals(java.util.List.of(
                 "dashscope-qwen37-flash-product-v5",
                 "dashscope-qwen37-plus-product-v5",

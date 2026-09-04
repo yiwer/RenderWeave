@@ -205,6 +205,12 @@ class InferenceControllerPolicyTest {
                 mock(BlobStore.class),
                 mock(ObjectMapper.class),
                 documentVisionPreprocessor,
+                cn.hbads.renderweave.inference.retention.PayloadAccessGuard.allowAll(),
+                cn.hbads.renderweave.inference.retention.PayloadLifecycleReadiness.healthy(),
+                cn.hbads.renderweave.inference.admission.ImageOnlyAdmissionPolicy.fixed(true),
+                () -> new cn.hbads.renderweave.inference.admission.ProviderEgressPermit.Snapshot(
+                        true, "test-permit-1"),
+                cn.hbads.renderweave.inference.audit.AuditIntegrityProbe.healthy(),
                 uploadEnabled
         );
     }

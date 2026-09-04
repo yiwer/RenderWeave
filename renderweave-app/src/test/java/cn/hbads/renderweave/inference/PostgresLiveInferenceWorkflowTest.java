@@ -32,6 +32,7 @@ import cn.hbads.renderweave.inference.provider.ProviderInferenceResponse;
 import cn.hbads.renderweave.inference.provider.ProviderUsage;
 import cn.hbads.renderweave.inference.replay.InferenceAttempt;
 import cn.hbads.renderweave.inference.replay.InferenceAttemptStatus;
+import cn.hbads.renderweave.inference.replay.InferenceRejectionEnvelope;
 import cn.hbads.renderweave.inference.replay.InferenceReplayStore;
 import cn.hbads.renderweave.inference.replay.ReplayCorpus;
 import cn.hbads.renderweave.inference.run.InferenceStage;
@@ -72,6 +73,7 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @Testcontainers
 @SpringBootTest
@@ -146,6 +148,20 @@ class PostgresLiveInferenceWorkflowTest {
             "dashscope-qwen37-plus-product-v44-hybrid-generic";
     private static final String PLUS_V45_HYBRID_VISUAL_PROFILE =
             "dashscope-qwen37-plus-product-v45-hybrid-generic";
+    private static final String MAX_V46_CERTIFICATION_PROFILE =
+            "dashscope-qwen38-max-product-v46-hybrid-generic";
+    private static final String MAX_V47_SUCCESSOR_PROFILE =
+            "dashscope-qwen38-max-product-v47-hybrid-generic";
+    private static final String MAX_V48_REGION_RECOVERY_PROFILE =
+            "dashscope-qwen38-max-product-v48-hybrid-generic";
+    private static final String MAX_V49_MIXED_RECOVERY_PROFILE =
+            "dashscope-qwen38-max-product-v49-hybrid-generic";
+    private static final String MAX_V50_LOCAL_ID_CANONICALIZATION_PROFILE =
+            "dashscope-qwen38-max-product-v50-hybrid-generic";
+    private static final String MAX_V51_PARENT_CONTAINMENT_PROVENANCE_PROFILE =
+            "dashscope-qwen38-max-product-v51-hybrid-generic";
+    private static final String MAX_V52_ITEM_PARENT_ENVELOPE_NORMALIZATION_PROFILE =
+            "dashscope-qwen38-max-product-v52-hybrid-generic";
     private static final String DOCUMENT_VISION_CAPABILITY =
             "rapidocr-3.9.2-openvino-2026.0.0-ppocrv6-small-c05805399d7d10b1";
 
@@ -1181,6 +1197,717 @@ class PostgresLiveInferenceWorkflowTest {
                         Map.of("VISUAL_GROUNDING_OUTPUT_TRUNCATED", 1)
                 )
         );
+    }
+
+    @Test
+    void pipelineFourPointTwentyNineStopsAfterTheThirdEquivalentRejectedAttempt() {
+        var blobs = new MemoryBlobStore();
+        var created = createGroundedVisual(
+                blobs, "v47-equivalent-reject-breaker", MAX_V47_SUCCESSOR_PROFILE
+        );
+        var provider = new ScriptedProvider(repeatSteps(12,
+                request -> response(request, "{\"partial\":true}", "length")));
+        var preprocessCalls = new AtomicInteger();
+
+        var finished = worker(
+                provider, blobs, T0.plusSeconds(1),
+                hybridPreprocessor(preprocessCalls, "OCR_SENTINEL_V47_BREAKER")
+        ).processNext("v47-equivalent-reject-worker").orElseThrow();
+
+        assertThat(finished.state()).isEqualTo(InferenceRunState.FAILED);
+        assertThat(finished.failureCode()).contains("VISUAL_GROUNDING_OUTPUT_TRUNCATED");
+        assertThat(provider.requests).hasSize(3).allSatisfy(request ->
+                assertThat(request.stage()).isEqualTo(InferenceStage.OBSERVE));
+        assertThat(workflowStore.attempts(created)).hasSize(3).allSatisfy(attempt -> {
+            assertThat(attempt.status()).isEqualTo(InferenceAttemptStatus.REJECTED);
+            assertThat(attempt.problemCodeCounts()).containsExactlyEntriesOf(
+                    Map.of("VISUAL_GROUNDING_OUTPUT_TRUNCATED", 1));
+        });
+        assertThat(preprocessCalls).hasValue(1);
+    }
+
+    @Test
+    void pipelineFourPointThirtyStopsAfterTheThirdAllowlistedEquivalentRejectedAttempt() {
+        var blobs = new MemoryBlobStore();
+        var created = createGroundedVisual(
+                blobs, "v48-equivalent-reject-breaker", MAX_V48_REGION_RECOVERY_PROFILE
+        );
+        var provider = new ScriptedProvider(repeatSteps(12,
+                request -> response(request, "{\"partial\":true}", "length")));
+
+        var finished = worker(
+                provider, blobs, T0.plusSeconds(1),
+                hybridPreprocessor(new AtomicInteger(), "OCR_SENTINEL_V48_BREAKER")
+        ).processNext("v48-equivalent-reject-worker").orElseThrow();
+
+        assertThat(finished.state()).isEqualTo(InferenceRunState.FAILED);
+        assertThat(finished.failureCode()).contains("VISUAL_GROUNDING_OUTPUT_TRUNCATED");
+        assertThat(provider.requests).hasSize(3).allSatisfy(request ->
+                assertThat(request.stage()).isEqualTo(InferenceStage.OBSERVE));
+        assertThat(workflowStore.attempts(created)).hasSize(3).allSatisfy(attempt ->
+                assertThat(attempt.problemCodeCounts()).containsExactlyEntriesOf(
+                        Map.of("VISUAL_GROUNDING_OUTPUT_TRUNCATED", 1)
+                ));
+    }
+
+    @Test
+    void pipelineFourPointThirtyFailsAnUnlistedObserveCodeWithoutAnotherReservation() {
+        var blobs = new MemoryBlobStore();
+        var created = createGroundedVisual(
+                blobs, "v48-unlisted-observe-code", MAX_V48_REGION_RECOVERY_PROFILE
+        );
+        var invalidVersion = groundedStationElements().replace(
+                "renderweave-visual-grounding/2.0", "renderweave-visual-grounding/9.0"
+        );
+        var provider = new ScriptedProvider(request -> response(request, invalidVersion));
+
+        var finished = worker(
+                provider, blobs, T0.plusSeconds(1),
+                hybridPreprocessor(new AtomicInteger(), "OCR_SENTINEL_V48_UNLISTED")
+        ).processNext("v48-unlisted-observe-worker").orElseThrow();
+
+        assertThat(finished.state()).isEqualTo(InferenceRunState.FAILED);
+        assertThat(finished.failureCode()).contains("VISUAL_GROUNDING_VERSION_INVALID");
+        assertThat(provider.requests).hasSize(1);
+        assertThat(workflowStore.attempts(created)).hasSize(1).first().satisfies(attempt -> {
+            assertThat(attempt.status()).isEqualTo(InferenceAttemptStatus.REJECTED);
+            assertThat(attempt.problemCodeCounts()).containsExactlyEntriesOf(
+                    Map.of("VISUAL_GROUNDING_VERSION_INVALID", 1));
+        });
+    }
+
+    @Test
+    void pipelineFourPointThirtyFeedsFieldSpecificEvidenceCodeIntoOneBoundedCorrection() {
+        var blobs = new MemoryBlobStore();
+        var created = createGroundedVisual(
+                blobs, "v48-field-specific-correction", MAX_V48_REGION_RECOVERY_PROFILE
+        );
+        var invalidEvidence = groundedStationElements().replaceFirst(
+                "view-00-overview-00", "unknown-view"
+        );
+        var provider = new ScriptedProvider(
+                request -> response(request, invalidEvidence),
+                request -> response(request, groundedStationElements()),
+                request -> response(request, groundedStationHierarchy()),
+                request -> response(request, groundedStationBindings())
+        );
+
+        var finished = worker(
+                provider, blobs, T0.plusSeconds(1),
+                hybridPreprocessor(new AtomicInteger(), "OCR_SENTINEL_V48_CORRECTION")
+        ).processNext("v48-field-specific-correction-worker").orElseThrow();
+
+        assertThat(finished.state())
+                .as("failure=%s attempts=%s", finished.failureCode(), workflowStore.attempts(created))
+                .isEqualTo(InferenceRunState.REVIEW_REQUIRED);
+        assertThat(provider.requests).extracting(ProviderInferenceRequest::stage)
+                .containsExactly(
+                        InferenceStage.OBSERVE, InferenceStage.OBSERVE,
+                        InferenceStage.HIERARCHY, InferenceStage.ELEMENT_BINDING
+                );
+        assertThat(provider.requests.get(1).taskJson())
+                .contains("VISUAL_GROUNDING_REGION_EVIDENCE_INVALID");
+        assertThat(workflowStore.attempts(created)).extracting(InferenceAttempt::status)
+                .containsExactly(
+                        InferenceAttemptStatus.REJECTED, InferenceAttemptStatus.SUCCEEDED,
+                        InferenceAttemptStatus.SUCCEEDED, InferenceAttemptStatus.SUCCEEDED
+                );
+        assertThat(workflowStore.attempts(created).getFirst().problemCodeCounts())
+                .containsExactlyEntriesOf(Map.of(
+                        "VISUAL_GROUNDING_REGION_EVIDENCE_INVALID", 1
+                ));
+    }
+
+    @Test
+    void pipelineFourPointThirtyOnePersistsMixedEnvelopeBeforeRetryPermit() {
+        var blobs = new MemoryBlobStore();
+        var created = createV49EnvelopeProbe(blobs, "v49-mixed-envelope");
+        var mixed = groundedStationElements()
+                .replaceFirst("\"regionId\":\"header\"", "\"regionId\":\"Header\"")
+                .replaceFirst(
+                        "\"parentRegionId\":\"root\"", "\"parentRegionId\":\"Root\""
+                );
+        var provider = new ScriptedProvider(request -> response(request, mixed));
+
+        var claimed = runs.claim(
+                created, "v49-envelope-worker", T0.plusSeconds(1), Duration.ofMinutes(5)
+        ).orElseThrow();
+        var advanced = worker(
+                provider, blobs, T0.plusSeconds(1),
+                hybridPreprocessor(new AtomicInteger(), "OCR_SENTINEL_V49_ENVELOPE")
+        ).advance(claimed);
+
+        assertThat(advanced.state()).isEqualTo(InferenceRunState.RUNNING);
+        assertThat(advanced.stage()).isEqualTo(InferenceStage.OBSERVE);
+        assertThat(provider.requests).hasSize(1);
+        var attempt = workflowStore.attempts(created).getFirst();
+        assertThat(attempt.status()).isEqualTo(InferenceAttemptStatus.REJECTED);
+        assertThat(attempt.problemCodeCounts()).containsExactlyInAnyOrderEntriesOf(Map.of(
+                "VISUAL_GROUNDING_REGION_ID_INVALID", 1,
+                "VISUAL_GROUNDING_REGION_PARENT_ID_INVALID", 1
+        ));
+        assertThat(attempt.rejectionEnvelope()).contains(new InferenceRejectionEnvelope(
+                InferenceRejectionEnvelope.MIXED_REGION_FIELDS_PRIMARY_CODE,
+                InferenceStage.OBSERVE,
+                List.of(
+                        "VISUAL_GROUNDING_REGION_ID_INVALID",
+                        "VISUAL_GROUNDING_REGION_PARENT_ID_INVALID"
+                )
+        ));
+        assertThat(jdbcClient.sql("""
+                        select rejection_envelope::text
+                        from inference_attempt
+                        where run_id = :runId and attempt_ordinal = 0
+                        """)
+                .param("runId", created)
+                .query(String.class)
+                .single()).contains(
+                "VISUAL_GROUNDING_REGION_FIELDS_INVALID",
+                "VISUAL_GROUNDING_REGION_ID_INVALID",
+                "VISUAL_GROUNDING_REGION_PARENT_ID_INVALID"
+        );
+        assertThat(jdbcClient.sql("""
+                        select count(*) from inference_provider_reservation
+                        where run_id = :runId and state = 'SETTLED'
+                        """)
+                .param("runId", created)
+                .query(Long.class).single()).isEqualTo(1L);
+        assertThat(jdbcClient.sql("""
+                        select count(*) from inference_provider_reservation
+                        where run_id = :runId and state = 'RESERVED'
+                        """)
+                .param("runId", created)
+                .query(Long.class).single()).isZero();
+    }
+
+    @Test
+    void postgresRoundTripsUnclassifiedEnvelopeBeforePrimaryOnlyTerminal() {
+        var blobs = new MemoryBlobStore();
+        var created = createV49EnvelopeProbe(blobs, "v49-unclassified-envelope");
+        var claimed = runs.claim(
+                created, "v49-unclassified-worker", T0.plusSeconds(1), Duration.ofMinutes(5)
+        ).orElseThrow();
+        var envelope = new InferenceRejectionEnvelope(
+                InferenceRejectionEnvelope.UNCLASSIFIED_REGION_PRIMARY_CODE,
+                InferenceStage.OBSERVE,
+                List.of()
+        );
+        var recorded = workflowStore.recordAttempt(
+                created, claimed.lease().orElseThrow().token(),
+                new InferenceAttempt(
+                        created, 0, InferenceStage.OBSERVE, InferenceAttemptStatus.REJECTED,
+                        "LIVE_VISUAL_ANALYSIS_REJECTED", Optional.empty(), Optional.empty(),
+                        0, 0, 0, 0, Map.of(), Optional.of(envelope), T0.plusSeconds(2)
+                ),
+                T0.plusSeconds(2)
+        );
+        var terminal = runs.fail(
+                created, recorded.lease().orElseThrow().token(), envelope.primaryCode(),
+                T0.plusSeconds(3)
+        );
+
+        assertThat(terminal.failureCode()).contains(
+                InferenceRejectionEnvelope.UNCLASSIFIED_REGION_PRIMARY_CODE
+        );
+        assertThat(workflowStore.attempts(created)).singleElement().satisfies(attempt -> {
+            assertThat(attempt.problemCodeCounts()).isEmpty();
+            assertThat(attempt.rejectionEnvelope()).contains(envelope);
+        });
+    }
+
+    @Test
+    void expiredLeaseReplaysPersistedUnclassifiedEnvelopeWithoutAnotherProviderPermit() {
+        var blobs = new MemoryBlobStore();
+        var created = createV49EnvelopeProbe(blobs, "v49-envelope-crash-replay");
+        var claimed = runs.claim(
+                created, "crashed-v49-envelope-worker", T0.plusSeconds(1),
+                Duration.ofSeconds(5)
+        ).orElseThrow();
+        var envelope = new InferenceRejectionEnvelope(
+                InferenceRejectionEnvelope.UNCLASSIFIED_REGION_PRIMARY_CODE,
+                InferenceStage.OBSERVE,
+                List.of()
+        );
+        workflowStore.recordAttempt(
+                created, claimed.lease().orElseThrow().token(),
+                new InferenceAttempt(
+                        created, 0, InferenceStage.OBSERVE, InferenceAttemptStatus.REJECTED,
+                        "LIVE_VISUAL_ANALYSIS_REJECTED", Optional.empty(), Optional.empty(),
+                        0, 0, 0, 0, envelope.detailCodeCounts(), Optional.of(envelope),
+                        T0.plusSeconds(2)
+                ),
+                T0.plusSeconds(2)
+        );
+        var provider = new ScriptedProvider(request -> {
+            throw new AssertionError("persisted terminal envelope must not issue Provider permit");
+        });
+
+        var terminal = worker(
+                provider, blobs, T0.plusSeconds(7),
+                hybridPreprocessor(new AtomicInteger(), "OCR_SENTINEL_V49_REPLAY")
+        ).processNext("replacement-v49-envelope-worker").orElseThrow();
+
+        assertThat(terminal.state()).isEqualTo(InferenceRunState.FAILED);
+        assertThat(terminal.failureCode()).contains(envelope.primaryCode());
+        assertThat(provider.requests).isEmpty();
+        assertThat(workflowStore.attempts(created)).singleElement()
+                .extracting(InferenceAttempt::rejectionEnvelope)
+                .isEqualTo(Optional.of(envelope));
+    }
+
+    @Test
+    void expiredLeaseAfterThirdEquivalentMixedSetStopsBeforeAnotherProviderPermit() {
+        var blobs = new MemoryBlobStore();
+        var created = createV49EnvelopeProbe(blobs, "v49-mixed-breaker-crash-replay");
+        var current = runs.claim(
+                created, "crashed-v49-mixed-breaker-worker", T0.plusSeconds(1),
+                Duration.ofSeconds(5)
+        ).orElseThrow();
+        var envelope = new InferenceRejectionEnvelope(
+                InferenceRejectionEnvelope.MIXED_REGION_FIELDS_PRIMARY_CODE,
+                InferenceStage.OBSERVE,
+                List.of(
+                        "VISUAL_GROUNDING_REGION_ID_INVALID",
+                        "VISUAL_GROUNDING_REGION_PARENT_ID_INVALID"
+                )
+        );
+        for (var ordinal = 0; ordinal < 3; ordinal++) {
+            current = workflowStore.recordAttempt(
+                    created, current.lease().orElseThrow().token(),
+                    new InferenceAttempt(
+                            created, ordinal, InferenceStage.OBSERVE,
+                            InferenceAttemptStatus.REJECTED,
+                            "LIVE_VISUAL_ANALYSIS_REJECTED", Optional.empty(), Optional.empty(),
+                            0, 0, 0, 0, envelope.detailCodeCounts(), Optional.of(envelope),
+                            T0.plusSeconds(2 + ordinal)
+                    ),
+                    T0.plusSeconds(2 + ordinal)
+            );
+        }
+        var provider = new ScriptedProvider(request -> {
+            throw new AssertionError("third equivalent mixed set must trip persisted breaker");
+        });
+
+        var terminal = worker(
+                provider, blobs, T0.plusSeconds(7),
+                hybridPreprocessor(new AtomicInteger(), "OCR_SENTINEL_V49_BREAKER_REPLAY")
+        ).processNext("replacement-v49-mixed-breaker-worker").orElseThrow();
+
+        assertThat(terminal.state()).isEqualTo(InferenceRunState.FAILED);
+        assertThat(terminal.failureCode()).contains(envelope.primaryCode());
+        assertThat(provider.requests).isEmpty();
+        assertThat(workflowStore.attempts(created)).hasSize(3).allSatisfy(attempt ->
+                assertThat(attempt.rejectionEnvelope()).contains(envelope)
+        );
+    }
+
+    @Test
+    void postgresRejectsMalformedMixedEnvelopeBeforeItCanEnterTheLedger() {
+        var blobs = new MemoryBlobStore();
+        var created = createV49EnvelopeProbe(blobs, "v49-malformed-envelope");
+        var claimed = runs.claim(
+                created, "v49-malformed-envelope-worker", T0.plusSeconds(1),
+                Duration.ofMinutes(5)
+        ).orElseThrow();
+        var valid = new InferenceRejectionEnvelope(
+                InferenceRejectionEnvelope.UNCLASSIFIED_REGION_PRIMARY_CODE,
+                InferenceStage.OBSERVE,
+                List.of()
+        );
+        workflowStore.recordAttempt(
+                created, claimed.lease().orElseThrow().token(),
+                new InferenceAttempt(
+                        created, 0, InferenceStage.OBSERVE, InferenceAttemptStatus.REJECTED,
+                        "LIVE_VISUAL_ANALYSIS_REJECTED", Optional.empty(), Optional.empty(),
+                        0, 0, 0, 0, Map.of(), Optional.of(valid), T0.plusSeconds(2)
+                ),
+                T0.plusSeconds(2)
+        );
+        var malformed = """
+                {"primaryCode":"VISUAL_GROUNDING_REGION_FIELDS_INVALID",
+                 "earliestStage":"OBSERVE",
+                 "detailCodes":["VISUAL_GROUNDING_REGION_PARENT_ID_INVALID",
+                                "VISUAL_GROUNDING_REGION_ID_INVALID"],
+                 "detailCodeCount":2}
+                """;
+
+        assertThatThrownBy(() -> jdbcClient.sql("""
+                        update inference_attempt
+                        set rejection_envelope = cast(:envelope as jsonb)
+                        where run_id = :runId
+                        """)
+                .param("envelope", malformed)
+                .param("runId", created)
+                .update()).isInstanceOf(RuntimeException.class);
+        assertThat(workflowStore.attempts(created)).singleElement()
+                .extracting(InferenceAttempt::rejectionEnvelope)
+                .isEqualTo(Optional.of(valid));
+    }
+
+    @Test
+    void pipelineFourPointThirtyOneCorrectsPromptCoveredMixedFieldsToReviewRequired() {
+        var blobs = new MemoryBlobStore();
+        var created = createV49EnvelopeProbe(blobs, "v49-mixed-correction");
+        var mixed = mixedRegionIdAndParent(
+                "UNSAFE_REGION_VALUE_ALPHA", "UNSAFE_REGION_VALUE_BETA"
+        );
+        var provider = new ScriptedProvider(
+                request -> response(request, mixed),
+                request -> response(request, groundedStationElements()),
+                request -> response(request, groundedStationHierarchy()),
+                request -> response(request, groundedStationBindings())
+        );
+        var staticSchemaCountBefore = jdbcClient.sql("select count(*) from static_schema")
+                .query(Long.class).single();
+
+        var finished = worker(
+                provider, blobs, T0.plusSeconds(1),
+                hybridPreprocessor(new AtomicInteger(), "OCR_SENTINEL_V49_MIXED_CORRECTION")
+        ).processNext("v49-mixed-correction-worker").orElseThrow();
+
+        assertThat(finished.state())
+                .as("failure=%s attempts=%s", finished.failureCode(), workflowStore.attempts(created))
+                .isEqualTo(InferenceRunState.REVIEW_REQUIRED);
+        assertThat(provider.requests).extracting(ProviderInferenceRequest::stage)
+                .containsExactly(
+                        InferenceStage.OBSERVE, InferenceStage.OBSERVE,
+                        InferenceStage.HIERARCHY, InferenceStage.ELEMENT_BINDING
+                );
+        assertThat(provider.requests.get(1).taskJson())
+                .contains(
+                        "VISUAL_GROUNDING_REGION_ID_INVALID",
+                        "VISUAL_GROUNDING_REGION_PARENT_ID_INVALID"
+                )
+                .doesNotContain("UNSAFE_REGION_VALUE_ALPHA", "UNSAFE_REGION_VALUE_BETA");
+        assertThat(workflowStore.attempts(created)).extracting(InferenceAttempt::status)
+                .containsExactly(
+                        InferenceAttemptStatus.REJECTED, InferenceAttemptStatus.SUCCEEDED,
+                        InferenceAttemptStatus.SUCCEEDED, InferenceAttemptStatus.SUCCEEDED
+                );
+        assertThat(workflowStore.attempts(created).getFirst().rejectionEnvelope())
+                .contains(new InferenceRejectionEnvelope(
+                        InferenceRejectionEnvelope.MIXED_REGION_FIELDS_PRIMARY_CODE,
+                        InferenceStage.OBSERVE,
+                        List.of(
+                                "VISUAL_GROUNDING_REGION_ID_INVALID",
+                                "VISUAL_GROUNDING_REGION_PARENT_ID_INVALID"
+                        )
+                ));
+        assertThat(jdbcClient.sql("select count(*) from schema_draft")
+                .query(Long.class).single()).isZero();
+        assertThat(jdbcClient.sql("select count(*) from static_schema")
+                .query(Long.class).single()).isEqualTo(staticSchemaCountBefore);
+    }
+
+    @Test
+    void pipelineFourPointThirtyOneBreaksBeforeTheFourthEquivalentMixedSet() {
+        var blobs = new MemoryBlobStore();
+        var created = createV49EnvelopeProbe(blobs, "v49-mixed-set-breaker");
+        var mixed = mixedRegionIdAndParent("InvalidAlpha", "InvalidBeta");
+        var provider = new ScriptedProvider(repeatSteps(
+                12, request -> response(request, mixed)
+        ));
+
+        var finished = worker(
+                provider, blobs, T0.plusSeconds(1),
+                hybridPreprocessor(new AtomicInteger(), "OCR_SENTINEL_V49_MIXED_BREAKER")
+        ).processNext("v49-mixed-breaker-worker").orElseThrow();
+
+        assertThat(finished.state()).isEqualTo(InferenceRunState.FAILED);
+        assertThat(finished.failureCode()).contains(
+                InferenceRejectionEnvelope.MIXED_REGION_FIELDS_PRIMARY_CODE
+        );
+        assertThat(provider.requests).hasSize(3);
+        assertThat(workflowStore.attempts(created)).hasSize(3).allSatisfy(attempt -> {
+            assertThat(attempt.status()).isEqualTo(InferenceAttemptStatus.REJECTED);
+            assertThat(attempt.rejectionEnvelope()).isPresent();
+        });
+        assertThat(jdbcClient.sql("""
+                        select count(*) from inference_provider_reservation
+                        where run_id = :runId and state = 'SETTLED'
+                        """)
+                .param("runId", created).query(Long.class).single()).isEqualTo(3L);
+        assertThat(jdbcClient.sql("""
+                        select count(*) from inference_provider_reservation
+                        where run_id = :runId and state = 'RESERVED'
+                        """)
+                .param("runId", created).query(Long.class).single()).isZero();
+    }
+
+    @Test
+    void pipelineFourPointThirtyTwoCanonicalizesOpaqueLocalIdsWithoutARepairCall() {
+        var blobs = new MemoryBlobStore();
+        var created = createGroundedVisual(
+                blobs, "v50-local-id-canonicalization",
+                MAX_V50_LOCAL_ID_CANONICALIZATION_PROFILE
+        );
+        var provider = new ScriptedProvider(
+                request -> response(request, v50OpaqueElements()),
+                request -> response(request, v50CanonicalHierarchy()),
+                request -> response(request, v50CanonicalBindings())
+        );
+        var staticSchemaCountBefore = jdbcClient.sql("select count(*) from static_schema")
+                .query(Long.class).single();
+
+        var finished = worker(
+                provider, blobs, T0.plusSeconds(1),
+                hybridPreprocessor(new AtomicInteger(), "OCR_SENTINEL_V50_LOCAL_IDS")
+        ).processNext("v50-local-id-worker").orElseThrow();
+
+        assertThat(finished.state())
+                .as("failure=%s attempts=%s", finished.failureCode(), workflowStore.attempts(created))
+                .isEqualTo(InferenceRunState.REVIEW_REQUIRED);
+        assertThat(provider.requests).extracting(ProviderInferenceRequest::stage)
+                .containsExactly(
+                        InferenceStage.OBSERVE, InferenceStage.HIERARCHY,
+                        InferenceStage.ELEMENT_BINDING
+                );
+        assertThat(provider.requests.get(1).taskJson())
+                .contains("r1", "r3", "e1", "e2")
+                .doesNotContain("Opaque Root", "Opaque Repeat", "Opaque Title");
+        assertThat(workflowStore.attempts(created)).extracting(InferenceAttempt::status)
+                .containsExactly(
+                        InferenceAttemptStatus.SUCCEEDED, InferenceAttemptStatus.SUCCEEDED,
+                        InferenceAttemptStatus.SUCCEEDED
+                );
+        assertThat(workflowStore.attempts(created).getFirst().problemCodeCounts())
+                .containsExactlyEntriesOf(Map.of(
+                        "VISUAL_GROUNDING_LOCAL_ID_CLASSES_CANONICALIZED", 9
+                ));
+        assertThat(jdbcClient.sql("select count(*) from schema_draft")
+                .query(Long.class).single()).isZero();
+        assertThat(jdbcClient.sql("select count(*) from static_schema")
+                .query(Long.class).single()).isEqualTo(staticSchemaCountBefore);
+    }
+
+    @Test
+    void pipelineFourPointThirtyThreeClassifiesContainmentAndStopsBeforeSecondPermit() {
+        var blobs = new MemoryBlobStore();
+        var created = createGroundedVisual(
+                blobs, "v51-parent-containment-provenance",
+                MAX_V51_PARENT_CONTAINMENT_PROVENANCE_PROFILE
+        );
+        var cyclicOutsideParent = groundedStationElements().replace(
+                "\"regionId\":\"routes\",\"parentRegionId\":\"root\"",
+                "\"regionId\":\"routes\",\"parentRegionId\":\"stop-item\""
+        );
+        var provider = new ScriptedProvider(
+                request -> response(request, cyclicOutsideParent)
+        );
+
+        var claimed = runs.claimNextLive(
+                "v51-containment-worker", T0.plusSeconds(1), Duration.ofMinutes(5)
+        ).orElseThrow();
+        var finished = worker(
+                provider, blobs, T0.plusSeconds(1),
+                hybridPreprocessor(new AtomicInteger(), "OCR_SENTINEL_V51_CONTAINMENT")
+        ).drain(claimed);
+
+        assertThat(finished.state()).isEqualTo(InferenceRunState.FAILED);
+        assertThat(finished.failureCode()).contains(
+                InferenceRejectionEnvelope.PARENT_CONTAINMENT_PRIMARY_CODE
+        );
+        assertThat(provider.requests).singleElement().satisfies(request ->
+                assertThat(request.stage()).isEqualTo(InferenceStage.OBSERVE)
+        );
+        assertThat(workflowStore.attempts(created)).singleElement().satisfies(attempt -> {
+            assertThat(attempt.status()).isEqualTo(InferenceAttemptStatus.REJECTED);
+            assertThat(attempt.rejectionEnvelope()).contains(new InferenceRejectionEnvelope(
+                    InferenceRejectionEnvelope.PARENT_CONTAINMENT_PRIMARY_CODE,
+                    InferenceStage.OBSERVE,
+                    List.of(
+                            "VISUAL_GROUNDING_PARENT_CONTAINMENT_NON_ITEM_ZERO_COMPATIBLE"
+                    )
+            ));
+        });
+        assertThat(jdbcClient.sql("""
+                        select count(*) from inference_provider_reservation
+                        where run_id = :runId and state = 'SETTLED'
+                        """)
+                .param("runId", created).query(Long.class).single()).isEqualTo(1L);
+        assertThat(jdbcClient.sql("""
+                        select count(*) from inference_provider_reservation
+                        where run_id = :runId and state = 'RESERVED'
+                        """)
+                .param("runId", created).query(Long.class).single()).isZero();
+    }
+
+    @Test
+    void pipelineFourPointThirtyFourNormalizesExactItemParentEnvelopeBeforeSecondPermit() {
+        var blobs = new MemoryBlobStore();
+        var created = createGroundedVisual(
+                blobs, "v52-item-parent-envelope-normalization",
+                MAX_V52_ITEM_PARENT_ENVELOPE_NORMALIZATION_PROFILE
+        );
+        var shrunkenRepeatedGroup = v50OpaqueElements().replace(
+                "\"regionId\":\"Opaque Repeat\",\"parentRegionId\":\"Opaque Root\",\"kind\":\"REPEATED_GROUP\",\"multiplicity\":\"MANY\",\"readingOrder\":1,\"repeatGroupId\":\"Opaque Rows\",\"evidence\":[{\"viewId\":\"view-00-overview-00\",\"boundingBox\":{\"left\":0,\"top\":2000,\"right\":10000,\"bottom\":10000}}]",
+                "\"regionId\":\"Opaque Repeat\",\"parentRegionId\":\"Opaque Root\",\"kind\":\"REPEATED_GROUP\",\"multiplicity\":\"MANY\",\"readingOrder\":1,\"repeatGroupId\":\"Opaque Rows\",\"evidence\":[{\"viewId\":\"view-00-overview-00\",\"boundingBox\":{\"left\":0,\"top\":2000,\"right\":8000,\"bottom\":9000}}]"
+        );
+        var provider = new ScriptedProvider(
+                request -> response(request, shrunkenRepeatedGroup),
+                request -> response(request, v50CanonicalHierarchy()),
+                request -> response(request, v50CanonicalBindings())
+        );
+        var staticSchemaCountBefore = jdbcClient.sql("select count(*) from static_schema")
+                .query(Long.class).single();
+
+        var finished = worker(
+                provider, blobs, T0.plusSeconds(1),
+                hybridPreprocessor(new AtomicInteger(), "OCR_SENTINEL_V52_PARENT_ENVELOPE")
+        ).processNext("v52-parent-envelope-worker").orElseThrow();
+
+        assertThat(finished.state())
+                .as("failure=%s attempts=%s", finished.failureCode(), workflowStore.attempts(created))
+                .isEqualTo(InferenceRunState.REVIEW_REQUIRED);
+        assertThat(provider.requests).extracting(ProviderInferenceRequest::stage)
+                .containsExactly(
+                        InferenceStage.OBSERVE, InferenceStage.HIERARCHY,
+                        InferenceStage.ELEMENT_BINDING
+                );
+        assertThat(workflowStore.attempts(created)).extracting(InferenceAttempt::status)
+                .containsExactly(
+                        InferenceAttemptStatus.SUCCEEDED, InferenceAttemptStatus.SUCCEEDED,
+                        InferenceAttemptStatus.SUCCEEDED
+                );
+        assertThat(workflowStore.attempts(created).getFirst().problemCodeCounts())
+                .containsEntry("VISUAL_GROUNDING_REPEATED_GROUP_ENVELOPE_NORMALIZED", 1);
+        assertThat(jdbcClient.sql("""
+                        select count(*) from inference_provider_reservation
+                        where run_id = :runId and state = 'SETTLED'
+                        """)
+                .param("runId", created).query(Long.class).single()).isEqualTo(3L);
+        assertThat(jdbcClient.sql("""
+                        select count(*) from inference_provider_reservation
+                        where run_id = :runId and state = 'RESERVED'
+                        """)
+                .param("runId", created).query(Long.class).single()).isZero();
+        assertThat(jdbcClient.sql("select count(*) from schema_draft")
+                .query(Long.class).single()).isZero();
+        assertThat(jdbcClient.sql("select count(*) from static_schema")
+                .query(Long.class).single()).isEqualTo(staticSchemaCountBefore);
+    }
+
+    @Test
+    void changingMixedSetsRemainIsolatedButCannotBypassTheTotalCallCap() {
+        var blobs = new MemoryBlobStore();
+        var created = createV49EnvelopeProbe(blobs, "v49-changing-mixed-cap", 3);
+        var setA = mixedRegionIdAndParent("InvalidAlpha", "InvalidBeta");
+        var setB = mixedRegionIdAndReadingOrder("InvalidGamma");
+        var provider = new ScriptedProvider(
+                request -> response(request, setA),
+                request -> response(request, setB),
+                request -> response(request, setA)
+        );
+
+        var finished = worker(
+                provider, blobs, T0.plusSeconds(1),
+                hybridPreprocessor(new AtomicInteger(), "OCR_SENTINEL_V49_MIXED_CAP")
+        ).processNext("v49-changing-mixed-cap-worker").orElseThrow();
+
+        assertThat(finished.state()).isEqualTo(InferenceRunState.FAILED);
+        assertThat(finished.failureCode()).contains(
+                InferenceRejectionEnvelope.MIXED_REGION_FIELDS_PRIMARY_CODE
+        );
+        assertThat(provider.requests).hasSize(3);
+        assertThat(workflowStore.attempts(created)).extracting(attempt ->
+                        attempt.rejectionEnvelope().orElseThrow().detailCodes())
+                .containsExactly(
+                        List.of(
+                                "VISUAL_GROUNDING_REGION_ID_INVALID",
+                                "VISUAL_GROUNDING_REGION_PARENT_ID_INVALID"
+                        ),
+                        List.of(
+                                "VISUAL_GROUNDING_REGION_ID_INVALID",
+                                "VISUAL_GROUNDING_REGION_READING_ORDER_INVALID"
+                        ),
+                        List.of(
+                                "VISUAL_GROUNDING_REGION_ID_INVALID",
+                                "VISUAL_GROUNDING_REGION_PARENT_ID_INVALID"
+                        )
+                );
+    }
+
+    @Test
+    void equivalentRejectCountsAreIsolatedByCodeAndStage() {
+        var invalidVersion = groundedStationElements().replace(
+                "renderweave-visual-grounding/2.0", "renderweave-visual-grounding/9.0"
+        );
+
+        var codeBlobs = new MemoryBlobStore();
+        var codeRun = createGroundedVisual(
+                codeBlobs, "v47-code-isolation", MAX_V47_SUCCESSOR_PROFILE
+        );
+        var codeProvider = new ScriptedProvider(
+                request -> response(request, "{\"partial\":true}", "length"),
+                request -> response(request, invalidVersion),
+                request -> response(request, "{\"partial\":true}", "length"),
+                request -> response(request, invalidVersion),
+                request -> response(request, "{\"partial\":true}", "length")
+        );
+        var codeFinished = worker(
+                codeProvider, codeBlobs, T0.plusSeconds(1),
+                hybridPreprocessor(new AtomicInteger(), "OCR_SENTINEL_V47_CODE_ISOLATION")
+        ).processNext("v47-code-isolation-worker").orElseThrow();
+
+        assertThat(codeFinished.state()).isEqualTo(InferenceRunState.FAILED);
+        assertThat(codeProvider.requests).hasSize(5);
+        assertThat(workflowStore.attempts(codeRun)).extracting(attempt ->
+                attempt.problemCodeCounts().keySet().iterator().next())
+                .containsExactly(
+                        "VISUAL_GROUNDING_OUTPUT_TRUNCATED",
+                        "VISUAL_GROUNDING_VERSION_INVALID",
+                        "VISUAL_GROUNDING_OUTPUT_TRUNCATED",
+                        "VISUAL_GROUNDING_VERSION_INVALID",
+                        "VISUAL_GROUNDING_OUTPUT_TRUNCATED"
+                );
+
+        var stageBlobs = new MemoryBlobStore();
+        var stageRun = createGroundedVisual(
+                stageBlobs, "v47-stage-isolation", MAX_V47_SUCCESSOR_PROFILE
+        );
+        var stageProvider = new ScriptedProvider(
+                request -> response(request, "{\"partial\":true}", "length"),
+                request -> response(request, "{\"partial\":true}", "length"),
+                request -> response(request, groundedStationElements()),
+                request -> response(request, "{\"partial\":true}", "length"),
+                request -> response(request, "{\"partial\":true}", "length"),
+                request -> response(request, groundedStationHierarchy()),
+                request -> response(request, groundedStationBindings())
+        );
+        var stageFinished = worker(
+                stageProvider, stageBlobs, T0.plusSeconds(1),
+                hybridPreprocessor(new AtomicInteger(), "OCR_SENTINEL_V47_STAGE_ISOLATION")
+        ).processNext("v47-stage-isolation-worker").orElseThrow();
+
+        assertThat(stageFinished.state())
+                .as("failure=%s", stageFinished.failureCode())
+                .isEqualTo(InferenceRunState.REVIEW_REQUIRED);
+        assertThat(stageProvider.requests).extracting(ProviderInferenceRequest::stage)
+                .containsExactly(
+                        InferenceStage.OBSERVE, InferenceStage.OBSERVE, InferenceStage.OBSERVE,
+                        InferenceStage.HIERARCHY, InferenceStage.HIERARCHY,
+                        InferenceStage.HIERARCHY, InferenceStage.ELEMENT_BINDING
+                );
+        assertThat(workflowStore.attempts(stageRun)).hasSize(7);
+    }
+
+    @Test
+    void historicalPipelineFourPointTwentyEightKeepsItsTwelveCallSnapshot() {
+        var blobs = new MemoryBlobStore();
+        var created = createGroundedVisual(
+                blobs, "v46-equivalent-reject-history", MAX_V46_CERTIFICATION_PROFILE
+        );
+        var provider = new ScriptedProvider(repeatSteps(12,
+                request -> response(request, "{\"partial\":true}", "length")));
+
+        var finished = worker(
+                provider, blobs, T0.plusSeconds(1),
+                hybridPreprocessor(new AtomicInteger(), "OCR_SENTINEL_V46_HISTORY")
+        ).processNext("v46-equivalent-reject-history-worker").orElseThrow();
+
+        assertThat(finished.state()).isEqualTo(InferenceRunState.FAILED);
+        assertThat(provider.requests).hasSize(12);
+        assertThat(workflowStore.attempts(created)).hasSize(12);
     }
 
     @Test
@@ -3380,6 +4107,36 @@ class PostgresLiveInferenceWorkflowTest {
             Long costLimitMicrosCny
     ) {
         var profile = profiles.require(profileId);
+        return createGroundedVisual(
+                blobs, seed, profileId, profile.snapshotJson(), costLimitMicrosCny
+        );
+    }
+
+    private UUID createV49EnvelopeProbe(MemoryBlobStore blobs, String seed) {
+        return createV49EnvelopeProbe(blobs, seed, 12);
+    }
+
+    private UUID createV49EnvelopeProbe(MemoryBlobStore blobs, String seed, int maximumCalls) {
+        var v49 = profiles.require(MAX_V49_MIXED_RECOVERY_PROFILE);
+        var snapshot = v49.snapshotJson();
+        if (maximumCalls != 12) {
+            snapshot = snapshot.replace(
+                    "\"maximumTotalCalls\":12",
+                    "\"maximumTotalCalls\":" + maximumCalls
+            );
+        }
+        return createGroundedVisual(
+                blobs, seed, MAX_V49_MIXED_RECOVERY_PROFILE, snapshot, null
+        );
+    }
+
+    private UUID createGroundedVisual(
+            MemoryBlobStore blobs,
+            String seed,
+            String profileId,
+            String profileSnapshot,
+            Long costLimitMicrosCny
+    ) {
         var image = new BufferedImage(1_050, 1_660, BufferedImage.TYPE_INT_RGB);
         var graphics = image.createGraphics();
         try {
@@ -3412,7 +4169,7 @@ class PostgresLiveInferenceWorkflowTest {
                 List.of()
         );
         return runs.create(NewInferenceRun.initial(
-                UUID.randomUUID(), "idem-" + seed, normalized, profile.snapshotJson(),
+                UUID.randomUUID(), "idem-" + seed, normalized, profileSnapshot,
                 costLimitMicrosCny, T0
         )).run().runId();
     }
@@ -4206,6 +4963,66 @@ class PostgresLiveInferenceWorkflowTest {
             requests.add(request);
             return steps.removeFirst().apply(request);
         }
+    }
+
+    private static String v50OpaqueElements() {
+        return """
+                {"contractVersion":"renderweave-visual-grounding/2.0","regions":[
+                  {"regionId":"Opaque Root","parentRegionId":null,"kind":"ROOT","multiplicity":"ONE","readingOrder":0,"repeatGroupId":null,"evidence":[{"viewId":"view-00-overview-00","boundingBox":{"left":0,"top":0,"right":10000,"bottom":10000}}]},
+                  {"regionId":"Opaque Header","parentRegionId":"Opaque Root","kind":"SECTION","multiplicity":"ONE","readingOrder":0,"repeatGroupId":null,"evidence":[{"viewId":"view-00-overview-00","boundingBox":{"left":0,"top":0,"right":10000,"bottom":2000}}]},
+                  {"regionId":"Opaque Repeat","parentRegionId":"Opaque Root","kind":"REPEATED_GROUP","multiplicity":"MANY","readingOrder":1,"repeatGroupId":"Opaque Rows","evidence":[{"viewId":"view-00-overview-00","boundingBox":{"left":0,"top":2000,"right":10000,"bottom":10000}}]},
+                  {"regionId":"Opaque Item A","parentRegionId":"Opaque Repeat","kind":"ITEM","multiplicity":"ONE","readingOrder":0,"repeatGroupId":"Opaque Rows","evidence":[{"viewId":"view-00-overview-00","boundingBox":{"left":0,"top":2000,"right":10000,"bottom":6000}}]},
+                  {"regionId":"Opaque Item B","parentRegionId":"Opaque Repeat","kind":"ITEM","multiplicity":"ONE","readingOrder":1,"repeatGroupId":"Opaque Rows","evidence":[{"viewId":"view-00-overview-00","boundingBox":{"left":0,"top":6000,"right":10000,"bottom":10000}}]}
+                ],"elements":[
+                  {"elementId":"Opaque Title","kind":"SLOT","proposedKey":"title","displayName":"标题","multiplicity":"ONE","valueHint":"TEXT","regionIds":["Opaque Header"],"evidence":[{"viewId":"view-00-overview-00","boundingBox":{"left":100,"top":100,"right":3000,"bottom":700}}]},
+                  {"elementId":"Opaque Row Group","kind":"GROUP","proposedKey":"items","displayName":"重复项目","multiplicity":"MANY","valueHint":null,"regionIds":["Opaque Repeat"],"evidence":[{"viewId":"view-00-overview-00","boundingBox":{"left":0,"top":2000,"right":10000,"bottom":10000}}]},
+                  {"elementId":"Opaque Item Label","kind":"SLOT","proposedKey":"label","displayName":"项目名称","multiplicity":"ONE","valueHint":"TEXT","regionIds":["Opaque Item A","Opaque Item B"],"evidence":[{"viewId":"view-00-overview-00","boundingBox":{"left":100,"top":2300,"right":3000,"bottom":2800}},{"viewId":"view-00-overview-00","boundingBox":{"left":100,"top":6300,"right":3000,"bottom":6800}}]}
+                ]}
+                """;
+    }
+
+    private static String v50CanonicalHierarchy() {
+        return """
+                {"contractVersion":"renderweave-visual-hierarchy/2.0","rootEntityId":"document","entities":[
+                  {"entityId":"document","schemaKey":"document","displayName":"文档","regionIds":["r1"],"supportingElementIds":["e1"]},
+                  {"entityId":"item","schemaKey":"item","displayName":"项目","regionIds":["r4","r5"],"supportingElementIds":["e2"]}
+                ],"relationships":[
+                  {"relationshipId":"document-items","parentEntityId":"document","childEntityId":"item","fieldKey":"items","displayName":"项目","cardinality":"MANY","regionId":"r3","supportingElementIds":["e2"]}
+                ]}
+                """;
+    }
+
+    private static String v50CanonicalBindings() {
+        return """
+                {"contractVersion":"renderweave-visual-bindings/2.0","bindings":[
+                  {"elementId":"e1","entityId":"document"},
+                  {"elementId":"e3","entityId":"item"}
+                ]}
+                """;
+    }
+
+    private static String mixedRegionIdAndParent(String regionId, String parentRegionId) {
+        return groundedStationElements()
+                .replaceFirst("\"regionId\":\"header\"", "\"regionId\":\"" + regionId + "\"")
+                .replaceFirst(
+                        "\"parentRegionId\":\"root\"",
+                        "\"parentRegionId\":\"" + parentRegionId + "\""
+                );
+    }
+
+    private static String mixedRegionIdAndReadingOrder(String regionId) {
+        return groundedStationElements().replaceFirst(
+                "\"regionId\":\"header\",\"parentRegionId\":\"root\",\"kind\":\"SECTION\","
+                        + "\"multiplicity\":\"ONE\",\"readingOrder\":0",
+                "\"regionId\":\"" + regionId + "\",\"parentRegionId\":\"root\","
+                        + "\"kind\":\"SECTION\",\"multiplicity\":\"ONE\",\"readingOrder\":128"
+        );
+    }
+
+    private static Step[] repeatSteps(int count, Step step) {
+        var result = new Step[count];
+        java.util.Arrays.fill(result, step);
+        return result;
     }
 
     @FunctionalInterface

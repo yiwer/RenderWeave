@@ -153,6 +153,35 @@ final class LocalProcessDocumentVisionPreprocessor
         );
     }
 
+    /**
+     * Production OCR seam: HTTP/1.1 over the sidecar's Unix domain socket. The startup capability
+     * probe must report the exact frozen identity or the feature fails closed.
+     */
+    static DocumentVisionPreprocessor forUnixSocket(
+            Path socketPath,
+            Duration timeout,
+            String expectedCapabilityId
+    ) {
+        if (socketPath == null || socketPath.toString().isBlank()) {
+            return DocumentVisionPreprocessor.unavailable("DOCUMENT_VISION_SOCKET_MISSING");
+        }
+        if (timeout.toSeconds() < 1 || timeout.toSeconds() > 60) {
+            return DocumentVisionPreprocessor.unavailable("DOCUMENT_VISION_TIMEOUT_INVALID");
+        }
+        try {
+            var socket = socketPath.toAbsolutePath().normalize();
+            return new LocalProcessDocumentVisionPreprocessor(
+                    List.of(), socket.getParent() == null ? Path.of(".") : socket.getParent(),
+                    timeout, requireCapabilityId(expectedCapabilityId),
+                    new UnixDomainSocketDocumentVisionRunner(socket)
+            );
+        } catch (DocumentVisionException failure) {
+            return DocumentVisionPreprocessor.unavailable(failure.code());
+        } catch (RuntimeException failure) {
+            return DocumentVisionPreprocessor.unavailable("DOCUMENT_VISION_STARTUP_PROBE_FAILED");
+        }
+    }
+
     @Override
     public DocumentVisionCapability capability() {
         return capability;

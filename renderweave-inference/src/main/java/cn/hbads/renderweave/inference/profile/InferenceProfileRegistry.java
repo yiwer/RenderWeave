@@ -165,7 +165,13 @@ public final class InferenceProfileRegistry {
             "inference-profiles/dashscope-qwen37-flash-product-v45-hybrid-generic.json",
             "inference-profiles/dashscope-qwen37-plus-product-v45-hybrid-generic.json",
             "inference-profiles/dashscope-qwen38-max-product-v45-hybrid-generic.json",
-            "inference-profiles/dashscope-qwen38-max-product-v46-hybrid-generic.json"
+            "inference-profiles/dashscope-qwen38-max-product-v46-hybrid-generic.json",
+            "inference-profiles/dashscope-qwen38-max-product-v47-hybrid-generic.json",
+            "inference-profiles/dashscope-qwen38-max-product-v48-hybrid-generic.json",
+            "inference-profiles/dashscope-qwen38-max-product-v49-hybrid-generic.json",
+            "inference-profiles/dashscope-qwen38-max-product-v50-hybrid-generic.json",
+            "inference-profiles/dashscope-qwen38-max-product-v51-hybrid-generic.json",
+            "inference-profiles/dashscope-qwen38-max-product-v52-hybrid-generic.json"
     );
     private static final java.util.List<String> PRODUCT_LIVE_PROFILE_IDS = java.util.List.of(
             "dashscope-qwen37-plus-product-v45-hybrid-generic",
@@ -173,7 +179,12 @@ public final class InferenceProfileRegistry {
             "dashscope-qwen37-flash-product-v45-hybrid-generic"
     );
     private static final java.util.List<String> CERTIFICATION_CANDIDATE_PROFILE_IDS = java.util.List.of(
-            "dashscope-qwen38-max-product-v46-hybrid-generic"
+            "dashscope-qwen38-max-product-v47-hybrid-generic",
+            "dashscope-qwen38-max-product-v48-hybrid-generic",
+            "dashscope-qwen38-max-product-v49-hybrid-generic",
+            "dashscope-qwen38-max-product-v50-hybrid-generic",
+            "dashscope-qwen38-max-product-v51-hybrid-generic",
+            "dashscope-qwen38-max-product-v52-hybrid-generic"
     );
     private static final java.util.List<String> VISUAL_NEXT_PROFILE_IDS = java.util.List.of(
             "dashscope-qwen37-flash-product-v5",

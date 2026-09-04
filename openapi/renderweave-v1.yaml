@@ -4711,9 +4711,42 @@ components:
             type: integer
             minimum: 1
             maximum: 10000
+        rejectionEnvelope:
+          $ref: '#/components/schemas/InferenceRejectionEnvelope'
         completedAt:
           type: string
           format: date-time
+    InferenceRejectionEnvelope:
+      type: object
+      additionalProperties: false
+      required: [primaryCode, earliestStage, detailCodes, detailCodeCount]
+      properties:
+        primaryCode:
+          type: string
+          enum:
+            [VISUAL_GROUNDING_REGION_FIELDS_INVALID, VISUAL_GROUNDING_REGION_UNCLASSIFIED]
+        earliestStage:
+          type: string
+          enum: [OBSERVE]
+        detailCodes:
+          type: array
+          minItems: 0
+          maxItems: 7
+          uniqueItems: true
+          items:
+            type: string
+            enum:
+              - VISUAL_GROUNDING_REGION_ENTRY_INVALID
+              - VISUAL_GROUNDING_REGION_ID_INVALID
+              - VISUAL_GROUNDING_REGION_PARENT_ID_INVALID
+              - VISUAL_GROUNDING_REGION_MULTIPLICITY_INVALID
+              - VISUAL_GROUNDING_REGION_READING_ORDER_INVALID
+              - VISUAL_GROUNDING_REGION_REPEAT_GROUP_ID_INVALID
+              - VISUAL_GROUNDING_REGION_EVIDENCE_INVALID
+        detailCodeCount:
+          type: integer
+          minimum: 0
+          maximum: 7
     SaveCandidateRequest:
       type: object
       additionalProperties: false

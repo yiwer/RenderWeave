@@ -1,0 +1,11 @@
+---
+status: accepted
+---
+
+# Bind every Provider egress to a payload-free audit chain and two independent default-closed switches
+
+Live admission and egress decisions are audited through a single append-only `live_admission_audit_event` chain. Each run carries a monotonic sequence whose domain-separated SHA-256 digest commits to the previous digest, so any duplicate, reorder, deletion, tamper or gap fails independent replay. Events may only carry opaque actor/request identities, digests, closed decision codes, usage/cost and time; images, filenames, OCR text, prompts, responses, PII, secrets and chain-of-thought never enter the audit, logs or evidence. The Flyway owner maintains the table while the `renderweave_live_runtime` role keeps only SELECT and INSERT, and append-only triggers reject UPDATE and DELETE even from privileged sessions.
+
+Every Provider call is authorized atomically. Call authorization, attempt identity, cost reservation and the audit event commit as one PostgreSQL transaction; the Provider permit exists only after that commit, so no byte can leave with only a reservation and no audit fact. A committed authorization whose dispatch never happened is not replayed blindly: re-authorizing the same attempt ordinal fails closed instead of guessing whether bytes already left. Dispatch outcomes settle the reservation and append the outcome event in one transaction.
+
+Two emergency switches stay independent and default closed. `ImageOnlyAdmissionPolicy` is the persisted, versioned application policy whose append-only history is itself the payload-free audit of changes; `ProviderEgressPermit` is a read-only port for the orchestrator/firewall authority mounted from outside the application. Credential presence, readiness recovery or water-level relief never opens either switch; only an ops identity appends policy versions, and only the orchestrator writes the permit artifact. Either switch closed blocks new admission and retries, drains QUEUED runs to stable terminals at sweep/dequeue, stops RUNNING work at the next safe boundary without advancing in-flight results, and leaves REVIEW_REQUIRED review/apply untouched. Reopening never resurrects a drained run. An unwritable or broken audit chain projects `AUDIT_INTEGRITY_UNAVAILABLE` and closes new calls before any dispatch.

@@ -29,15 +29,18 @@ public class PostgresCandidateApplyStore implements CandidateApplyStore {
     private final JdbcClient jdbcClient;
     private final DraftStore drafts;
     private final InferenceRunStore runs;
+    private final PostgresPayloadLifecycleStore payloadLifecycle;
 
     public PostgresCandidateApplyStore(
             JdbcClient jdbcClient,
             DraftStore drafts,
-            InferenceRunStore runs
+            InferenceRunStore runs,
+            PostgresPayloadLifecycleStore payloadLifecycle
     ) {
         this.jdbcClient = jdbcClient;
         this.drafts = drafts;
         this.runs = runs;
+        this.payloadLifecycle = payloadLifecycle;
     }
 
     @Override
@@ -70,6 +73,7 @@ public class PostgresCandidateApplyStore implements CandidateApplyStore {
         }
 
         var state = lockRun(runId);
+        payloadLifecycle.requireForApplyLocked(runId, now);
         if (state.state() == InferenceRunState.COMPLETED) {
             if (!candidate.finalMatches() || candidate.appliedAt() == null) {
                 throw new InvalidInferenceRunTransitionException(
@@ -153,6 +157,9 @@ public class PostgresCandidateApplyStore implements CandidateApplyStore {
                 runId, completedSequence, "CANDIDATE_APPLIED", InferenceRunState.COMPLETED,
                 completedEventData(expectedCandidateRevision, bundle), now
         );
+        if (payloadLifecycle.isManaged(runId)) {
+            payloadLifecycle.tombstoneCompleted(runId, now);
+        }
         var persistedAppliedAt = jdbcClient.sql("""
                         select applied_at from inference_candidate where run_id = :runId
                         """)

@@ -9,6 +9,7 @@ import cn.hbads.renderweave.inference.run.InferenceRunService;
 import cn.hbads.renderweave.inference.run.InferenceRunStore;
 import cn.hbads.renderweave.inference.replay.InferenceReplayStore;
 import cn.hbads.renderweave.inference.replay.ReplayInferenceWorker;
+import cn.hbads.renderweave.inference.retention.PayloadAccessGuard;
 import cn.hbads.renderweave.inference.dashscope.DashScopeInferenceProvider;
 import cn.hbads.renderweave.inference.profile.InferenceProfileRegistry;
 import cn.hbads.renderweave.inference.profile.InferencePromptRegistry;
@@ -23,6 +24,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
 import java.nio.file.Path;
+import java.security.SecureRandom;
 import java.time.Clock;
 import java.time.Duration;
 import java.util.UUID;
@@ -53,10 +55,36 @@ class InferenceApplicationConfiguration {
     }
 
     @Bean
+    @ConditionalOnProperty(
+            prefix = "renderweave.inference.envelope-encryption",
+            name = "enabled",
+            havingValue = "false",
+            matchIfMissing = true
+    )
     BlobStore inferenceBlobStore(
             @Value("${renderweave.inference.blob-root:./var/renderweave/blobs}") String root
     ) {
         return new FileSystemBlobStore(Path.of(root));
+    }
+
+    @Bean
+    @ConditionalOnProperty(
+            prefix = "renderweave.inference.envelope-encryption",
+            name = "enabled",
+            havingValue = "true"
+    )
+    BlobStore envelopeEncryptedInferenceBlobStore(
+            PostgresArtifactEnvelopeStore envelopes,
+            Clock inferenceClock,
+            @Value("${renderweave.inference.blob-root:./var/renderweave/blobs}") String root,
+            @Value("${renderweave.inference.envelope-encryption.kek-directory:}") String kekDirectory,
+            @Value("${renderweave.inference.envelope-encryption.current-kek-id:}") String currentKekId
+    ) {
+        var ring = FileSystemArtifactKekRing.load(Path.of(kekDirectory), currentKekId);
+        var ciphertexts = new FileSystemEncryptedCiphertextStore(Path.of(root).resolve("encrypted"));
+        return new EnvelopeEncryptedBlobStore(
+                envelopes, ciphertexts, ring, new SecureRandom(), inferenceClock
+        );
     }
 
     @Bean
@@ -65,18 +93,35 @@ class InferenceApplicationConfiguration {
     }
 
     @Bean
+    cn.hbads.renderweave.inference.admission.ProviderEgressPermit providerEgressPermit(
+            @Value("${renderweave.inference.egress-permit-file:}") String permitFile
+    ) {
+        return FileSystemProviderEgressPermit.fromConfiguration(permitFile);
+    }
+
+    @Bean
     DocumentVisionPreprocessor documentVisionPreprocessor(
             @Value("${renderweave.inference.document-vision.enabled:false}") boolean enabled,
             @Value("${renderweave.inference.document-vision.executable:}") String executable,
             @Value("${renderweave.inference.document-vision.adapter-script:}") String adapterScript,
             @Value("${renderweave.inference.document-vision.model-root:}") String modelRoot,
+            @Value("${renderweave.inference.document-vision.ud-socket:}") String unixSocket,
             @Value("${renderweave.inference.document-vision.timeout-seconds:30}") long timeoutSeconds,
             @Value("${renderweave.inference.document-vision.expected-capability-id:"
                     + LocalProcessDocumentVisionPreprocessor.EXPECTED_CAPABILITY_ID + "}")
             String expectedCapabilityId
     ) {
+        if (!enabled) {
+            return DocumentVisionPreprocessor.unavailable("DOCUMENT_VISION_DISABLED");
+        }
+        if (unixSocket != null && !unixSocket.isBlank()) {
+            return LocalProcessDocumentVisionPreprocessor.forUnixSocket(
+                    Path.of(unixSocket), java.time.Duration.ofSeconds(timeoutSeconds),
+                    expectedCapabilityId
+            );
+        }
         return LocalProcessDocumentVisionPreprocessor.fromConfiguration(
-                enabled, executable, adapterScript, modelRoot, timeoutSeconds, expectedCapabilityId
+                true, executable, adapterScript, modelRoot, timeoutSeconds, expectedCapabilityId
         );
     }
 
@@ -112,6 +157,8 @@ class InferenceApplicationConfiguration {
             InferenceProvider provider,
             BlobStore blobStore,
             DocumentVisionPreprocessor documentVisionPreprocessor,
+            PayloadAccessGuard payloadAccessGuard,
+            PostgresLiveProviderCallGate callGate,
             Clock inferenceClock,
             @Value("${renderweave.inference.live-lease-seconds:600}") long leaseSeconds
     ) {
@@ -119,12 +166,12 @@ class InferenceApplicationConfiguration {
             return new LiveInferenceWorker(
                     runStore, replayStore, budgetStore, provider, blobStore,
                     inferenceClock, Duration.ofSeconds(leaseSeconds), configured,
-                    configured.acquisitionPolicy()
+                    configured.acquisitionPolicy(), payloadAccessGuard, callGate
             );
         }
         return new LiveInferenceWorker(
                 runStore, replayStore, budgetStore, provider, blobStore,
-                inferenceClock, Duration.ofSeconds(leaseSeconds)
+                inferenceClock, Duration.ofSeconds(leaseSeconds), payloadAccessGuard, callGate
         );
     }
 
@@ -154,9 +201,12 @@ class InferenceApplicationConfiguration {
             InferenceRunStore runStore,
             InferenceReplayStore replayStore,
             Clock inferenceClock,
-            BlobStore blobStore
+            BlobStore blobStore,
+            PayloadAccessGuard payloadAccessGuard
     ) {
-        return new CandidateReviewService(runStore, replayStore, inferenceClock, blobStore);
+        return new CandidateReviewService(
+                runStore, replayStore, inferenceClock, blobStore, payloadAccessGuard
+        );
     }
 
     @Bean

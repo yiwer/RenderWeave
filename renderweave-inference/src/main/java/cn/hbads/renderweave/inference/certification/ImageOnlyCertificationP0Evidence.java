@@ -45,7 +45,7 @@ final class ImageOnlyCertificationP0Evidence {
                         manifest.manifestIdentity(), manifest.profileId(), manifest.profileSha256(),
                         manifest.corpusIdentity(), manifest.r1InfrastructureIdentity(),
                         manifest.evaluatorIdentity(), manifest.assignmentSeed(),
-                        java.util.Arrays.stream(CertificationStage.values()).map(stage ->
+                        java.util.Arrays.stream(CertificationStage.scoredStages()).map(stage ->
                                 new ImageOnlyCertificationP0Report.ThresholdProof(
                                         stage.name(), stage.caseCount(), stage.acceptanceThreshold())).toList(),
                         manifest.canariesForIndependentReplay(),

@@ -51,7 +51,7 @@ public final class ProfileCertificationService {
             fail("PROFILE_CERTIFICATION_CYCLE_TERMINAL");
         }
         var passedCount = (int) events.stream().filter(item -> item.eventType() == STAGE_PASSED).count();
-        var ordered = CertificationStage.values();
+        var ordered = CertificationStage.scoredStages();
         if (passedCount >= ordered.length || outcome.stage() != ordered[passedCount]) {
             fail("PROFILE_CERTIFICATION_STAGE_REORDERED");
         }
@@ -65,6 +65,10 @@ public final class ProfileCertificationService {
     public void grant(UUID cycleId, String productionPolicyAuthorityReference,
                       String evidenceIdentity, Instant recordedAt) {
         var events = requireEvents(cycleId);
+        if (!cn.hbads.renderweave.inference.provider.ProfileRunBudgetPolicy
+                .IMAGE_ONLY_V47_PROFILE_ID.equals(events.getFirst().profileId())) {
+            fail("PROFILE_CERTIFICATION_PROFILE_SUPERSEDED");
+        }
         if (status(events) != ProfileCertificationStatus.READY_TO_GRANT) {
             fail("PROFILE_CERTIFICATION_GRANT_NOT_READY");
         }
@@ -107,7 +111,7 @@ public final class ProfileCertificationService {
         if (current == ProfileCertificationStatus.IN_PROGRESS) {
             var passed = (int) events.stream()
                     .filter(item -> item.eventType() == STAGE_PASSED).count();
-            next = CertificationStage.values()[passed];
+            next = CertificationStage.scoredStages()[passed];
         }
         var start = events.getFirst();
         return new ProfileCertificationProgress(cycleId, current, next,
@@ -189,7 +193,7 @@ public final class ProfileCertificationService {
                     terminal = true;
                 }
                 case CERTIFICATION_GRANTED -> {
-                    if (passedStages != CertificationStage.values().length || granted
+                    if (passedStages != CertificationStage.scoredStages().length || granted
                             || event.authorityReference() == null
                             || !event.authorityReference().matches(
                             "production-policy-j1:[a-z0-9][a-z0-9-]{2,95}")) {
@@ -207,8 +211,8 @@ public final class ProfileCertificationService {
     }
 
     private static void requireExpectedStage(ProfileCertificationEvent event, int passedStages) {
-        if (passedStages >= CertificationStage.values().length
-                || event.stage() != CertificationStage.values()[passedStages]) {
+        if (passedStages >= CertificationStage.scoredStages().length
+                || event.stage() != CertificationStage.scoredStages()[passedStages]) {
             fail("PROFILE_CERTIFICATION_EVENT_HISTORY_INVALID");
         }
     }
@@ -224,7 +228,7 @@ public final class ProfileCertificationService {
             return ProfileCertificationStatus.FAILED;
         }
         var passed = events.stream().filter(item -> item.eventType() == STAGE_PASSED).count();
-        return passed == CertificationStage.values().length
+        return passed == CertificationStage.scoredStages().length
                 ? ProfileCertificationStatus.READY_TO_GRANT : ProfileCertificationStatus.IN_PROGRESS;
     }
 

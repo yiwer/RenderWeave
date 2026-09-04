@@ -3,6 +3,7 @@ package cn.hbads.renderweave.inference.live;
 import cn.hbads.renderweave.inference.candidate.CandidateBoundingBox;
 import cn.hbads.renderweave.inference.provider.ProviderInferenceResponse;
 import cn.hbads.renderweave.inference.provider.ProviderUsage;
+import cn.hbads.renderweave.inference.replay.InferenceRejectionEnvelope;
 import cn.hbads.renderweave.inference.run.InferenceStage;
 import org.junit.jupiter.api.Test;
 
@@ -84,6 +85,291 @@ class VisualGroundingContractTest {
                 "\"regionId\":\"repeat\",\"parentRegionId\":\"root\",\"kind\":\"REPEATED_GROUP\",\"multiplicity\":\"MANY\",\"readingOrder\":1",
                 "\"regionId\":\"repeat\",\"parentRegionId\":\"root\",\"kind\":\"REPEATED_GROUP\",\"multiplicity\":\"MANY\",\"readingOrder\":0"
         ), views, "VISUAL_GROUNDING_READING_ORDER_POSITION_INVALID");
+    }
+
+    @Test
+    void exposesFieldSpecificRegionDiagnosticsOnlyWhenExplicitlySelected() throws Exception {
+        var views = views();
+        assertFieldSpecificRegionDiagnostic(
+                elementsJson().replace("\"regions\":[", "\"regions\":[null,"), views,
+                "VISUAL_GROUNDING_REGION_ENTRY_INVALID"
+        );
+        assertFieldSpecificRegionDiagnostic(
+                elementsJson().replaceFirst("\"regionId\":\"root\"", "\"regionId\":\"Root\""), views,
+                "VISUAL_GROUNDING_REGION_ID_INVALID"
+        );
+        assertFieldSpecificRegionDiagnostic(
+                elementsJson().replaceFirst(
+                        "\"parentRegionId\":\"root\"", "\"parentRegionId\":\"Root\""
+                ), views, "VISUAL_GROUNDING_REGION_PARENT_ID_INVALID"
+        );
+        assertFieldSpecificRegionDiagnostic(
+                elementsJson().replaceFirst("\"multiplicity\":\"ONE\"", "\"multiplicity\":null"), views,
+                "VISUAL_GROUNDING_REGION_MULTIPLICITY_INVALID"
+        );
+        assertFieldSpecificRegionDiagnostic(
+                elementsJson().replaceFirst("\"readingOrder\":0", "\"readingOrder\":128"), views,
+                "VISUAL_GROUNDING_REGION_READING_ORDER_INVALID"
+        );
+        assertFieldSpecificRegionDiagnostic(
+                elementsJson().replaceFirst(
+                        "\"repeatGroupId\":\"rows\"", "\"repeatGroupId\":\"Rows\""
+                ), views, "VISUAL_GROUNDING_REGION_REPEAT_GROUP_ID_INVALID"
+        );
+        assertFieldSpecificRegionDiagnostic(
+                elementsJson().replaceFirst("view-00-overview-00", "unknown-view"), views,
+                "VISUAL_GROUNDING_REGION_EVIDENCE_INVALID"
+        );
+        assertFieldSpecificRegionDiagnostic(
+                elementsJson()
+                        .replaceFirst("\"regionId\":\"header\"", "\"regionId\":\"Header\"")
+                        .replaceFirst(
+                                "\"parentRegionId\":\"root\"", "\"parentRegionId\":\"Root\""
+                        ),
+                views, "VISUAL_GROUNDING_REGION_INVALID"
+        );
+
+        assertDiagnostic(
+                elementsJson().replaceFirst("view-00-overview-00", "unknown-view"), views,
+                "VISUAL_GROUNDING_REGION_INVALID"
+        );
+    }
+
+    @Test
+    void exposesMixedRegionProvenanceOnlyThroughTheSuccessorProbePolicy() throws Exception {
+        var views = views();
+        var mixed = elementsJson()
+                .replaceFirst("\"regionId\":\"header\"", "\"regionId\":\"Header\"")
+                .replaceFirst(
+                        "\"parentRegionId\":\"root\"", "\"parentRegionId\":\"Root\""
+                );
+
+        var failure = assertThrows(InvalidVisualAnalysisException.class, () ->
+                codec.parseElements(
+                        mixed, views, List.of(IMAGE_ID),
+                        VisualObservationNormalizationPolicy
+                                .BOUNDED_CONSTRAINT_UNIQUE_KIND_ANCESTOR_PARENT_GAPPED_READING_ORDER_DIAGNOSTIC_EVIDENCE_AND_ITEM_SLOT_OWNER,
+                        VisualObservationSemanticPolicy
+                                .SLOT_LEAF_EVIDENCE_AND_GROUP_REGION_CARDINALITY_REQUIRED,
+                        VisualRegionDiagnosticPolicy.MIXED_PROVENANCE
+                ));
+        assertEquals("VISUAL_GROUNDING_REGION_FIELDS_INVALID", failure.diagnosticCode());
+        assertEquals(new InferenceRejectionEnvelope(
+                InferenceRejectionEnvelope.MIXED_REGION_FIELDS_PRIMARY_CODE,
+                InferenceStage.OBSERVE,
+                List.of(
+                        "VISUAL_GROUNDING_REGION_ID_INVALID",
+                        "VISUAL_GROUNDING_REGION_PARENT_ID_INVALID"
+                )
+        ), failure.rejectionEnvelope().orElseThrow());
+        assertRegionDiagnostic(
+                mixed, views, VisualRegionDiagnosticPolicy.FIELD_SPECIFIC,
+                "VISUAL_GROUNDING_REGION_INVALID"
+        );
+        assertDiagnostic(mixed, views, "VISUAL_GROUNDING_REGION_INVALID");
+    }
+
+    @Test
+    void mixedRegionProvenancePolicyLeavesValidObservationBehaviourUnchanged() throws Exception {
+        var views = views();
+        var expected = codec.parseElements(
+                elementsJson(), views, List.of(IMAGE_ID),
+                VisualObservationNormalizationPolicy
+                        .BOUNDED_CONSTRAINT_UNIQUE_KIND_ANCESTOR_PARENT_GAPPED_READING_ORDER_DIAGNOSTIC_EVIDENCE_AND_ITEM_SLOT_OWNER,
+                VisualObservationSemanticPolicy
+                        .SLOT_LEAF_EVIDENCE_AND_GROUP_REGION_CARDINALITY_REQUIRED,
+                VisualRegionDiagnosticPolicy.FIELD_SPECIFIC
+        );
+        var actual = codec.parseElements(
+                elementsJson(), views, List.of(IMAGE_ID),
+                VisualObservationNormalizationPolicy
+                        .BOUNDED_CONSTRAINT_UNIQUE_KIND_ANCESTOR_PARENT_GAPPED_READING_ORDER_DIAGNOSTIC_EVIDENCE_AND_ITEM_SLOT_OWNER,
+                VisualObservationSemanticPolicy
+                        .SLOT_LEAF_EVIDENCE_AND_GROUP_REGION_CARDINALITY_REQUIRED,
+                VisualRegionDiagnosticPolicy.MIXED_PROVENANCE
+        );
+
+        assertEquals(expected, actual);
+    }
+
+    @Test
+    void successorClassifiesFinalParentContainmentWithoutChangingHistoricalCode()
+            throws Exception {
+        var containmentFailure = elementsJson().replace(
+                "\"regionId\":\"repeat\",\"parentRegionId\":\"root\"",
+                "\"regionId\":\"repeat\",\"parentRegionId\":\"item-a\""
+        );
+        var failure = assertThrows(InvalidVisualAnalysisException.class, () ->
+                codec.parseElements(
+                        containmentFailure, views(), List.of(IMAGE_ID),
+                        VisualObservationNormalizationPolicy
+                                .BOUNDED_CONSTRAINT_UNIQUE_KIND_ANCESTOR_PARENT_GAPPED_READING_ORDER_DIAGNOSTIC_EVIDENCE_AND_ITEM_SLOT_OWNER,
+                        VisualObservationSemanticPolicy
+                                .SLOT_LEAF_EVIDENCE_AND_GROUP_REGION_CARDINALITY_REQUIRED,
+                        VisualRegionDiagnosticPolicy.MIXED_PROVENANCE_AND_CONTAINMENT,
+                        VisualLocalIdCanonicalizationPolicy.LOSSLESS_OPAQUE_LABELS
+                ));
+
+        assertEquals(InferenceRejectionEnvelope.PARENT_CONTAINMENT_PRIMARY_CODE,
+                failure.diagnosticCode());
+        assertEquals(new InferenceRejectionEnvelope(
+                InferenceRejectionEnvelope.PARENT_CONTAINMENT_PRIMARY_CODE,
+                InferenceStage.OBSERVE,
+                List.of("VISUAL_GROUNDING_PARENT_CONTAINMENT_NON_ITEM_ZERO_COMPATIBLE")
+        ), failure.rejectionEnvelope().orElseThrow());
+        assertEquals("VISUAL_GROUNDING_PARENT_CONTAINMENT_INVALID", assertThrows(
+                InvalidVisualAnalysisException.class, () -> codec.parseElements(
+                        containmentFailure, views(), List.of(IMAGE_ID),
+                        VisualObservationNormalizationPolicy
+                                .BOUNDED_CONSTRAINT_UNIQUE_KIND_ANCESTOR_PARENT_GAPPED_READING_ORDER_DIAGNOSTIC_EVIDENCE_AND_ITEM_SLOT_OWNER,
+                        VisualObservationSemanticPolicy
+                                .SLOT_LEAF_EVIDENCE_AND_GROUP_REGION_CARDINALITY_REQUIRED,
+                        VisualRegionDiagnosticPolicy.MIXED_PROVENANCE,
+                        VisualLocalIdCanonicalizationPolicy.LOSSLESS_OPAQUE_LABELS
+                )
+        ).diagnosticCode());
+    }
+
+    @Test
+    void v52AtomicallyExpandsOnlyTheExactRepeatedGroupEnvelope() throws Exception {
+        var originalRepeat = "{\"regionId\":\"repeat\",\"parentRegionId\":\"root\",\"kind\":\"REPEATED_GROUP\",\"multiplicity\":\"MANY\",\"readingOrder\":1,\"repeatGroupId\":\"rows\",\"evidence\":[{\"viewId\":\"view-00-overview-00\",\"boundingBox\":{\"left\":0,\"top\":2000,\"right\":10000,\"bottom\":10000}}]}";
+        var itemContainmentFailure = elementsJson().replace(
+                originalRepeat,
+                "{\"regionId\":\"repeat\",\"parentRegionId\":\"root\",\"kind\":\"REPEATED_GROUP\",\"multiplicity\":\"MANY\",\"readingOrder\":1,\"repeatGroupId\":\"rows\",\"evidence\":[{\"viewId\":\"view-00-overview-00\",\"boundingBox\":{\"left\":0,\"top\":2000,\"right\":10000,\"bottom\":5000}}]}"
+        );
+        var historicalFailure = assertThrows(InvalidVisualAnalysisException.class, () ->
+                parseWithParentContainmentPolicy(
+                        itemContainmentFailure,
+                        VisualObservationNormalizationPolicy
+                                .BOUNDED_CONSTRAINT_UNIQUE_KIND_ANCESTOR_PARENT_GAPPED_READING_ORDER_DIAGNOSTIC_EVIDENCE_AND_ITEM_SLOT_OWNER
+                ));
+        assertEquals(List.of(
+                        "VISUAL_GROUNDING_PARENT_CONTAINMENT_ITEM_ZERO_COMPATIBLE"),
+                historicalFailure.rejectionEnvelope().orElseThrow().detailCodes());
+
+        var normalized = parseWithParentContainmentPolicy(
+                itemContainmentFailure,
+                VisualObservationNormalizationPolicy
+                        .BOUNDED_CONSTRAINT_UNIQUE_KIND_ANCESTOR_PARENT_GAPPED_READING_ORDER_DIAGNOSTIC_EVIDENCE_ITEM_PARENT_ENVELOPE_AND_ITEM_SLOT_OWNER
+        );
+        assertEquals(new CandidateBoundingBox(0, 2000, 10000, 10000),
+                normalized.grounding().regions().stream()
+                        .filter(region -> region.kind() == VisualRegionKind.REPEATED_GROUP)
+                        .findFirst().orElseThrow()
+                        .evidence().getFirst().boundingBox());
+        assertEquals(1, normalized.normalizedRepeatedGroupEnvelopes());
+        assertEquals(0, parseWithParentContainmentPolicy(
+                elementsJson(), VisualObservationNormalizationPolicy
+                        .BOUNDED_CONSTRAINT_UNIQUE_KIND_ANCESTOR_PARENT_GAPPED_READING_ORDER_DIAGNOSTIC_EVIDENCE_ITEM_PARENT_ENVELOPE_AND_ITEM_SLOT_OWNER
+        ).normalizedRepeatedGroupEnvelopes());
+    }
+
+    @Test
+    void v52RollsBackTheWholeEnvelopeWhenExpansionEscapesItsAncestor() throws Exception {
+        var originalRepeat = "{\"regionId\":\"repeat\",\"parentRegionId\":\"root\",\"kind\":\"REPEATED_GROUP\",\"multiplicity\":\"MANY\",\"readingOrder\":1,\"repeatGroupId\":\"rows\",\"evidence\":[{\"viewId\":\"view-00-overview-00\",\"boundingBox\":{\"left\":0,\"top\":2000,\"right\":10000,\"bottom\":10000}}]}";
+        var boundedBody = "{\"regionId\":\"body\",\"parentRegionId\":\"root\",\"kind\":\"SECTION\",\"multiplicity\":\"ONE\",\"readingOrder\":1,\"repeatGroupId\":null,\"evidence\":[{\"viewId\":\"view-00-overview-00\",\"boundingBox\":{\"left\":0,\"top\":2000,\"right\":10000,\"bottom\":9000}}]},\n"
+                + "{\"regionId\":\"repeat\",\"parentRegionId\":\"body\",\"kind\":\"REPEATED_GROUP\",\"multiplicity\":\"MANY\",\"readingOrder\":0,\"repeatGroupId\":\"rows\",\"evidence\":[{\"viewId\":\"view-00-overview-00\",\"boundingBox\":{\"left\":0,\"top\":2000,\"right\":10000,\"bottom\":5000}}]}";
+        var ancestorEscape = elementsJson().replace(originalRepeat, boundedBody);
+
+        var failure = assertThrows(InvalidVisualAnalysisException.class, () ->
+                parseWithParentContainmentPolicy(
+                        ancestorEscape,
+                        VisualObservationNormalizationPolicy
+                                .BOUNDED_CONSTRAINT_UNIQUE_KIND_ANCESTOR_PARENT_GAPPED_READING_ORDER_DIAGNOSTIC_EVIDENCE_ITEM_PARENT_ENVELOPE_AND_ITEM_SLOT_OWNER
+                ));
+        assertEquals(InferenceRejectionEnvelope.PARENT_CONTAINMENT_PRIMARY_CODE,
+                failure.diagnosticCode());
+        assertEquals(List.of(
+                        "VISUAL_GROUNDING_PARENT_CONTAINMENT_ITEM_ZERO_COMPATIBLE"),
+                failure.rejectionEnvelope().orElseThrow().detailCodes());
+    }
+
+    @Test
+    void v52RejectsNineEnvelopeRewritesWithoutPartialCommit() throws Exception {
+        var failure = assertThrows(InvalidVisualAnalysisException.class, () ->
+                codec.parseElements(
+                        nineRepeatedGroupEnvelopeCandidates(), views(), List.of(IMAGE_ID),
+                        VisualObservationNormalizationPolicy
+                                .BOUNDED_CONSTRAINT_UNIQUE_KIND_ANCESTOR_PARENT_GAPPED_READING_ORDER_DIAGNOSTIC_EVIDENCE_ITEM_PARENT_ENVELOPE_AND_ITEM_SLOT_OWNER,
+                        VisualObservationSemanticPolicy.LEGACY,
+                        VisualRegionDiagnosticPolicy.MIXED_PROVENANCE_AND_CONTAINMENT,
+                        VisualLocalIdCanonicalizationPolicy.STRICT
+                ));
+
+        assertEquals(InferenceRejectionEnvelope.PARENT_CONTAINMENT_PRIMARY_CODE,
+                failure.diagnosticCode());
+        assertEquals(List.of(
+                        "VISUAL_GROUNDING_PARENT_CONTAINMENT_ITEM_ZERO_COMPATIBLE"),
+                failure.rejectionEnvelope().orElseThrow().detailCodes());
+    }
+
+    @Test
+    void losslesslyCanonicalizesOpaqueLocalIdGraphBeforeStrictValidation() throws Exception {
+        var first = parseWithOpaqueLocalIds(opaqueLocalIdsJson("A"));
+        var second = parseWithOpaqueLocalIds(opaqueLocalIdsJson("B"));
+
+        assertEquals(first, second);
+        assertEquals(VisualGroundingJsonCodec.LOCAL_ID_CANONICALIZATION_ID,
+                "renderweave-image-only-local-id-canonicalizer/1.0");
+        assertEquals(9, first.canonicalizedLocalIdClasses());
+        assertEquals(List.of("r1", "r2", "r3", "r4", "r5"),
+                first.grounding().regions().stream().map(VisualRegion::regionId).toList());
+        assertEquals("r1", first.grounding().requireRegion("r2").parentRegionId());
+        assertEquals("r1", first.grounding().requireRegion("r3").parentRegionId());
+        assertEquals("r3", first.grounding().requireRegion("r4").parentRegionId());
+        assertEquals("g1", first.grounding().requireRegion("r3").repeatGroupId());
+        assertEquals("g1", first.grounding().requireRegion("r4").repeatGroupId());
+        assertEquals(List.of("r4", "r5"), first.grounding().regionIdsForElement("e3"));
+
+        assertEquals("VISUAL_GROUNDING_REGION_INVALID", assertThrows(
+                InvalidVisualAnalysisException.class,
+                () -> codec.parseElements(opaqueLocalIdsJson("A"), views(), List.of(IMAGE_ID))
+        ).diagnosticCode());
+    }
+
+    @Test
+    void localIdCanonicalizationFailsClosedWhenGraphEquivalenceCannotBeProved() throws Exception {
+        var source = opaqueLocalIdsJson("A");
+        assertCanonicalizationRejected(source.replace(
+                "\"regionId\":\"A Rows Group\"",
+                "\"regionId\":\"A Header / alpha\""
+        ));
+        assertCanonicalizationRejected(source.replace(
+                "\"regionId\":\"A Root Page\"", "\"regionId\":\"   \""
+        ));
+        assertCanonicalizationRejected(source.replaceFirst(
+                "\"parentRegionId\":\"A Root Page\"",
+                "\"parentRegionId\":\"missing-region\""
+        ));
+        assertCanonicalizationRejected(source.replace(
+                "\"regionIds\":[\"A Header / alpha\"]",
+                "\"regionIds\":[\"missing-region\"]"
+        ));
+        assertCanonicalizationRejected(source.replace(
+                "\"elementId\":\"A Row Group Element\"",
+                "\"elementId\":\"A Title Slot\""
+        ));
+        assertCanonicalizationRejected(source.replace(
+                "\"regionIds\":[\"A Rows Group\"]", "\"regionIds\":null"
+        ));
+    }
+
+    @Test
+    void localIdCanonicalizationDoesNotMaskJsonShapeOrSpatialFailures() throws Exception {
+        var source = opaqueLocalIdsJson("A");
+        assertEquals("VISUAL_GROUNDING_JSON_SHAPE_INVALID_REGION_ID", assertThrows(
+                InvalidVisualAnalysisException.class, () -> parseWithOpaqueLocalIds(
+                        source.replace("\"regionId\":\"A Root Page\"", "\"regionId\":12")
+                )
+        ).diagnosticCode());
+        assertEquals("VISUAL_GROUNDING_READING_ORDER_GAP", assertThrows(
+                InvalidVisualAnalysisException.class, () -> parseWithOpaqueLocalIds(
+                        source.replace(
+                                "\"regionId\":\"A Rows Group\",\"parentRegionId\":\"A Root Page\",\"kind\":\"REPEATED_GROUP\",\"multiplicity\":\"MANY\",\"readingOrder\":1",
+                                "\"regionId\":\"A Rows Group\",\"parentRegionId\":\"A Root Page\",\"kind\":\"REPEATED_GROUP\",\"multiplicity\":\"MANY\",\"readingOrder\":2"
+                        )
+                )
+        ).diagnosticCode());
     }
 
     @Test
@@ -1935,6 +2221,39 @@ class VisualGroundingContractTest {
                 () -> codec.parseElements(json, views, List.of(IMAGE_ID))).diagnosticCode());
     }
 
+    private void assertFieldSpecificRegionDiagnostic(
+            String json,
+            VisualViewPlan views,
+            String expectedCode
+    ) {
+        assertEquals(expectedCode, assertThrows(InvalidVisualAnalysisException.class,
+                () -> codec.parseElements(
+                        json, views, List.of(IMAGE_ID),
+                        VisualObservationNormalizationPolicy
+                                .BOUNDED_CONSTRAINT_UNIQUE_KIND_ANCESTOR_PARENT_GAPPED_READING_ORDER_DIAGNOSTIC_EVIDENCE_AND_ITEM_SLOT_OWNER,
+                        VisualObservationSemanticPolicy
+                                .SLOT_LEAF_EVIDENCE_AND_GROUP_REGION_CARDINALITY_REQUIRED,
+                        VisualRegionDiagnosticPolicy.FIELD_SPECIFIC
+                )).diagnosticCode());
+    }
+
+    private void assertRegionDiagnostic(
+            String json,
+            VisualViewPlan views,
+            VisualRegionDiagnosticPolicy policy,
+            String expectedCode
+    ) {
+        assertEquals(expectedCode, assertThrows(InvalidVisualAnalysisException.class,
+                () -> codec.parseElements(
+                        json, views, List.of(IMAGE_ID),
+                        VisualObservationNormalizationPolicy
+                                .BOUNDED_CONSTRAINT_UNIQUE_KIND_ANCESTOR_PARENT_GAPPED_READING_ORDER_DIAGNOSTIC_EVIDENCE_AND_ITEM_SLOT_OWNER,
+                        VisualObservationSemanticPolicy
+                                .SLOT_LEAF_EVIDENCE_AND_GROUP_REGION_CARDINALITY_REQUIRED,
+                        policy
+                )).diagnosticCode());
+    }
+
     private void assertHierarchyDiagnostic(
             String json,
             GroundedElementInventory observed,
@@ -2084,6 +2403,85 @@ class VisualGroundingContractTest {
                   ]
                 }
                 """;
+    }
+
+    private GroundedElementInventory parseWithOpaqueLocalIds(String json) throws Exception {
+        return codec.parseElements(
+                json, views(), List.of(IMAGE_ID), VisualObservationNormalizationPolicy.STRICT,
+                VisualObservationSemanticPolicy.LEGACY,
+                VisualRegionDiagnosticPolicy.FIELD_SPECIFIC,
+                VisualLocalIdCanonicalizationPolicy.LOSSLESS_OPAQUE_LABELS
+        );
+    }
+
+    private GroundedElementInventory parseWithParentContainmentPolicy(
+            String json,
+            VisualObservationNormalizationPolicy normalizationPolicy
+    ) throws Exception {
+        return codec.parseElements(
+                json, views(), List.of(IMAGE_ID), normalizationPolicy,
+                VisualObservationSemanticPolicy
+                        .SLOT_LEAF_EVIDENCE_AND_GROUP_REGION_CARDINALITY_REQUIRED,
+                VisualRegionDiagnosticPolicy.MIXED_PROVENANCE_AND_CONTAINMENT,
+                VisualLocalIdCanonicalizationPolicy.LOSSLESS_OPAQUE_LABELS
+        );
+    }
+
+    private void assertCanonicalizationRejected(String json) throws Exception {
+        assertEquals("VISUAL_GROUNDING_LOCAL_ID_CANONICALIZATION_INVALID", assertThrows(
+                InvalidVisualAnalysisException.class, () -> parseWithOpaqueLocalIds(json)
+        ).diagnosticCode());
+    }
+
+    private static String opaqueLocalIdsJson(String prefix) {
+        return elementsJson()
+                .replace("\"regionId\":\"root\"", "\"regionId\":\"%s Root Page\"".formatted(prefix))
+                .replace("\"parentRegionId\":\"root\"", "\"parentRegionId\":\"%s Root Page\"".formatted(prefix))
+                .replace("\"regionId\":\"header\"", "\"regionId\":\"%s Header / alpha\"".formatted(prefix))
+                .replace("\"parentRegionId\":\"header\"", "\"parentRegionId\":\"%s Header / alpha\"".formatted(prefix))
+                .replace("\"regionId\":\"repeat\"", "\"regionId\":\"%s Rows Group\"".formatted(prefix))
+                .replace("\"parentRegionId\":\"repeat\"", "\"parentRegionId\":\"%s Rows Group\"".formatted(prefix))
+                .replace("\"regionId\":\"item-a\"", "\"regionId\":\"%s Row A\"".formatted(prefix))
+                .replace("\"regionId\":\"item-b\"", "\"regionId\":\"%s Row B\"".formatted(prefix))
+                .replace("\"repeatGroupId\":\"rows\"", "\"repeatGroupId\":\"%s Rows / 2026\"".formatted(prefix))
+                .replace("\"elementId\":\"title\"", "\"elementId\":\"%s Title Slot\"".formatted(prefix))
+                .replace("\"elementId\":\"row-group\"", "\"elementId\":\"%s Row Group Element\"".formatted(prefix))
+                .replace("\"elementId\":\"item-label\"", "\"elementId\":\"%s Item Label Element\"".formatted(prefix))
+                .replace("\"regionIds\":[\"header\"]", "\"regionIds\":[\"%s Header / alpha\"]".formatted(prefix))
+                .replace("\"regionIds\":[\"repeat\"]", "\"regionIds\":[\"%s Rows Group\"]".formatted(prefix))
+                .replace("\"regionIds\":[\"item-a\",\"item-b\"]",
+                        "\"regionIds\":[\"%s Row A\",\"%s Row B\"]".formatted(prefix, prefix));
+    }
+
+    private static String nineRepeatedGroupEnvelopeCandidates() {
+        var json = new StringBuilder("""
+                {"contractVersion":"renderweave-visual-grounding/2.0","regions":[
+                {"regionId":"root","parentRegionId":null,"kind":"ROOT","multiplicity":"ONE","readingOrder":0,"repeatGroupId":null,"evidence":[{"viewId":"view-00-overview-00","boundingBox":{"left":0,"top":0,"right":10000,"bottom":10000}}]}
+                """);
+        for (var index = 0; index < 9; index++) {
+            var top = index * 1_000;
+            var bottom = (index + 1) * 1_000;
+            json.append(",")
+                    .append("{\"regionId\":\"group-").append(index)
+                    .append("\",\"parentRegionId\":\"root\",\"kind\":\"REPEATED_GROUP\",\"multiplicity\":\"MANY\",\"readingOrder\":")
+                    .append(index).append(",\"repeatGroupId\":\"rows-").append(index)
+                    .append("\",\"evidence\":[{\"viewId\":\"view-00-overview-00\",\"boundingBox\":{\"left\":0,\"top\":")
+                    .append(top).append(",\"right\":9000,\"bottom\":").append(bottom)
+                    .append("}}]}")
+                    .append(",")
+                    .append("{\"regionId\":\"item-").append(index)
+                    .append("\",\"parentRegionId\":\"group-").append(index)
+                    .append("\",\"kind\":\"ITEM\",\"multiplicity\":\"ONE\",\"readingOrder\":0,\"repeatGroupId\":\"rows-")
+                    .append(index)
+                    .append("\",\"evidence\":[{\"viewId\":\"view-00-overview-00\",\"boundingBox\":{\"left\":0,\"top\":")
+                    .append(top).append(",\"right\":10000,\"bottom\":").append(bottom)
+                    .append("}}]}");
+        }
+        return json.append("""
+                ],"elements":[
+                {"elementId":"title","kind":"SLOT","proposedKey":"title","displayName":"Title","multiplicity":"ONE","valueHint":"TEXT","regionIds":["root"],"evidence":[{"viewId":"view-00-overview-00","boundingBox":{"left":100,"top":100,"right":500,"bottom":500}}]}
+                ]}
+                """).toString();
     }
 
     private static String parentNormalizationElementsJson(String parentRegionId) {

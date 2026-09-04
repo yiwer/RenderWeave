@@ -24,6 +24,7 @@ public record InferenceAttempt(
         long estimatedCostMicrosCny,
         long durationMillis,
         Map<String, Integer> problemCodeCounts,
+        Optional<InferenceRejectionEnvelope> rejectionEnvelope,
         Instant completedAt
 ) {
     public InferenceAttempt {
@@ -62,7 +63,42 @@ public record InferenceAttempt(
             throw new IllegalArgumentException("Attempt telemetry must not be negative");
         }
         problemCodeCounts = InferenceAttemptProblemTaxonomy.normalize(problemCodeCounts);
+        rejectionEnvelope = Objects.requireNonNull(rejectionEnvelope, "rejectionEnvelope");
+        if (rejectionEnvelope.isPresent()) {
+            var envelope = rejectionEnvelope.orElseThrow();
+            if (status != InferenceAttemptStatus.REJECTED
+                    || !"LIVE_VISUAL_ANALYSIS_REJECTED".equals(outcomeCode)
+                    || stage.ordinal() < envelope.earliestStage().ordinal()
+                    || !problemCodeCounts.equals(envelope.detailCodeCounts())) {
+                throw new IllegalArgumentException(
+                        "Attempt rejection envelope is inconsistent with attempt telemetry"
+                );
+            }
+        }
         Objects.requireNonNull(completedAt, "completedAt");
+    }
+
+    public InferenceAttempt(
+            UUID runId,
+            int attemptOrdinal,
+            InferenceStage stage,
+            InferenceAttemptStatus status,
+            String outcomeCode,
+            Optional<String> providerRequestId,
+            Optional<String> providerModel,
+            long inputTokens,
+            long outputTokens,
+            long estimatedCostMicrosCny,
+            long durationMillis,
+            Map<String, Integer> problemCodeCounts,
+            Instant completedAt
+    ) {
+        this(
+                runId, attemptOrdinal, stage, status, outcomeCode,
+                providerRequestId, providerModel, inputTokens, outputTokens,
+                estimatedCostMicrosCny, durationMillis, problemCodeCounts,
+                Optional.empty(), completedAt
+        );
     }
 
     public InferenceAttempt(
@@ -82,7 +118,7 @@ public record InferenceAttempt(
         this(
                 runId, attemptOrdinal, stage, status, outcomeCode,
                 providerRequestId, providerModel, inputTokens, outputTokens,
-                estimatedCostMicrosCny, durationMillis, Map.of(), completedAt
+                estimatedCostMicrosCny, durationMillis, Map.of(), Optional.empty(), completedAt
         );
     }
 
@@ -96,7 +132,8 @@ public record InferenceAttempt(
     ) {
         this(
                 runId, attemptOrdinal, stage, status, outcomeCode,
-                Optional.empty(), Optional.empty(), 0, 0, 0, 0, Map.of(), completedAt
+                Optional.empty(), Optional.empty(), 0, 0, 0, 0, Map.of(),
+                Optional.empty(), completedAt
         );
     }
 }

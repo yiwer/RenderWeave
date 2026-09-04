@@ -101,7 +101,13 @@ public record VisualModelCapability(
                 || profile.profileId().endsWith("-product-v43-hybrid-generic")
                 || profile.profileId().endsWith("-product-v44-hybrid-generic")
                 || profile.profileId().endsWith("-product-v45-hybrid-generic")
-                || profile.profileId().endsWith("-product-v46-hybrid-generic");
+                || profile.profileId().endsWith("-product-v46-hybrid-generic")
+                || profile.profileId().endsWith("-product-v47-hybrid-generic")
+                || profile.profileId().endsWith("-product-v48-hybrid-generic")
+                || profile.profileId().endsWith("-product-v49-hybrid-generic")
+                || profile.profileId().endsWith("-product-v50-hybrid-generic")
+                || profile.profileId().endsWith("-product-v51-hybrid-generic")
+                || profile.profileId().endsWith("-product-v52-hybrid-generic");
         var requiredOutputTokens = extendedRuntimeProduct && advertisedMaximumOutputTokens != null
                 ? Math.min(16_384, advertisedMaximumOutputTokens)
                 : productMaximumOutputTokens;
@@ -138,7 +144,13 @@ public record VisualModelCapability(
                 || "renderweave-inference-pipeline/4.25".equals(profile.pipelineVersion())
                 || "renderweave-inference-pipeline/4.26".equals(profile.pipelineVersion())
                 || "renderweave-inference-pipeline/4.27".equals(profile.pipelineVersion())
-                || "renderweave-inference-pipeline/4.28".equals(profile.pipelineVersion()))
+                || "renderweave-inference-pipeline/4.28".equals(profile.pipelineVersion())
+                || "renderweave-inference-pipeline/4.29".equals(profile.pipelineVersion())
+                || "renderweave-inference-pipeline/4.30".equals(profile.pipelineVersion())
+                || "renderweave-inference-pipeline/4.31".equals(profile.pipelineVersion())
+                || "renderweave-inference-pipeline/4.32".equals(profile.pipelineVersion())
+                || "renderweave-inference-pipeline/4.33".equals(profile.pipelineVersion())
+                || "renderweave-inference-pipeline/4.34".equals(profile.pipelineVersion()))
                 || !profile.supportedModes().equals(List.of(
                 cn.hbads.renderweave.inference.input.InferenceMode.IMAGE_ONLY
         ))

@@ -28,9 +28,12 @@ class ImageOnlyV46ProfileTest {
                 differingComponents(baseline.profile(), candidate.profile()));
         assertEquals(12, candidate.profile().maximumTotalCalls());
         assertEquals(6_000_000L, candidate.profile().maximumEstimatedCostMicrosCny());
-        assertEquals(1, registry.certificationCandidateProfiles().size());
-        assertEquals(V46, registry.certificationCandidateProfiles().getFirst().profile().profileId());
-        assertTrue(registry.isCertificationCandidateProfile(V46));
+        assertEquals(6, registry.certificationCandidateProfiles().size());
+        assertEquals("dashscope-qwen38-max-product-v47-hybrid-generic",
+                registry.certificationCandidateProfiles().getFirst().profile().profileId());
+        assertEquals("dashscope-qwen38-max-product-v52-hybrid-generic",
+                registry.certificationCandidateProfiles().getLast().profile().profileId());
+        assertFalse(registry.isCertificationCandidateProfile(V46));
         assertFalse(registry.isProductLiveProfile(V46));
         assertFalse(registry.productLiveProfiles().contains(candidate));
         assertEquals("EXPERIMENTAL", candidate.profile().certification());

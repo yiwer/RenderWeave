@@ -1494,7 +1494,15 @@ export type InferenceAttempt = {
     problemCodeCounts: {
         [key: string]: number;
     };
+    rejectionEnvelope?: InferenceRejectionEnvelope;
     completedAt: string;
+};
+
+export type InferenceRejectionEnvelope = {
+    primaryCode: 'VISUAL_GROUNDING_REGION_FIELDS_INVALID' | 'VISUAL_GROUNDING_REGION_UNCLASSIFIED';
+    earliestStage: 'OBSERVE';
+    detailCodes: Array<'VISUAL_GROUNDING_REGION_ENTRY_INVALID' | 'VISUAL_GROUNDING_REGION_ID_INVALID' | 'VISUAL_GROUNDING_REGION_PARENT_ID_INVALID' | 'VISUAL_GROUNDING_REGION_MULTIPLICITY_INVALID' | 'VISUAL_GROUNDING_REGION_READING_ORDER_INVALID' | 'VISUAL_GROUNDING_REGION_REPEAT_GROUP_ID_INVALID' | 'VISUAL_GROUNDING_REGION_EVIDENCE_INVALID'>;
+    detailCodeCount: number;
 };
 
 export type SaveCandidateRequest = {

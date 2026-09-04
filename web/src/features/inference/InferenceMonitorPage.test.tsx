@@ -81,6 +81,24 @@ describe('Inference monitor workspace', () => {
     await waitFor(() => expect(api.retryInferenceRunRequest).toHaveBeenCalledWith(failed.runId));
   });
 
+  it('shows a bounded mixed-region rejection without provider payloads', async () => {
+    const failed = {
+      ...run('FAILED'),
+      stage: 'OBSERVE' as const,
+      failureCode: 'VISUAL_GROUNDING_REGION_FIELDS_INVALID',
+    };
+    api.getInferenceRunRequest.mockResolvedValue(failed);
+    api.getInferenceExecutionLogRequest.mockResolvedValue(mixedRejectionExecutionLog(failed));
+    renderPage();
+
+    expect(await screen.findByText('VISUAL_GROUNDING_REGION_FIELDS_INVALID')).toBeTruthy();
+    const envelope = await screen.findByLabelText('模型调用 1 的拒绝分类');
+    expect(envelope.textContent).toContain('2 项固定字段诊断');
+    expect(screen.getAllByText('VISUAL_GROUNDING_REGION_ID_INVALID').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('VISUAL_GROUNDING_REGION_PARENT_ID_INVALID').length).toBeGreaterThan(0);
+    expect(screen.queryByText('raw-region-id')).toBeNull();
+  });
+
   it('summarizes vNext stage, region, issue, cost and recovery telemetry without payloads', async () => {
     const running = {
       ...run('RUNNING'),
@@ -280,6 +298,39 @@ function executionLog(runSnapshot: InferenceRunResponse, failed = false): Infere
       },
       completedAt: '2026-08-10T04:03:11Z',
     }] : [],
+    truncated: false,
+  };
+}
+
+function mixedRejectionExecutionLog(runSnapshot: InferenceRunResponse): InferenceExecutionLogResponse {
+  return {
+    run: runSnapshot,
+    events: [],
+    attempts: [{
+      attemptOrdinal: 0,
+      stage: 'OBSERVE',
+      status: 'REJECTED',
+      outcomeCode: 'LIVE_VISUAL_ANALYSIS_REJECTED',
+      providerModel: 'qwen3.8-max',
+      inputTokens: 2_300,
+      outputTokens: 4_100,
+      costMicrosCny: 2_715,
+      durationMillis: 22_083,
+      problemCodeCounts: {
+        VISUAL_GROUNDING_REGION_ID_INVALID: 1,
+        VISUAL_GROUNDING_REGION_PARENT_ID_INVALID: 1,
+      },
+      rejectionEnvelope: {
+        primaryCode: 'VISUAL_GROUNDING_REGION_FIELDS_INVALID',
+        earliestStage: 'OBSERVE',
+        detailCodes: [
+          'VISUAL_GROUNDING_REGION_ID_INVALID',
+          'VISUAL_GROUNDING_REGION_PARENT_ID_INVALID',
+        ],
+        detailCodeCount: 2,
+      },
+      completedAt: '2026-08-18T02:48:27Z',
+    }],
     truncated: false,
   };
 }

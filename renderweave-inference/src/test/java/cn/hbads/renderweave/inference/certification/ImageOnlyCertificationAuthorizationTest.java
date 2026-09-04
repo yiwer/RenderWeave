@@ -14,7 +14,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class ImageOnlyCertificationAuthorizationTest {
     private static final Instant T0 = Instant.parse("2026-08-17T08:00:00Z");
-    private static final String SHA = "22f561c88b30fabbf3ba660bcfe203fb570975f770ff122f2ce1c7216454ac0c";
+    private static final String SHA = "a9fe98e1cfa4b7cc126db1f74601fdebe60526a1c999924daf189ed5f1ac5eb0";
     private static final UUID CYCLE_ID =
             UUID.fromString("22222222-2222-2222-2222-222222222222");
 
@@ -187,12 +187,14 @@ class ImageOnlyCertificationAuthorizationTest {
                 ImageOnlyCertificationAuthorization.VERSION,
                 "iopa-j1-test-authorization", status,
                 CYCLE_ID, stage,
-                "dashscope-qwen38-max-product-v46-hybrid-generic", profileSha,
+                "dashscope-qwen38-max-product-v47-hybrid-generic", profileSha,
                 manifest.manifestIdentity(), manifest.evaluatorIdentity(),
+                null,
                 "DASHSCOPE", "qwen3.8-max",
                 "https://dashscope.aliyuncs.com/compatible-mode/v1",
                 "USER_PROVIDED", dataClass, cases,
                 maxRuns, maxCalls, maxTokens, maxCost,
+                12, 6_000_000L,
                 effective, expires, "owner:renderweave", effective,
                 "IMAGE_ONLY_PROFILE_CERTIFICATION_" + stage.name(),
                 status == AuthorizationStatus.CLOSED ? effective : null,
@@ -207,7 +209,8 @@ class ImageOnlyCertificationAuthorizationTest {
                     String.format("%064x", index)));
         }
         return new ImageOnlyCertificationManifestFactory().create(
-                SHA, canaries, "image-only-certification-seed-v1");
+                "dashscope-qwen38-max-product-v47-hybrid-generic", SHA, canaries,
+                "image-only-certification-seed-v1");
     }
 
     private static FrozenCertificationCycle cycle(FrozenImageOnlyCertificationManifest manifest) {
@@ -231,10 +234,12 @@ class ImageOnlyCertificationAuthorizationTest {
         return new ImageOnlyCertificationAuthorization(
                 source.version(), source.authorizationId(), source.status(), source.cycleId(),
                 source.stage(), source.profileId(), source.profileSha256(), source.manifestIdentity(),
-                source.evaluatorIdentity(), source.provider(), source.model(), source.providerBaseUrl(),
+                source.evaluatorIdentity(), source.normalizationIdentity(), source.provider(),
+                source.model(), source.providerBaseUrl(),
                 source.inputProvenance(), source.dataClassification(), source.cases(),
                 source.maximumRuns(), source.maximumProviderCalls(), source.maximumModelTokens(),
-                source.maximumCostMicrosCny(), source.effectiveAt(), source.expiresAt(),
+                source.maximumCostMicrosCny(), source.maximumProviderCallsPerRun(),
+                source.maximumCostPerRunMicrosCny(), source.effectiveAt(), source.expiresAt(),
                 source.approvedBy(), approvedAt, source.approvalScope(), source.closedAt(),
                 source.closureReason());
     }

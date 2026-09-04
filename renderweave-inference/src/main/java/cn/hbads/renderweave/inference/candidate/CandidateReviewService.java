@@ -5,6 +5,8 @@ import cn.hbads.renderweave.inference.input.BlobStore;
 import cn.hbads.renderweave.inference.profile.InferenceProfileRegistry;
 import cn.hbads.renderweave.inference.profile.JsonStructuralProfiler;
 import cn.hbads.renderweave.inference.replay.InferenceReplayStore;
+import cn.hbads.renderweave.inference.retention.PayloadAccess;
+import cn.hbads.renderweave.inference.retention.PayloadAccessGuard;
 import cn.hbads.renderweave.inference.run.InferenceRunState;
 import cn.hbads.renderweave.inference.run.InferenceRunStore;
 
@@ -27,6 +29,7 @@ public final class CandidateReviewService {
     private final InferenceProfileRegistry profiles;
     private final BlobStore blobStore;
     private final JsonStructuralProfiler structuralProfiler;
+    private final PayloadAccessGuard payloadAccessGuard;
 
     public CandidateReviewService(
             InferenceRunStore runStore,
@@ -37,6 +40,20 @@ public final class CandidateReviewService {
         this(
                 runStore, replayStore, clock, new CandidateJsonCodec(), new CandidateProblemJsonCodec(),
                 new CandidateValidator(), new InferenceProfileRegistry(), blobStore, new JsonStructuralProfiler()
+        );
+    }
+
+    public CandidateReviewService(
+            InferenceRunStore runStore,
+            InferenceReplayStore replayStore,
+            Clock clock,
+            BlobStore blobStore,
+            PayloadAccessGuard payloadAccessGuard
+    ) {
+        this(
+                runStore, replayStore, clock, new CandidateJsonCodec(), new CandidateProblemJsonCodec(),
+                new CandidateValidator(), new InferenceProfileRegistry(), blobStore,
+                new JsonStructuralProfiler(), payloadAccessGuard
         );
     }
 
@@ -51,6 +68,24 @@ public final class CandidateReviewService {
             BlobStore blobStore,
             JsonStructuralProfiler structuralProfiler
     ) {
+        this(
+                runStore, replayStore, clock, candidateCodec, problemCodec, validator,
+                profiles, blobStore, structuralProfiler, PayloadAccessGuard.allowAll()
+        );
+    }
+
+    CandidateReviewService(
+            InferenceRunStore runStore,
+            InferenceReplayStore replayStore,
+            Clock clock,
+            CandidateJsonCodec candidateCodec,
+            CandidateProblemJsonCodec problemCodec,
+            CandidateValidator validator,
+            InferenceProfileRegistry profiles,
+            BlobStore blobStore,
+            JsonStructuralProfiler structuralProfiler,
+            PayloadAccessGuard payloadAccessGuard
+    ) {
         this.runStore = Objects.requireNonNull(runStore, "runStore");
         this.replayStore = Objects.requireNonNull(replayStore, "replayStore");
         this.clock = Objects.requireNonNull(clock, "clock");
@@ -60,6 +95,7 @@ public final class CandidateReviewService {
         this.profiles = Objects.requireNonNull(profiles, "profiles");
         this.blobStore = Objects.requireNonNull(blobStore, "blobStore");
         this.structuralProfiler = Objects.requireNonNull(structuralProfiler, "structuralProfiler");
+        this.payloadAccessGuard = Objects.requireNonNull(payloadAccessGuard, "payloadAccessGuard");
     }
 
     public CandidateReviewSnapshot get(UUID runId) {
@@ -135,6 +171,7 @@ public final class CandidateReviewService {
                 .filter(input -> input.kind() == NormalizedArtifact.Kind.JSON_PROFILE)
                 .toList();
         if (jsonInputs.size() > 1) throw new IllegalStateException("A run may contain one JSON profile artifact");
+        if (!jsonInputs.isEmpty()) payloadAccessGuard.require(run.runId(), PayloadAccess.READ);
         var jsonProfile = jsonInputs.isEmpty() ? null : structuralProfiler.profile(
                 blobStore.read(jsonInputs.getFirst().artifact().locator())
         );
