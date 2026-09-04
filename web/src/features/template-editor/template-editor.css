@@ -1606,6 +1606,30 @@
 
 .te-structural-preview button {
   min-height: 44px;
+  padding: 0 var(--space-sm);
+  border: 1px solid var(--color-hairline-strong);
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--color-body);
+  font: inherit;
+  font-weight: 700;
+}
+
+.te-structural-preview button:hover:not(:disabled),
+.te-structural-preview button:focus-visible {
+  border-color: var(--color-cyan);
+  background: var(--color-info-soft);
+  color: var(--color-ink);
+}
+
+.te-structural-preview button:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.te-structural-preview button:disabled {
+  cursor: not-allowed;
+  opacity: 0.42;
 }
 
 .te-canvas-ruler {
