@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import type { StaticSnapshot } from '../schema-studio/lossless-api';
 import {
   projectStructuralAuthoring,
+  selectTemplateUseInsertionCandidate,
   wholeTemplateContextSelector,
   type TemplateStructuralSample,
 } from './template-editor-structural-authoring';
@@ -14,6 +15,7 @@ const TEMPLATE_USE_NODE_ID = '00000000-0000-4000-8000-000000000105';
 const TEMPLATE_USE_ID = '00000000-0000-4000-8000-000000000205';
 const OFFER_TEMPLATE_ID = '00000000-0000-4000-8000-000000000501';
 const CHILD_PUBLIC_ID = '00000000-0000-4000-8000-000000000601';
+const CHILD_PUBLIC_LIST_ID = '00000000-0000-4000-8000-000000000603';
 
 describe('Template Editor structural authoring', () => {
   it('offers only exact eligible StaticSchema and Definition collections to Repeat', () => {
@@ -273,6 +275,97 @@ describe('Template Editor structural authoring', () => {
       sourceCanvasSizeMm: { widthMm: 100, heightMm: 100 },
       problems: [],
     });
+    expect(selectTemplateUseInsertionCandidate(
+      projection,
+      TEMPLATE_USE_NODE_ID,
+      [templateCatalogEntry(OFFER_TEMPLATE_ID, 'offer', 'v1', 'READY')],
+    )).toEqual({
+      templateId: OFFER_TEMPLATE_ID,
+      contextSelector: wholeTemplateContextSelector(
+        { kind: 'loop', loopId: ROOT_LOOP_ID },
+        'SKIP',
+      ),
+    });
+  });
+
+  it('authors reference context and exact list fills without excluding legal ABSENT sources', () => {
+    const use = templateUseNode(
+      OFFER_TEMPLATE_ID,
+      {
+        kind: 'context',
+        domain: { kind: 'invocation' },
+        pointer: '/featuredOffer',
+        contextAbsentPolicy: 'SKIP',
+      },
+      [{
+        targetDefinitionId: CHILD_PUBLIC_LIST_ID,
+        source: context('invocation', '/tags'),
+      }],
+    );
+    const parentListDefinition = {
+      definitionId: LIST_DEFINITION_ID,
+      kind: 'expression',
+      displayName: '备用标签',
+      domain: 'invocation',
+      output: { type: 'list', items: 'text' },
+      inputs: [],
+      source: '[]',
+    };
+    const projection = projectStructuralAuthoring({
+      designDsl: designWithChildren([use], [parentListDefinition]),
+      staticSchema: rootSchemaWithOfferReference(),
+      staticSchemas: [offerSchema()],
+      templateCatalog: [templateCatalogEntry(OFFER_TEMPLATE_ID, 'offer', 'v1', 'READY')],
+      templateCurrents: [childTemplateCurrent([{
+        definitionId: CHILD_PUBLIC_LIST_ID,
+        kind: 'custom',
+        displayName: '标签列表',
+        exposure: 'PUBLIC',
+        valueType: { type: 'list', items: 'text' },
+        defaultValue: [],
+      }])],
+    });
+    const state = projection.nodeStates[TEMPLATE_USE_NODE_ID];
+    if (!state || state.kind !== 'templateUse') throw new Error('expected TemplateUse state');
+
+    expect(state.authoringState).toBe('READY');
+    expect(state.contextOptions).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        id: 'template-context:invocation:',
+        schema: { schemaKey: 'root', versionTag: 'v1' },
+        presence: 'CONCRETE',
+      }),
+      expect.objectContaining({
+        id: 'template-context:invocation:/featuredOffer',
+        schema: { schemaKey: 'offer', versionTag: 'v1' },
+        presence: 'MAY_BE_ABSENT',
+      }),
+    ]));
+    const listTarget = state.fillTargets.find(({ definitionId }) => (
+      definitionId === CHILD_PUBLIC_LIST_ID
+    ));
+    expect(listTarget?.sources.map(({ id, presence }) => ({ id, presence }))).toEqual([
+      { id: 'context:invocation:/tags', presence: 'MAY_BE_ABSENT' },
+      { id: 'context:invocation:/featuredOffer/badges', presence: 'MAY_BE_ABSENT' },
+      { id: `definition:${LIST_DEFINITION_ID}`, presence: 'CONCRETE' },
+    ]);
+    expect(state.fills).toContainEqual({
+      targetDefinitionId: CHILD_PUBLIC_LIST_ID,
+      state: 'READY',
+    });
+    expect(selectTemplateUseInsertionCandidate(
+      projection,
+      TEMPLATE_USE_NODE_ID,
+      [templateCatalogEntry(OFFER_TEMPLATE_ID, 'offer', 'v1', 'READY')],
+    )).toEqual({
+      templateId: OFFER_TEMPLATE_ID,
+      contextSelector: {
+        kind: 'context',
+        domain: { kind: 'invocation' },
+        pointer: '/featuredOffer',
+        contextAbsentPolicy: 'ERROR',
+      },
+    });
   });
 
   it('does not expose child facts when catalog READY and current readiness drift apart', () => {
@@ -461,6 +554,19 @@ function rootSchema(): StaticSnapshot {
   ]);
 }
 
+function rootSchemaWithOfferReference(): StaticSnapshot {
+  const root = rootSchema();
+  return schema(root.schemaKey, root.versionTag, [
+    ...root.definition.fields,
+    {
+      fieldKey: 'featuredOffer',
+      displayName: '主推优惠',
+      required: false,
+      value: { type: 'reference', ref: { schemaKey: 'offer', versionTag: 'v1' } },
+    },
+  ]);
+}
+
 function offerSchema(): StaticSnapshot {
   return schema('offer', 'v1', [
     { fieldKey: 'name', required: true, value: { type: 'text' } },
@@ -489,7 +595,9 @@ function templateCatalogEntry(
   };
 }
 
-function childTemplateCurrent(): Readonly<Record<string, unknown>> {
+function childTemplateCurrent(
+  extraDefinitions: readonly Record<string, unknown>[] = [],
+): Readonly<Record<string, unknown>> {
   return {
     templateId: OFFER_TEMPLATE_ID,
     disclosure: 'READABLE',
@@ -514,6 +622,7 @@ function childTemplateCurrent(): Readonly<Record<string, unknown>> {
         valueType: 'boolean',
         defaultValue: false,
       },
+      ...extraDefinitions,
     ]),
   };
 }

@@ -12,8 +12,13 @@ import { applyTemplateDisplayName } from './template-editor-session';
 import { TemplateEditorShell, TemplateEditorSurface } from './TemplateEditorShell';
 import { TemplateRequestError, type TemplateEditorTransport } from './template-open';
 import type { TemplateSaveTransport } from './template-save';
-import type { AssetCatalogEntry, AssetReadableResponse } from '../../api/generated';
+import type {
+  AssetCatalogEntry,
+  AssetReadableResponse,
+  TemplateReadableResponse,
+} from '../../api/generated';
 import type { TemplateEditorAssetTransport } from './template-editor-assets';
+import type { TemplateEditorCompositionTransport } from './template-editor-composition';
 import type { TemplateStaticSchemaTransport } from './template-editor-static-schema';
 import type { StaticSnapshot } from '../schema-studio/lossless-api';
 import {
@@ -330,6 +335,99 @@ describe('Template Editor E1/E2 Product shell', () => {
     expect(screen.getByRole('button', { name: '添加条件容器' })).toBeTruthy();
     expect(screen.getByRole('button', { name: '添加嵌套模板' })).toBeTruthy();
     expect(screen.getByText('7 个正式容器 / 结构节点')).toBeTruthy();
+  });
+
+  it('does not apply an obsolete TemplateUse insertion after the EditorSession changes', async () => {
+    vi.spyOn(globalThis.crypto, 'randomUUID')
+      .mockReturnValue('11111111-1111-4111-8111-111111111111');
+    const targetTemplateId = '22222222-2222-4222-8222-222222222222';
+    let resolveCurrent!: (value: TemplateReadableResponse) => void;
+    const getCurrent = vi.fn().mockReturnValue(new Promise<TemplateReadableResponse>((resolve) => {
+      resolveCurrent = resolve;
+    }));
+    const compositionTransport: TemplateEditorCompositionTransport = {
+      listCatalog: vi.fn().mockResolvedValue({ items: [{
+        templateId: targetTemplateId,
+        displayName: '嵌套价签',
+        staticSchema: { schemaKey: 'system-empty', versionTag: 'v1' },
+        revision: 1,
+        readiness: 'READY',
+        updatedAt: '2026-09-03T00:00:00Z',
+      }] }),
+      getCurrent,
+    };
+    render(<TemplateEditorShell
+      session={createSessionFromBaseline(
+        structuredBaseline(),
+        { state: 'checked', value: 'READY' },
+      )}
+      staticSchemaTransport={{
+        getStaticSchema: vi.fn().mockResolvedValue(templateStaticSnapshot()),
+      }}
+      compositionTransport={compositionTransport}
+    />);
+
+    await waitFor(() => expect(compositionTransport.listCatalog).toHaveBeenCalledOnce());
+    fireEvent.click(screen.getByRole('button', { name: '数据源' }));
+    await screen.findByText('测试数据');
+    fireEvent.click(screen.getByRole('button', { name: '容器' }));
+    fireEvent.click(screen.getByRole('button', { name: '添加嵌套模板' }));
+    await waitFor(() => expect(getCurrent).toHaveBeenCalledWith(targetTemplateId, undefined));
+
+    fireEvent.change(screen.getByRole('textbox', { name: 'Template 名称' }), {
+      target: { value: '读取期间的本地编辑' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: '应用本地名称' }));
+    resolveCurrent(templateCurrent(targetTemplateId));
+
+    expect(await screen.findByText(/未应用过期操作/)).toBeTruthy();
+    expect(screen.getByRole('heading', { level: 1, name: '读取期间的本地编辑' })).toBeTruthy();
+    expect(screen.queryByRole('treeitem', { name: /嵌套模板/ })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: '撤销本地编辑' }));
+    expect(screen.getByRole('heading', { level: 1, name: '门店价签' })).toBeTruthy();
+  });
+
+  it('inserts TemplateUse from the first exact direct-reference context when whole context has no target', async () => {
+    vi.spyOn(globalThis.crypto, 'randomUUID')
+      .mockReturnValueOnce('11111111-1111-4111-8111-111111111111')
+      .mockReturnValueOnce('33333333-3333-4333-8333-333333333333');
+    const targetTemplateId = '22222222-2222-4222-8222-222222222222';
+    const baseline = structuredBaseline();
+    baseline.staticSchema = { schemaKey: 'parent', versionTag: 'v1' };
+    const getCurrent = vi.fn().mockResolvedValue(templateCurrent(
+      targetTemplateId,
+      { schemaKey: 'offer', versionTag: 'v1' },
+    ));
+    const compositionTransport: TemplateEditorCompositionTransport = {
+      listCatalog: vi.fn().mockResolvedValue({ items: [{
+        templateId: targetTemplateId,
+        displayName: '嵌套优惠卡',
+        staticSchema: { schemaKey: 'offer', versionTag: 'v1' },
+        revision: 1,
+        readiness: 'READY',
+        updatedAt: '2026-09-03T00:00:00Z',
+      }] }),
+      getCurrent,
+    };
+    const staticSchemaTransport: TemplateStaticSchemaTransport = {
+      getStaticSchema: vi.fn().mockResolvedValue(parentStaticSnapshot()),
+    };
+    render(<TemplateEditorShell
+      session={createSessionFromBaseline(baseline, { state: 'checked', value: 'READY' })}
+      staticSchemaTransport={staticSchemaTransport}
+      compositionTransport={compositionTransport}
+    />);
+
+    await waitFor(() => {
+      expect(compositionTransport.listCatalog).toHaveBeenCalledOnce();
+      expect(staticSchemaTransport.getStaticSchema).toHaveBeenCalledOnce();
+    });
+    fireEvent.click(screen.getByRole('button', { name: '容器' }));
+    fireEvent.click(screen.getByRole('button', { name: '添加嵌套模板' }));
+
+    await waitFor(() => expect(getCurrent).toHaveBeenCalledWith(targetTemplateId, undefined));
+    expect(await screen.findByRole('treeitem', { name: /嵌套模板/ })).toBeTruthy();
+    expect(screen.getByLabelText('子模板上下文').textContent).toContain('/featuredOffer');
   });
 
   it('renders the approved Canvas Focus workbench with only real behavior', () => {
@@ -858,6 +956,43 @@ function templateStaticSnapshot(): StaticSnapshot {
       displayName: '测试数据',
       fields: [{ fieldKey: 'title', required: true, value: { type: 'text' } }],
     },
+  };
+}
+
+function parentStaticSnapshot(): StaticSnapshot {
+  return {
+    ...templateStaticSnapshot(),
+    schemaKey: 'parent',
+    origin: 'DRAFT',
+    sourceDraftRevision: 1,
+    referenceDepth: 1,
+    definition: {
+      dslVersion: 'renderweave-schema/1.0',
+      displayName: '父模板数据',
+      fields: [{
+        fieldKey: 'featuredOffer',
+        displayName: '主推优惠',
+        required: false,
+        value: { type: 'reference', ref: { schemaKey: 'offer', versionTag: 'v1' } },
+      }],
+    },
+  };
+}
+
+function templateCurrent(
+  templateId: string,
+  staticSchema: { schemaKey: string; versionTag: string } = {
+    schemaKey: 'system-empty', versionTag: 'v1',
+  },
+): TemplateReadableResponse {
+  return {
+    templateId,
+    disclosure: 'READABLE',
+    revision: 1,
+    staticSchema,
+    contentHash: `sha256:${'a'.repeat(64)}`,
+    readiness: 'READY',
+    designDsl: structuredBaseline().designDsl as TemplateReadableResponse['designDsl'],
   };
 }
 

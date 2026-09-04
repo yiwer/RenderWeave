@@ -4,10 +4,6 @@ import { SelectField, type SelectFieldOption } from '../../components/SelectFiel
 import type { TemplateCatalogEntry } from '../../api/generated';
 import type { StaticSnapshot } from '../schema-studio/lossless-api';
 import type { EditorNodeProjection } from './template-editor-model';
-import {
-  projectBindingSources,
-  type TemplateBindingValueType,
-} from './template-editor-data-authoring';
 import { objectOrNull } from './template-editor-model';
 import type { TemplateStructuralConfiguration } from './template-editor-commands';
 import type {
@@ -16,11 +12,9 @@ import type {
   TemplateStructuralNodeState,
   TemplateStructuralAuthoringProjection,
   TemplateStructuralSample,
+  TemplateUseContextOption,
+  TemplateUseFillSourceOption,
 } from './template-editor-structural-authoring';
-
-const BINDING_TYPES = new Set<TemplateBindingValueType>([
-  'text', 'decimal', 'boolean', 'date', 'time', 'color', 'imageRef', 'fontRef',
-]);
 
 export interface TemplateEditorStructuralInspectorProps {
   readonly node: EditorNodeProjection;
@@ -52,13 +46,14 @@ function RepeatInspector({
   templateCatalog,
   disabled,
   onConfigure,
+  onPreviewSample,
   onCreateLoopTemplate,
 }: TemplateEditorStructuralInspectorProps) {
   const value = node.value;
   const sources = projection.repeatSources[node.nodeId] ?? [];
   const selected = sources.find((option) => sameWire(option.source, value.items));
-  const itemLayout = objectOrNull(value.itemLayout);
-  const instanceLayout = objectOrNull(value.instanceLayout);
+  const itemLayout = repeatPacking(objectOrNull(value.itemLayout));
+  const instanceLayout = repeatPacking(objectOrNull(value.instanceLayout));
   const templateUse = childNodes(value).find((child) => child.kind === 'templateUse');
   const currentTemplateId = stringMember(objectOrNull(templateUse?.templateRef), 'templateId') ?? '';
   const referenceTargets = selected?.itemKind === 'reference'
@@ -80,14 +75,17 @@ function RepeatInspector({
       kind: 'repeat',
       items: items as Extract<TemplateStructuralConfiguration, { kind: 'repeat' }>['items'],
       absentPolicy: patch.absentPolicy ?? repeatAbsentPolicy(value.absentPolicy),
-      itemLayout: patch.itemLayout ?? repeatPacking(itemLayout),
-      instanceLayout: patch.instanceLayout ?? repeatPacking(instanceLayout),
+      itemLayout: patch.itemLayout ?? itemLayout,
+      instanceLayout: patch.instanceLayout ?? instanceLayout,
     });
   };
 
   return (
     <section className="te-structural-inspector" aria-label="Repeat 结构配置">
       <h3>循环工作流</h3>
+      {childNodes(value).length === 0 ? (
+        <p className="te-field-help">当前结构暂时为空；添加循环内容后才能通过保存校验。</p>
+      ) : null}
       <Field label="循环列表属性">
         <SelectField
           ariaLabel="循环列表属性"
@@ -113,82 +111,36 @@ function RepeatInspector({
           onChange={(absentPolicy) => configure({ absentPolicy: absentPolicy as 'EMPTY' | 'ERROR' })}
         />
       </Field>
-      <Field label="单项排列方向">
-        <SelectField
-          ariaLabel="单项排列方向"
-          value={itemLayout?.kind === 'STACK' && itemLayout.direction === 'ROW' ? 'ROW' : 'COLUMN'}
-          options={[{ value: 'COLUMN', label: '纵向' }, { value: 'ROW', label: '横向' }]}
-          disabled={disabled}
-          onChange={(direction) => configure({
-            itemLayout: {
-              kind: 'STACK', direction: direction as 'ROW' | 'COLUMN',
-              gapMm: nonnegativeNumber(itemLayout?.gapMm, 0),
-            },
-          })}
-        />
-      </Field>
-      <StructuralNumberInput
-        label="单项间距"
-        value={nonnegativeNumber(itemLayout?.gapMm, 0)}
-        minimum={0}
+      <div className="te-structural-preview" role="group" aria-label="循环预览输入">
+        {(['VALUES', 'EMPTY', 'ABSENT', 'ERROR'] as const).map((state) => (
+          <button
+            key={state}
+            type="button"
+            disabled={disabled || (state === 'VALUES' && !selected)}
+            onClick={() => onPreviewSample(state === 'VALUES'
+              ? { state: 'value', value: repeatSampleValues(selected) }
+              : state === 'EMPTY'
+                ? { state: 'value', value: [] }
+                : state === 'ABSENT'
+                  ? { state: 'absent' }
+                  : { state: 'error', code: 'EDITOR_SAMPLE_ERROR' })}
+          >
+            {state}
+          </button>
+        ))}
+      </div>
+      <RepeatPackingEditor
+        scope="单项"
+        value={itemLayout}
         disabled={disabled}
-        onCommit={(gapMm) => configure({
-          itemLayout: {
-            kind: 'STACK',
-            direction: itemLayout?.direction === 'ROW' ? 'ROW' : 'COLUMN',
-            gapMm,
-          },
-        })}
+        onCommit={(next) => configure({ itemLayout: next })}
       />
-      <Field label="循环布局方式">
-        <SelectField
-          ariaLabel="循环布局方式"
-          value={instanceLayout?.kind === 'GRID' ? 'GRID' : 'STACK'}
-          options={[{ value: 'STACK', label: '堆叠' }, { value: 'GRID', label: '网格' }]}
-          disabled={disabled}
-          onChange={(kind) => configure({
-            instanceLayout: kind === 'GRID'
-              ? { kind: 'GRID', columns: 2, columnGapMm: 0, rowGapMm: 0 }
-              : { kind: 'STACK', direction: 'COLUMN', gapMm: 0 },
-          })}
-        />
-      </Field>
-      {instanceLayout?.kind === 'GRID' ? (
-        <>
-          <StructuralNumberInput
-            label="循环网格列数"
-            value={positiveInteger(instanceLayout.columns, 2)}
-            minimum={1}
-            integer
-            disabled={disabled}
-            onCommit={(columns) => configure({ instanceLayout: {
-              kind: 'GRID', columns,
-              columnGapMm: nonnegativeNumber(instanceLayout.columnGapMm, 0),
-              rowGapMm: nonnegativeNumber(instanceLayout.rowGapMm, 0),
-            } })}
-          />
-          <StructuralNumberInput
-            label="循环列间距"
-            value={nonnegativeNumber(instanceLayout.columnGapMm, 0)}
-            minimum={0}
-            disabled={disabled}
-            onCommit={(columnGapMm) => configure({ instanceLayout: {
-              kind: 'GRID', columns: positiveInteger(instanceLayout.columns, 2),
-              columnGapMm, rowGapMm: nonnegativeNumber(instanceLayout.rowGapMm, 0),
-            } })}
-          />
-          <StructuralNumberInput
-            label="循环行间距"
-            value={nonnegativeNumber(instanceLayout.rowGapMm, 0)}
-            minimum={0}
-            disabled={disabled}
-            onCommit={(rowGapMm) => configure({ instanceLayout: {
-              kind: 'GRID', columns: positiveInteger(instanceLayout.columns, 2),
-              columnGapMm: nonnegativeNumber(instanceLayout.columnGapMm, 0), rowGapMm,
-            } })}
-          />
-        </>
-      ) : null}
+      <RepeatPackingEditor
+        scope="循环"
+        value={instanceLayout}
+        disabled={disabled}
+        onCommit={(next) => configure({ instanceLayout: next })}
+      />
       {selected?.itemKind === 'reference' ? (
         <Field label="循环单项模板">
           <SelectField
@@ -206,6 +158,96 @@ function RepeatInspector({
       ) : null}
       <StructuralState state={projection.nodeStates[node.nodeId]} />
     </section>
+  );
+}
+
+type RepeatConfiguration = Extract<TemplateStructuralConfiguration, { kind: 'repeat' }>;
+type RepeatPacking = NonNullable<RepeatConfiguration['itemLayout']>;
+
+function RepeatPackingEditor({
+  scope,
+  value,
+  disabled,
+  onCommit,
+}: {
+  scope: '单项' | '循环';
+  value: RepeatPacking;
+  disabled: boolean;
+  onCommit: (value: RepeatPacking) => void;
+}) {
+  return (
+    <>
+      <Field label={`${scope}布局方式`}>
+        <SelectField
+          ariaLabel={`${scope}布局方式`}
+          value={value.kind}
+          options={[{ value: 'STACK', label: '堆叠' }, { value: 'GRID', label: '网格' }]}
+          disabled={disabled}
+          onChange={(kind) => onCommit(kind === 'GRID'
+            ? { kind: 'GRID', columns: 2, columnGapMm: 0, rowGapMm: 0 }
+            : { kind: 'STACK', direction: 'COLUMN', gapMm: 0 })}
+        />
+      </Field>
+      {value.kind === 'STACK' ? (
+        <>
+          <Field label={`${scope}排列方向`}>
+            <SelectField
+              ariaLabel={`${scope}排列方向`}
+              value={value.direction}
+              options={[{ value: 'COLUMN', label: '纵向' }, { value: 'ROW', label: '横向' }]}
+              disabled={disabled}
+              onChange={(direction) => onCommit({
+                kind: 'STACK',
+                direction: direction as 'ROW' | 'COLUMN',
+                gapMm: nonnegativeNumber(value.gapMm, 0),
+              })}
+            />
+          </Field>
+          <StructuralNumberInput
+            label={`${scope}间距`}
+            value={nonnegativeNumber(value.gapMm, 0)}
+            minimum={0}
+            disabled={disabled}
+            onCommit={(gapMm) => onCommit({ kind: 'STACK', direction: value.direction, gapMm })}
+          />
+        </>
+      ) : (
+        <>
+          <StructuralNumberInput
+            label={`${scope}网格列数`}
+            value={positiveInteger(value.columns, 2)}
+            minimum={1}
+            integer
+            disabled={disabled}
+            onCommit={(columns) => onCommit({
+              kind: 'GRID', columns,
+              columnGapMm: nonnegativeNumber(value.columnGapMm, 0),
+              rowGapMm: nonnegativeNumber(value.rowGapMm, 0),
+            })}
+          />
+          <StructuralNumberInput
+            label={`${scope}列间距`}
+            value={nonnegativeNumber(value.columnGapMm, 0)}
+            minimum={0}
+            disabled={disabled}
+            onCommit={(columnGapMm) => onCommit({
+              kind: 'GRID', columns: positiveInteger(value.columns, 2),
+              columnGapMm, rowGapMm: nonnegativeNumber(value.rowGapMm, 0),
+            })}
+          />
+          <StructuralNumberInput
+            label={`${scope}行间距`}
+            value={nonnegativeNumber(value.rowGapMm, 0)}
+            minimum={0}
+            disabled={disabled}
+            onCommit={(rowGapMm) => onCommit({
+              kind: 'GRID', columns: positiveInteger(value.columns, 2),
+              columnGapMm: nonnegativeNumber(value.columnGapMm, 0), rowGapMm,
+            })}
+          />
+        </>
+      )}
+    </>
   );
 }
 
@@ -228,6 +270,9 @@ function ConditionalInspector({
   return (
     <section className="te-structural-inspector" aria-label="Conditional 结构配置">
       <h3>条件工作流</h3>
+      {childNodes(node.value).length === 0 ? (
+        <p className="te-field-help">当前结构暂时为空；添加 TRUE 分支内容后才能通过保存校验。</p>
+      ) : null}
       <Field label="条件数据源">
         <SelectField
           ariaLabel="条件数据源"
@@ -280,9 +325,6 @@ function TemplateUseInspector({
   node,
   projection,
   templateCatalog,
-  designDsl,
-  staticSchema,
-  staticSchemas,
   disabled,
   onConfigure,
   onSelectTemplateTarget,
@@ -299,12 +341,69 @@ function TemplateUseInspector({
   const fills = Array.isArray(node.value.fills)
     ? node.value.fills.map(objectOrNull).filter(notNull)
     : [];
-  const contextSelector = node.value.contextSelector;
+  const contextSelector = objectOrNull(node.value.contextSelector);
   const fillTargets = state?.kind === 'templateUse' ? state.fillTargets : [];
+  const contextOptions = state?.kind === 'templateUse' ? state.contextOptions : [];
+  const selectedContext = contextOptions.find((option) => (
+    sameTemplateContextSelector(option.selector, contextSelector)
+  ));
+  const contextValue = selectedContext?.id ?? (contextSelector ? '__unavailable__' : '');
+  const contextPolicy = contextSelector?.contextAbsentPolicy === 'SKIP' ? 'SKIP' : 'ERROR';
   return (
     <section className="te-structural-inspector" aria-label="TemplateUse 结构配置">
       <h3>嵌套模板工作流</h3>
       {currentTarget ? <p className="te-structural-current">{currentTarget.displayName}</p> : null}
+      <Field label="子模板上下文">
+        <SelectField
+          ariaLabel="子模板上下文"
+          value={contextValue}
+          options={[
+            ...(contextSelector && !selectedContext ? [{
+              value: '__unavailable__', label: '当前上下文不可用', disabled: true,
+            }] : []),
+            ...contextOptions.map(templateContextOption),
+          ]}
+          disabled={disabled}
+          placeholder="选择 whole context 或 reference 路径"
+          onChange={(id) => {
+            const option = contextOptions.find((candidate) => candidate.id === id);
+            if (!option) return;
+            const next = objectOrNull(option.selector);
+            const nextSelector = next?.kind === 'context'
+              ? { ...option.selector, contextAbsentPolicy: contextPolicy }
+              : option.selector;
+            onConfigure({
+              kind: 'templateUse', templateId,
+              contextSelector: nextSelector as never,
+              fills: fills as never,
+            });
+          }}
+        />
+      </Field>
+      {contextSelector?.kind === 'context' ? (
+        <Field label="上下文缺失策略">
+          <SelectField
+            ariaLabel="上下文缺失策略"
+            value={contextPolicy}
+            options={[
+              { value: 'ERROR', label: 'ERROR · 终止本次求值' },
+              { value: 'SKIP', label: 'SKIP · 移除本次嵌套出现' },
+            ]}
+            disabled={disabled}
+            onChange={(policy) => {
+              if (policy !== 'ERROR' && policy !== 'SKIP') return;
+              onConfigure({
+                kind: 'templateUse', templateId,
+                contextSelector: {
+                  ...contextSelector,
+                  contextAbsentPolicy: policy,
+                } as never,
+                fills: fills as never,
+              });
+            }}
+          />
+        </Field>
+      ) : null}
       <Field label="嵌套模板选择">
         <SelectField
           ariaLabel="嵌套模板选择"
@@ -319,27 +418,37 @@ function TemplateUseInspector({
         />
       </Field>
       {fillTargets.map((target) => {
-        const targetType = bindingType(target.valueType);
-        const sources = targetType
-          ? projectBindingSources(designDsl, staticSchema, node.nodeId, targetType, staticSchemas)
-          : [];
+        const sources = target.sources;
         const existing = fills.find((fill) => fill.targetDefinitionId === target.definitionId);
         const selectedSource = sources.find((source) => sameWire(source.source, existing?.source));
+        const sourceValue = selectedSource?.id ?? (existing ? '__unavailable__' : '');
         return (
           <Field key={target.definitionId} label={`${target.displayName} 来源`}>
             <SelectField
               ariaLabel={`${target.displayName} 来源`}
-              value={selectedSource?.id ?? ''}
-              options={sources.map((source) => ({
-                value: source.id,
-                label: `${source.label} · ${source.detail}`,
-                disabled: source.state !== 'available',
-              }))}
-              disabled={disabled || !targetType}
-              placeholder="选择同类型公开赋值来源"
+              value={sourceValue}
+              options={[
+                { value: '', label: '使用子模板默认值' },
+                ...(existing && !selectedSource ? [{
+                  value: '__unavailable__', label: '当前来源不可用', disabled: true,
+                }] : []),
+                ...sources.map(templateFillSourceOption),
+              ]}
+              disabled={disabled}
               onChange={(id) => {
+                if (!contextSelector) return;
+                if (id === '') {
+                  onConfigure({
+                    kind: 'templateUse', templateId,
+                    contextSelector: contextSelector as never,
+                    fills: fills.filter((fill) => (
+                      fill.targetDefinitionId !== target.definitionId
+                    )) as never,
+                  });
+                  return;
+                }
                 const source = sources.find((candidate) => candidate.id === id);
-                if (!source || source.state !== 'available' || !contextSelector) return;
+                if (!source) return;
                 const nextFills = [
                   ...fills.filter((fill) => fill.targetDefinitionId !== target.definitionId),
                   { targetDefinitionId: target.definitionId, source: source.source },
@@ -382,13 +491,28 @@ function StructuralNumberInput({
   onCommit: (value: number) => void;
 }) {
   const id = useId();
-  const [draft, setDraft] = useState(String(value));
+  const problemId = `${id}-problem`;
+  const [field, setField] = useState<{
+    readonly sourceValue: number;
+    readonly draft: string;
+    readonly problem: string | null;
+  }>({ sourceValue: value, draft: String(value), problem: null });
+  if (field.sourceValue !== value) {
+    setField({ sourceValue: value, draft: String(value), problem: null });
+  }
+  const { draft, problem } = field;
   const commit = () => {
-    const parsed = Number(draft);
+    const parsed = draft.trim() === '' ? Number.NaN : Number(draft);
     if (!Number.isFinite(parsed) || parsed < minimum || (integer && !Number.isSafeInteger(parsed))) {
-      setDraft(String(value));
+      setField((current) => ({
+        ...current,
+        problem: integer
+          ? `请输入不小于 ${minimum} 的整数。`
+          : `请输入不小于 ${minimum} 的数字。`,
+      }));
       return;
     }
+    if (problem) setField((current) => ({ ...current, problem: null }));
     if (parsed !== value) onCommit(parsed);
   };
   return (
@@ -402,7 +526,11 @@ function StructuralNumberInput({
         step={integer ? 1 : 'any'}
         value={draft}
         disabled={disabled}
-        onChange={(event) => setDraft(event.currentTarget.value)}
+        aria-invalid={problem !== null}
+        aria-describedby={problem ? problemId : undefined}
+        onChange={(event) => {
+          setField({ sourceValue: value, draft: event.currentTarget.value, problem: null });
+        }}
         onBlur={commit}
         onKeyDown={(event) => {
           if (event.key === 'Enter') {
@@ -411,6 +539,9 @@ function StructuralNumberInput({
           }
         }}
       />
+      {problem ? (
+        <small id={problemId} className="te-node-inspector-problem" role="alert">{problem}</small>
+      ) : null}
     </label>
   );
 }
@@ -435,6 +566,23 @@ function sourceOption(
   };
 }
 
+function templateContextOption(option: TemplateUseContextOption): SelectFieldOption {
+  const selector = objectOrNull(option.selector);
+  const pointer = stringMember(selector, 'pointer');
+  return {
+    value: option.id,
+    label: `${option.label}${pointer ? ` · ${pointer}` : ''} · ${option.schema.schemaKey}@${option.schema.versionTag}${option.presence === 'MAY_BE_ABSENT' ? ' · 可能缺失' : ''}`,
+  };
+}
+
+function templateFillSourceOption(source: TemplateUseFillSourceOption): SelectFieldOption {
+  const pointer = objectOrNull(source.source)?.pointer;
+  return {
+    value: source.id,
+    label: `${source.label}${typeof pointer === 'string' ? ` · ${pointer}` : ''}${source.presence === 'MAY_BE_ABSENT' ? ' · 可能缺失，缺失时使用子模板默认值' : ''}`,
+  };
+}
+
 function repeatPacking(value: Record<string, unknown> | null) {
   return value?.kind === 'GRID'
     ? {
@@ -450,18 +598,29 @@ function repeatPacking(value: Record<string, unknown> | null) {
     };
 }
 
+function repeatSampleValues(source: TemplateRepeatSourceOption | undefined): readonly unknown[] {
+  if (!source) return [];
+  if (source.itemKind === 'reference') return [{}, {}, {}];
+  switch (source.itemContext.schemaKey) {
+    case 'system-basic-decimal':
+      return [1, 2, 3];
+    case 'system-basic-boolean':
+      return [true, false, true];
+    case 'system-basic-date':
+      return ['2026-09-01', '2026-09-02', '2026-09-03'];
+    case 'system-basic-time':
+      return ['09:00:00', '12:00:00', '17:00:00'];
+    default:
+      return ['A', 'B', 'C'];
+  }
+}
+
 function repeatAbsentPolicy(value: unknown): 'EMPTY' | 'ERROR' {
   return value === 'ERROR' ? 'ERROR' : 'EMPTY';
 }
 
 function conditionalAbsentPolicy(value: unknown): 'FALSE' | 'ERROR' {
   return value === 'ERROR' ? 'ERROR' : 'FALSE';
-}
-
-function bindingType(value: unknown): TemplateBindingValueType | null {
-  return typeof value === 'string' && BINDING_TYPES.has(value as TemplateBindingValueType)
-    ? value as TemplateBindingValueType
-    : null;
 }
 
 function childNodes(value: Readonly<Record<string, unknown>>): Record<string, unknown>[] {
@@ -495,6 +654,25 @@ function sameWire(left: unknown, right: unknown): boolean {
   if (leftSource.kind !== 'context') return false;
   return leftSource.pointer === rightSource.pointer
     && sameSourceDomain(leftSource.domain, rightSource.domain);
+}
+
+function sameTemplateContextSelector(
+  left: unknown,
+  right: Readonly<Record<string, unknown>> | null,
+): boolean {
+  const leftSelector = objectOrNull(left);
+  if (!leftSelector || !right || leftSelector.kind !== right.kind) return false;
+  if (leftSelector.kind === 'empty') return true;
+  if (leftSelector.kind !== 'context' || right.kind !== 'context') return false;
+  return leftSelector.pointer === right.pointer
+    && sameTemplateSelectorDomain(leftSelector.domain, right.domain);
+}
+
+function sameTemplateSelectorDomain(left: unknown, right: unknown): boolean {
+  const leftDomain = objectOrNull(left);
+  const rightDomain = objectOrNull(right);
+  if (!leftDomain || !rightDomain || leftDomain.kind !== rightDomain.kind) return false;
+  return leftDomain.kind === 'invocation' || leftDomain.loopId === rightDomain.loopId;
 }
 
 function sameSourceDomain(left: unknown, right: unknown): boolean {

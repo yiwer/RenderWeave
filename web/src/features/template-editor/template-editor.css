@@ -1583,14 +1583,19 @@
 }
 
 .te-structural-field > input {
-  min-height: 34px;
+  min-height: 40px;
   box-sizing: border-box;
   padding: 0 9px;
   border: 1px solid var(--color-hairline-strong);
-  border-radius: 4px;
+  border-radius: var(--radius-input);
   background: var(--color-surface);
   color: var(--color-ink);
   font: inherit;
+}
+
+.te-structural-field > input[aria-invalid="true"] {
+  border-color: var(--color-error-border);
+  box-shadow: 0 0 0 2px var(--color-error-soft);
 }
 
 .te-structural-preview {
@@ -1600,7 +1605,7 @@
 }
 
 .te-structural-preview button {
-  min-height: 30px;
+  min-height: 44px;
 }
 
 .te-canvas-ruler {

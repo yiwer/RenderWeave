@@ -43,10 +43,27 @@ export interface TemplateTargetOption {
   readonly state: 'eligible' | 'incompatible' | 'unavailable';
 }
 
+export interface TemplateUseContextOption {
+  readonly id: string;
+  readonly label: string;
+  readonly selector: Readonly<Record<string, unknown>>;
+  readonly schema: TemplateStructuralSchemaRef;
+  readonly presence: TemplateStructuralPresence;
+}
+
+export interface TemplateUseFillSourceOption {
+  readonly id: string;
+  readonly label: string;
+  readonly source: Readonly<Record<string, unknown>>;
+  readonly valueType: unknown;
+  readonly presence: TemplateStructuralPresence;
+}
+
 export interface TemplateUseFillTarget {
   readonly definitionId: string;
   readonly displayName: string;
   readonly valueType: unknown;
+  readonly sources: readonly TemplateUseFillSourceOption[];
 }
 
 export interface TemplateUseFillProjection {
@@ -111,6 +128,7 @@ export interface TemplateConditionalNodeState {
 export interface TemplateUseNodeState {
   readonly kind: 'templateUse';
   readonly authoringState: 'READY' | 'NEEDS_REPAIR' | 'INVALID';
+  readonly contextOptions: readonly TemplateUseContextOption[];
   readonly context:
     | { readonly state: 'READY'; readonly schema: TemplateStructuralSchemaRef }
     | { readonly state: 'INVALID'; readonly problem: string };
@@ -131,6 +149,11 @@ export interface TemplateStructuralAuthoringProjection {
   readonly templateTargets: Readonly<Record<string, readonly TemplateTargetOption[]>>;
   readonly loopContexts: readonly TemplateLoopContextProjection[];
   readonly nodeStates: Readonly<Record<string, TemplateStructuralNodeState>>;
+}
+
+export interface TemplateUseInsertionCandidate {
+  readonly templateId: string;
+  readonly contextSelector: Readonly<Record<string, unknown>>;
 }
 
 interface SourceCatalog {
@@ -238,6 +261,31 @@ export function wholeTemplateContextSelector(
   });
 }
 
+export function selectTemplateUseInsertionCandidate(
+  projection: TemplateStructuralAuthoringProjection,
+  nodeId: string,
+  templateCatalog: readonly Readonly<Record<string, unknown>>[],
+): TemplateUseInsertionCandidate | null {
+  const state = projection.nodeStates[nodeId];
+  if (state?.kind !== 'templateUse') return null;
+  for (const option of state.contextOptions) {
+    const target = projectTemplateTargets(
+      templateCatalog,
+      readyContext(option.schema),
+    ).find((candidate) => candidate.state === 'eligible');
+    if (!target) continue;
+    const selector = record(option.selector);
+    const domain = record(selector?.domain);
+    return Object.freeze({
+      templateId: target.templateId,
+      contextSelector: selector?.kind === 'context' && domain?.kind === 'loop'
+        ? Object.freeze({ ...option.selector, contextAbsentPolicy: 'SKIP' })
+        : option.selector,
+    });
+  }
+  return null;
+}
+
 interface ProjectTemplateUseInput {
   readonly node: Readonly<Record<string, unknown>>;
   readonly loops: readonly LexicalLoop[];
@@ -246,6 +294,227 @@ interface ProjectTemplateUseInput {
   readonly designDsl: Readonly<Record<string, unknown>>;
   readonly templateCatalog: readonly Readonly<Record<string, unknown>>[];
   readonly templateCurrents: readonly Readonly<Record<string, unknown>>[];
+}
+
+function projectTemplateUseContextOptions(
+  input: ProjectTemplateUseInput,
+): readonly TemplateUseContextOption[] {
+  const options: TemplateUseContextOption[] = [];
+  for (const { projection } of [...input.loops].reverse()) {
+    const domain = Object.freeze({ kind: 'loop' as const, loopId: projection.loopId });
+    appendTemplateUseContextOptions(
+      options,
+      projection.itemContext,
+      input.schemas.get(schemaIdentity(
+        projection.itemContext.schemaKey,
+        projection.itemContext.versionTag,
+      )) ?? null,
+      domain,
+      `循环 ${projection.loopId.slice(0, 8)} 当前项`,
+      input.schemas,
+    );
+  }
+  appendTemplateUseContextOptions(
+    options,
+    Object.freeze({ schemaKey: input.rootSchema.schemaKey, versionTag: input.rootSchema.versionTag }),
+    input.rootSchema,
+    'invocation',
+    '调用上下文',
+    input.schemas,
+  );
+  options.push(Object.freeze({
+    id: 'template-context:empty',
+    label: '空上下文',
+    selector: Object.freeze({ kind: 'empty' }),
+    schema: Object.freeze({ schemaKey: 'system-empty', versionTag: 'v1' }),
+    presence: 'CONCRETE',
+  }));
+  return Object.freeze(options);
+}
+
+function appendTemplateUseContextOptions(
+  options: TemplateUseContextOption[],
+  context: TemplateStructuralSchemaRef,
+  schema: StaticSnapshot | null,
+  domain: 'invocation' | Readonly<{ kind: 'loop'; loopId: string }>,
+  domainLabel: string,
+  schemas: ReadonlyMap<string, StaticSnapshot>,
+): void {
+  options.push(Object.freeze({
+    id: templateContextId(domain, ''),
+    label: domainLabel,
+    selector: wholeTemplateContextSelector(domain),
+    schema: context,
+    presence: 'CONCRETE',
+  }));
+  if (!schema) return;
+  collectReferenceContextOptions(
+    options,
+    schema,
+    domain,
+    domainLabel,
+    schemas,
+    '',
+    true,
+    new Set(),
+  );
+}
+
+function collectReferenceContextOptions(
+  options: TemplateUseContextOption[],
+  schema: StaticSnapshot,
+  domain: 'invocation' | Readonly<{ kind: 'loop'; loopId: string }>,
+  domainLabel: string,
+  schemas: ReadonlyMap<string, StaticSnapshot>,
+  prefix: string,
+  concrete: boolean,
+  visited: ReadonlySet<string>,
+): void {
+  const identity = schemaIdentity(schema.schemaKey, schema.versionTag);
+  if (visited.has(identity)) return;
+  const nextVisited = new Set(visited).add(identity);
+  for (const field of schema.definition.fields) {
+    if (field.value.type !== 'reference' || !field.value.ref.versionTag) continue;
+    const pointer = `${prefix}/${escapePointer(field.fieldKey)}`;
+    const present = concrete && field.required;
+    const referenced = Object.freeze({
+      schemaKey: field.value.ref.schemaKey,
+      versionTag: field.value.ref.versionTag,
+    });
+    options.push(Object.freeze({
+      id: templateContextId(domain, pointer),
+      label: `${domainLabel} · ${field.displayName ?? field.fieldKey}`,
+      selector: templateContextSelector(domain, pointer),
+      schema: referenced,
+      presence: present ? 'CONCRETE' : 'MAY_BE_ABSENT',
+    }));
+    const child = schemas.get(schemaIdentity(referenced.schemaKey, referenced.versionTag));
+    if (child) {
+      collectReferenceContextOptions(
+        options,
+        child,
+        domain,
+        domainLabel,
+        schemas,
+        pointer,
+        present,
+        nextVisited,
+      );
+    }
+  }
+}
+
+function projectTemplateUseFillSources(
+  input: ProjectTemplateUseInput,
+): readonly TemplateUseFillSourceOption[] {
+  const sources: TemplateUseFillSourceOption[] = [];
+  collectTemplateUseContextFillSources(
+    sources,
+    input.rootSchema,
+    'invocation',
+    input.schemas,
+    '',
+    true,
+    new Set(),
+  );
+  for (const value of array(input.designDsl.definitions)) {
+    const definition = record(value);
+    const definitionId = text(definition?.definitionId);
+    const valueType = definition?.kind === 'custom' ? definition.valueType : definition?.output;
+    const declarationLoopId = record(definition?.domain)?.kind === 'loop'
+      ? text(record(definition?.domain)?.loopId)
+      : null;
+    if (!definitionId || valueType === undefined || (declarationLoopId
+      && !input.loops.some(({ projection }) => projection.loopId === declarationLoopId))) continue;
+    sources.push(Object.freeze({
+      id: `definition:${definitionId}`,
+      label: text(definition?.displayName) ?? definitionId,
+      source: Object.freeze({ kind: 'definition', definitionId }),
+      valueType,
+      presence: 'CONCRETE',
+    }));
+  }
+  for (const { projection } of input.loops) {
+    const domain = Object.freeze({ kind: 'loop' as const, loopId: projection.loopId });
+    if (projection.itemKind === 'scalar') {
+      const valueType = systemBasicValueType(projection.itemContext);
+      if (valueType) {
+        sources.push(Object.freeze({
+          id: contextId(domain, '/value'),
+          label: `循环 ${projection.loopId.slice(0, 8)} 当前值`,
+          source: Object.freeze({ kind: 'context', domain, pointer: '/value' }),
+          valueType,
+          presence: 'CONCRETE',
+        }));
+      }
+    } else {
+      const schema = input.schemas.get(schemaIdentity(
+        projection.itemContext.schemaKey,
+        projection.itemContext.versionTag,
+      ));
+      if (schema) {
+        collectTemplateUseContextFillSources(
+          sources,
+          schema,
+          domain,
+          input.schemas,
+          '',
+          true,
+          new Set(),
+        );
+      }
+    }
+    sources.push(Object.freeze({
+      id: `loop-index:${projection.loopId}`,
+      label: `循环 ${projection.loopId.slice(0, 8)} 索引`,
+      source: Object.freeze({ kind: 'loopIndex', loopId: projection.loopId }),
+      valueType: 'decimal',
+      presence: 'CONCRETE',
+    }));
+  }
+  return Object.freeze(sources);
+}
+
+function collectTemplateUseContextFillSources(
+  sources: TemplateUseFillSourceOption[],
+  schema: StaticSnapshot,
+  domain: 'invocation' | Readonly<{ kind: 'loop'; loopId: string }>,
+  schemas: ReadonlyMap<string, StaticSnapshot>,
+  prefix: string,
+  concrete: boolean,
+  visited: ReadonlySet<string>,
+): void {
+  const identity = schemaIdentity(schema.schemaKey, schema.versionTag);
+  if (visited.has(identity)) return;
+  const nextVisited = new Set(visited).add(identity);
+  for (const field of schema.definition.fields) {
+    const pointer = `${prefix}/${escapePointer(field.fieldKey)}`;
+    const present = concrete && field.required;
+    if (field.value.type === 'reference' && field.value.ref.versionTag) {
+      const child = schemas.get(schemaIdentity(field.value.ref.schemaKey, field.value.ref.versionTag));
+      if (child) {
+        collectTemplateUseContextFillSources(
+          sources,
+          child,
+          domain,
+          schemas,
+          pointer,
+          present,
+          nextVisited,
+        );
+      }
+      continue;
+    }
+    const valueType = schemaValueType(field.value);
+    if (valueType === null) continue;
+    sources.push(Object.freeze({
+      id: contextId(domain, pointer),
+      label: field.displayName ?? field.fieldKey,
+      source: Object.freeze({ kind: 'context', domain, pointer }),
+      valueType,
+      presence: present ? 'CONCRETE' : 'MAY_BE_ABSENT',
+    }));
+  }
 }
 
 interface ReadyContext {
@@ -262,6 +531,7 @@ function projectTemplateUseNodeState(
   input: ProjectTemplateUseInput,
 ): { readonly targets: readonly TemplateTargetOption[]; readonly state: TemplateUseNodeState } {
   const context = resolveTemplateUseContext(input);
+  const contextOptions = projectTemplateUseContextOptions(input);
   const targets = projectTemplateTargets(input.templateCatalog, context);
   if (context.state === 'INVALID') {
     return Object.freeze({
@@ -269,6 +539,7 @@ function projectTemplateUseNodeState(
       state: Object.freeze({
         kind: 'templateUse',
         authoringState: 'INVALID',
+        contextOptions,
         context,
         fillTargets: Object.freeze([]),
         fills: Object.freeze([]),
@@ -290,12 +561,16 @@ function projectTemplateUseNodeState(
   const currentDesign = record(current?.designDsl);
   const sourceCanvasSizeMm = currentDesign ? templateCanvasSize(currentDesign) : null;
   const definitions = array(currentDesign?.definitions).map(record).filter(notNull);
+  const fillSources = projectTemplateUseFillSources(input);
   const fillTargets = Object.freeze(definitions
     .filter((definition) => definition.kind === 'custom' && definition.exposure === 'PUBLIC')
     .map((definition) => Object.freeze({
       definitionId: text(definition.definitionId) ?? '',
       displayName: text(definition.displayName) ?? '',
       valueType: definition.valueType,
+      sources: Object.freeze(fillSources.filter((source) => (
+        sameValueType(source.valueType, definition.valueType)
+      ))),
     }))
     .filter(({ definitionId }) => definitionId.length > 0));
   const fillResult = projectTemplateUseFills(input, definitions);
@@ -312,6 +587,7 @@ function projectTemplateUseNodeState(
     state: Object.freeze({
       kind: 'templateUse',
       authoringState: hard ? 'INVALID' : problems.length > 0 ? 'NEEDS_REPAIR' : 'READY',
+      contextOptions,
       context,
       fillTargets,
       fills: fillResult.fills,
@@ -781,7 +1057,7 @@ function loopContextSources(
 
 type ContextPathResult =
   | { readonly kind: 'reference'; readonly schema: TemplateStructuralSchemaRef }
-  | { readonly kind: 'array' }
+  | { readonly kind: 'array'; readonly valueType: unknown | null }
   | { readonly kind: 'value'; readonly valueType: unknown }
   | { readonly kind: 'invalid'; readonly problem: string };
 
@@ -814,7 +1090,9 @@ function resolveContextPath(
       continue;
     }
     if (!final) return { kind: 'invalid', problem: 'CONTEXT_POINTER_INVALID' };
-    if (field.value.type === 'array') return { kind: 'array' };
+    if (field.value.type === 'array') {
+      return { kind: 'array', valueType: schemaValueType(field.value) };
+    }
     return { kind: 'value', valueType: field.value.type };
   }
   return { kind: 'invalid', problem: 'CONTEXT_POINTER_INVALID' };
@@ -855,6 +1133,9 @@ function resolveBindingSourceType(
   if (!base) return { state: 'invalid', problem: 'FILL_SOURCE_OUT_OF_SCOPE' };
   const resolved = resolveContextPath(base, source.pointer, input.schemas);
   if (resolved.kind === 'value') return { state: 'ready', valueType: resolved.valueType };
+  if (resolved.kind === 'array' && resolved.valueType !== null) {
+    return { state: 'ready', valueType: resolved.valueType };
+  }
   return { state: 'invalid', problem: 'FILL_SOURCE_INVALID' };
 }
 
@@ -876,6 +1157,16 @@ function systemBasicValueType(schema: TemplateStructuralSchemaRef): string | nul
   return schema.versionTag === 'v1' && schema.schemaKey.startsWith(prefix)
     ? schema.schemaKey.slice(prefix.length)
     : null;
+}
+
+function schemaValueType(
+  value: StaticSnapshot['definition']['fields'][number]['value'],
+): unknown | null {
+  if (value.type === 'reference') return null;
+  if (value.type !== 'array') return value.type;
+  return value.items.type === 'reference'
+    ? null
+    : Object.freeze({ type: 'list', items: value.items.type });
 }
 
 function sameValueType(left: unknown, right: unknown): boolean {
@@ -928,6 +1219,28 @@ function contextId(
   return domain === 'invocation'
     ? `context:invocation:${pointer}`
     : `context:loop:${domain.loopId}:${pointer}`;
+}
+
+function templateContextId(
+  domain: 'invocation' | Readonly<{ kind: 'loop'; loopId: string }>,
+  pointer: string,
+): string {
+  return `template-${contextId(domain, pointer)}`;
+}
+
+function templateContextSelector(
+  domain: 'invocation' | Readonly<{ kind: 'loop'; loopId: string }>,
+  pointer: string,
+  contextAbsentPolicy: 'ERROR' | 'SKIP' = 'ERROR',
+): Readonly<Record<string, unknown>> {
+  return Object.freeze({
+    kind: 'context',
+    domain: domain === 'invocation'
+      ? Object.freeze({ kind: 'invocation' })
+      : Object.freeze({ kind: 'loop', loopId: domain.loopId }),
+    pointer,
+    contextAbsentPolicy,
+  });
 }
 
 function schemaIdentity(schemaKey: string, versionTag: string): string {

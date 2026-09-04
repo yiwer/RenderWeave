@@ -150,10 +150,9 @@ function proveTreeContentModel(root: Record<string, unknown>): TemplateStructure
       || !Array.isArray(parent.children)) {
       return unprovenContentModel(`${pointer}/children`, '父节点 ContentModel 不允许 children[]。');
     }
-    if ((parent.kind === 'repeat' || parent.kind === 'conditional')
-      && parent.children.length === 0) {
-      return unprovenContentModel(`${pointer}/children`, `${parent.kind} 必须保留 authored child。`);
-    }
+    // Repeat/Conditional non-empty is a save-authority invariant. EditorSession is
+    // explicitly allowed to carry that temporary invalid state while an author
+    // adds, removes or moves the branch's real content.
     const expectedPlacement = expectedTemplateChildPlacement(parent.kind);
     if (!expectedPlacement) {
       return unprovenContentModel(`${pointer}/kind`, '父节点 placement variant 无法证明。');

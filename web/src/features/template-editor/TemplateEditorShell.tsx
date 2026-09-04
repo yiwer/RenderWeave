@@ -38,6 +38,7 @@ import {
   useEffect,
   useEffectEvent,
   useId,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -177,6 +178,7 @@ import {
 } from './template-editor-composition';
 import {
   projectStructuralAuthoring,
+  selectTemplateUseInsertionCandidate,
   wholeTemplateContextSelector,
   type TemplateStructuralAuthoringProjection,
   type TemplateStructuralSample,
@@ -577,6 +579,10 @@ function StructuredShell({
       : localSession,
     [incomingSession.baseline, incomingSession.readiness, localSession],
   );
+  const sessionRef = useRef(session);
+  useLayoutEffect(() => {
+    sessionRef.current = session;
+  }, [session]);
   useEffect(() => {
     preview.syncSession(session);
   }, [preview, session]);
@@ -954,23 +960,26 @@ function StructuredShell({
         }, { selectAffected: true, openStructure: true });
         return;
       }
-      const target = insertion.projection.templateTargets[insertion.probeNodeId]
-        ?.find((candidate) => candidate.state === 'eligible');
-      if (!target || !insertion.contextSelector) {
+      const templateUse = insertion.templateUse;
+      if (!templateUse) {
         setNodeAuthoringProblem(compositionCatalog.state === 'error'
           ? compositionCatalog.message
           : '当前 exact context 没有 READY Template；请先准备兼容目标。');
         return;
       }
-      void ensureTemplateCurrent(target.templateId).then((current) => {
+      void ensureTemplateCurrent(templateUse.templateId).then((current) => {
         if (!current) return;
+        if (sessionRef.current !== session) {
+          setNodeAuthoringProblem('读取 Template current 期间本地草稿已变化；未应用过期操作，请重试。');
+          return;
+        }
         dispatchEditorCommand({
           operation: 'insert', nodeKind: kind, parentNodeId,
           ...(at ? { at } : {}),
           structural: {
             kind,
-            templateId: target.templateId,
-            contextSelector: insertion.contextSelector as never,
+            templateId: templateUse.templateId,
+            contextSelector: templateUse.contextSelector as never,
             fills: [],
           },
         }, { selectAffected: true, openStructure: true });
@@ -1007,6 +1016,10 @@ function StructuredShell({
       ensureTemplateCurrent(templateId),
     ]).then(([schema, current]) => {
       if (!schema || !current) return;
+      if (sessionRef.current !== session) {
+        setNodeAuthoringProblem('读取循环单项依赖期间本地草稿已变化；未应用过期操作，请重试。');
+        return;
+      }
       const contextSelector = wholeTemplateContextSelector({ kind: 'loop', loopId }, 'SKIP');
       if (existingNodeId) {
         const existing = nodes.find((node) => node.nodeId === existingNodeId)?.value;
@@ -1046,6 +1059,10 @@ function StructuredShell({
     if (!existing || existing.kind !== 'templateUse') return;
     void ensureTemplateCurrent(templateId).then((current) => {
       if (!current) return;
+      if (sessionRef.current !== session) {
+        setNodeAuthoringProblem('读取 Template current 期间本地草稿已变化；未应用过期操作，请重试。');
+        return;
+      }
       const previousTemplateId = stringMember(objectOrNull(existing.templateRef), 'templateId');
       dispatchEditorCommand({
         operation: 'configure-structural', nodeId,
@@ -2144,9 +2161,7 @@ function StructuredShell({
               }}
               onCreateLoopTemplate={chooseLoopTemplate}
               onSelectTemplateTarget={selectTemplateTarget}
-              onEnsureTemplateCurrent={(templateId) => {
-                void ensureTemplateCurrent(templateId);
-              }}
+              onEnsureTemplateCurrent={ensureTemplateCurrent}
             />
           </aside>
         ) : null}
@@ -3200,7 +3215,10 @@ function projectStructuralInsertion(
 ): {
   probeNodeId: string;
   projection: TemplateStructuralAuthoringProjection;
-  contextSelector?: Readonly<Record<string, unknown>>;
+  templateUse?: Readonly<{
+    templateId: string;
+    contextSelector: Readonly<Record<string, unknown>>;
+  }>;
 } {
   const probeNodeId = '00000000-0000-4000-8000-000000000000';
   const root = objectOrNull(designDsl.designRoot);
@@ -3236,16 +3254,20 @@ function projectStructuralInsertion(
         contextSelector, fills: [],
       };
   const projectedRoot = root ? appendStructuralProbe(root, parentNodeId, probe) : root;
+  const projection = projectStructuralAuthoring({
+    designDsl: { ...designDsl, designRoot: projectedRoot ?? designDsl.designRoot },
+    staticSchema,
+    staticSchemas,
+    templateCatalog,
+    templateCurrents,
+  });
+  const templateUse = kind === 'templateUse'
+    ? selectTemplateUseInsertionCandidate(projection, probeNodeId, templateCatalog)
+    : null;
   return {
     probeNodeId,
-    contextSelector,
-    projection: projectStructuralAuthoring({
-      designDsl: { ...designDsl, designRoot: projectedRoot ?? designDsl.designRoot },
-      staticSchema,
-      staticSchemas,
-      templateCatalog,
-      templateCurrents,
-    }),
+    projection,
+    ...(templateUse ? { templateUse } : {}),
   };
 }
 

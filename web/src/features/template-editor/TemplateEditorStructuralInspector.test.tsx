@@ -60,6 +60,158 @@ describe('Template Editor structural inspector', () => {
     }));
   });
 
+  it('edits item and instance STACK or GRID packing independently', () => {
+    const onConfigure = vi.fn();
+    const repeat = node({
+      nodeId: 'repeat', kind: 'repeat', displayName: '循环商品', loopId: 'loop',
+      items: { kind: 'context', domain: 'invocation', pointer: '/tags' },
+      absentPolicy: 'EMPTY',
+      itemLayout: { kind: 'GRID', columns: 3, columnGapMm: 1, rowGapMm: 2 },
+      instanceLayout: { kind: 'STACK', direction: 'COLUMN', gapMm: 4 },
+      placement: {}, bindings: [], children: [],
+    });
+    render(<TemplateEditorStructuralInspector
+      node={repeat}
+      projection={projection({ repeatSources: {
+        repeat: [repeatSource('tags', '标签', '/tags', 'system-basic-text', 'scalar')],
+      } })}
+      templateCatalog={[]}
+      designDsl={{ definitions: [], designRoot: {} }}
+      staticSchema={staticSchema()}
+      staticSchemas={[]}
+      disabled={false}
+      onConfigure={onConfigure}
+      onPreviewSample={vi.fn()}
+      onCreateLoopTemplate={vi.fn()}
+      onSelectTemplateTarget={vi.fn()}
+    />);
+
+    const itemColumns = screen.getByRole('spinbutton', { name: '单项网格列数' });
+    fireEvent.change(itemColumns, { target: { value: '5' } });
+    fireEvent.blur(itemColumns);
+    expect(onConfigure).toHaveBeenLastCalledWith(expect.objectContaining({
+      itemLayout: { kind: 'GRID', columns: 5, columnGapMm: 1, rowGapMm: 2 },
+      instanceLayout: { kind: 'STACK', direction: 'COLUMN', gapMm: 4 },
+    }));
+
+    const itemColumnGap = screen.getByRole('spinbutton', { name: '单项列间距' });
+    fireEvent.change(itemColumnGap, { target: { value: '6' } });
+    fireEvent.blur(itemColumnGap);
+    expect(onConfigure).toHaveBeenLastCalledWith(expect.objectContaining({
+      itemLayout: { kind: 'GRID', columns: 3, columnGapMm: 6, rowGapMm: 2 },
+    }));
+
+    const itemRowGap = screen.getByRole('spinbutton', { name: '单项行间距' });
+    fireEvent.change(itemRowGap, { target: { value: '8' } });
+    fireEvent.blur(itemRowGap);
+    expect(onConfigure).toHaveBeenLastCalledWith(expect.objectContaining({
+      itemLayout: { kind: 'GRID', columns: 3, columnGapMm: 1, rowGapMm: 8 },
+    }));
+
+    const instanceGap = screen.getByRole('spinbutton', { name: '循环间距' });
+    fireEvent.change(instanceGap, { target: { value: '7' } });
+    fireEvent.blur(instanceGap);
+    expect(onConfigure).toHaveBeenLastCalledWith(expect.objectContaining({
+      itemLayout: { kind: 'GRID', columns: 3, columnGapMm: 1, rowGapMm: 2 },
+      instanceLayout: { kind: 'STACK', direction: 'COLUMN', gapMm: 7 },
+    }));
+
+    fireEvent.click(screen.getByLabelText('循环排列方向'));
+    fireEvent.click(screen.getByRole('option', { name: '横向' }));
+    expect(onConfigure).toHaveBeenLastCalledWith(expect.objectContaining({
+      instanceLayout: { kind: 'STACK', direction: 'ROW', gapMm: 4 },
+    }));
+
+    fireEvent.click(screen.getByLabelText('单项布局方式'));
+    fireEvent.click(screen.getByRole('option', { name: '堆叠' }));
+    expect(onConfigure).toHaveBeenLastCalledWith(expect.objectContaining({
+      itemLayout: { kind: 'STACK', direction: 'COLUMN', gapMm: 0 },
+      instanceLayout: { kind: 'STACK', direction: 'COLUMN', gapMm: 4 },
+    }));
+  });
+
+  it('drives local Repeat VALUES, EMPTY, ABSENT and ERROR projection samples', () => {
+    const onPreview = vi.fn();
+    const repeat = node({
+      nodeId: 'repeat', kind: 'repeat', displayName: '循环标签', loopId: 'loop',
+      items: { kind: 'context', domain: 'invocation', pointer: '/tags' },
+      absentPolicy: 'EMPTY',
+      itemLayout: { kind: 'STACK', direction: 'COLUMN', gapMm: 0 },
+      instanceLayout: { kind: 'STACK', direction: 'COLUMN', gapMm: 0 },
+      placement: {}, bindings: [], children: [],
+    });
+    render(<TemplateEditorStructuralInspector
+      node={repeat}
+      projection={projection({ repeatSources: {
+        repeat: [repeatSource('tags', '标签', '/tags', 'system-basic-text', 'scalar')],
+      } })}
+      templateCatalog={[]}
+      designDsl={{ definitions: [], designRoot: {} }}
+      staticSchema={staticSchema()}
+      staticSchemas={[]}
+      disabled={false}
+      onConfigure={vi.fn()}
+      onPreviewSample={onPreview}
+      onCreateLoopTemplate={vi.fn()}
+      onSelectTemplateTarget={vi.fn()}
+    />);
+
+    for (const state of ['VALUES', 'EMPTY', 'ABSENT', 'ERROR']) {
+      fireEvent.click(screen.getByRole('button', { name: state }));
+    }
+    expect(onPreview).toHaveBeenNthCalledWith(1, { state: 'value', value: ['A', 'B', 'C'] });
+    expect(onPreview).toHaveBeenNthCalledWith(2, { state: 'value', value: [] });
+    expect(onPreview).toHaveBeenNthCalledWith(3, { state: 'absent' });
+    expect(onPreview).toHaveBeenNthCalledWith(4, { state: 'error', code: 'EDITOR_SAMPLE_ERROR' });
+    expect(screen.getByRole('group', { name: '循环预览输入' })).toBeTruthy();
+  });
+
+  it('announces invalid Repeat numbers and resyncs an externally replaced value', () => {
+    const onConfigure = vi.fn();
+    const repeat = (gapMm: number) => node({
+      nodeId: 'repeat', kind: 'repeat', displayName: '循环商品', loopId: 'loop',
+      items: { kind: 'context', domain: 'invocation', pointer: '/tags' },
+      absentPolicy: 'EMPTY',
+      itemLayout: { kind: 'STACK', direction: 'COLUMN', gapMm },
+      instanceLayout: { kind: 'STACK', direction: 'COLUMN', gapMm: 0 },
+      placement: {}, bindings: [], children: [],
+    });
+    const inspector = (gapMm: number) => (
+      <TemplateEditorStructuralInspector
+        node={repeat(gapMm)}
+        projection={projection({})}
+        templateCatalog={[]}
+        designDsl={{ definitions: [], designRoot: {} }}
+        staticSchema={staticSchema()}
+        staticSchemas={[]}
+        disabled={false}
+        onConfigure={onConfigure}
+        onPreviewSample={vi.fn()}
+        onCreateLoopTemplate={vi.fn()}
+        onSelectTemplateTarget={vi.fn()}
+      />
+    );
+    const view = render(inspector(0));
+    const input = screen.getByRole('spinbutton', { name: '单项间距' }) as HTMLInputElement;
+
+    fireEvent.change(input, { target: { value: '-1' } });
+    fireEvent.blur(input);
+
+    const problem = screen.getByRole('alert');
+    expect(input.value).toBe('-1');
+    expect(input.getAttribute('aria-invalid')).toBe('true');
+    expect(input.getAttribute('aria-describedby')).toBe(problem.id);
+    expect(problem.textContent).toContain('不小于 0');
+    expect(onConfigure).not.toHaveBeenCalled();
+
+    view.rerender(inspector(6));
+
+    expect(input.value).toBe('6');
+    expect(input.getAttribute('aria-invalid')).toBe('false');
+    expect(input.getAttribute('aria-describedby')).toBeNull();
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+
   it('keeps a canonicalized reference source selected and exposes its exact Template targets', () => {
     const repeat = node({
       nodeId: 'repeat', kind: 'repeat', displayName: '循环商品', loopId: 'loop',
@@ -127,6 +279,106 @@ describe('Template Editor structural inspector', () => {
     expect(onPreview).toHaveBeenNthCalledWith(1, { state: 'value', value: false });
     expect(onPreview).toHaveBeenNthCalledWith(2, { state: 'absent' });
     expect(view.getByRole('group', { name: '条件预览输入' })).toBeTruthy();
+  });
+
+  it('edits TemplateUse reference context policy and removes an optional list fill', () => {
+    const onConfigure = vi.fn();
+    const templateId = '11111111-1111-4111-8111-111111111111';
+    const fillTargetId = '22222222-2222-4222-8222-222222222222';
+    const wholeSelector = {
+      kind: 'context', domain: { kind: 'invocation' }, pointer: '', contextAbsentPolicy: 'ERROR',
+    };
+    const existingFill = {
+      targetDefinitionId: fillTargetId,
+      source: { kind: 'context', domain: 'invocation', pointer: '/tags' },
+    };
+    const use = node({
+      nodeId: 'use', kind: 'templateUse', displayName: '优惠卡',
+      templateRef: { templateId }, contextSelector: wholeSelector, fills: [existingFill],
+      placement: {}, bindings: [],
+    });
+    render(<TemplateEditorStructuralInspector
+      node={use}
+      projection={projection({
+        templateTargets: { use: [{
+          templateId,
+          displayName: '优惠卡',
+          staticSchema: { schemaKey: 'offer', versionTag: 'v1' },
+          readiness: 'READY',
+          state: 'eligible',
+        }] },
+        nodeStates: { use: {
+          kind: 'templateUse',
+          authoringState: 'READY',
+          contextOptions: [{
+            id: 'whole',
+            label: '调用上下文',
+            selector: wholeSelector,
+            schema: { schemaKey: 'parent', versionTag: 'v1' },
+            presence: 'CONCRETE',
+          }, {
+            id: 'featured-offer',
+            label: '调用上下文 · 主推优惠',
+            selector: {
+              kind: 'context', domain: { kind: 'invocation' }, pointer: '/featuredOffer',
+              contextAbsentPolicy: 'ERROR',
+            },
+            schema: { schemaKey: 'offer', versionTag: 'v1' },
+            presence: 'MAY_BE_ABSENT',
+          }],
+          context: { state: 'READY', schema: { schemaKey: 'parent', versionTag: 'v1' } },
+          fillTargets: [{
+            definitionId: fillTargetId,
+            displayName: '标签列表',
+            valueType: { type: 'list', items: 'text' },
+            sources: [{
+              id: 'tags',
+              label: '标签',
+              source: existingFill.source,
+              valueType: { type: 'list', items: 'text' },
+              presence: 'MAY_BE_ABSENT',
+            }],
+          }],
+          fills: [{ targetDefinitionId: fillTargetId, state: 'READY' }],
+          problems: [],
+        } },
+      })}
+      templateCatalog={[{
+        templateId,
+        displayName: '优惠卡',
+        staticSchema: { schemaKey: 'offer', versionTag: 'v1' },
+        revision: 1,
+        readiness: 'READY',
+        updatedAt: '2026-09-03T00:00:00Z',
+      }]}
+      designDsl={{ definitions: [], designRoot: {} }}
+      staticSchema={staticSchema()}
+      staticSchemas={[]}
+      disabled={false}
+      onConfigure={onConfigure}
+      onPreviewSample={vi.fn()}
+      onCreateLoopTemplate={vi.fn()}
+      onSelectTemplateTarget={vi.fn()}
+    />);
+
+    fireEvent.click(screen.getByLabelText('子模板上下文'));
+    fireEvent.click(screen.getByRole('option', { name: /主推优惠.*featuredOffer/ }));
+    expect(onConfigure).toHaveBeenLastCalledWith(expect.objectContaining({
+      kind: 'templateUse', templateId,
+      contextSelector: expect.objectContaining({ pointer: '/featuredOffer', contextAbsentPolicy: 'ERROR' }),
+      fills: [existingFill],
+    }));
+
+    fireEvent.click(screen.getByLabelText('上下文缺失策略'));
+    fireEvent.click(screen.getByRole('option', { name: /SKIP/ }));
+    expect(onConfigure).toHaveBeenLastCalledWith(expect.objectContaining({
+      contextSelector: expect.objectContaining({ contextAbsentPolicy: 'SKIP' }),
+    }));
+
+    expect(screen.getByLabelText('标签列表 来源').textContent).toContain('缺失时使用子模板默认值');
+    fireEvent.click(screen.getByLabelText('标签列表 来源'));
+    fireEvent.click(screen.getByRole('option', { name: '使用子模板默认值' }));
+    expect(onConfigure).toHaveBeenLastCalledWith(expect.objectContaining({ fills: [] }));
   });
 });
 

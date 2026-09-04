@@ -264,29 +264,24 @@ function resolveInsert(
   root: Record<string, unknown>,
   intent: Extract<TemplateEditorCommandIntent, { operation: 'insert' }>,
   options: TemplateEditorCommandOptions,
-): { state: 'command'; command: InsertNodeCommand | ReplaceNodeShellCommand; affectedNodeIds: string[]; message: string }
+): { state: 'command'; command: InsertNodeCommand; affectedNodeIds: string[]; message: string }
   | Extract<TemplateEditorCommandResult, { state: 'rejected' }> {
   const parent = findNode(root, intent.parentNodeId)?.node;
   if (!parent) return rejected(session, 'PARENT_NOT_FOUND', '目标父节点不在当前 working copy 中。');
   if (!canAcceptCoreChildren(parent)) {
     return rejected(session, 'PARENT_CANNOT_HAVE_CHILDREN', '目标节点不能承载首批核心节点。');
   }
-  const scaffold = findEmptyStructuralScaffold(parent);
   let nodeId: string;
-  if (scaffold) {
-    nodeId = stringMember(scaffold, 'nodeId') ?? '';
-  } else {
-    try {
-      nodeId = (options.createNodeId ?? defaultNodeId)().toLowerCase();
-    } catch {
-      return rejected(session, 'NODE_ID_UNAVAILABLE', '浏览器未能生成新节点 identity。');
-    }
-    if (!UUID_V4.test(nodeId)) {
-      return rejected(session, 'NODE_ID_INVALID', '浏览器生成的 nodeId 不是 canonical UUID v4。');
-    }
-    if (findNode(root, nodeId)) {
-      return rejected(session, 'NODE_ID_DUPLICATE', '浏览器生成的 nodeId 已存在。');
-    }
+  try {
+    nodeId = (options.createNodeId ?? defaultNodeId)().toLowerCase();
+  } catch {
+    return rejected(session, 'NODE_ID_UNAVAILABLE', '浏览器未能生成新节点 identity。');
+  }
+  if (!UUID_V4.test(nodeId)) {
+    return rejected(session, 'NODE_ID_INVALID', '浏览器生成的 nodeId 不是 canonical UUID v4。');
+  }
+  if (findNode(root, nodeId)) {
+    return rejected(session, 'NODE_ID_DUPLICATE', '浏览器生成的 nodeId 已存在。');
   }
   const ordinal = countKind(root, intent.nodeKind) + 1;
   const built = defaultNode(intent, nodeId, ordinal, options, root);
@@ -318,14 +313,6 @@ function resolveInsert(
   const node = { ...built.node, placement };
   if (!validLayoutCandidate(node, parent)) {
     return rejected(session, 'PLACEMENT_CONVERSION_INVALID', '默认节点无法满足目标父级的布局合同。');
-  }
-  if (scaffold) {
-    return replaceNodeCommand(
-      nodeId,
-      nodeShell(scaffold),
-      nodeShell(node),
-      `${kindLabel(intent.nodeKind)}已替换结构容器的初始 authored 内容。`,
-    );
   }
   const children = parent.children;
   if (!Array.isArray(children)) {
@@ -1381,12 +1368,10 @@ function buildStructuralNode(
   }
 
   if (configuration.kind === 'repeat') {
-    const childId = allocateStructuralIdentity(options.createNodeId, root, new Set([nodeId]));
-    if (childId.state === 'rejected') return childId;
     const loopId = allocateStructuralIdentity(
       options.createLoopId,
       root,
-      new Set([nodeId, childId.value]),
+      new Set([nodeId]),
     );
     if (loopId.state === 'rejected') return loopId;
     return {
@@ -1395,55 +1380,18 @@ function buildStructuralNode(
         ...common,
         loopId: loopId.value,
         ...patch,
-        children: [defaultStructuralScaffold(childId.value, 'PACK', '循环内容占位')],
+        children: [],
       },
     };
   }
-  const childId = allocateStructuralIdentity(options.createNodeId, root, new Set([nodeId]));
-  if (childId.state === 'rejected') return childId;
   return {
     state: 'built',
     node: {
       ...common,
       ...patch,
-      children: [defaultStructuralScaffold(childId.value, 'ABSOLUTE', '条件内容占位')],
+      children: [],
     },
   };
-}
-
-function defaultStructuralScaffold(
-  nodeId: string,
-  placementType: 'PACK' | 'ABSOLUTE',
-  displayName: string,
-): Record<string, unknown> {
-  return {
-    nodeId,
-    kind: 'rect',
-    displayName,
-    bindings: [],
-    render: false,
-    placement: placementType === 'PACK'
-      ? {
-        type: 'PACK', widthMode: 'FIXED', widthMm: 1,
-        heightMode: 'FIXED', heightMm: 1,
-      }
-      : {
-        type: 'ABSOLUTE', xMm: 0, yMm: 0,
-        widthMode: 'FIXED', widthMm: 1,
-        heightMode: 'FIXED', heightMm: 1,
-      },
-  };
-}
-
-function findEmptyStructuralScaffold(parent: Record<string, unknown>): Record<string, unknown> | null {
-  if ((parent.kind !== 'repeat' && parent.kind !== 'conditional')
-    || !Array.isArray(parent.children) || parent.children.length !== 1) return null;
-  const child = objectOrNull(parent.children[0]);
-  if (!child || child.kind !== 'rect' || child.render !== false
-    || (child.displayName !== '循环内容占位' && child.displayName !== '条件内容占位')
-    || child.children !== undefined
-    || !Array.isArray(child.bindings) || child.bindings.length !== 0) return null;
-  return child;
 }
 
 function allocateStructuralIdentity(
