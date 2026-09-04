@@ -7,11 +7,26 @@ target/
 ### RenderWeave generated/local ###
 .scratch/chrome-cdp-*/
 .scratch/chrome-profile-*/
+# Ticket-local browser probes, screenshots, temporary worktrees, and replay output.
+# Durable issue/spec Markdown remains tracked under named effort directories.
+.scratch/dev-web/
+.scratch/runtime/
+.scratch/shots/
+.scratch/source-captures/
+.scratch/worktrees/
+.scratch/t[0-9]*/
+.scratch/t[0-9]*.*
+.scratch/td*.*
+.scratch/*.log
+.scratch/*.png
 node_modules/
 web/dist/
 web/playwright-report/
 web/test-results/
 web/coverage/
+/playwright-report/
+/test-results/
+web/.scratch/
 .sdlc/evidence/
 .sdlc/downloads/
 .sdlc/toolchains/

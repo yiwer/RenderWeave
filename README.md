@@ -69,6 +69,13 @@ gate 为兼容历史脚本仍会把输入清单、Git 状态、日志、退出�
 
 ## 本地拓扑
 
+生产 OCR sidecar 的固定 wheel 由 Git LFS 管理。首次 clone 后先确保已安装 Git LFS，并拉取离线构建输入：
+
+```powershell
+git lfs install
+git lfs pull --include="docker/ocr-sidecar/vendor/*.whl"
+```
+
 `compose.yaml` 定义 Web、API、PostgreSQL 与持久 BlobStore 卷：
 
 ```powershell
