@@ -1,100 +1,150 @@
-# Template v1 Goal 交接文档
+# Template v1 skills-first handoff
 
-> 状态日期：2026-08-20
-> Goal：持续推进 Template v1 实现直到完成
-> Goal tracker：active；single-writer 纪律不变
+> Updated: 2026-09-03
+> Audience: the next agent landing the approved Template Designer prototype decisions into the production editor,
+> then continuing additive Template v1.
 
-## 1. 当前快照
+## Outcome at handoff
 
-| 项目 | 值 |
+The reference prototype has been validated and production landing is complete through T224. T225 has a substantial
+candidate implementation commit, but it is **not complete**: fixed-point review and a successful real save/reload
+journey are still missing. T226 and T227 remain blocked behind it. Template v1, the formal Renderer Profile and
+Authoritative Preview are not READY.
+
+## Start state
+
+| Fact | Current value |
 |---|---|
-| Worktree | `D:\\Yiwer\\code\\RenderWeave-template-v1-implementation` |
-| 分支 | `feature/template-v1` |
-| 验证锚点 | `c91a128`（T21）+ TV1-T13 closeout diff |
-| Upstream | 当前已提交历史 ahead 9；从未 push，本轮也未 push/tag/PR |
-| Goal | active，无 token budget |
-| 当前 ticket | TV1-T13 resolved / `automated_verified`；最终 full exact-manifest gate 后形成单一 verified commit |
+| Repository | `D:\Yiwer\code\RenderWeave` |
+| Branch / HEAD | `main` / `dd596f692e9d28d1396a21b88592d470508cdf21` |
+| Upstream relation | `main` is 141 commits ahead of `origin/main`; nothing from this effort was pushed |
+| Goal tracker | `paused`; objective remains continuous Template v1 completion |
+| Current ticket | T225 `in-progress` |
+| T225 base / candidates | `5e0e2d84` / `b6f40ef8`, plus incremental fix `b16f621f` |
+| Next approved tickets | T226, then T227 |
 
-T01–T21 的实施 tracker ticket（含 T13，编号并非连续的执行顺序）现已全部 resolved。旧冻结规格中的
-Security/Capacity Ticket 19 仍 open，它不是已经完成的 implementation TV1-T19（TemplateUse）同一票。
+The separate IMAGE_ONLY admission accumulation present at the original handoff was classified on 2026-09-03 into
+`2a1c2843` (offline OCR build context), `dcb8b8ef` (recovery and secure admission implementation) and `be3222c8`
+(authority/history records). Its local review packs remain payload-bearing workspace artifacts and are intentionally
+not tracked. T225 remains in progress after incremental fix `b16f621f`; re-anchor with `git status` before continuing.
 
-当前没有已登记且 unblocked 的下一 ticket。按 single-writer 规则，T13 提交后必须从 map 的
-`Not yet specified` 中只登记/claim 一张新票；不得把 Rust Engine、公开 render route、Editor 或求值硬化
-顺带塞进 T13。依赖顺序上，最自然的下一候选是 ADR-0045 已冻结的首个 Rust daemon/process Adapter +
-`render` gate 实现纵切，因为公开权威 preview 与 Editor 后续切片依赖真实 Engine；登记前仍要核对 frozen
-spec/ADR 与当前源代码，不预造 Profile 或 placeholder。
+The commit after the T225 candidate, `dd596f69`, is the approved progressive-disclosure documentation restructure.
+Do not review T225 as `5e0e2d84..HEAD`, because that would mix this later documentation commit into the ticket diff.
 
-## 2. 最近完成的两张票
+## Skills-first read order
 
-### TV1-T21：首个 Rendering 应用纵切（commit `c91a128`）
+1. Read `CONSTITUTION.md`.
+2. Read `docs/agents/issue-tracker.md` and `plans/execution-protocol.md`.
+3. Fetch T225 and its blocker T224 from `.scratch/renderweave-template-v1-implementation/issues/`.
+4. Route through `CONTEXT-MAP.md` to `docs/context/template-editor.md`. Add `asset.md` or `rendering.md` only when the
+   selected ticket actually crosses those seams.
+5. Read `docs/adr/README.md`, then only the relevant Template ADR sections. T225 is mainly governed by the frozen
+   DesignDSL/placement contract; T226 also crosses TemplateRef and lexical-domain semantics. Renderer work remains
+   governed by ADR-0044 and ADR-0045.
+6. Read the current ticket's relevant sections of
+   `specs/changes/20260817-template-v1-implementation-authority.md` and frozen checkpoint records.
+7. Call `get_goal`. The goal was paused for this handoff; report/resume it truthfully before implementation.
 
-- 新 `renderweave-rendering` artifact；TemplateClosureAuthority、Evaluator stage 1–8、Materializer、Sealer、
-  RenderNodeContract catalog/vector、CapabilityState 加密落盘与 RenderEngine scripted port。
-- app Testcontainers PostgreSQL assembly 证明 Template create → closure/admission/materialize/seal。
-- 无公开 render/preview route、无 Rust Engine；AssetResolutionPort 当时 production bridge 缺省 fail-closed。
-- 最终 full exact input manifest 已核验；本地提交完成，未 push。
+`plans/renderweave-template-v1-plan.md` is now only a pointer. `map.md`, T01-T210 cards, `docs/history/` and
+`.sdlc/evidence/` are historical navigation/build logs, not a second status machine. Do not revive A0-A3/J0-J1,
+claim, Phase or checkpoint bookkeeping.
 
-### TV1-T13：AssetResolver / Renderer-only lease（本次 closeout）
+## Completed runway
 
-- Asset-owned `AssetResolver` 与 `AssetFetchEndpoint`；precheck metadata-free，resolve closed input 只含
-  request/scope/resource/asset/kind/audience/deadline。
-- V024 `asset_render_selection`：`(renderRequestId, resourceId)` 单事务线性化，同 fingerprint exact replay，
-  异 fingerprint conflict；selection 随机 nonce AES-GCM 加密，AAD 绑定 key/fingerprint，lease 与 expiry
-  为 opaque plaintext control。
-- HMAC signed canonical HTTPS app-origin bearer URL；内部 GET 在任何 body byte 前验证 token/expiry/record 和
-  S3 exact blob length+sha256，拒绝 cookie/range/compression，固定 1 MiB chunks，404/500/503 closed status。
-- Rendering app bridge 穷尽映射 NOT_FOUND/DELETED/KIND_MISMATCH/CONFLICT/TIMEOUT/UNAVAILABLE；Evaluator
-  每次请求从 UTC Clock 冻结 60 秒 deadline；nested child failure 保留原始 Asset problem。
-- 纵切覆盖 exact replay、replace 后混合版本、8 线程线性化、delete 后旧 lease fetch、ciphertext、token
-  tamper、Range、blob corruption 与 Evaluator→Resolver→PG/S3。
+| Ticket / commit | Delivered result |
+|---|---|
+| T211-T217 / through `38d46ece` | Portable font fixture, exact offline build closure, native Text-to-PNG, fail-closed glyph paths and exact JPEG output. Renderer remains `NOT_CERTIFIED` and Profile `NOT_REGISTERED`. |
+| T218 / `d509863c` | Explicit loopback-only Candidate Preview through saved Template current, production Evaluator and real Renderer process adapter; formal preview remains fail closed. |
+| T219 / `cb2be4a4` | Real browser create/edit/save → candidate PNG/JPEG loop, integrity checks and accessibility validation; durable findings are in `docs/validation/template-v1-candidate-preview-v1.md`. |
+| T220 / `8e46155b` | Throwaway A/B/C Template Designer prototype. Variant A and its interaction vocabulary became the selected production direction. |
+| T221 / `0d9bba21` | Full admitted `renderweave-design/1.0` Web wire recognition and lossless open/resave path. |
+| T222 / `e7bfd9bd` | Production `/templates/:templateId` authoring shell, canonical EditorSession commands, Structure tree, inspector, canvas interactions and undo/redo. |
+| T223 / `3d3d1820` | All admitted visual leaves plus real ACTIVE Image/FONT Asset authoring; only canonical AssetRefs persist. |
+| T224 / `5e0e2d84` | Exact StaticSchema System projection, DSL-owned Custom/Mapping/Expression definitions and policy-authorized property bindings. |
 
-## 3. 当前证据
+Reference and production code must remain distinct until T227:
 
-| Gate | 结果 | Evidence |
-|---|---|---|
-| asset | Java 90/90；Python independent 41/41 | `.sdlc/evidence/20260820-173235-asset/` |
-| server | 全 Reactor success；Rendering 104、Asset 90、app 319，0 failure/error | `.sdlc/evidence/20260820-173254-server/` |
-| fast | repository diff、八模块 package、Web typecheck 通过 | `.sdlc/evidence/20260820-174441-fast/` |
-| full | 用 T13 最终 docs + product diff 的 exact manifest 执行；目录在最终 handoff 消息报告，不反写此文件 | `.sdlc/evidence/<final-passing-full>/` |
+- Throwaway reference: `web/src/prototype/template-designer/` and `/prototype/template-designer?variant=A|B|C`.
+- Production editor: `web/src/features/template-editor/` and `/templates/:templateId`.
 
-Gate wrapper 显式清空全部付费/live AI selector；provider attempts、费用与 API-key reads 必须保持 0。自动 gate
-最高只支撑 `automated_verified`；没有新的 J1/A3，也没有 Template/Editor/Renderer READY 声明。
+Do not copy the prototype's in-memory `DraftBox[]`, Canvas layout delta, browser-only domain shapes or persistence
+shortcuts into production. T221-T224 deliberately use the canonical DesignDSL working copy and real APIs instead.
 
-## 4. 关键边界
+## T225: exact state and next actions
 
-- 不碰另一个 dirty main/worktree；只在本实施 worktree 写入。
-- 不 push/tag/PR；需要用户另行明确授权。
-- PostgreSQL 语义只用 Testcontainers PostgreSQL，Blob 只走同一 S3 Adapter/Testcontainers MinIO；不用
-  H2/SQLite、文件系统替代或 test-only bypass。
-- fetch URL 是请求级 bearer secret：进入完整 RenderDocument bytes 以做交接完整性保护，但不进入
-  assetSelectionDigest/evaluationResultDigest、普通日志、审计或 selection record 明文。
-- replace/delete 不撤销已签发 lease；endpoint 按 selection exact hash 读取 immutable blob，不重查 current、
-  lifecycle 或 actor。新 resolve occurrence 独立观察后续状态。
-- 无 Rust daemon/process Adapter、Engine network allowlist/retry/cache、公共 render/preview、Editor 产品代码、
-  图片渲染、Profile registration 或 physical Linux certification。
-- `asset_aggregate` 与 `asset_content_revision` 的 circular deferred FK 仍使物理删除不属于现有语义；v1 只用
-  lifecycle soft delete。若未来需要 purge，必须另票设计 forward migration。
-- app 全量测试关闭多个 Testcontainers context 时，既有 scheduled consumer 可能在 shutdown 期间记录旧连接
-  refused 噪声；Maven/gate 的 test summary 与 metadata exit code 才是结果权威。不要把日志噪声伪报为失败，
-  也不要在真实 test failure 时忽略 exit code。
+Candidate commit `b6f40ef8` changes 21 ticket-owned Web/E2E files (about +6.6k/-0.2k lines). It adds:
 
-## 5. 接手后的顺序
+- `template-editor-definite-layout.ts`: pure, non-authoritative projection from persisted DesignDSL for Group, Frame,
+  Stack and Grid, including definite HUG containers, padding, signed margins, alignment, FIXED/FILL bounds, stable
+  Stack allocation, ordered Grid FIXED/AUTO/FRACTION solving and fail-closed cycle/intrinsic errors.
+- `template-editor-grid-tracks.ts`: lossless compact `12, auto, 1*, 2*` syntax over formal track objects.
+- Semantic placement/property commands, reparent conversion and Group compensation without a parallel geometry store.
+- Inspector controls and canvas projections for managed layout; managed moves are transient and restore, while legal
+  FREE geometry changes persist. Selection chrome remains an editor-only overlay.
+- Unit/component coverage and an expanded real-route Stack/Grid roundtrip journey.
 
-1. `get_goal` 确认同一 goal 仍 active。
-2. 核对 T13 最终 full evidence、verified commit 与 clean worktree；若未完成，先收口 T13，不另 claim。
-3. 从 `map.md`、ADR-0045、冻结 Renderer tickets/requirements 与当前 Rendering seam 重算 DAG。
-4. 只登记并 claim 一个最小但完整的 unblocked implementation ticket；优先评估首个 Rust Engine/process
-   vertical，不以 placeholder、scripted adapter 或 Windows/WSL 结果冒充生产 Renderer。
-5. 按 TDD 与局部→受影响→Phase→Goal gate 推进；继续禁止付费/live provider、真实数据与任何 secret 输出。
+Verification truth:
 
-## 6. 权威索引
+- Web gate passed on the candidate working tree: 60 files / 721 tests, typecheck/lint and a 2,190-module build
+  (`.sdlc/evidence/20260903-093528-web`). It has not been replayed from a clean worktree at `b6f40ef8`.
+- Template Java 195/195, independent kernel 211/211 and AssetRef replay 3/3 passed. The composite gate then failed at
+  the pre-existing tricky-font `INPUT_BINDING: renderer/process-manifest.json` mismatch
+  (`.sdlc/evidence/20260903-090018-template`). The immutable record binds `f814c98e...`, while the current manifest is
+  `7ff83532...`.
+- No T225 real roundtrip passed. One attempt lacked the app JAR; a second ended with
+  `You cannot call a method on a null-valued expression` during orchestration/cleanup. Treat the journey as unverified.
+- T225 remains `in-progress`; its acceptance boxes are unchecked and Resolution is empty.
 
-- `CONSTITUTION.md` / `CONTEXT.md`：治理、领域语言与模块边界
-- `plans/renderweave-template-v1-plan.md`：当前 DAG/status
-- `.scratch/renderweave-template-v1-implementation/map.md`：tracker 与未登记切片
-- `.scratch/renderweave-template-v1-implementation/issues/13-resolver-and-renderer-lease.md`：T13 contract/resolution
-- `plans/logs/TV1-T13.md`：T13 TDD、产品增量、证据与边界
-- `docs/adr/0043-asset-admission-resolution-deep-interface.md` / `0044-evaluator-renderdocument-seam.md` /
-  `0045-rust-renderer-process-protocol-and-certification.md`：冻结实现方向
-- `.scratch/renderweave-template-v1/issues/13-asset-reference-and-resolution.md` 与 requirements/13.tsv：冻结
-  Asset resolution 语义；后续 Engine 约束另见 tickets 16/19 与相应 requirements
+Continue T225 in this order:
+
+1. Run `code-review` on explicit fixed point `5e0e2d84..b6f40ef8`, separating Standards and Spec findings. Do not
+   include `dd596f69` or the dirty IMAGE_ONLY diff.
+2. Fix blocking findings with focused tests. Because another commit follows the candidate, avoid history rewriting in
+   the dirty shared worktree; use a narrowly staged T225 follow-up commit if needed.
+3. Build the app, then rerun:
+   `powershell -ExecutionPolicy Bypass -File tools/run-template-editor-roundtrip-e2e.ps1 -LocalPostgresBin D:\postgresql\bin`.
+   Diagnose the null orchestration failure if it recurs; do not weaken cleanup or substitute H2/SQLite.
+4. Replay `-Gate web`. Run `-Gate template` and report the Template passes separately from the known immutable
+   Renderer-manifest blocker unless a separately approved successor-authority ticket has repaired it.
+5. Only after review, affected verification and a successful Stack/Grid save/reload journey: check acceptance boxes,
+   write a concise Resolution, set T225 to `done`, and commit only T225-owned paths.
+
+## Approved frontier after T225
+
+- **T226 — Repeat, Conditional and TemplateUse composition.** It owns exact list/boolean source eligibility, lexical
+  Repeat domains, authored-once versus virtual occurrences, TemplateUse exact schema/readiness filtering and fills.
+  It does not invent a primitive `{value}` adapter, browser runtime evaluation or backend DataSource aggregate.
+- **T227 — safety closure and prototype retirement.** It revalidates conflict reconciliation, INVALID confirmation,
+  recovery/import, Raw Repair, Compatibility Read-only, keyboard/a11y and representative real-route journeys, then
+  removes or development-isolates obsolete prototype routes/state. It does not authorize Renderer certification or
+  production rollout.
+
+These tickets are already published and approved. Each ready ticket gets one `implement` run, affected gates, local
+commit and fixed-point `code-review`.
+
+## Work still needed after T227
+
+T227 finishes the approved production-editor landing set, not all Template v1. Before declaring the goal complete,
+run a fresh spec-to-code gap analysis and use `to-tickets` to present the next tracer-bullet decomposition for user
+approval. Known residual groups include:
+
+- Append-only repair for the legacy Renderer process-manifest/tricky-font authority, using a successor record or
+  versioned historical-manifest lookup rather than rewriting frozen v1/v2/v3 bytes.
+- Remaining exact Renderer surface: unsupported Text/RenderNode variants, LayoutTrace multipart and the deferred 162
+  exact output/conformance records.
+- Physical Linux certification on required CPU families, certified manifest lifecycle, Profile registration and READY
+  transition before formal Render/Authoritative Preview can become available.
+- Final product-level Template v1 acceptance against the frozen authority, including remaining capacity, security,
+  cancellation/recovery and browser journeys.
+
+Formal certification was explicitly deferred during T218/T219. Do not infer authorization to register a Profile,
+claim READY, use production systems or mutate immutable records.
+
+## Boundaries
+
+- No push, tag or PR without explicit authorization.
+- No paid/live model call, real data, production action, secret read or external side effect.
+- No placeholder route/table/interface/module/Profile registration or test-only bypass.
+- PostgreSQL behavior uses PostgreSQL/Testcontainers or the explicit local runner, never H2/SQLite.
+- Preserve unrelated dirty IMAGE_ONLY work. Use explicit path lists for `git add`; never `git add -A`.
+- Keep Candidate Preview `NOT_CERTIFIED`; normal Authoritative Preview stays fail closed until certification is real.
