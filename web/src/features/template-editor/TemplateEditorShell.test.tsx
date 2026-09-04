@@ -313,7 +313,7 @@ describe('Template Editor E1/E2 Product shell', () => {
     expect(screen.getByText(/无法为目标父级构造合法 placement/)).toBeTruthy();
   });
 
-  it('exposes all four formal container kinds in the production catalog', () => {
+  it('exposes all formal layout and structural container kinds in the production catalog', () => {
     const session = createSessionFromBaseline(
       structuredBaseline(),
       { state: 'checked', value: 'READY' },
@@ -326,7 +326,10 @@ describe('Template Editor E1/E2 Product shell', () => {
     expect(screen.getByRole('button', { name: '添加框架' })).toBeTruthy();
     expect(screen.getByRole('button', { name: '添加堆叠容器' })).toBeTruthy();
     expect(screen.getByRole('button', { name: '添加网格容器' })).toBeTruthy();
-    expect(screen.getByText('4 个正式容器')).toBeTruthy();
+    expect(screen.getByRole('button', { name: '添加循环容器' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: '添加条件容器' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: '添加嵌套模板' })).toBeTruthy();
+    expect(screen.getByText('7 个正式容器 / 结构节点')).toBeTruthy();
   });
 
   it('renders the approved Canvas Focus workbench with only real behavior', () => {

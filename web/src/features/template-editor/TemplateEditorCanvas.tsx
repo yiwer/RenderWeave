@@ -42,6 +42,8 @@ import {
   type TemplateDefiniteLayoutEntry,
   type TemplateEditorLayoutProblem,
   type TemplateParentLayout,
+  type TemplateStructuralLayoutProblem,
+  type TemplateStructuralLayoutStates,
 } from './template-editor-definite-layout';
 
 export const CANVAS_PX_PER_MM = 4;
@@ -104,11 +106,13 @@ export interface TemplateEditorCanvasProps {
   readonly assetTransport?: TemplateEditorAssetTransport;
   readonly assetResources?: TemplateEditorCanvasAssetResources;
   readonly onInsertAt?: (kind: TemplateCanvasDropKind, xMm: number, yMm: number) => void;
+  readonly structuralStates?: TemplateStructuralLayoutStates;
 }
 
 export type TemplateCanvasDropKind =
   | 'group' | 'frame' | 'stack' | 'grid' | 'text' | 'image' | 'rect' | 'ellipse' | 'line'
-  | 'shape' | 'polygon' | 'polyline' | 'path' | 'qrCode' | 'barcode';
+  | 'shape' | 'polygon' | 'polyline' | 'path' | 'qrCode' | 'barcode'
+  | 'repeat' | 'conditional' | 'templateUse';
 
 interface TemplateEditorCanvasImageResource {
   readonly url: string;
@@ -189,6 +193,7 @@ export function TemplateEditorCanvas({
   onInsertAt,
   assetTransport,
   assetResources = defaultTemplateEditorCanvasAssetResources,
+  structuralStates = {},
 }: TemplateEditorCanvasProps) {
   const canvas = objectOrNull(workingCopy.designDsl.designRoot);
   const widthMm = positiveTemplateNumber(canvas?.widthMm) ?? 210;
@@ -197,7 +202,10 @@ export function TemplateEditorCanvas({
     width: widthMm * CANVAS_PX_PER_MM,
     height: heightMm * CANVAS_PX_PER_MM,
   }), [heightMm, widthMm]);
-  const layout = useMemo(() => projectTemplateDefiniteLayout(canvas), [canvas]);
+  const layout = useMemo(
+    () => projectTemplateDefiniteLayout(canvas, structuralStates),
+    [canvas, structuralStates],
+  );
   const authoredNodes = useMemo(() => layout.state === 'ready'
     ? layout.entries.slice(1).map((entry) => projectAuthoredCanvasNode(entry, CANVAS_PX_PER_MM))
     : [], [layout]);
@@ -617,6 +625,16 @@ export function TemplateEditorCanvas({
           <span>{layoutProblemMessage(layout.problems[0])}</span>
         </p>
       ) : null}
+      {layout.state === 'ready' && layout.structuralProblems?.map((problem) => (
+        <p
+          key={`${problem.nodeId}:${problem.outcome}`}
+          className="te-canvas-layout-problem is-structural"
+          role="alert"
+        >
+          <AlertTriangle aria-hidden="true" size={16} />
+          <span>{structuralProblemMessage(problem, nodes)}</span>
+        </p>
+      ))}
       <div className="te-canvas-ruler is-horizontal" aria-hidden="true">
         <span>0</span><span>{formatNumber(widthMm / 2)}</span><span>{formatNumber(widthMm)} mm</span>
       </div>
@@ -705,6 +723,22 @@ export function TemplateEditorCanvas({
           })}
         </div>
         <div className="te-canvas-editor-overlay" data-template-canvas-editor-overlay="">
+          {layout.state === 'ready' ? layout.virtualOccurrences?.map((occurrence) => (
+            <div
+              key={`${occurrence.repeatNodeId}:${occurrence.ordinal}`}
+              className="te-canvas-repeat-occurrence"
+              data-template-repeat-occurrence={occurrence.repeatNodeId}
+              data-template-repeat-ordinal={occurrence.ordinal}
+              style={{
+                left: occurrence.worldRect.x * CANVAS_PX_PER_MM,
+                top: occurrence.worldRect.y * CANVAS_PX_PER_MM,
+                width: occurrence.worldRect.width * CANVAS_PX_PER_MM,
+                height: occurrence.worldRect.height * CANVAS_PX_PER_MM,
+              }}
+            >
+              <span>{occurrence.ordinal}</span>
+            </div>
+          )) : null}
           {authoredNodes.filter((node) => selectedIds.has(node.nodeId)).map((node) => {
             const isPrimary = node.nodeId === selectedNodeId;
             const displayRect = previewCanvasNodeRect(node, geometryPreview);
@@ -1018,6 +1052,20 @@ function layoutProblemMessage(problem: TemplateEditorLayoutProblem | undefined):
   return `${reason}：${problem.nodeId} · ${problem.property}`;
 }
 
+function structuralProblemMessage(
+  problem: TemplateStructuralLayoutProblem,
+  nodes: readonly EditorNodeProjection[],
+): string {
+  const label = nodes.find((node) => node.nodeId === problem.nodeId)?.displayName
+    ?? problem.nodeId;
+  const reason = problem.outcome === 'NEEDS_REPAIR'
+    ? '现有选择与当前事实不兼容，请重新配置'
+    : problem.outcome === 'ABSENT_ERROR'
+      ? '数据缺失且策略为 ERROR'
+      : '数据源暂不可投影';
+  return `${label}：${reason}`;
+}
+
 interface CanvasVisualResourceState {
   readonly imagePreviewUrl?: string;
   readonly imageAlt?: string;
@@ -1180,7 +1228,7 @@ function assetResolutionWarning(resolution: TemplateAssetResolution, label: stri
 
 const TEMPLATE_CANVAS_DROP_KINDS: ReadonlySet<string> = new Set([
   'group', 'frame', 'stack', 'grid', 'text', 'image', 'rect', 'ellipse', 'line', 'shape',
-  'polygon', 'polyline', 'path', 'qrCode', 'barcode',
+  'polygon', 'polyline', 'path', 'qrCode', 'barcode', 'repeat', 'conditional', 'templateUse',
 ]);
 
 function isTemplateCanvasDropKind(value: unknown): value is TemplateCanvasDropKind {

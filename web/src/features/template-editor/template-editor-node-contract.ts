@@ -27,8 +27,8 @@ const NODE_CONTRACTS = Object.freeze({
   frame: contract(true, 'ABSOLUTE', true, true),
   stack: contract(true, 'STACK', true, true),
   grid: contract(true, 'GRID', true, true),
-  repeat: contract(true, 'PACK'),
-  conditional: contract(true, 'ABSOLUTE'),
+  repeat: contract(true, 'PACK', true, true),
+  conditional: contract(true, 'ABSOLUTE', true, true),
   text: contract(false, null, true),
   image: contract(false, null, true),
   rect: contract(false, null, true, false, FIXED_FILL_SIZE_MODES),
@@ -39,7 +39,7 @@ const NODE_CONTRACTS = Object.freeze({
   path: contract(false, null, true),
   qrCode: contract(false, null, true, false, FIXED_FILL_SIZE_MODES),
   barcode: contract(false, null, true, false, FIXED_FILL_SIZE_MODES),
-  templateUse: contract(false),
+  templateUse: contract(false, null, true),
 } satisfies Record<TemplateDesignNodeKind, TemplateEditorNodeContract>);
 
 export const TEMPLATE_DESIGN_NODE_KINDS: ReadonlySet<string> = new Set(

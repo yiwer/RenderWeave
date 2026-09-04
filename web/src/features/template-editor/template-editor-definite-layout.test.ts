@@ -929,4 +929,166 @@ describe('projectTemplateDefiniteLayout', () => {
       worldRect: { x: 3, y: 4, width: 5, height: 6 },
     });
   });
+
+  it('projects structural control flow without cloning authored identities or leaving suppressed gaps', () => {
+    const conditional: Node = {
+      nodeId: 'conditional', kind: 'conditional',
+      placement: stackPlacement({ widthMm: 10, heightMm: 10 }),
+      condition: { kind: 'literal', valueType: 'boolean', value: false },
+      absentPolicy: 'FALSE',
+      children: [rect('conditional-child', fixed(0, 0, 4, 3))],
+    };
+    const stack: Node = {
+      nodeId: 'stack', kind: 'stack', placement: fixed(0, 0, 40, 40),
+      direction: 'COLUMN', gapMm: 5, children: [conditional, rect('after', stackPlacement())],
+    };
+    const repeat: Node = {
+      nodeId: 'repeat', kind: 'repeat', placement: fixed(50, 0, 40, 20),
+      loopId: 'loop', items: { kind: 'literal', valueType: { type: 'list', items: 'text' }, value: ['a', 'b', 'c'] },
+      absentPolicy: 'EMPTY',
+      itemLayout: { kind: 'STACK', direction: 'COLUMN', gapMm: 0 },
+      instanceLayout: { kind: 'STACK', direction: 'ROW', gapMm: 2 },
+      children: [rect('repeat-child', {
+        type: 'PACK', widthMode: 'FIXED', widthMm: 5, heightMode: 'FIXED', heightMm: 4,
+      })],
+    };
+
+    const result = projectTemplateDefiniteLayout(canvas([stack, repeat]), {
+      conditional: { kind: 'conditional', outcome: 'FALSE' },
+      repeat: { kind: 'repeat', outcome: 'VALUES', count: 3 },
+    });
+
+    expect(result.state).toBe('ready');
+    if (result.state !== 'ready') throw new Error('expected ready layout');
+    expect(result.entries.map(({ nodeId }) => nodeId)).toEqual([
+      'canvas', 'stack', 'after', 'repeat', 'repeat-child',
+    ]);
+    expect(result.entries.find(({ nodeId }) => nodeId === 'after')?.localRect.y).toBe(0);
+    expect(result.entries.filter(({ nodeId }) => nodeId === 'repeat-child')).toHaveLength(1);
+    expect(result.virtualOccurrences).toEqual([
+      expect.objectContaining({ repeatNodeId: 'repeat', ordinal: 1, worldRect: { x: 50, y: 0, width: 5, height: 4 } }),
+      expect.objectContaining({ repeatNodeId: 'repeat', ordinal: 2, worldRect: { x: 57, y: 0, width: 5, height: 4 } }),
+      expect.objectContaining({ repeatNodeId: 'repeat', ordinal: 3, worldRect: { x: 64, y: 0, width: 5, height: 4 } }),
+    ]);
+  });
+
+  it('keeps structural source failures visible without executing render input', () => {
+    const conditional: Node = {
+      nodeId: 'conditional-error', kind: 'conditional', placement: fixed(2, 3, 10, 8),
+      condition: { kind: 'context', domain: 'invocation', pointer: '/flag' },
+      absentPolicy: 'ERROR', children: [rect('kept-authored', fixed(0, 0, 1, 1))],
+    };
+    const result = projectTemplateDefiniteLayout(canvas([conditional]), {
+      'conditional-error': { kind: 'conditional', outcome: 'SOURCE_ERROR' },
+    });
+    expect(result.state).toBe('ready');
+    if (result.state !== 'ready') throw new Error('expected ready layout');
+    expect(result.entries.map(({ nodeId }) => nodeId)).toEqual([
+      'canvas', 'conditional-error', 'kept-authored',
+    ]);
+    expect(result.structuralProblems).toEqual([{
+      nodeId: 'conditional-error', kind: 'conditional', outcome: 'SOURCE_ERROR',
+    }]);
+  });
+
+  it('removes empty and zero-surviving Repeat nodes before parent packing', () => {
+    const pack = {
+      type: 'PACK', widthMode: 'FIXED', widthMm: 5,
+      heightMode: 'FIXED', heightMm: 4,
+    };
+    const repeat = (nodeId: string, child: Node): Node => ({
+      nodeId,
+      kind: 'repeat',
+      placement: stackPlacement({ widthMm: 20, heightMm: 10 }),
+      loopId: `${nodeId}-loop`,
+      items: { kind: 'literal', valueType: { type: 'list', items: 'text' }, value: [] },
+      absentPolicy: 'EMPTY',
+      itemLayout: { kind: 'STACK', direction: 'ROW' },
+      instanceLayout: { kind: 'STACK', direction: 'COLUMN' },
+      children: [child],
+    });
+    const empty = repeat('empty-repeat', rect('empty-child', pack));
+    const zeroSurviving = repeat('zero-surviving-repeat', {
+      ...rect('suppressed-child', pack),
+      render: false,
+    });
+    const stack: Node = {
+      nodeId: 'repeat-parent', kind: 'stack', placement: fixed(0, 0, 40, 40),
+      direction: 'COLUMN', gapMm: 5,
+      children: [empty, zeroSurviving, rect('after-repeats', stackPlacement())],
+    };
+
+    const result = projectTemplateDefiniteLayout(canvas([stack]), {
+      'empty-repeat': { kind: 'repeat', outcome: 'EMPTY' },
+      'zero-surviving-repeat': { kind: 'repeat', outcome: 'VALUES', count: 2 },
+    });
+
+    expect(result.state).toBe('ready');
+    if (result.state !== 'ready') throw new Error('expected ready layout');
+    expect(result.entries.map(({ nodeId }) => nodeId)).toEqual([
+      'canvas', 'repeat-parent', 'after-repeats',
+    ]);
+    expect(result.entries.find(({ nodeId }) => nodeId === 'after-repeats')?.localRect.y).toBe(0);
+    expect(result.virtualOccurrences).toBeUndefined();
+  });
+
+  it('measures HUG Conditional, Repeat and TemplateUse from their frozen local facts', () => {
+    const conditional: Node = {
+      nodeId: 'hug-conditional', kind: 'conditional',
+      placement: {
+        type: 'ABSOLUTE', xMm: 1, yMm: 2,
+        widthMode: 'HUG_CONTENT', heightMode: 'HUG_CONTENT',
+      },
+      condition: { kind: 'literal', valueType: 'boolean', value: true },
+      absentPolicy: 'FALSE',
+      children: [rect('conditional-hug-child', fixed(2, 3, 5, 4))],
+    };
+    const repeat: Node = {
+      nodeId: 'hug-repeat', kind: 'repeat',
+      placement: {
+        type: 'ABSOLUTE', xMm: 20, yMm: 2,
+        widthMode: 'HUG_CONTENT', heightMode: 'HUG_CONTENT',
+      },
+      loopId: 'hug-repeat-loop',
+      items: { kind: 'literal', valueType: { type: 'list', items: 'text' }, value: ['a', 'b', 'c'] },
+      absentPolicy: 'EMPTY',
+      itemLayout: { kind: 'STACK', direction: 'ROW', gapMm: 1 },
+      instanceLayout: { kind: 'GRID', columns: 3, columnGapMm: 2, rowGapMm: 1 },
+      children: [
+        rect('repeat-hug-first', {
+          type: 'PACK', widthMode: 'FIXED', widthMm: 5,
+          heightMode: 'FIXED', heightMm: 4,
+        }),
+        rect('repeat-hug-second', {
+          type: 'PACK', widthMode: 'FIXED', widthMm: 3,
+          heightMode: 'FIXED', heightMm: 6,
+        }),
+      ],
+    };
+    const templateUse: Node = {
+      nodeId: 'hug-use', kind: 'templateUse',
+      placement: {
+        type: 'ABSOLUTE', xMm: 50, yMm: 2,
+        widthMode: 'HUG_CONTENT', heightMode: 'HUG_CONTENT',
+      },
+    };
+
+    const result = projectTemplateDefiniteLayout(canvas([conditional, repeat, templateUse]), {
+      'hug-conditional': { kind: 'conditional', outcome: 'TRUE' },
+      'hug-repeat': { kind: 'repeat', outcome: 'VALUES', count: 2 },
+      'hug-use': {
+        kind: 'templateUse', outcome: 'READY',
+        sourceCanvasSizeMm: { widthMm: 30, heightMm: 12 },
+      },
+    });
+
+    expect(result.state).toBe('ready');
+    if (result.state !== 'ready') throw new Error('expected ready layout');
+    expect(result.entries.find(({ nodeId }) => nodeId === 'hug-conditional')?.worldRect)
+      .toEqual({ x: 1, y: 2, width: 7, height: 7 });
+    expect(result.entries.find(({ nodeId }) => nodeId === 'hug-repeat')?.worldRect)
+      .toEqual({ x: 20, y: 2, width: 20, height: 6 });
+    expect(result.entries.find(({ nodeId }) => nodeId === 'hug-use')?.worldRect)
+      .toEqual({ x: 50, y: 2, width: 30, height: 12 });
+  });
 });

@@ -1,6 +1,30 @@
 import { finiteTemplateNumber } from './template-editor-numbers';
 
-export type TemplateParentLayout = 'ABSOLUTE' | 'STACK' | 'GRID';
+export type TemplateParentLayout = 'ABSOLUTE' | 'STACK' | 'GRID' | 'PACK';
+
+export type TemplateStructuralLayoutState =
+  | { readonly kind: 'repeat'; readonly outcome: 'VALUES'; readonly count: number }
+  | { readonly kind: 'repeat'; readonly outcome: 'EMPTY' | 'ABSENT_ERROR' | 'SOURCE_ERROR' }
+  | { readonly kind: 'conditional'; readonly outcome: 'TRUE' | 'FALSE' | 'ABSENT_ERROR' | 'SOURCE_ERROR' }
+  | {
+    readonly kind: 'templateUse';
+    readonly outcome: 'READY' | 'NEEDS_REPAIR' | 'SOURCE_ERROR';
+    readonly sourceCanvasSizeMm?: Readonly<{ readonly widthMm: number; readonly heightMm: number }>;
+  };
+
+export type TemplateStructuralLayoutStates = Readonly<Record<string, TemplateStructuralLayoutState>>;
+
+export interface TemplateRepeatOccurrence {
+  readonly repeatNodeId: string;
+  readonly ordinal: number;
+  readonly worldRect: TemplateLayoutRect;
+}
+
+export interface TemplateStructuralLayoutProblem {
+  readonly nodeId: string;
+  readonly kind: 'repeat' | 'conditional' | 'templateUse';
+  readonly outcome: 'ABSENT_ERROR' | 'SOURCE_ERROR' | 'NEEDS_REPAIR';
+}
 
 export interface TemplateLayoutRect {
   readonly x: number;
@@ -38,6 +62,8 @@ export type TemplateDefiniteLayoutResult =
     readonly state: 'ready';
     readonly entries: readonly TemplateDefiniteLayoutEntry[];
     readonly canvasContentRect: TemplateLayoutRect;
+    readonly virtualOccurrences?: readonly TemplateRepeatOccurrence[];
+    readonly structuralProblems?: readonly TemplateStructuralLayoutProblem[];
   }
   | {
     readonly state: 'invalid';
@@ -125,16 +151,20 @@ interface GridChildMeasure {
   readonly verticalAlign: Alignment;
 }
 
-export function projectTemplateDefiniteLayout(canvas: unknown): TemplateDefiniteLayoutResult {
+export function projectTemplateDefiniteLayout(
+  canvas: unknown,
+  structuralStates: TemplateStructuralLayoutStates = {},
+): TemplateDefiniteLayoutResult {
   try {
-    const root = record(canvas, '<canvas>', 'canvas');
-    const rootId = text(root.nodeId, '<canvas>', 'nodeId');
-    if (root.kind !== 'canvas') invalid(rootId, 'kind');
-    assertAcyclicUniqueTree(root);
+    const authoredRoot = record(canvas, '<canvas>', 'canvas');
+    const rootId = text(authoredRoot.nodeId, '<canvas>', 'nodeId');
+    if (authoredRoot.kind !== 'canvas') invalid(rootId, 'kind');
+    assertAcyclicUniqueTree(authoredRoot);
+    const root = suppressStructuralBranches(authoredRoot, structuralStates);
     const width = positive(root.widthMm, rootId, 'widthMm');
     const height = positive(root.heightMm, rootId, 'heightMm');
     const rootRect = rect(0, 0, width, height);
-    const projector = new LayoutProjector();
+    const projector = new LayoutProjector(structuralStates);
     projector.push(root, null, rootRect, rootRect, 'ABSOLUTE');
     for (const child of staticallyRenderedChildren(root, rootId)) {
       projector.absolute(child, rootId, rootRect);
@@ -143,6 +173,12 @@ export function projectTemplateDefiniteLayout(canvas: unknown): TemplateDefinite
       state: 'ready',
       entries: Object.freeze(projector.entries),
       canvasContentRect: rootRect,
+      ...(projector.virtualOccurrences.length > 0
+        ? { virtualOccurrences: Object.freeze(projector.virtualOccurrences) }
+        : {}),
+      ...(projector.structuralProblems.length > 0
+        ? { structuralProblems: Object.freeze(projector.structuralProblems) }
+        : {}),
     });
   } catch (error) {
     const problem = error instanceof LayoutFault
@@ -163,7 +199,7 @@ export function projectTemplateGroupUnionBounds(group: unknown): TemplateGroupUn
     const nodeId = text(node.nodeId, '<group>', 'nodeId');
     if (node.kind !== 'group') invalid(nodeId, 'kind');
     assertAcyclicUniqueTree(node);
-    const measured = measureGroup(node);
+    const measured = measureGroup(node, {});
     return Object.freeze({
       state: 'ready',
       bounds: Object.freeze({
@@ -185,6 +221,10 @@ export function projectTemplateGroupUnionBounds(group: unknown): TemplateGroupUn
 
 class LayoutProjector {
   readonly entries: TemplateDefiniteLayoutEntry[] = [];
+  readonly virtualOccurrences: TemplateRepeatOccurrence[] = [];
+  readonly structuralProblems: TemplateStructuralLayoutProblem[] = [];
+
+  constructor(private readonly structuralStates: TemplateStructuralLayoutStates) {}
 
   push(
     value: NodeValue,
@@ -220,7 +260,7 @@ class LayoutProjector {
     const x = finite(placement.xMm, nodeId, 'placement.xMm');
     const y = finite(placement.yMm, nodeId, 'placement.yMm');
     const kind = text(node.kind, nodeId, 'kind');
-    const groupMeasure = kind === 'group' ? measureGroup(node) : null;
+    const groupMeasure = kind === 'group' ? measureGroup(node, this.structuralStates) : null;
     const widthMode = sizeMode(placement.widthMode, nodeId, 'placement.widthMode');
     const heightMode = sizeMode(placement.heightMode, nodeId, 'placement.heightMode');
     let width = widthMode === 'HUG_CONTENT'
@@ -241,6 +281,7 @@ class LayoutProjector {
           placement,
           'width',
           heightMode === 'HUG_CONTENT' ? undefined : height,
+          this.structuralStates,
         ),
       );
     }
@@ -256,6 +297,7 @@ class LayoutProjector {
           placement,
           'height',
           widthMode === 'HUG_CONTENT' ? undefined : width,
+          this.structuralStates,
         ),
       );
     }
@@ -281,7 +323,7 @@ class LayoutProjector {
     const nodeId = text(node.nodeId, parentNodeId, 'nodeId');
     const kind = text(node.kind, nodeId, 'kind');
     if (kind === 'group') {
-      const groupMeasure = knownGroupMeasure ?? measureGroup(node);
+      const groupMeasure = knownGroupMeasure ?? measureGroup(node, this.structuralStates);
       const normalizedContent = rect(
         derivedFinite(worldRect.x - groupMeasure.minimumX, nodeId, 'children'),
         derivedFinite(worldRect.y - groupMeasure.minimumY, nodeId, 'children'),
@@ -306,9 +348,95 @@ class LayoutProjector {
       const content = containerContentRect(node, worldRect, nodeId);
       this.push(node, parentNodeId, localRect, worldRect, parentLayout, content);
       this.grid(node, content);
+    } else if (kind === 'conditional') {
+      this.push(node, parentNodeId, localRect, worldRect, parentLayout, worldRect);
+      this.captureStructuralProblem(nodeId, kind);
+      for (const child of staticallyRenderedChildren(node, nodeId)) {
+        this.absolute(child, nodeId, worldRect);
+      }
+    } else if (kind === 'repeat') {
+      this.repeat(node, parentNodeId, localRect, worldRect, parentLayout);
+    } else if (kind === 'templateUse') {
+      this.push(node, parentNodeId, localRect, worldRect, parentLayout, null);
+      this.captureStructuralProblem(nodeId, kind);
     } else {
       this.push(node, parentNodeId, localRect, worldRect, parentLayout, null);
     }
+  }
+
+  private repeat(
+    node: NodeValue,
+    parentNodeId: string,
+    localRect: TemplateLayoutRect,
+    worldRect: TemplateLayoutRect,
+    parentLayout: TemplateParentLayout,
+  ): void {
+    const nodeId = text(node.nodeId, parentNodeId, 'nodeId');
+    this.push(node, parentNodeId, localRect, worldRect, parentLayout, worldRect);
+    const state = this.structuralStates[nodeId];
+    if (!state || state.kind !== 'repeat' || state.outcome !== 'VALUES') {
+      this.captureStructuralProblem(nodeId, 'repeat');
+      return;
+    }
+    const count = nonnegativeInteger(state.count, nodeId, 'occurrences');
+    if (count === 0) return;
+    const children = staticallyRenderedChildren(node, nodeId);
+    const item = packNodes(
+      children,
+      node.itemLayout,
+      nodeId,
+      'itemLayout',
+      this.structuralStates,
+    );
+    const occurrenceSizes = Array.from({ length: count }, () => ({
+      width: item.width,
+      height: item.height,
+    }));
+    const instances = packSizes(occurrenceSizes, node.instanceLayout, nodeId, 'instanceLayout');
+    instances.rects.forEach((occurrence, index) => {
+      this.virtualOccurrences.push(Object.freeze({
+        repeatNodeId: nodeId,
+        ordinal: index + 1,
+        worldRect: rect(
+          worldRect.x + occurrence.x,
+          worldRect.y + occurrence.y,
+          occurrence.width,
+          occurrence.height,
+        ),
+      }));
+    });
+    const first = instances.rects[0];
+    if (!first) return;
+    item.rects.forEach((childRect, index) => {
+      const child = children[index];
+      if (!child) return;
+      const childNode = record(child, nodeId, 'children');
+      const projected = rect(
+        worldRect.x + first.x + childRect.x,
+        worldRect.y + first.y + childRect.y,
+        childRect.width,
+        childRect.height,
+      );
+      this.emit(
+        childNode,
+        nodeId,
+        rect(first.x + childRect.x, first.y + childRect.y, childRect.width, childRect.height),
+        projected,
+        'PACK',
+      );
+    });
+  }
+
+  private captureStructuralProblem(
+    nodeId: string,
+    kind: 'repeat' | 'conditional' | 'templateUse',
+  ): void {
+    const state = this.structuralStates[nodeId];
+    if (!state || state.kind !== kind) return;
+    if (state.outcome !== 'ABSENT_ERROR'
+      && state.outcome !== 'SOURCE_ERROR'
+      && state.outcome !== 'NEEDS_REPAIR') return;
+    this.structuralProblems.push(Object.freeze({ nodeId, kind, outcome: state.outcome }));
   }
 
   private stack(stack: NodeValue, content: TemplateLayoutRect): void {
@@ -331,7 +459,13 @@ class LayoutProjector {
     ) as Alignment;
     const row = direction === 'ROW';
     const values = staticallyRenderedChildren(stack, stackId);
-    const measured = values.map((value) => measureStackChild(value, row, content, alignItems));
+    const measured = values.map((value) => measureStackChild(
+      value,
+      row,
+      content,
+      alignItems,
+      this.structuralStates,
+    ));
     const availableMain = row ? content.width : content.height;
     let usedWithoutFill = gap * Math.max(0, measured.length - 1);
     const fillIndices: number[] = [];
@@ -347,9 +481,21 @@ class LayoutProjector {
     for (const child of measured) {
       if (!child.deferredCrossHug) continue;
       if (row) {
-        child.height = measureIntrinsicAxis(child.node, child.placement, 'height', child.width);
+        child.height = measureIntrinsicAxis(
+          child.node,
+          child.placement,
+          'height',
+          child.width,
+          this.structuralStates,
+        );
       } else {
-        child.width = measureIntrinsicAxis(child.node, child.placement, 'width', child.height);
+        child.width = measureIntrinsicAxis(
+          child.node,
+          child.placement,
+          'width',
+          child.height,
+          this.structuralStates,
+        );
       }
     }
     let occupied = usedWithoutFill;
@@ -397,6 +543,7 @@ class LayoutProjector {
       columnGap,
       content.width,
       'width',
+      this.structuralStates,
     );
     const rows = solveGridAxis(
       measured,
@@ -404,6 +551,7 @@ class LayoutProjector {
       rowGap,
       content.height,
       'height',
+      this.structuralStates,
       columns,
     );
 
@@ -414,9 +562,9 @@ class LayoutProjector {
       const widthOffer = resolveGridDefiniteAxis(child, 'width', columnWidth, left, right);
       const heightOffer = resolveGridDefiniteAxis(child, 'height', rowHeight, top, bottom);
       const width = widthOffer
-        ?? resolveGridChildAxis(child, 'width', heightOffer);
+        ?? resolveGridChildAxis(child, 'width', heightOffer, this.structuralStates);
       const height = heightOffer
-        ?? resolveGridChildAxis(child, 'height', widthOffer);
+        ?? resolveGridChildAxis(child, 'height', widthOffer, this.structuralStates);
       const x = columns.origins[child.column]!
         + gridAxisPosition(child, 'width', columnWidth, left, right, width);
       const y = rows.origins[child.row]!
@@ -511,6 +659,7 @@ function solveGridAxis(
   gap: number,
   available: number,
   axis: 'width' | 'height',
+  structuralStates: TemplateStructuralLayoutStates,
   oppositeAxisMeasure?: GridAxisMeasure,
 ): GridAxisMeasure {
   const constraints: Array<{
@@ -536,6 +685,7 @@ function solveGridAxis(
       axis,
       mode,
       resolvedGridOppositeOuter(child, axis, oppositeAxisMeasure),
+      structuralStates,
     );
     const [top, right, bottom, left] = child.margins;
     const contribution = Math.max(0, size + (axis === 'width' ? left + right : top + bottom));
@@ -591,16 +741,24 @@ function gridChildNaturalSize(
   axis: 'width' | 'height',
   mode: SizeMode,
   oppositeOuter: number | undefined,
+  structuralStates: TemplateStructuralLayoutStates,
 ): number {
   if (mode === 'FIXED') return constrainedFixed(child.placement, axis, child.nodeId);
   if (mode === 'FILL') cycle(child.nodeId, `placement.${axis}Mode`);
-  return measureIntrinsicAxis(child.node, child.placement, axis, oppositeOuter);
+  return measureIntrinsicAxis(
+    child.node,
+    child.placement,
+    axis,
+    oppositeOuter,
+    structuralStates,
+  );
 }
 
 function resolveGridChildAxis(
   child: GridChildMeasure,
   axis: 'width' | 'height',
   oppositeOuter: number | undefined,
+  structuralStates: TemplateStructuralLayoutStates,
 ): number {
   const mode = sizeMode(
     child.placement[`${axis}Mode`],
@@ -608,7 +766,7 @@ function resolveGridChildAxis(
     `placement.${axis}Mode`,
   );
   if (mode !== 'HUG_CONTENT') invalid(child.nodeId, `placement.${axis}Mode`);
-  return gridChildNaturalSize(child, axis, mode, oppositeOuter);
+  return gridChildNaturalSize(child, axis, mode, oppositeOuter, structuralStates);
 }
 
 function resolveGridDefiniteAxis(
@@ -690,7 +848,10 @@ function spannedSize(axis: GridAxisMeasure, start: number, span: number): number
   return size;
 }
 
-function measureGroup(group: NodeValue): GroupMeasure {
+function measureGroup(
+  group: NodeValue,
+  structuralStates: TemplateStructuralLayoutStates,
+): GroupMeasure {
   const nodeId = text(group.nodeId, '<group>', 'nodeId');
   const values = staticallyRenderedChildren(group, nodeId);
   if (values.length === 0) {
@@ -705,7 +866,7 @@ function measureGroup(group: NodeValue): GroupMeasure {
   let maximumX = Number.NEGATIVE_INFINITY;
   let maximumY = Number.NEGATIVE_INFINITY;
   for (const value of values) {
-    const bounds = measureAbsoluteDirectChildBounds(value, nodeId);
+    const bounds = measureAbsoluteDirectChildBounds(value, nodeId, structuralStates);
     minimumX = derivedFinite(Math.min(minimumX, bounds.minimumX), nodeId, 'children');
     minimumY = derivedFinite(Math.min(minimumY, bounds.minimumY), nodeId, 'children');
     maximumX = derivedFinite(Math.max(maximumX, bounds.maximumX), nodeId, 'children');
@@ -725,6 +886,7 @@ function measureFrameAxis(
   frame: NodeValue,
   axis: LayoutAxis,
   oppositeOuter: number | undefined,
+  structuralStates: TemplateStructuralLayoutStates,
 ): number {
   const nodeId = text(frame.nodeId, '<frame>', 'nodeId');
   const oppositeContent = oppositeOuter === undefined
@@ -735,6 +897,7 @@ function measureFrameAxis(
     const bounds = measureAbsoluteDirectChildBounds(
       value,
       nodeId,
+      structuralStates,
       axis === 'height' ? oppositeContent : undefined,
       axis === 'width' ? oppositeContent : undefined,
     );
@@ -749,6 +912,7 @@ function measureFrameAxis(
 function measureAbsoluteDirectChildBounds(
   value: unknown,
   parentNodeId: string,
+  structuralStates: TemplateStructuralLayoutStates,
   parentWidth: number | undefined = undefined,
   parentHeight: number | undefined = undefined,
 ): DirectChildBounds {
@@ -760,7 +924,7 @@ function measureAbsoluteDirectChildBounds(
   const y = finite(placement.yMm, childId, 'placement.yMm');
   const widthMode = sizeMode(placement.widthMode, childId, 'placement.widthMode');
   const heightMode = sizeMode(placement.heightMode, childId, 'placement.heightMode');
-  const groupMeasure = child.kind === 'group' ? measureGroup(child) : null;
+  const groupMeasure = child.kind === 'group' ? measureGroup(child, structuralStates) : null;
   let width = resolveDirectChildDefiniteAxis(
     placement,
     'width',
@@ -783,6 +947,7 @@ function measureAbsoluteDirectChildBounds(
       placement,
       'width',
       heightMode === 'HUG_CONTENT' ? undefined : height,
+      structuralStates,
     );
   }
   if (height === undefined) {
@@ -791,6 +956,7 @@ function measureAbsoluteDirectChildBounds(
       placement,
       'height',
       widthMode === 'HUG_CONTENT' ? undefined : width,
+      structuralStates,
     );
   }
   return transformedLayoutBoxBounds(child, childId, x, y, width, height);
@@ -890,6 +1056,7 @@ function measureStackChild(
   row: boolean,
   content: TemplateLayoutRect,
   inheritedAlign: Alignment,
+  structuralStates: TemplateStructuralLayoutStates,
 ): StackChildMeasure {
   const node = record(value, '<stack>', 'children');
   const nodeId = text(node.nodeId, '<stack>', 'nodeId');
@@ -920,6 +1087,7 @@ function measureStackChild(
           heightMode === 'FIXED'
             ? constrainedFixed(placement, 'height', nodeId)
             : resolvedHeightFill,
+          structuralStates,
         )
       : row
         ? 0
@@ -936,6 +1104,7 @@ function measureStackChild(
           widthMode === 'FIXED'
             ? constrainedFixed(placement, 'width', nodeId)
             : resolvedWidthFill,
+          structuralStates,
         )
       : row
         ? resolvedHeightFill!
@@ -1073,6 +1242,7 @@ function measureStackAxis(
   stack: NodeValue,
   axis: LayoutAxis,
   oppositeOuter: number | undefined,
+  structuralStates: TemplateStructuralLayoutStates,
 ): number {
   const stackId = text(stack.nodeId, '<stack>', 'nodeId');
   const direction = optionalEnum(stack.direction, 'COLUMN', ['ROW', 'COLUMN'], stackId, 'direction');
@@ -1096,7 +1266,13 @@ function measureStackAxis(
         oppositeContent,
         childId,
       );
-      const size = resolveMeasuredNodeAxis(child, childPlacement, axis, childOppositeOuter);
+      const size = resolveMeasuredNodeAxis(
+        child,
+        childPlacement,
+        axis,
+        childOppositeOuter,
+        structuralStates,
+      );
       for (const addition of [leading, size, trailing]) {
         cursor += addition;
         extent = Math.max(extent, cursor);
@@ -1111,7 +1287,7 @@ function measureStackAxis(
 
   const mainSizes = oppositeContent === undefined
     ? null
-    : resolveStackMainSizes(stack, direction === 'ROW', oppositeContent);
+    : resolveStackMainSizes(stack, direction === 'ROW', oppositeContent, structuralStates);
   let extent = 0;
   for (const value of values) {
     const child = record(value, stackId, 'children');
@@ -1120,7 +1296,13 @@ function measureStackAxis(
     const [leading, trailing] = stackAxisMargins(childPlacement, axis, childId);
     const childOppositeOuter = mainSizes?.get(child)
       ?? fixedOppositeOuter(childPlacement, axis, childId);
-    const size = resolveMeasuredNodeAxis(child, childPlacement, axis, childOppositeOuter);
+    const size = resolveMeasuredNodeAxis(
+      child,
+      childPlacement,
+      axis,
+      childOppositeOuter,
+      structuralStates,
+    );
     extent = Math.max(extent, leading + size + trailing);
   }
   return extent + axisInsetExtent(stack, axis, stackId);
@@ -1130,6 +1312,7 @@ function resolveStackMainSizes(
   stack: NodeValue,
   row: boolean,
   available: number,
+  structuralStates: TemplateStructuralLayoutStates,
 ): ReadonlyMap<NodeValue, number> {
   const stackId = text(stack.nodeId, '<stack>', 'nodeId');
   const alignItems = optionalEnum(
@@ -1151,11 +1334,12 @@ function resolveStackMainSizes(
     const mainSize = mainMode === 'FILL'
       ? 0
       : resolveMeasuredNodeAxis(
-        node,
-        childPlacement,
-        mainAxis,
-        fixedOppositeOuter(childPlacement, mainAxis, nodeId),
-      );
+          node,
+          childPlacement,
+          mainAxis,
+          fixedOppositeOuter(childPlacement, mainAxis, nodeId),
+          structuralStates,
+        );
     const fillWeight = mainMode === 'FILL'
       ? positive(childPlacement.fillWeight ?? 1, nodeId, 'placement.fillWeight')
       : 1;
@@ -1244,6 +1428,7 @@ function measureGridIntrinsicAxis(
   grid: NodeValue,
   axis: LayoutAxis,
   oppositeOuter: number | undefined,
+  structuralStates: TemplateStructuralLayoutStates,
 ): number {
   const gridId = text(grid.nodeId, '<grid>', 'nodeId');
   const measured = staticallyRenderedChildren(grid, gridId).map((value) => measureGridChild(
@@ -1255,7 +1440,7 @@ function measureGridIntrinsicAxis(
     const tracks = gridTracks(grid.columns, gridId, 'columns');
     if (tracks.some((track) => track.type === 'FRACTION')) invalid(gridId, 'columns');
     const gap = optionalNonnegative(grid.columnGapMm, 0, gridId, 'columnGapMm');
-    const columns = solveGridAxis(measured, tracks, gap, 0, 'width');
+    const columns = solveGridAxis(measured, tracks, gap, 0, 'width', structuralStates);
     return gridAxisExtent(columns) + axisInsetExtent(grid, axis, gridId);
   }
 
@@ -1268,6 +1453,7 @@ function measureGridIntrinsicAxis(
       optionalNonnegative(grid.columnGapMm, 0, gridId, 'columnGapMm'),
       contentWidth,
       'width',
+      structuralStates,
     );
   }
   const rowTracks = gridTracks(grid.rows, gridId, 'rows');
@@ -1278,6 +1464,7 @@ function measureGridIntrinsicAxis(
     optionalNonnegative(grid.rowGapMm, 0, gridId, 'rowGapMm'),
     0,
     'height',
+    structuralStates,
     columns,
   );
   return gridAxisExtent(rows) + axisInsetExtent(grid, axis, gridId);
@@ -1331,19 +1518,25 @@ function measureIntrinsicAxis(
   placement: NodeValue,
   axis: LayoutAxis,
   oppositeOuter: number | undefined,
+  structuralStates: TemplateStructuralLayoutStates,
 ): number {
   const nodeId = text(node.nodeId, '<node>', 'nodeId');
   const kind = text(node.kind, nodeId, 'kind');
   let natural: number;
   if (kind === 'group') {
-    const group = measureGroup(node);
+    const group = measureGroup(node, structuralStates);
     natural = axis === 'width' ? group.width : group.height;
-  } else if (kind === 'frame') {
-    natural = measureFrameAxis(node, axis, oppositeOuter);
+  } else if (kind === 'frame' || kind === 'conditional') {
+    natural = measureFrameAxis(node, axis, oppositeOuter, structuralStates);
   } else if (kind === 'stack') {
-    natural = measureStackAxis(node, axis, oppositeOuter);
+    natural = measureStackAxis(node, axis, oppositeOuter, structuralStates);
   } else if (kind === 'grid') {
-    natural = measureGridIntrinsicAxis(node, axis, oppositeOuter);
+    natural = measureGridIntrinsicAxis(node, axis, oppositeOuter, structuralStates);
+  } else if (kind === 'repeat') {
+    const repeat = measureRepeatNaturalSize(node, structuralStates);
+    natural = axis === 'width' ? repeat.width : repeat.height;
+  } else if (kind === 'templateUse') {
+    natural = measureTemplateUseNaturalAxis(nodeId, axis, structuralStates);
   } else {
     intrinsicUnsupported(nodeId, `placement.${axis}Mode`);
   }
@@ -1355,12 +1548,61 @@ function resolveMeasuredNodeAxis(
   placement: NodeValue,
   axis: LayoutAxis,
   oppositeOuter: number | undefined,
+  structuralStates: TemplateStructuralLayoutStates,
 ): number {
   const nodeId = text(node.nodeId, '<node>', 'nodeId');
   const mode = sizeMode(placement[`${axis}Mode`], nodeId, `placement.${axis}Mode`);
   if (mode === 'FILL') cycle(nodeId, `placement.${axis}Mode`);
-  if (mode === 'HUG_CONTENT') return measureIntrinsicAxis(node, placement, axis, oppositeOuter);
+  if (mode === 'HUG_CONTENT') {
+    return measureIntrinsicAxis(node, placement, axis, oppositeOuter, structuralStates);
+  }
   return constrainedFixed(placement, axis, nodeId);
+}
+
+function measureRepeatNaturalSize(
+  node: NodeValue,
+  structuralStates: TemplateStructuralLayoutStates,
+): PackedSize {
+  const nodeId = text(node.nodeId, '<repeat>', 'nodeId');
+  const state = structuralStates[nodeId];
+  const count = state?.kind === 'repeat' && state.outcome === 'VALUES'
+    ? nonnegativeInteger(state.count, nodeId, 'occurrences')
+    : state?.kind === 'repeat' && state.outcome === 'EMPTY'
+      ? 0
+      : 1;
+  if (count === 0) return { width: 0, height: 0 };
+  const item = packNodes(
+    staticallyRenderedChildren(node, nodeId),
+    node.itemLayout,
+    nodeId,
+    'itemLayout',
+    structuralStates,
+  );
+  const instances = packSizes(
+    Array.from({ length: count }, () => ({ width: item.width, height: item.height })),
+    node.instanceLayout,
+    nodeId,
+    'instanceLayout',
+  );
+  return { width: instances.width, height: instances.height };
+}
+
+function measureTemplateUseNaturalAxis(
+  nodeId: string,
+  axis: LayoutAxis,
+  structuralStates: TemplateStructuralLayoutStates,
+): number {
+  const state = structuralStates[nodeId];
+  if (state?.kind !== 'templateUse'
+    || state.outcome !== 'READY'
+    || state.sourceCanvasSizeMm === undefined) {
+    intrinsicUnsupported(nodeId, `placement.${axis}Mode`);
+  }
+  return positive(
+    state.sourceCanvasSizeMm[axis === 'width' ? 'widthMm' : 'heightMm'],
+    nodeId,
+    `sourceCanvasSizeMm.${axis}Mm`,
+  );
 }
 
 function resolveAbsoluteAxis(
@@ -1419,6 +1661,156 @@ function staticallyRenderedChildren(node: NodeValue, nodeId: string): readonly u
   ));
 }
 
+function suppressStructuralBranches(
+  node: NodeValue,
+  states: TemplateStructuralLayoutStates,
+): NodeValue {
+  const nodeId = text(node.nodeId, '<node>', 'nodeId');
+  const state = states[nodeId];
+  let suppressed = node.kind === 'conditional'
+    && state?.kind === 'conditional'
+    && state.outcome === 'FALSE';
+  suppressed ||= node.kind === 'repeat'
+    && state?.kind === 'repeat'
+    && (state.outcome === 'EMPTY' || (state.outcome === 'VALUES' && state.count === 0));
+  if (!Array.isArray(node.children)) return suppressed ? { ...node, render: false } : node;
+  const projectedChildren = node.children.map((value) => (
+    suppressStructuralBranches(record(value, nodeId, 'children'), states)
+  ));
+  suppressed ||= node.kind === 'repeat'
+    && state?.kind === 'repeat'
+    && state.outcome === 'VALUES'
+    && projectedChildren.every((child) => child.render === false);
+  return {
+    ...node,
+    ...(suppressed ? { render: false } : {}),
+    children: projectedChildren,
+  };
+}
+
+interface PackedSize {
+  readonly width: number;
+  readonly height: number;
+}
+
+interface PackedProjection {
+  readonly width: number;
+  readonly height: number;
+  readonly rects: readonly TemplateLayoutRect[];
+}
+
+function packNodes(
+  values: readonly unknown[],
+  spec: unknown,
+  parentNodeId: string,
+  property: string,
+  structuralStates: TemplateStructuralLayoutStates,
+): PackedProjection {
+  const sizes = values.map((value): PackedSize => {
+    const node = record(value, parentNodeId, 'children');
+    const nodeId = text(node.nodeId, parentNodeId, 'nodeId');
+    const placement = record(node.placement, nodeId, 'placement');
+    if (placement.type !== 'PACK') invalid(nodeId, 'placement.type');
+    const widthMode = sizeMode(placement.widthMode, nodeId, 'placement.widthMode');
+    const heightMode = sizeMode(placement.heightMode, nodeId, 'placement.heightMode');
+    if (widthMode === 'FILL' || heightMode === 'FILL') invalid(nodeId, 'placement');
+    const fixedWidth = widthMode === 'FIXED' ? constrainedFixed(placement, 'width', nodeId) : undefined;
+    const fixedHeight = heightMode === 'FIXED' ? constrainedFixed(placement, 'height', nodeId) : undefined;
+    const width = fixedWidth ?? measureIntrinsicAxis(
+      node,
+      placement,
+      'width',
+      fixedHeight,
+      structuralStates,
+    );
+    const height = fixedHeight ?? measureIntrinsicAxis(
+      node,
+      placement,
+      'height',
+      width,
+      structuralStates,
+    );
+    return { width, height };
+  });
+  return packSizes(sizes, spec, parentNodeId, property);
+}
+
+function packSizes(
+  sizes: readonly PackedSize[],
+  specValue: unknown,
+  nodeId: string,
+  property: string,
+): PackedProjection {
+  const spec = record(specValue, nodeId, property);
+  if (spec.kind === 'STACK') {
+    const direction = optionalEnum(
+      spec.direction,
+      'COLUMN',
+      ['ROW', 'COLUMN'],
+      nodeId,
+      `${property}.direction`,
+    );
+    const gap = optionalNonnegative(spec.gapMm, 0, nodeId, `${property}.gapMm`);
+    let cursor = 0;
+    const rects = sizes.map((size) => {
+      const projected = direction === 'ROW'
+        ? rect(cursor, 0, size.width, size.height)
+        : rect(0, cursor, size.width, size.height);
+      cursor += (direction === 'ROW' ? size.width : size.height) + gap;
+      return projected;
+    });
+    return Object.freeze({
+      width: direction === 'ROW'
+        ? sizes.reduce((total, size) => total + size.width, 0) + gap * Math.max(0, sizes.length - 1)
+        : Math.max(0, ...sizes.map((size) => size.width)),
+      height: direction === 'COLUMN'
+        ? sizes.reduce((total, size) => total + size.height, 0) + gap * Math.max(0, sizes.length - 1)
+        : Math.max(0, ...sizes.map((size) => size.height)),
+      rects: Object.freeze(rects),
+    });
+  }
+  if (spec.kind !== 'GRID') invalid(nodeId, `${property}.kind`);
+  const columnCount = positiveInteger(spec.columns, nodeId, `${property}.columns`);
+  const columnGap = optionalNonnegative(spec.columnGapMm, 0, nodeId, `${property}.columnGapMm`);
+  const rowGap = optionalNonnegative(spec.rowGapMm, 0, nodeId, `${property}.rowGapMm`);
+  const effectiveColumnCount = Math.min(columnCount, sizes.length);
+  if (effectiveColumnCount === 0) {
+    return Object.freeze({ width: 0, height: 0, rects: Object.freeze([]) });
+  }
+  const rowCount = Math.ceil(sizes.length / effectiveColumnCount);
+  const columnWidths = Array.from({ length: effectiveColumnCount }, () => 0);
+  const rowHeights = Array.from({ length: rowCount }, () => 0);
+  sizes.forEach((size, index) => {
+    const column = index % effectiveColumnCount;
+    const row = Math.floor(index / effectiveColumnCount);
+    columnWidths[column] = Math.max(columnWidths[column] ?? 0, size.width);
+    rowHeights[row] = Math.max(rowHeights[row] ?? 0, size.height);
+  });
+  const origins = (values: readonly number[], gap: number): number[] => {
+    let cursor = 0;
+    return values.map((value) => {
+      const origin = cursor;
+      cursor += value + gap;
+      return origin;
+    });
+  };
+  const columnOrigins = origins(columnWidths, columnGap);
+  const rowOrigins = origins(rowHeights, rowGap);
+  const rects = sizes.map((size, index) => rect(
+    columnOrigins[index % effectiveColumnCount] ?? 0,
+    rowOrigins[Math.floor(index / effectiveColumnCount)] ?? 0,
+    size.width,
+    size.height,
+  ));
+  return Object.freeze({
+    width: columnWidths.reduce((total, value) => total + value, 0)
+      + columnGap * Math.max(0, columnWidths.length - 1),
+    height: rowHeights.reduce((total, value) => total + value, 0)
+      + rowGap * Math.max(0, rowHeights.length - 1),
+    rects: Object.freeze(rects),
+  });
+}
+
 function assertAcyclicUniqueTree(root: NodeValue): void {
   const active = new WeakSet<object>();
   const nodeIds = new Set<string>();
@@ -1431,7 +1823,8 @@ function assertAcyclicUniqueTree(root: NodeValue): void {
     active.add(node);
     const kind = text(node.kind, nodeId, 'kind');
     if (kind === 'group') validateGroupPlacement(record(node.placement, nodeId, 'placement'), nodeId);
-    if (kind === 'canvas' || kind === 'group' || kind === 'frame' || kind === 'stack' || kind === 'grid') {
+    if (kind === 'canvas' || kind === 'group' || kind === 'frame' || kind === 'stack'
+      || kind === 'grid' || kind === 'repeat' || kind === 'conditional') {
       for (const child of children(node, nodeId)) visit(child, nodeId);
     }
     active.delete(node);

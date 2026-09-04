@@ -1382,6 +1382,11 @@
   border-radius: 50%;
 }
 
+.te-canvas-node[data-template-canvas-node-kind="conditional"] {
+  border-color: transparent;
+  background: transparent !important;
+}
+
 .te-canvas-node:hover {
   outline: 1px solid color-mix(in oklab, var(--color-cyan) 66%, transparent);
   outline-offset: 1px;
@@ -1392,6 +1397,22 @@
   z-index: 1;
   inset: 0;
   pointer-events: none;
+}
+
+.te-canvas-repeat-occurrence {
+  position: absolute;
+  box-sizing: border-box;
+  border: 1px dashed color-mix(in oklab, var(--color-cyan) 72%, transparent);
+  background: color-mix(in oklab, var(--color-cyan) 7%, transparent);
+}
+
+.te-canvas-repeat-occurrence > span {
+  position: absolute;
+  top: 2px;
+  left: 3px;
+  color: var(--color-cyan-ink);
+  font-size: 8px;
+  font-weight: 800;
 }
 
 .te-canvas-node.is-visual {
@@ -1538,6 +1559,48 @@
   font-size: var(--text-xs);
   line-height: 1.45;
   backdrop-filter: blur(6px);
+}
+
+.te-structural-inspector {
+  display: grid;
+  gap: var(--space-sm);
+  padding: var(--space-sm);
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-soft);
+}
+
+.te-structural-inspector h3,
+.te-structural-current {
+  margin: 0;
+}
+
+.te-structural-field {
+  display: grid;
+  gap: 5px;
+  color: var(--color-muted);
+  font-size: var(--text-xs);
+}
+
+.te-structural-field > input {
+  min-height: 34px;
+  box-sizing: border-box;
+  padding: 0 9px;
+  border: 1px solid var(--color-hairline-strong);
+  border-radius: 4px;
+  background: var(--color-surface);
+  color: var(--color-ink);
+  font: inherit;
+}
+
+.te-structural-preview {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 5px;
+}
+
+.te-structural-preview button {
+  min-height: 30px;
 }
 
 .te-canvas-ruler {

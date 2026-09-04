@@ -8,6 +8,12 @@ import type {
   StructuredEditorCommand,
   StructuredEditorSession,
 } from './template-editor-model';
+import type {
+  DesignRepeatPackingSpec,
+  DesignStructuralValueSource,
+  DesignTemplateUseContextSelector,
+  DesignTemplateUseFill,
+} from '../../api/generated';
 import { objectOrNull } from './template-editor-model';
 import {
   finiteTemplateNumber,
@@ -40,7 +46,30 @@ import {
 const UUID_V4 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 const COLOR = /^#[0-9A-Fa-f]{8}$/;
 
-export type CoreInsertableNodeKind = 'group' | 'frame' | 'stack' | 'grid' | TemplateVisualLeafKind;
+export type StructuralInsertableNodeKind = 'repeat' | 'conditional' | 'templateUse';
+export type CoreInsertableNodeKind =
+  | 'group' | 'frame' | 'stack' | 'grid'
+  | StructuralInsertableNodeKind
+  | TemplateVisualLeafKind;
+export type TemplateStructuralConfiguration =
+  | {
+    readonly kind: 'repeat';
+    readonly items: DesignStructuralValueSource;
+    readonly absentPolicy?: 'ERROR' | 'EMPTY';
+    readonly itemLayout?: DesignRepeatPackingSpec;
+    readonly instanceLayout?: DesignRepeatPackingSpec;
+  }
+  | {
+    readonly kind: 'conditional';
+    readonly condition: DesignStructuralValueSource;
+    readonly absentPolicy?: 'FALSE' | 'ERROR';
+  }
+  | {
+    readonly kind: 'templateUse';
+    readonly templateId: string;
+    readonly contextSelector: DesignTemplateUseContextSelector;
+    readonly fills?: readonly DesignTemplateUseFill[];
+  };
 export type TemplateTreeDropPosition = 'before' | 'into' | 'after';
 export type TemplateSiblingOrder = 'front' | 'forward' | 'backward' | 'back';
 export type TemplateLayoutProperty =
@@ -68,6 +97,7 @@ export type TemplateEditorCommandIntent =
     at?: { xMm: number; yMm: number };
     assetId?: string;
     shapePreset?: TemplateShapePreset;
+    structural?: TemplateStructuralConfiguration;
   }
   | { operation: 'rename'; nodeId: string; displayName: string }
   | { operation: 'delete'; nodeId: string }
@@ -92,10 +122,17 @@ export type TemplateEditorCommandIntent =
       | 'canvasWidthMm' | 'canvasHeightMm' | TemplateLayoutProperty
       | TemplateVisualPropertyChange['property'];
     value: unknown;
+  }
+  | {
+    operation: 'configure-structural';
+    nodeId: string;
+    structural: TemplateStructuralConfiguration;
   };
 
 export interface TemplateEditorCommandOptions {
   createNodeId?: () => string;
+  createLoopId?: () => string;
+  createUseId?: () => string;
 }
 
 export type TemplateEditorCommandResult =
@@ -123,6 +160,8 @@ export type TemplateEditorCommandProblemCode =
   | 'NODE_ID_DUPLICATE'
   | 'ASSET_REQUIRED'
   | 'ASSET_ID_INVALID'
+  | 'STRUCTURAL_FACTS_REQUIRED'
+  | 'STRUCTURAL_CONFIGURATION_INVALID'
   | 'PARENT_NOT_FOUND'
   | 'PARENT_CANNOT_HAVE_CHILDREN'
   | 'CANVAS_MUTATION_FORBIDDEN'
@@ -180,6 +219,14 @@ export function executeTemplateEditorCommand(
         intent.property,
         intent.value,
       );
+      break;
+    case 'configure-structural':
+      resolved = resolveStructuralConfiguration(
+        session,
+        root,
+        intent.nodeId,
+        intent.structural,
+      );
   }
   if (resolved.state !== 'command') return resolved;
 
@@ -217,33 +264,48 @@ function resolveInsert(
   root: Record<string, unknown>,
   intent: Extract<TemplateEditorCommandIntent, { operation: 'insert' }>,
   options: TemplateEditorCommandOptions,
-): { state: 'command'; command: InsertNodeCommand; affectedNodeIds: string[]; message: string }
+): { state: 'command'; command: InsertNodeCommand | ReplaceNodeShellCommand; affectedNodeIds: string[]; message: string }
   | Extract<TemplateEditorCommandResult, { state: 'rejected' }> {
   const parent = findNode(root, intent.parentNodeId)?.node;
   if (!parent) return rejected(session, 'PARENT_NOT_FOUND', '目标父节点不在当前 working copy 中。');
   if (!canAcceptCoreChildren(parent)) {
     return rejected(session, 'PARENT_CANNOT_HAVE_CHILDREN', '目标节点不能承载首批核心节点。');
   }
+  const scaffold = findEmptyStructuralScaffold(parent);
   let nodeId: string;
-  try {
-    nodeId = (options.createNodeId ?? defaultNodeId)().toLowerCase();
-  } catch {
-    return rejected(session, 'NODE_ID_UNAVAILABLE', '浏览器未能生成新节点 identity。');
-  }
-  if (!UUID_V4.test(nodeId)) {
-    return rejected(session, 'NODE_ID_INVALID', '浏览器生成的 nodeId 不是 canonical UUID v4。');
-  }
-  if (findNode(root, nodeId)) {
-    return rejected(session, 'NODE_ID_DUPLICATE', '浏览器生成的 nodeId 已存在。');
+  if (scaffold) {
+    nodeId = stringMember(scaffold, 'nodeId') ?? '';
+  } else {
+    try {
+      nodeId = (options.createNodeId ?? defaultNodeId)().toLowerCase();
+    } catch {
+      return rejected(session, 'NODE_ID_UNAVAILABLE', '浏览器未能生成新节点 identity。');
+    }
+    if (!UUID_V4.test(nodeId)) {
+      return rejected(session, 'NODE_ID_INVALID', '浏览器生成的 nodeId 不是 canonical UUID v4。');
+    }
+    if (findNode(root, nodeId)) {
+      return rejected(session, 'NODE_ID_DUPLICATE', '浏览器生成的 nodeId 已存在。');
+    }
   }
   const ordinal = countKind(root, intent.nodeKind) + 1;
-  const built = defaultNode(intent, nodeId, ordinal);
+  const built = defaultNode(intent, nodeId, ordinal, options, root);
   if (built.state === 'rejected') {
     const code = built.code === 'ASSET_ID_REQUIRED'
       ? 'ASSET_REQUIRED'
       : built.code === 'ASSET_ID_INVALID'
         ? 'ASSET_ID_INVALID'
-        : 'PROPERTY_INVALID';
+        : built.code === 'STRUCTURAL_FACTS_REQUIRED'
+          ? 'STRUCTURAL_FACTS_REQUIRED'
+          : built.code === 'STRUCTURAL_CONFIGURATION_INVALID'
+            ? 'STRUCTURAL_CONFIGURATION_INVALID'
+            : built.code === 'NODE_ID_UNAVAILABLE'
+              ? 'NODE_ID_UNAVAILABLE'
+              : built.code === 'NODE_ID_INVALID'
+                ? 'NODE_ID_INVALID'
+                : built.code === 'NODE_ID_DUPLICATE'
+                  ? 'NODE_ID_DUPLICATE'
+                  : 'PROPERTY_INVALID';
     return rejected(session, code, built.message);
   }
   const authoredPlacement = objectOrNull(built.node.placement);
@@ -256,6 +318,14 @@ function resolveInsert(
   const node = { ...built.node, placement };
   if (!validLayoutCandidate(node, parent)) {
     return rejected(session, 'PLACEMENT_CONVERSION_INVALID', '默认节点无法满足目标父级的布局合同。');
+  }
+  if (scaffold) {
+    return replaceNodeCommand(
+      nodeId,
+      nodeShell(scaffold),
+      nodeShell(node),
+      `${kindLabel(intent.nodeKind)}已替换结构容器的初始 authored 内容。`,
+    );
   }
   const children = parent.children;
   if (!Array.isArray(children)) {
@@ -613,6 +683,43 @@ function resolveGeometry(
     affectedNodeIds: replacements.map((item) => item.nodeId),
     message: '已原子提交 authored move/resize 与自由分组原点补偿。',
   };
+}
+
+function resolveStructuralConfiguration(
+  session: StructuredEditorSession,
+  root: Record<string, unknown>,
+  nodeId: string,
+  configuration: TemplateStructuralConfiguration,
+): { state: 'command'; command: ReplaceNodeShellCommand; affectedNodeIds: string[]; message: string }
+  | Extract<TemplateEditorCommandResult, { state: 'no-op' | 'rejected' }> {
+  const located = findNode(root, nodeId);
+  if (!located) return rejected(session, 'NODE_NOT_FOUND', '目标节点不在当前 working copy 中。');
+  if (located.node.kind !== configuration.kind
+    || (configuration.kind !== 'repeat'
+      && configuration.kind !== 'conditional'
+      && configuration.kind !== 'templateUse')) {
+    return rejected(
+      session,
+      'STRUCTURAL_CONFIGURATION_INVALID',
+      '配置种类与目标结构节点不一致。',
+      { nodeId },
+    );
+  }
+  const patch = structuralConfigurationPatch(configuration);
+  if (!patch) {
+    return rejected(
+      session,
+      'STRUCTURAL_CONFIGURATION_INVALID',
+      '结构节点配置不满足已冻结的 v1 wire。',
+      { nodeId },
+    );
+  }
+  const before = nodeShell(located.node);
+  const after = { ...before, ...patch };
+  if (sameRecord(before, after)) {
+    return { state: 'no-op', session, message: '结构节点配置没有变化。' };
+  }
+  return replaceNodeCommand(nodeId, before, after, '结构节点配置已写入 canonical working copy。');
 }
 
 function resolveProperty(
@@ -1060,6 +1167,8 @@ function validPlacementForNode(
       || !validGridAlign(placement.verticalAlignSelf)) return false;
     if (widthMode === 'FILL' && placement.horizontalAlignSelf !== undefined) return false;
     if (heightMode === 'FILL' && placement.verticalAlignSelf !== undefined) return false;
+  } else if (placement.type === 'PACK') {
+    if (widthMode === 'FILL' || heightMode === 'FILL') return false;
   }
   return true;
 }
@@ -1159,10 +1268,22 @@ function defaultNode(
   intent: Extract<TemplateEditorCommandIntent, { operation: 'insert' }>,
   nodeId: string,
   ordinal: number,
+  options: TemplateEditorCommandOptions,
+  root: Record<string, unknown>,
 ):
   | { state: 'built'; node: Record<string, unknown> }
   | { state: 'rejected'; code: string; message: string } {
   const kind = intent.nodeKind;
+  if (kind === 'repeat' || kind === 'conditional' || kind === 'templateUse') {
+    if (!intent.structural || intent.structural.kind !== kind) {
+      return {
+        state: 'rejected',
+        code: 'STRUCTURAL_FACTS_REQUIRED',
+        message: '请先加载并选择结构节点所需的数据或模板事实。',
+      };
+    }
+    return buildStructuralNode(intent, nodeId, ordinal, options, root);
+  }
   if (kind !== 'group' && kind !== 'frame' && kind !== 'stack' && kind !== 'grid') {
     const result = intent.shapePreset && kind === 'polygon'
       ? buildTemplateShapePresetNode({
@@ -1226,6 +1347,270 @@ function defaultNode(
   }
 }
 
+function buildStructuralNode(
+  intent: Extract<TemplateEditorCommandIntent, { operation: 'insert' }>,
+  nodeId: string,
+  ordinal: number,
+  options: TemplateEditorCommandOptions,
+  root: Record<string, unknown>,
+):
+  | { state: 'built'; node: Record<string, unknown> }
+  | { state: 'rejected'; code: string; message: string } {
+  const configuration = intent.structural;
+  if (!configuration || configuration.kind !== intent.nodeKind) {
+    return structuralBuildProblem('STRUCTURAL_FACTS_REQUIRED', '请先加载并选择结构节点所需的数据或模板事实。');
+  }
+  const patch = structuralConfigurationPatch(configuration);
+  if (!patch) {
+    return structuralBuildProblem('STRUCTURAL_CONFIGURATION_INVALID', '结构节点配置不满足已冻结的 v1 wire。');
+  }
+  const common = {
+    nodeId,
+    kind: intent.nodeKind,
+    displayName: `${kindLabel(intent.nodeKind)} ${ordinal}`,
+    bindings: [],
+    placement: {
+      type: 'ABSOLUTE', xMm: intent.at?.xMm ?? 25.4, yMm: intent.at?.yMm ?? 25.4,
+      ...defaultContainerSize(),
+    },
+  };
+  if (configuration.kind === 'templateUse') {
+    const useId = allocateStructuralIdentity(options.createUseId, root, new Set([nodeId]));
+    if (useId.state === 'rejected') return useId;
+    return { state: 'built', node: { ...common, useId: useId.value, ...patch } };
+  }
+
+  if (configuration.kind === 'repeat') {
+    const childId = allocateStructuralIdentity(options.createNodeId, root, new Set([nodeId]));
+    if (childId.state === 'rejected') return childId;
+    const loopId = allocateStructuralIdentity(
+      options.createLoopId,
+      root,
+      new Set([nodeId, childId.value]),
+    );
+    if (loopId.state === 'rejected') return loopId;
+    return {
+      state: 'built',
+      node: {
+        ...common,
+        loopId: loopId.value,
+        ...patch,
+        children: [defaultStructuralScaffold(childId.value, 'PACK', '循环内容占位')],
+      },
+    };
+  }
+  const childId = allocateStructuralIdentity(options.createNodeId, root, new Set([nodeId]));
+  if (childId.state === 'rejected') return childId;
+  return {
+    state: 'built',
+    node: {
+      ...common,
+      ...patch,
+      children: [defaultStructuralScaffold(childId.value, 'ABSOLUTE', '条件内容占位')],
+    },
+  };
+}
+
+function defaultStructuralScaffold(
+  nodeId: string,
+  placementType: 'PACK' | 'ABSOLUTE',
+  displayName: string,
+): Record<string, unknown> {
+  return {
+    nodeId,
+    kind: 'rect',
+    displayName,
+    bindings: [],
+    render: false,
+    placement: placementType === 'PACK'
+      ? {
+        type: 'PACK', widthMode: 'FIXED', widthMm: 1,
+        heightMode: 'FIXED', heightMm: 1,
+      }
+      : {
+        type: 'ABSOLUTE', xMm: 0, yMm: 0,
+        widthMode: 'FIXED', widthMm: 1,
+        heightMode: 'FIXED', heightMm: 1,
+      },
+  };
+}
+
+function findEmptyStructuralScaffold(parent: Record<string, unknown>): Record<string, unknown> | null {
+  if ((parent.kind !== 'repeat' && parent.kind !== 'conditional')
+    || !Array.isArray(parent.children) || parent.children.length !== 1) return null;
+  const child = objectOrNull(parent.children[0]);
+  if (!child || child.kind !== 'rect' || child.render !== false
+    || (child.displayName !== '循环内容占位' && child.displayName !== '条件内容占位')
+    || child.children !== undefined
+    || !Array.isArray(child.bindings) || child.bindings.length !== 0) return null;
+  return child;
+}
+
+function allocateStructuralIdentity(
+  factory: (() => string) | undefined,
+  root: Record<string, unknown>,
+  claimed: ReadonlySet<string>,
+):
+  | { state: 'allocated'; value: string }
+  | { state: 'rejected'; code: string; message: string } {
+  let value: string;
+  try {
+    value = (factory ?? defaultNodeId)().toLowerCase();
+  } catch {
+    return structuralBuildProblem('NODE_ID_UNAVAILABLE', '浏览器未能生成结构节点 identity。');
+  }
+  if (!UUID_V4.test(value)) {
+    return structuralBuildProblem('NODE_ID_INVALID', '浏览器生成的结构 identity 不是 canonical UUID v4。');
+  }
+  if (claimed.has(value) || hasAuthoredIdentity(root, value)) {
+    return structuralBuildProblem('NODE_ID_DUPLICATE', '浏览器生成的结构 identity 已存在。');
+  }
+  return { state: 'allocated', value };
+}
+
+function structuralBuildProblem(
+  code: string,
+  message: string,
+): { state: 'rejected'; code: string; message: string } {
+  return { state: 'rejected', code, message };
+}
+
+function hasAuthoredIdentity(node: Record<string, unknown>, identity: string): boolean {
+  if (node.nodeId === identity || node.loopId === identity || node.useId === identity) return true;
+  if (!Array.isArray(node.children)) return false;
+  return node.children.some((candidate) => {
+    const child = objectOrNull(candidate);
+    return child ? hasAuthoredIdentity(child, identity) : false;
+  });
+}
+
+function structuralConfigurationPatch(
+  configuration: TemplateStructuralConfiguration,
+): Record<string, unknown> | null {
+  if (configuration.kind === 'repeat') {
+    const itemLayout = configuration.itemLayout
+      ?? { kind: 'STACK' as const, direction: 'COLUMN' as const, gapMm: 0 };
+    const instanceLayout = configuration.instanceLayout
+      ?? { kind: 'STACK' as const, direction: 'COLUMN' as const, gapMm: 0 };
+    if (!validRepeatSource(configuration.items)
+      || !validPacking(itemLayout)
+      || !validPacking(instanceLayout)
+      || (configuration.absentPolicy !== undefined
+        && configuration.absentPolicy !== 'ERROR'
+        && configuration.absentPolicy !== 'EMPTY')) return null;
+    return {
+      items: configuration.items,
+      absentPolicy: configuration.absentPolicy ?? 'EMPTY',
+      itemLayout,
+      instanceLayout,
+    };
+  }
+  if (configuration.kind === 'conditional') {
+    if (!validBooleanSource(configuration.condition)
+      || (configuration.absentPolicy !== undefined
+        && configuration.absentPolicy !== 'FALSE'
+        && configuration.absentPolicy !== 'ERROR')) return null;
+    return {
+      condition: configuration.condition,
+      absentPolicy: configuration.absentPolicy ?? 'FALSE',
+    };
+  }
+  if (!UUID_V4.test(configuration.templateId)
+    || !validTemplateUseContextSelector(configuration.contextSelector)
+    || !(configuration.fills ?? []).every(validTemplateUseFill)) return null;
+  return {
+    templateRef: { templateId: configuration.templateId },
+    contextSelector: configuration.contextSelector,
+    fills: [...(configuration.fills ?? [])],
+  };
+}
+
+function validStructuralSource(value: unknown): value is DesignStructuralValueSource {
+  const source = objectOrNull(value);
+  if (!source) return false;
+  if (source.kind === 'context') {
+    return typeof source.pointer === 'string' && validDefinitionDomain(source.domain);
+  }
+  if (source.kind === 'definition') return typeof source.definitionId === 'string' && UUID_V4.test(source.definitionId);
+  if (source.kind !== 'literal' || !Object.hasOwn(source, 'valueType') || !Object.hasOwn(source, 'value')) {
+    return false;
+  }
+  return typeof source.value === 'string'
+    || typeof source.value === 'number'
+    || typeof source.value === 'boolean'
+    || Array.isArray(source.value)
+    || Boolean(objectOrNull(source.value));
+}
+
+function validRepeatSource(value: unknown): value is DesignStructuralValueSource {
+  if (!validStructuralSource(value)) return false;
+  const source = value as unknown as Record<string, unknown>;
+  if (source.kind !== 'literal') return true;
+  const valueType = objectOrNull(source.valueType);
+  return valueType?.type === 'list'
+    && (valueType.items === 'text' || valueType.items === 'decimal'
+      || valueType.items === 'boolean' || valueType.items === 'date'
+      || valueType.items === 'time')
+    && Array.isArray(source.value);
+}
+
+function validBooleanSource(value: unknown): value is DesignStructuralValueSource {
+  if (!validStructuralSource(value)) return false;
+  const source = value as unknown as Record<string, unknown>;
+  return source.kind !== 'literal'
+    || (source.valueType === 'boolean' && typeof source.value === 'boolean');
+}
+
+function validBindingSource(value: unknown): boolean {
+  const source = objectOrNull(value);
+  if (!source) return false;
+  if (source.kind === 'context') return typeof source.pointer === 'string' && validDefinitionDomain(source.domain);
+  if (source.kind === 'loopIndex') return typeof source.loopId === 'string' && UUID_V4.test(source.loopId);
+  return source.kind === 'definition'
+    && typeof source.definitionId === 'string'
+    && UUID_V4.test(source.definitionId);
+}
+
+function validDefinitionDomain(value: unknown): boolean {
+  if (value === 'invocation') return true;
+  const domain = objectOrNull(value);
+  return domain?.kind === 'loop' && typeof domain.loopId === 'string' && UUID_V4.test(domain.loopId);
+}
+
+function validPacking(value: unknown): value is DesignRepeatPackingSpec {
+  const packing = objectOrNull(value);
+  if (!packing) return false;
+  if (packing.kind === 'STACK') {
+    return (packing.direction === 'ROW' || packing.direction === 'COLUMN')
+      && (packing.gapMm === undefined
+        || (finiteTemplateNumber(packing.gapMm) !== null && Number(packing.gapMm) >= 0));
+  }
+  return packing.kind === 'GRID'
+    && positiveInteger(packing.columns) !== null
+    && ['columnGapMm', 'rowGapMm'].every((member) => packing[member] === undefined
+      || (finiteTemplateNumber(packing[member]) !== null && Number(packing[member]) >= 0));
+}
+
+function validTemplateUseContextSelector(value: unknown): value is DesignTemplateUseContextSelector {
+  const selector = objectOrNull(value);
+  if (!selector) return false;
+  if (selector.kind === 'empty') return Object.keys(selector).length === 1;
+  if (selector.kind !== 'context'
+    || typeof selector.pointer !== 'string'
+    || (selector.contextAbsentPolicy !== 'ERROR' && selector.contextAbsentPolicy !== 'SKIP')) return false;
+  const domain = objectOrNull(selector.domain);
+  return domain?.kind === 'invocation'
+    || (domain?.kind === 'loop' && typeof domain.loopId === 'string' && UUID_V4.test(domain.loopId));
+}
+
+function validTemplateUseFill(value: unknown): value is DesignTemplateUseFill {
+  const fill = objectOrNull(value);
+  return Boolean(fill
+    && typeof fill.targetDefinitionId === 'string'
+    && UUID_V4.test(fill.targetDefinitionId)
+    && validBindingSource(fill.source));
+}
+
 function defaultContainerSize(): Record<string, unknown> {
   const widthMm = 80;
   const heightMm = 60;
@@ -1246,6 +1631,10 @@ function placementForParent(
 ): Record<string, unknown> | null {
   const parentKind = stringMember(parent, 'kind');
   const targetType = expectedTemplateChildPlacement(parentKind);
+  if (targetType === 'PACK') {
+    if (size.widthMode === 'FILL' || size.heightMode === 'FILL') return null;
+    return { type: 'PACK', ...size };
+  }
   if (targetType === 'STACK') return { type: 'STACK', ...size };
   if (targetType === 'GRID') {
     if (!isTemplateGridTrackList(parent.rows) || !isTemplateGridTrackList(parent.columns)) return null;
@@ -1270,8 +1659,9 @@ function convertPlacement(
 ): Record<string, unknown> | null {
   const parentKind = stringMember(parent, 'kind');
   const targetType = expectedTemplateChildPlacement(parentKind);
-  if (!targetType || targetType === 'PACK'
-    || (placement.type !== 'ABSOLUTE' && placement.type !== 'STACK' && placement.type !== 'GRID')) {
+  if (!targetType
+    || (placement.type !== 'ABSOLUTE' && placement.type !== 'STACK'
+      && placement.type !== 'GRID' && placement.type !== 'PACK')) {
     return null;
   }
   if (projectedGeometry) {
@@ -1286,7 +1676,7 @@ function convertPlacement(
     && (!isTemplateGridTrackList(parent.rows) || !isTemplateGridTrackList(parent.columns))) return null;
 
   if (placement.type === targetType) {
-    if (targetType === 'STACK' || targetType === 'GRID') return placement;
+    if (targetType === 'STACK' || targetType === 'GRID' || targetType === 'PACK') return placement;
     if (sameParent) return placement;
     const xMm = projectedGeometry?.xMm ?? at?.xMm;
     const yMm = projectedGeometry?.yMm ?? at?.yMm;
@@ -1310,6 +1700,11 @@ function convertPlacement(
       .map((key) => [key, placement[key]]),
   );
   if (!validCommonPlacement(common)) return null;
+  if (targetType === 'PACK') {
+    return common.widthMode === 'FILL' || common.heightMode === 'FILL'
+      ? null
+      : { type: 'PACK', ...common };
+  }
   if (targetType === 'STACK') return { type: 'STACK', ...common };
   if (targetType === 'GRID') return { type: 'GRID', ...common, row: 0, column: 0 };
   if (!projectedGeometry
@@ -1697,6 +2092,9 @@ function kindLabel(kind: CoreInsertableNodeKind): string {
     frame: '框架',
     stack: '堆叠',
     grid: '网格',
+    repeat: '循环容器',
+    conditional: '条件容器',
+    templateUse: '嵌套模板',
     text: '文本',
     image: '图片',
     rect: '矩形',

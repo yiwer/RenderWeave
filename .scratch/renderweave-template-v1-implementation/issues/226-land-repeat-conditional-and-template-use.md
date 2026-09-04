@@ -1,8 +1,8 @@
 # T226 — Author Repeat, Conditional and TemplateUse composition end to end
 
 Type: task
-Status: blocked
-Blocked by: T225
+Status: in-progress
+Blocked by: T225 (done)
 
 ## What to build
 

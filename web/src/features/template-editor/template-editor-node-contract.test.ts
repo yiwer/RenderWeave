@@ -22,10 +22,13 @@ describe('Template Editor node contract projection', () => {
     expect(expectedTemplateChildPlacement('unknown')).toBeNull();
   });
 
-  it('includes Group and Grid in the core container command slice', () => {
+  it('includes structural nodes in the core command and parent slice', () => {
     expect(isTemplateDesignContainerKind('grid')).toBe(true);
     expect(isCoreTemplateAuthoringKind('group')).toBe(true);
     expect(isCoreTemplateAuthoringKind('grid')).toBe(true);
+    expect(isCoreTemplateAuthoringKind('repeat')).toBe(true);
+    expect(isCoreTemplateAuthoringKind('conditional')).toBe(true);
+    expect(isCoreTemplateAuthoringKind('templateUse')).toBe(true);
     for (const kind of [
       'text', 'image', 'rect', 'ellipse', 'line', 'polygon',
       'polyline', 'path', 'qrCode', 'barcode',
@@ -35,6 +38,9 @@ describe('Template Editor node contract projection', () => {
     expect(isCoreTemplateAuthoringParentKind('group')).toBe(true);
     expect(isCoreTemplateAuthoringParentKind('stack')).toBe(true);
     expect(isCoreTemplateAuthoringParentKind('grid')).toBe(true);
+    expect(isCoreTemplateAuthoringParentKind('repeat')).toBe(true);
+    expect(isCoreTemplateAuthoringParentKind('conditional')).toBe(true);
+    expect(isCoreTemplateAuthoringParentKind('templateUse')).toBe(false);
     expect(isCoreTemplateAuthoringParentKind('rect')).toBe(false);
   });
 

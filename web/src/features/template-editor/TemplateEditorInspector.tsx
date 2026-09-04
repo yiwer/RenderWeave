@@ -12,6 +12,7 @@ import {
 
 import { SelectField, type SelectFieldOption } from '../../components/SelectField';
 import type { TemplateEditorCommandIntent } from './template-editor-commands';
+import type { TemplateStructuralConfiguration } from './template-editor-commands';
 import { normalizeTemplateEditorDisplayName } from './template-editor-display-name';
 import {
   sameTemplateNumber,
@@ -58,6 +59,12 @@ import {
   type TemplateGridTrack,
 } from './template-editor-grid-tracks';
 import { canonicalTemplateDecimal } from './template-canonical-decimal';
+import { TemplateEditorStructuralInspector } from './TemplateEditorStructuralInspector';
+import type {
+  TemplateStructuralAuthoringProjection,
+  TemplateStructuralSample,
+} from './template-editor-structural-authoring';
+import type { TemplateCatalogEntry } from '../../api/generated';
 
 type InspectorTab = 'properties' | 'bindings';
 type DraftParse<T> = { ok: true; value: T } | { ok: false; problem: string };
@@ -100,6 +107,9 @@ const KIND_LABELS: Readonly<Record<string, string>> = {
   path: '路径',
   qrCode: '二维码',
   barcode: '条形码',
+  repeat: '循环容器',
+  conditional: '条件容器',
+  templateUse: '嵌套模板',
 };
 
 export interface TemplateEditorInspectorProps {
@@ -118,6 +128,21 @@ export interface TemplateEditorInspectorProps {
   ) => boolean | void;
   readonly problemFocus?: TemplateEditorInspectorFocusRequest;
   readonly onProblemFocusResult?: (requestId: number, focused: boolean) => void;
+  readonly structuralProjection?: TemplateStructuralAuthoringProjection;
+  readonly structuralStaticSchemas?: readonly StaticSnapshot[];
+  readonly templateCatalog?: readonly TemplateCatalogEntry[];
+  readonly onConfigureStructural?: (
+    nodeId: string,
+    configuration: TemplateStructuralConfiguration,
+  ) => void;
+  readonly onStructuralPreviewSample?: (nodeId: string, sample: TemplateStructuralSample) => void;
+  readonly onCreateLoopTemplate?: (
+    repeatNodeId: string,
+    templateId: string,
+    existingNodeId?: string,
+  ) => void;
+  readonly onSelectTemplateTarget?: (nodeId: string, templateId: string) => void;
+  readonly onEnsureTemplateCurrent?: (templateId: string) => void;
 }
 
 export interface TemplateEditorInspectorFocusRequest {
@@ -144,6 +169,14 @@ export function TemplateEditorInspector({
   onDataIntent,
   problemFocus,
   onProblemFocusResult,
+  structuralProjection,
+  structuralStaticSchemas = [],
+  templateCatalog = [],
+  onConfigureStructural,
+  onStructuralPreviewSample,
+  onCreateLoopTemplate,
+  onSelectTemplateTarget,
+  onEnsureTemplateCurrent,
 }: TemplateEditorInspectorProps) {
   const [tab, setTab] = useState<InspectorTab>('properties');
   const [bindingProperty, setBindingProperty] = useState<TemplateBindableProperty | null>(null);
@@ -316,6 +349,16 @@ export function TemplateEditorInspector({
             assetTransport={assetTransport}
             dependencyStaleMessage={dependencyStaleMessage}
             bindingAction={bindingAction}
+            structuralProjection={structuralProjection}
+            structuralStaticSchemas={structuralStaticSchemas}
+            templateCatalog={templateCatalog}
+            designDsl={designDsl}
+            staticSchema={staticSchema}
+            onConfigureStructural={onConfigureStructural}
+            onStructuralPreviewSample={onStructuralPreviewSample}
+            onCreateLoopTemplate={onCreateLoopTemplate}
+            onSelectTemplateTarget={onSelectTemplateTarget}
+            onEnsureTemplateCurrent={onEnsureTemplateCurrent}
           />
         </div>
       ) : (
@@ -370,8 +413,23 @@ function PropertiesPanel({
   assetTransport,
   dependencyStaleMessage,
   bindingAction,
+  structuralProjection,
+  structuralStaticSchemas,
+  templateCatalog,
+  designDsl,
+  staticSchema,
+  onConfigureStructural,
+  onStructuralPreviewSample,
+  onCreateLoopTemplate,
+  onSelectTemplateTarget,
+  onEnsureTemplateCurrent,
 }: Required<Pick<TemplateEditorInspectorProps, 'node' | 'disabled' | 'onCommand'>>
-  & Pick<TemplateEditorInspectorProps, 'assetTransport' | 'dependencyStaleMessage' | 'projectedSizeMm'>
+  & Pick<TemplateEditorInspectorProps,
+    | 'assetTransport' | 'dependencyStaleMessage' | 'projectedSizeMm'
+    | 'structuralProjection' | 'structuralStaticSchemas' | 'templateCatalog'
+    | 'designDsl' | 'staticSchema' | 'onConfigureStructural'
+    | 'onStructuralPreviewSample' | 'onCreateLoopTemplate'
+    | 'onSelectTemplateTarget' | 'onEnsureTemplateCurrent'>
   & { bindingAction: (path: string) => ReactNode }) {
   const value = node.value;
   const placement = objectOrNull(value.placement);
@@ -394,7 +452,8 @@ function PropertiesPanel({
   const isQrCode = node.kind === 'qrCode';
   const isBarcode = node.kind === 'barcode';
   const hasAbsoluteGeometry = placement?.type === 'ABSOLUTE' && !isCanvas;
-  const hasManagedPlacement = placement?.type === 'STACK' || placement?.type === 'GRID';
+  const hasManagedPlacement = placement?.type === 'STACK'
+    || placement?.type === 'GRID' || placement?.type === 'PACK';
   const hasLayoutProperties = isFrame || isStack || isGrid;
   const hasFill = isFrame || isStack || isGrid || isRect || node.kind === 'ellipse'
     || node.kind === 'polygon' || node.kind === 'path';
@@ -409,6 +468,27 @@ function PropertiesPanel({
 
   return (
     <div className="te-node-inspector-groups">
+      {(node.kind === 'repeat' || node.kind === 'conditional' || node.kind === 'templateUse')
+        && structuralProjection && designDsl && staticSchema?.state === 'ready'
+        && onConfigureStructural && onStructuralPreviewSample
+        && onCreateLoopTemplate && onSelectTemplateTarget ? (
+          <TemplateEditorStructuralInspector
+            node={node}
+            projection={structuralProjection}
+            templateCatalog={templateCatalog ?? []}
+            designDsl={designDsl}
+            staticSchema={staticSchema.snapshot}
+            staticSchemas={structuralStaticSchemas ?? []}
+            disabled={disabled}
+            onConfigure={(configuration) => onConfigureStructural(node.nodeId, configuration)}
+            onPreviewSample={(sample) => onStructuralPreviewSample(node.nodeId, sample)}
+            onCreateLoopTemplate={(templateId, existingNodeId) => (
+              onCreateLoopTemplate(node.nodeId, templateId, existingNodeId)
+            )}
+            onSelectTemplateTarget={(templateId) => onSelectTemplateTarget(node.nodeId, templateId)}
+            onEnsureTemplateCurrent={onEnsureTemplateCurrent}
+          />
+        ) : null}
       {isCore && !isCanvas ? (
         <InspectorGroup group="content" title="内容">
           <CommitInput

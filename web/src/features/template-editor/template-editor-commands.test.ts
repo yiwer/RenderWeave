@@ -32,8 +32,142 @@ const DELETE_FRAME_ID = '99999999-9999-4999-8999-999999999999';
 const QR_CODE_ID = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 const GROUP_ID = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
 const GRID_ID = 'cccccccc-cccc-4ccc-8ccc-cccccccccccc';
+const CONDITIONAL_ID = 'dddddddd-dddd-4ddd-8ddd-dddddddddddd';
+const TEMPLATE_USE_ID = 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee';
+const USE_ID = 'ffffffff-ffff-4fff-8fff-ffffffffffff';
+const CONDITIONAL_CHILD_ID = '01234567-89ab-4cde-8fab-0123456789ab';
+const TARGET_TEMPLATE_ID = '12345678-9abc-4def-8abc-123456789abc';
+const PUBLIC_DEFINITION_ID = '23456789-abcd-4efa-8bcd-23456789abcd';
 
 describe('Template Editor core command seam', () => {
+  it('authors and reconfigures Repeat, Conditional and TemplateUse without persisting occurrences', () => {
+    let session = structuredSession();
+    const repeatIds = [REPEAT_ID, TEMPLATE_USE_ID];
+    session = appliedWithOptions(session, {
+      operation: 'insert',
+      nodeKind: 'repeat',
+      parentNodeId: 'canvas-id',
+      structural: {
+        kind: 'repeat',
+        items: {
+          kind: 'context', domain: 'invocation', pointer: '/labels',
+        },
+      },
+    }, {
+      createNodeId: () => repeatIds.shift()!,
+      createLoopId: () => LOOP_ID,
+    });
+
+    expect(node(session, REPEAT_ID)).toEqual(expect.objectContaining({
+      kind: 'repeat',
+      loopId: LOOP_ID,
+      absentPolicy: 'EMPTY',
+      itemLayout: { kind: 'STACK', direction: 'COLUMN', gapMm: 0 },
+      instanceLayout: { kind: 'STACK', direction: 'COLUMN', gapMm: 0 },
+      placement: expect.objectContaining({ type: 'ABSOLUTE' }),
+      children: [expect.objectContaining({
+        nodeId: TEMPLATE_USE_ID,
+        kind: 'rect', render: false,
+        placement: expect.objectContaining({ type: 'PACK', widthMode: 'FIXED', heightMode: 'FIXED' }),
+      })],
+    }));
+    expect(JSON.stringify(node(session, REPEAT_ID))).not.toContain('occurrence');
+
+    const conditionalIds = [CONDITIONAL_ID, CONDITIONAL_CHILD_ID];
+    session = appliedWithOptions(session, {
+      operation: 'insert',
+      nodeKind: 'conditional',
+      parentNodeId: 'canvas-id',
+      structural: {
+        kind: 'conditional',
+        condition: { kind: 'literal', valueType: 'boolean', value: true },
+      },
+    }, {
+      createNodeId: () => conditionalIds.shift()!,
+    });
+    expect(node(session, CONDITIONAL_ID)).toEqual(expect.objectContaining({
+      kind: 'conditional', absentPolicy: 'FALSE',
+      condition: { kind: 'literal', valueType: 'boolean', value: true },
+      children: [expect.objectContaining({ nodeId: CONDITIONAL_CHILD_ID, kind: 'rect', render: false })],
+    }));
+
+    session = appliedWithOptions(session, {
+      operation: 'insert',
+      nodeKind: 'templateUse',
+      parentNodeId: REPEAT_ID,
+      structural: {
+        kind: 'templateUse',
+        templateId: TARGET_TEMPLATE_ID,
+        contextSelector: {
+          kind: 'context',
+          domain: { kind: 'loop', loopId: LOOP_ID },
+          pointer: '',
+          contextAbsentPolicy: 'ERROR',
+        },
+        fills: [{
+          targetDefinitionId: PUBLIC_DEFINITION_ID,
+          source: { kind: 'loopIndex', loopId: LOOP_ID },
+        }],
+      },
+    }, {
+      createNodeId: () => '3456789a-bcde-4fab-8cde-3456789abcde',
+      createUseId: () => USE_ID,
+    });
+    expect(node(session, TEMPLATE_USE_ID)).toEqual(expect.objectContaining({
+      useId: USE_ID,
+      templateRef: { templateId: TARGET_TEMPLATE_ID },
+      contextSelector: expect.objectContaining({ pointer: '' }),
+      fills: [expect.objectContaining({ targetDefinitionId: PUBLIC_DEFINITION_ID })],
+      placement: expect.objectContaining({ type: 'PACK' }),
+    }));
+
+    const authoredChildren = node(session, REPEAT_ID).children;
+    session = applied(session, {
+      operation: 'configure-structural',
+      nodeId: REPEAT_ID,
+      structural: {
+        kind: 'repeat',
+        items: { kind: 'definition', definitionId: LOOP_DEFINITION_ID },
+        absentPolicy: 'ERROR',
+        itemLayout: { kind: 'GRID', columns: 2, columnGapMm: 1, rowGapMm: 2 },
+        instanceLayout: { kind: 'STACK', direction: 'ROW', gapMm: 3 },
+      },
+    });
+    expect(node(session, REPEAT_ID)).toEqual(expect.objectContaining({
+      items: { kind: 'definition', definitionId: LOOP_DEFINITION_ID },
+      absentPolicy: 'ERROR',
+      itemLayout: { kind: 'GRID', columns: 2, columnGapMm: 1, rowGapMm: 2 },
+      instanceLayout: { kind: 'STACK', direction: 'ROW', gapMm: 3 },
+      children: authoredChildren,
+    }));
+  });
+
+  it('rejects structural insertion without loaded authoring facts or an explicit context pointer', () => {
+    const session = structuredSession();
+    const repeat = executeTemplateEditorCommand(session, {
+      operation: 'insert', nodeKind: 'repeat', parentNodeId: 'canvas-id',
+    });
+    expect(repeat).toEqual(expect.objectContaining({
+      state: 'rejected', code: 'STRUCTURAL_FACTS_REQUIRED', session,
+    }));
+
+    const missingPointer = executeTemplateEditorCommand(session, {
+      operation: 'insert',
+      nodeKind: 'templateUse',
+      parentNodeId: 'canvas-id',
+      structural: {
+        kind: 'templateUse',
+        templateId: TARGET_TEMPLATE_ID,
+        contextSelector: {
+          kind: 'context', domain: { kind: 'invocation' }, contextAbsentPolicy: 'ERROR',
+        },
+        fills: [],
+      },
+    });
+    expect(missingPointer).toEqual(expect.objectContaining({
+      state: 'rejected', code: 'STRUCTURAL_CONFIGURATION_INVALID', session,
+    }));
+  });
   it('inserts Frame, Stack and Rect into an explicit parent with admitted defaults', () => {
     let session = structuredSession();
     session = applied(session, {
@@ -1761,6 +1895,18 @@ function applied(
     intent,
     nodeId ? { createNodeId: () => nodeId } : undefined,
   );
+  if (result.state !== 'applied') {
+    throw new Error(result.state === 'rejected' ? result.message : 'expected an applied command');
+  }
+  return result.session;
+}
+
+function appliedWithOptions(
+  session: StructuredEditorSession,
+  intent: TemplateEditorCommandIntent,
+  options: Parameters<typeof executeTemplateEditorCommand>[2],
+): StructuredEditorSession {
+  const result = executeTemplateEditorCommand(session, intent, options);
   if (result.state !== 'applied') {
     throw new Error(result.state === 'rejected' ? result.message : 'expected an applied command');
   }

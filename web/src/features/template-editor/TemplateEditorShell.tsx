@@ -74,6 +74,7 @@ import {
 import {
   projectTemplateDefiniteLayout,
   type TemplateDefiniteLayoutResult,
+  type TemplateStructuralLayoutStates,
 } from './template-editor-definite-layout';
 import {
   defaultTemplateEditorAssetTransport,
@@ -164,9 +165,25 @@ import {
 } from './template-editor-data-authoring';
 import {
   defaultTemplateStaticSchemaTransport,
+  loadExactTemplateStaticSchema,
   loadTemplateStaticSchema,
   type TemplateStaticSchemaTransport,
 } from './template-editor-static-schema';
+import {
+  defaultTemplateEditorCompositionTransport,
+  loadTemplateCompositionCatalog,
+  loadTemplateCompositionCurrent,
+  type TemplateEditorCompositionTransport,
+} from './template-editor-composition';
+import {
+  projectStructuralAuthoring,
+  wholeTemplateContextSelector,
+  type TemplateStructuralAuthoringProjection,
+  type TemplateStructuralSample,
+  type TemplateStructuralSchemaRef,
+} from './template-editor-structural-authoring';
+import type { StaticSnapshot } from '../schema-studio/lossless-api';
+import type { TemplateCatalogEntry, TemplateReadableResponse } from '../../api/generated';
 import {
   TemplateEditorDataSources,
   type TemplateStaticSchemaView,
@@ -225,6 +242,7 @@ interface TemplateEditorShellProps {
   download?: TemplateEditorDownload;
   assetTransport?: TemplateEditorAssetTransport;
   staticSchemaTransport?: TemplateStaticSchemaTransport;
+  compositionTransport?: TemplateEditorCompositionTransport;
 }
 
 export interface TemplateEditorDownloadArtifact {
@@ -248,6 +266,7 @@ export function TemplateEditorShell({
   download = defaultTemplateEditorDownload,
   assetTransport = defaultTemplateEditorAssetTransport,
   staticSchemaTransport,
+  compositionTransport,
 }: TemplateEditorShellProps) {
   const preview = useTemplatePreviewCoordinator(session, previewTransport, previewObjectUrls);
   if (session.mode === 'raw-repair') {
@@ -274,6 +293,7 @@ export function TemplateEditorShell({
       download={download}
       assetTransport={assetTransport}
       staticSchemaTransport={staticSchemaTransport}
+      compositionTransport={compositionTransport}
     />
   );
 }
@@ -289,11 +309,17 @@ interface TemplateEditorSurfaceProps {
   download?: TemplateEditorDownload;
   assetTransport?: TemplateEditorAssetTransport;
   staticSchemaTransport?: TemplateStaticSchemaTransport;
+  compositionTransport?: TemplateEditorCompositionTransport;
 }
 
 type SurfaceState =
   | { state: 'loading' }
   | { state: 'open'; session: TemplateEditorSession; saveNotice?: string }
+  | { state: 'error'; message: string };
+
+type TemplateCompositionCatalogView =
+  | { state: 'loading' }
+  | { state: 'ready'; items: readonly TemplateCatalogEntry[] }
   | { state: 'error'; message: string };
 
 export function TemplateEditorSurface({
@@ -307,6 +333,7 @@ export function TemplateEditorSurface({
   download,
   assetTransport = defaultTemplateEditorAssetTransport,
   staticSchemaTransport,
+  compositionTransport,
 }: TemplateEditorSurfaceProps) {
   const [retryKey, setRetryKey] = useState(0);
   const [surface, setSurface] = useState<SurfaceState>({ state: 'loading' });
@@ -320,6 +347,10 @@ export function TemplateEditorSurface({
       ? defaultTemplateStaticSchemaTransport
       : undefined);
   const effectiveRecoveryStorage = recoveryStorage ?? browserTemplateRecoveryStorage();
+  const effectiveCompositionTransport = compositionTransport
+    ?? (transport === defaultTemplateEditorTransport
+      ? defaultTemplateEditorCompositionTransport
+      : undefined);
 
   useEffect(() => {
     const activeGeneration = generation.current + 1;
@@ -380,6 +411,7 @@ export function TemplateEditorSurface({
       download={download}
       assetTransport={assetTransport}
       staticSchemaTransport={effectiveStaticSchemaTransport}
+      compositionTransport={effectiveCompositionTransport}
     />
   );
 }
@@ -472,6 +504,7 @@ function StructuredShell({
   download,
   assetTransport,
   staticSchemaTransport,
+  compositionTransport,
 }: {
   session: StructuredEditorSession;
   onRetryReadiness?: () => void;
@@ -484,6 +517,7 @@ function StructuredShell({
   download: TemplateEditorDownload;
   assetTransport: TemplateEditorAssetTransport;
   staticSchemaTransport?: TemplateStaticSchemaTransport;
+  compositionTransport?: TemplateEditorCompositionTransport;
 }) {
   const [localSession, setLocalSession] = useState(incomingSession);
   const [saveView, setSaveView] = useState<StructuredSaveView>(
@@ -520,6 +554,23 @@ function StructuredShell({
   const [staticSchemaView, setStaticSchemaView] = useState<TemplateStaticSchemaView>({
     state: 'loading',
   });
+  const [structuralSchemas, setStructuralSchemas] = useState<readonly StaticSnapshot[]>([]);
+  const [compositionCatalog, setCompositionCatalog] = useState<TemplateCompositionCatalogView>({
+    state: 'loading',
+  });
+  const [templateCurrents, setTemplateCurrents] = useState<ReadonlyMap<string, TemplateReadableResponse>>(
+    () => new Map(),
+  );
+  const [structuralSamples, setStructuralSamples] = useState<
+    Readonly<Record<string, TemplateStructuralSample>>
+  >({});
+  const [priorItemContexts, setPriorItemContexts] = useState<
+    Readonly<Record<string, TemplateStructuralSchemaRef>>
+  >({});
+  const compositionCatalogRef = useRef(compositionCatalog);
+  const templateCurrentsRef = useRef(templateCurrents);
+  const structuralSchemasRef = useRef(structuralSchemas);
+  const pendingTemplateCurrents = useRef(new Set<string>());
   const session = useMemo(
     () => baselineIdentity(localSession.baseline) === baselineIdentity(incomingSession.baseline)
       ? updateStructuredReadiness(localSession, incomingSession.readiness)
@@ -535,6 +586,7 @@ function StructuredShell({
         state: 'error',
         message: '当前宿主未提供 StaticSchema 读取能力。',
       }));
+      queueMicrotask(() => setStructuralSchemas([]));
       return undefined;
     }
     const controller = new AbortController();
@@ -547,7 +599,10 @@ function StructuredShell({
       controller.signal,
     ).then(
       (snapshot) => {
-        if (!controller.signal.aborted) setStaticSchemaView({ state: 'ready', snapshot });
+        if (!controller.signal.aborted) {
+          setStaticSchemaView({ state: 'ready', snapshot });
+          setStructuralSchemas([snapshot]);
+        }
       },
       () => {
         if (!controller.signal.aborted) {
@@ -555,15 +610,76 @@ function StructuredShell({
             state: 'error',
             message: '永久 StaticSchema 暂不可读取或未通过身份核验。',
           });
+          setStructuralSchemas([]);
         }
       },
     );
     return () => controller.abort();
   }, [incomingBaselineKey, incomingSession, staticSchemaTransport]);
+  useEffect(() => {
+    compositionCatalogRef.current = compositionCatalog;
+  }, [compositionCatalog]);
+  useEffect(() => {
+    templateCurrentsRef.current = templateCurrents;
+  }, [templateCurrents]);
+  useEffect(() => {
+    structuralSchemasRef.current = structuralSchemas;
+  }, [structuralSchemas]);
+  useEffect(() => {
+    if (!compositionTransport) {
+      queueMicrotask(() => setCompositionCatalog({
+        state: 'error',
+        message: '当前宿主未提供 Template catalog/current 读取能力。',
+      }));
+      return undefined;
+    }
+    const controller = new AbortController();
+    queueMicrotask(() => {
+      if (!controller.signal.aborted) setCompositionCatalog({ state: 'loading' });
+    });
+    void loadTemplateCompositionCatalog(compositionTransport, controller.signal).then(
+      (items) => {
+        if (!controller.signal.aborted) setCompositionCatalog({ state: 'ready', items });
+      },
+      () => {
+        if (!controller.signal.aborted) setCompositionCatalog({
+          state: 'error',
+          message: 'Template 目录暂不可读取；请重试后再创建嵌套调用。',
+        });
+      },
+    );
+    return () => controller.abort();
+  }, [compositionTransport, incomingBaselineKey]);
   const nodes = useMemo(() => projectStructuredNodes(session), [session]);
+  const structuralProjection = useMemo<TemplateStructuralAuthoringProjection | undefined>(() => (
+    staticSchemaView.state === 'ready'
+      ? projectStructuralAuthoring({
+        designDsl: session.workingCopy.designDsl,
+        staticSchema: staticSchemaView.snapshot,
+        staticSchemas: structuralSchemas,
+        templateCatalog: compositionCatalog.state === 'ready' ? compositionCatalog.items : [],
+        templateCurrents: [...templateCurrents.values()],
+        sample: structuralSamples,
+        priorItemContexts,
+      })
+      : undefined
+  ), [
+    compositionCatalog,
+    priorItemContexts,
+    session.workingCopy.designDsl,
+    staticSchemaView,
+    structuralSamples,
+    structuralSchemas,
+    templateCurrents,
+  ]);
+  const structuralLayoutStates = useMemo(
+    () => projectStructuralLayoutStates(structuralProjection),
+    [structuralProjection],
+  );
   const layoutProjection = useMemo(() => projectTemplateDefiniteLayout(
     objectOrNull(session.workingCopy.designDsl.designRoot),
-  ), [session.workingCopy.designDsl.designRoot]);
+    structuralLayoutStates,
+  ), [session.workingCopy.designDsl.designRoot, structuralLayoutStates]);
   const [entry, setEntry] = useState<EditorEntry>('structure');
   const [selectedNodeId, setSelectedNodeId] = useState(nodes[0]?.nodeId ?? '');
   const [selectedNodeIds, setSelectedNodeIds] = useState<readonly string[]>(
@@ -663,6 +779,64 @@ function StructuredShell({
     setSaveView({ state: 'idle' });
   };
 
+  const ensureTemplateCurrent = useCallback(async (
+    templateId: string,
+  ): Promise<TemplateReadableResponse | null> => {
+    const cached = templateCurrentsRef.current.get(templateId);
+    if (cached) return cached;
+    if (!compositionTransport || pendingTemplateCurrents.current.has(templateId)) return null;
+    const catalog = compositionCatalogRef.current;
+    const entry = catalog.state === 'ready'
+      ? catalog.items.find((candidate) => candidate.templateId === templateId)
+      : undefined;
+    if (!entry) {
+      setNodeAuthoringProblem('所选 Template 已不在当前目录中，请刷新目录后重试。');
+      return null;
+    }
+    pendingTemplateCurrents.current.add(templateId);
+    try {
+      const current = await loadTemplateCompositionCurrent(entry, compositionTransport);
+      setTemplateCurrents((values) => {
+        const next = new Map(values).set(templateId, current);
+        templateCurrentsRef.current = next;
+        return next;
+      });
+      return current;
+    } catch {
+      setNodeAuthoringProblem('所选 Template current 已变化或暂不可读取，请刷新目录后重试。');
+      return null;
+    } finally {
+      pendingTemplateCurrents.current.delete(templateId);
+    }
+  }, [compositionTransport]);
+
+  const ensureStructuralSchema = useCallback(async (
+    identity: TemplateStructuralSchemaRef,
+  ): Promise<StaticSnapshot | null> => {
+    const cached = structuralSchemasRef.current.find((snapshot) => (
+      snapshot.schemaKey === identity.schemaKey && snapshot.versionTag === identity.versionTag
+    ));
+    if (cached) return cached;
+    if (!staticSchemaTransport) {
+      setNodeAuthoringProblem('当前宿主无法读取循环单项的 exact StaticSchema。');
+      return null;
+    }
+    try {
+      const snapshot = await loadExactTemplateStaticSchema(identity, staticSchemaTransport);
+      setStructuralSchemas((values) => {
+        if (values.some((value) => value.schemaKey === snapshot.schemaKey
+          && value.versionTag === snapshot.versionTag)) return values;
+        const next = [...values, snapshot];
+        structuralSchemasRef.current = next;
+        return next;
+      });
+      return snapshot;
+    } catch {
+      setNodeAuthoringProblem('循环单项的 exact StaticSchema 暂不可读取，请重试。');
+      return null;
+    }
+  }, [staticSchemaTransport]);
+
   const undo = () => acceptLocalChange(undoStructuredCommand(session));
   const redo = () => acceptLocalChange(redoStructuredCommand(session));
   const dispatchEditorCommand = (
@@ -670,6 +844,15 @@ function StructuredShell({
     options: { selectAffected?: boolean; openStructure?: boolean } = {},
   ) => {
     if (localLocked) return;
+    if (intent.operation === 'configure-structural' && intent.structural.kind === 'repeat') {
+      const previous = structuralProjection?.nodeStates[intent.nodeId];
+      if (previous?.kind === 'repeat' && previous.itemContext) {
+        setPriorItemContexts((values) => ({
+          ...values,
+          [intent.nodeId]: previous.itemContext as TemplateStructuralSchemaRef,
+        }));
+      }
+    }
     const result = executeTemplateEditorCommand(session, intent);
     if (result.state === 'rejected') {
       setNodeAuthoringProblem(result.message);
@@ -723,12 +906,75 @@ function StructuredShell({
     const parentNodeId = explicitParentNodeId
       ?? nearestCoreParentNodeId(nodes, effectiveSelectedNodeId);
     if (!parentNodeId) {
-      setNodeAuthoringProblem('当前选择没有可承载新节点的 Canvas、Frame 或 Stack。');
+      setNodeAuthoringProblem('当前选择没有可承载新节点的正式父容器。');
       return;
     }
     if (kind === 'text' || kind === 'image') {
       setNodeAuthoringProblem(null);
       setPendingAssetInsertion({ kind, parentNodeId, ...(at ? { at } : {}) });
+      return;
+    }
+    if (kind === 'repeat' || kind === 'conditional' || kind === 'templateUse') {
+      if (staticSchemaView.state !== 'ready') {
+        setNodeAuthoringProblem('请等待永久 StaticSchema 加载完成后再创建结构节点。');
+        return;
+      }
+      const insertion = projectStructuralInsertion(
+        session.workingCopy.designDsl,
+        parentNodeId,
+        kind,
+        staticSchemaView.snapshot,
+        structuralSchemas,
+        compositionCatalog.state === 'ready' ? compositionCatalog.items : [],
+        [...templateCurrents.values()],
+      );
+      if (kind === 'repeat') {
+        const source = insertion.projection.repeatSources[insertion.probeNodeId]?.[0];
+        if (!source) {
+          setNodeAuthoringProblem('当前词法作用域没有可用于 Repeat 的 exact list 字段或定义。');
+          return;
+        }
+        dispatchEditorCommand({
+          operation: 'insert', nodeKind: kind, parentNodeId,
+          ...(at ? { at } : {}),
+          structural: { kind, items: source.source as never },
+        }, { selectAffected: true, openStructure: true });
+        return;
+      }
+      if (kind === 'conditional') {
+        const source = insertion.projection.booleanSources[insertion.probeNodeId]?.[0];
+        if (!source) {
+          setNodeAuthoringProblem('当前词法作用域没有可用于 Conditional 的布尔字段或定义。');
+          return;
+        }
+        dispatchEditorCommand({
+          operation: 'insert', nodeKind: kind, parentNodeId,
+          ...(at ? { at } : {}),
+          structural: { kind, condition: source.source as never },
+        }, { selectAffected: true, openStructure: true });
+        return;
+      }
+      const target = insertion.projection.templateTargets[insertion.probeNodeId]
+        ?.find((candidate) => candidate.state === 'eligible');
+      if (!target || !insertion.contextSelector) {
+        setNodeAuthoringProblem(compositionCatalog.state === 'error'
+          ? compositionCatalog.message
+          : '当前 exact context 没有 READY Template；请先准备兼容目标。');
+        return;
+      }
+      void ensureTemplateCurrent(target.templateId).then((current) => {
+        if (!current) return;
+        dispatchEditorCommand({
+          operation: 'insert', nodeKind: kind, parentNodeId,
+          ...(at ? { at } : {}),
+          structural: {
+            kind,
+            templateId: target.templateId,
+            contextSelector: insertion.contextSelector as never,
+            fills: [],
+          },
+        }, { selectAffected: true, openStructure: true });
+      });
       return;
     }
     const nodeKind: CoreInsertableNodeKind = kind === 'shape' ? 'polygon' : kind;
@@ -742,6 +988,76 @@ function StructuredShell({
       },
       { selectAffected: true, openStructure: true },
     );
+  };
+
+  const chooseLoopTemplate = (
+    repeatNodeId: string,
+    templateId: string,
+    existingNodeId?: string,
+  ) => {
+    const repeat = nodes.find((node) => node.nodeId === repeatNodeId)?.value;
+    const loopId = repeat && typeof repeat.loopId === 'string' ? repeat.loopId : null;
+    const state = structuralProjection?.nodeStates[repeatNodeId];
+    if (!loopId || state?.kind !== 'repeat' || !state.itemContext) {
+      setNodeAuthoringProblem('请先选择可证明 exact 单项 context 的 Repeat 数据源。');
+      return;
+    }
+    void Promise.all([
+      ensureStructuralSchema(state.itemContext),
+      ensureTemplateCurrent(templateId),
+    ]).then(([schema, current]) => {
+      if (!schema || !current) return;
+      const contextSelector = wholeTemplateContextSelector({ kind: 'loop', loopId }, 'SKIP');
+      if (existingNodeId) {
+        const existing = nodes.find((node) => node.nodeId === existingNodeId)?.value;
+        const previousTemplateId = stringMember(
+          objectOrNull(existing?.templateRef),
+          'templateId',
+        );
+        dispatchEditorCommand({
+          operation: 'configure-structural',
+          nodeId: existingNodeId,
+          structural: {
+            kind: 'templateUse',
+            templateId,
+            contextSelector: contextSelector as never,
+            fills: previousTemplateId === templateId && Array.isArray(existing?.fills)
+              ? existing.fills as never
+              : [],
+          },
+        }, { selectAffected: true, openStructure: true });
+        return;
+      }
+      dispatchEditorCommand({
+        operation: 'insert',
+        nodeKind: 'templateUse',
+        parentNodeId: repeatNodeId,
+        structural: {
+          kind: 'templateUse', templateId,
+          contextSelector: contextSelector as never,
+          fills: [],
+        },
+      }, { selectAffected: true, openStructure: true });
+    });
+  };
+
+  const selectTemplateTarget = (nodeId: string, templateId: string) => {
+    const existing = nodes.find((node) => node.nodeId === nodeId)?.value;
+    if (!existing || existing.kind !== 'templateUse') return;
+    void ensureTemplateCurrent(templateId).then((current) => {
+      if (!current) return;
+      const previousTemplateId = stringMember(objectOrNull(existing.templateRef), 'templateId');
+      dispatchEditorCommand({
+        operation: 'configure-structural', nodeId,
+        structural: {
+          kind: 'templateUse', templateId,
+          contextSelector: existing.contextSelector as never,
+          fills: previousTemplateId === templateId && Array.isArray(existing.fills)
+            ? existing.fills as never
+            : [],
+        },
+      });
+    });
   };
 
   const persistRecoveryNow = async (
@@ -1744,6 +2060,7 @@ function StructuredShell({
             tool={canvasTool}
             disabled={localLocked}
             assetTransport={assetTransport}
+            structuralStates={structuralLayoutStates}
             onToolChange={setCanvasTool}
             onSelectNode={selectNode}
             onSelectionChange={(nodeIds, primaryNodeId) => {
@@ -1816,6 +2133,20 @@ function StructuredShell({
               onDataIntent={dispatchDataAuthoringIntent}
               assetTransport={assetTransport}
               dependencyStaleMessage={dependencyStaleMessage}
+              structuralProjection={structuralProjection}
+              structuralStaticSchemas={structuralSchemas}
+              templateCatalog={compositionCatalog.state === 'ready' ? compositionCatalog.items : []}
+              onConfigureStructural={(nodeId, structural) => {
+                dispatchEditorCommand({ operation: 'configure-structural', nodeId, structural });
+              }}
+              onStructuralPreviewSample={(nodeId, sample) => {
+                setStructuralSamples((values) => ({ ...values, [nodeId]: sample }));
+              }}
+              onCreateLoopTemplate={chooseLoopTemplate}
+              onSelectTemplateTarget={selectTemplateTarget}
+              onEnsureTemplateCurrent={(templateId) => {
+                void ensureTemplateCurrent(templateId);
+              }}
             />
           </aside>
         ) : null}
@@ -2703,8 +3034,8 @@ function ContainerCatalogSummary({
 }) {
   return (
     <>
-      <PanelHeading title="容器" detail="4 个正式容器" />
-      <p className="te-panel-copy">自由容器保留子级坐标；Stack 与 Grid 由布局属性实时排列。</p>
+      <PanelHeading title="容器" detail="7 个正式容器 / 结构节点" />
+      <p className="te-panel-copy">布局容器保存几何；Repeat、Conditional 与 TemplateUse 保存结构语义。</p>
       <div className="te-node-library" aria-label="可添加容器">
         <button
           type="button"
@@ -2720,6 +3051,36 @@ function ContainerCatalogSummary({
           <span className="te-node-library-icon"><Boxes aria-hidden="true" size={18} /></span>
           <span className="te-node-library-copy"><strong>自由分组</strong><small>内容包围 · 绝对子级</small></span>
           <span className="te-node-library-action">添加</span>
+        </button>
+        <button
+          type="button"
+          aria-label="添加循环容器"
+          disabled={disabled}
+          onClick={() => onInsert('repeat')}
+        >
+          <span className="te-node-library-icon"><RefreshCw aria-hidden="true" size={18} /></span>
+          <span className="te-node-library-copy"><strong>循环容器</strong><small>exact list · authored once</small></span>
+          <span className="te-node-library-action">配置并添加</span>
+        </button>
+        <button
+          type="button"
+          aria-label="添加条件容器"
+          disabled={disabled}
+          onClick={() => onInsert('conditional')}
+        >
+          <span className="te-node-library-icon"><Wrench aria-hidden="true" size={18} /></span>
+          <span className="te-node-library-copy"><strong>条件容器</strong><small>TRUE branch · FALSE prune</small></span>
+          <span className="te-node-library-action">配置并添加</span>
+        </button>
+        <button
+          type="button"
+          aria-label="添加嵌套模板"
+          disabled={disabled}
+          onClick={() => onInsert('templateUse')}
+        >
+          <span className="te-node-library-icon"><Boxes aria-hidden="true" size={18} /></span>
+          <span className="te-node-library-copy"><strong>嵌套模板</strong><small>READY exact-schema target</small></span>
+          <span className="te-node-library-action">配置并添加</span>
         </button>
         <button
           type="button"
@@ -2790,6 +3151,146 @@ const ELEMENT_CATALOG: ReadonlyArray<{
   { kind: 'qrCode', label: '二维码', detail: '本地草稿预览', icon: QrCode },
   { kind: 'barcode', label: '条形码', detail: '本地草稿预览', icon: Barcode },
 ];
+
+function projectStructuralLayoutStates(
+  projection: TemplateStructuralAuthoringProjection | undefined,
+): TemplateStructuralLayoutStates {
+  if (!projection) return {};
+  return Object.fromEntries(Object.entries(projection.nodeStates).map(([nodeId, state]) => {
+    if (state.kind === 'repeat') {
+      if (state.authoringState === 'INVALID') {
+        return [nodeId, { kind: 'repeat', outcome: 'SOURCE_ERROR' as const }];
+      }
+      if (state.runtime.state === 'VALUES') {
+        return [nodeId, {
+          kind: 'repeat', outcome: 'VALUES' as const, count: state.runtime.occurrences.length,
+        }];
+      }
+      return [nodeId, {
+        kind: 'repeat',
+        outcome: state.runtime.state === 'UNSAMPLED' ? 'EMPTY' : state.runtime.state,
+      }];
+    }
+    if (state.kind === 'conditional') {
+      return [nodeId, {
+        kind: 'conditional',
+        outcome: state.authoringState === 'INVALID'
+          ? 'SOURCE_ERROR'
+          : state.runtime.state === 'UNSAMPLED' ? 'TRUE' : state.runtime.state,
+      }];
+    }
+    return [nodeId, {
+      kind: 'templateUse',
+      outcome: state.authoringState === 'READY'
+        ? 'READY'
+        : state.authoringState === 'NEEDS_REPAIR' ? 'NEEDS_REPAIR' : 'SOURCE_ERROR',
+      ...(state.sourceCanvasSizeMm ? { sourceCanvasSizeMm: state.sourceCanvasSizeMm } : {}),
+    }];
+  })) as TemplateStructuralLayoutStates;
+}
+
+function projectStructuralInsertion(
+  designDsl: Readonly<Record<string, unknown>>,
+  parentNodeId: string,
+  kind: 'repeat' | 'conditional' | 'templateUse',
+  staticSchema: StaticSnapshot,
+  staticSchemas: readonly StaticSnapshot[],
+  templateCatalog: readonly TemplateCatalogEntry[],
+  templateCurrents: readonly TemplateReadableResponse[],
+): {
+  probeNodeId: string;
+  projection: TemplateStructuralAuthoringProjection;
+  contextSelector?: Readonly<Record<string, unknown>>;
+} {
+  const probeNodeId = '00000000-0000-4000-8000-000000000000';
+  const root = objectOrNull(designDsl.designRoot);
+  const loopId = root ? lexicalLoopForParent(root, parentNodeId) : null;
+  const contextSelector = wholeTemplateContextSelector(
+    loopId ? { kind: 'loop', loopId } : 'invocation',
+    loopId ? 'SKIP' : 'ERROR',
+  );
+  const common = {
+    nodeId: probeNodeId,
+    kind,
+    bindings: [],
+    placement: { type: 'ABSOLUTE', xMm: 0, yMm: 0, widthMode: 'FIXED', widthMm: 1, heightMode: 'FIXED', heightMm: 1 },
+  };
+  const probe = kind === 'repeat'
+    ? {
+      ...common, loopId: '00000000-0000-4000-8000-000000000001',
+      items: { kind: 'definition', definitionId: '00000000-0000-4000-8000-000000000002' },
+      absentPolicy: 'EMPTY',
+      itemLayout: { kind: 'STACK', direction: 'COLUMN' },
+      instanceLayout: { kind: 'STACK', direction: 'COLUMN' }, children: [],
+    }
+    : kind === 'conditional'
+      ? {
+        ...common,
+        condition: { kind: 'definition', definitionId: '00000000-0000-4000-8000-000000000002' },
+        absentPolicy: 'FALSE', children: [],
+      }
+      : {
+        ...common,
+        useId: '00000000-0000-4000-8000-000000000003',
+        templateRef: { templateId: '00000000-0000-4000-8000-000000000004' },
+        contextSelector, fills: [],
+      };
+  const projectedRoot = root ? appendStructuralProbe(root, parentNodeId, probe) : root;
+  return {
+    probeNodeId,
+    contextSelector,
+    projection: projectStructuralAuthoring({
+      designDsl: { ...designDsl, designRoot: projectedRoot ?? designDsl.designRoot },
+      staticSchema,
+      staticSchemas,
+      templateCatalog,
+      templateCurrents,
+    }),
+  };
+}
+
+function appendStructuralProbe(
+  node: Readonly<Record<string, unknown>>,
+  parentNodeId: string,
+  probe: Readonly<Record<string, unknown>>,
+): Readonly<Record<string, unknown>> {
+  if (node.nodeId === parentNodeId && Array.isArray(node.children)) {
+    return { ...node, children: [...node.children, probe] };
+  }
+  if (!Array.isArray(node.children)) return node;
+  return {
+    ...node,
+    children: node.children.map((value) => {
+      const child = objectOrNull(value);
+      return child ? appendStructuralProbe(child, parentNodeId, probe) : value;
+    }),
+  };
+}
+
+function lexicalLoopForParent(
+  root: Readonly<Record<string, unknown>>,
+  parentNodeId: string,
+): string | null {
+  const visit = (node: Readonly<Record<string, unknown>>, loops: readonly string[]): string | null => {
+    const childLoops = node.kind === 'repeat' && typeof node.loopId === 'string'
+      ? [...loops, node.loopId]
+      : loops;
+    if (node.nodeId === parentNodeId) return childLoops.at(-1) ?? null;
+    if (!Array.isArray(node.children)) return null;
+    for (const value of node.children) {
+      const child = objectOrNull(value);
+      if (!child) continue;
+      const found = visit(child, childLoops);
+      if (found) return found;
+    }
+    return null;
+  };
+  return visit(root, []);
+}
+
+function stringMember(value: Readonly<Record<string, unknown>> | null, member: string): string | null {
+  return value && typeof value[member] === 'string' ? value[member] : null;
+}
 
 function templateDependencyStaleMessage(
   session: StructuredEditorSession,

@@ -27,6 +27,8 @@ const COMPLETE_WIRE_FIXTURE = readFileSync(path.resolve(
   'all-kinds.json',
 ), 'utf8');
 const COMPLETE_WIRE_EDITED_NAME = 'Complete wire edited in Structured mode';
+const STRUCTURAL_PUBLIC_DEFINITION_ID = '94000000-0000-4000-8000-000000000001';
+const STRUCTURAL_PUBLIC_DEFINITION_NAME = '商品名称填充';
 const FONT_FIXTURE = readFileSync(path.resolve(
   process.cwd(),
   '..',
@@ -85,6 +87,12 @@ interface ProjectedInlineRect {
   top: string;
   width: string;
   height: string;
+}
+
+interface StructuralAuthoringSetup {
+  parent: TemplateCurrentBody;
+  child: TemplateCurrentBody;
+  childDisplayName: string;
 }
 
 test.describe('complete DesignDSL real Template round trip', () => {
@@ -183,7 +191,7 @@ test.describe('complete DesignDSL real Template round trip', () => {
     await expect(page.getByRole('main', { name: 'Template 编辑工作区' })).toBeVisible();
     await expect(page.getByText('revision 0', { exact: true })).toBeVisible();
 
-    await page.getByRole('button', { name: '容器' }).click();
+    await page.getByRole('button', { name: '容器', exact: true }).click();
     await page.getByRole('button', { name: '添加框架' }).click();
     const frameRow = page.getByRole('treeitem', { name: /框架 1/ });
     await expect(frameRow).toHaveAttribute('aria-selected', 'true');
@@ -204,13 +212,13 @@ test.describe('complete DesignDSL real Template round trip', () => {
     );
 
     await frameRow.click();
-    await page.getByRole('button', { name: '容器' }).click();
+    await page.getByRole('button', { name: '容器', exact: true }).click();
     await page.getByRole('button', { name: '添加堆叠容器' }).click();
     const stackRow = page.getByRole('treeitem', { name: /堆叠 1/ });
     const stackId = requiredAttribute(await stackRow.getAttribute('data-template-editor-node-id'));
 
     await frameRow.click();
-    await page.getByRole('button', { name: '容器' }).click();
+    await page.getByRole('button', { name: '容器', exact: true }).click();
     await page.getByRole('button', { name: '添加网格容器' }).click();
     const gridRow = page.getByRole('treeitem', { name: /网格 1/ });
     const gridId = requiredAttribute(await gridRow.getAttribute('data-template-editor-node-id'));
@@ -524,6 +532,163 @@ test.describe('complete DesignDSL real Template round trip', () => {
       .toEqual(requiredAuthoredNode(saved.designDsl, textId).bindings);
     expect(browserErrors).toEqual([]);
   });
+
+  test('authors Repeat, nested TemplateUse fills and Conditional suppression through the production shell', async ({ page }) => {
+    test.setTimeout(120_000);
+    const browserErrors = captureBrowserErrors(page);
+    await page.setViewportSize({ width: 1440, height: 900 });
+
+    const setup = await createTemplateForStructuralAuthoring(page.request);
+    const initialOpen = page.waitForResponse(templateCurrentResponse(setup.parent.templateId));
+    await page.goto(`/templates/${setup.parent.templateId}`, { waitUntil: 'domcontentloaded' });
+    expect((await initialOpen).status()).toBe(200);
+    await expect(page.getByRole('main', { name: 'Template 编辑工作区' })).toBeVisible();
+    await expect(page.getByText('revision 0', { exact: true })).toBeVisible();
+
+    const rootRow = page.locator('[role="treeitem"][data-kind="canvas"]');
+
+    // Scalar Repeat: the source is the exact list<text> field, while its authored
+    // PACK subtree remains one copy regardless of the local occurrence projection.
+    await rootRow.click();
+    await page.getByRole('button', { name: '容器', exact: true }).click();
+    await page.getByRole('button', { name: '添加循环容器' }).click();
+    const scalarRepeatRow = page.locator('[role="treeitem"][data-kind="repeat"]').nth(0);
+    await expect(scalarRepeatRow).toHaveAttribute('aria-selected', 'true');
+    const scalarRepeatId = requiredAttribute(
+      await scalarRepeatRow.getAttribute('data-template-editor-node-id'),
+    );
+    await selectOptionContaining(page, page.getByLabel('循环列表属性', { exact: true }), '/tags');
+    await selectOptionContaining(page, page.getByLabel('单项排列方向', { exact: true }), '纵向');
+    await commitInput(page.getByLabel('单项间距', { exact: true }), '1.5');
+    await selectOptionContaining(page, page.getByLabel('循环布局方式', { exact: true }), '网格');
+    await commitInput(page.getByLabel('循环网格列数', { exact: true }), '2');
+    await commitInput(page.getByLabel('循环列间距', { exact: true }), '3');
+    await commitInput(page.getByLabel('循环行间距', { exact: true }), '4');
+
+    await page.getByRole('button', { name: '元素' }).click();
+    await page.getByRole('button', { name: '添加矩形' }).click();
+    const firstScalarChild = page.getByRole('treeitem', { selected: true });
+    const firstScalarChildId = requiredAttribute(
+      await firstScalarChild.getAttribute('data-template-editor-node-id'),
+    );
+    await scalarRepeatRow.click();
+    await page.getByRole('button', { name: '元素' }).click();
+    await page.getByRole('button', { name: '添加矩形' }).click();
+    const secondScalarChild = page.getByRole('treeitem', { selected: true });
+    const secondScalarChildId = requiredAttribute(
+      await secondScalarChild.getAttribute('data-template-editor-node-id'),
+    );
+
+    // Reference Repeat: choosing an exact-schema READY child creates one explicit
+    // TemplateUse whose selector is the whole loop context. Each PUBLIC target is
+    // filled from a statically compatible field in that same lexical loop domain.
+    await rootRow.click();
+    await page.getByRole('button', { name: '容器', exact: true }).click();
+    await page.getByRole('button', { name: '添加循环容器' }).click();
+    const referenceRepeatRow = page.locator('[role="treeitem"][data-kind="repeat"]').nth(1);
+    const referenceRepeatId = requiredAttribute(
+      await referenceRepeatRow.getAttribute('data-template-editor-node-id'),
+    );
+    await selectOptionContaining(page, page.getByLabel('循环列表属性', { exact: true }), '/products');
+    await selectOptionContaining(page, page.getByLabel('循环单项模板', { exact: true }), setup.childDisplayName);
+    const templateUseRow = page.locator('[role="treeitem"][data-kind="templateUse"]');
+    await expect(templateUseRow).toBeVisible();
+    const templateUseId = requiredAttribute(
+      await templateUseRow.getAttribute('data-template-editor-node-id'),
+    );
+    await templateUseRow.click();
+    await expect(page.getByText(setup.childDisplayName, { exact: true })).toBeVisible();
+    await selectOptionContaining(
+      page, page.getByLabel(`${STRUCTURAL_PUBLIC_DEFINITION_NAME} 来源`, { exact: true }),
+      '/label',
+    );
+
+    // Conditional preview input is editor-local. FALSE and ABSENT suppress the
+    // projected branch without deleting the authored child in the structure tree.
+    await rootRow.click();
+    await page.getByRole('button', { name: '容器', exact: true }).click();
+    await page.getByRole('button', { name: '添加条件容器' }).click();
+    const conditionalRow = page.locator('[role="treeitem"][data-kind="conditional"]');
+    const conditionalId = requiredAttribute(
+      await conditionalRow.getAttribute('data-template-editor-node-id'),
+    );
+    await selectOptionContaining(page, page.getByLabel('条件数据源', { exact: true }), '/showDetails');
+    await selectOptionContaining(page, page.getByLabel('条件缺失策略', { exact: true }), '按 FALSE 剪枝');
+    await page.getByRole('button', { name: '元素' }).click();
+    await page.getByRole('button', { name: '添加矩形' }).click();
+    const selectedConditionalChildRow = page.getByRole('treeitem', { selected: true });
+    const conditionalChildId = requiredAttribute(
+      await selectedConditionalChildRow.getAttribute('data-template-editor-node-id'),
+    );
+    const conditionalChildRow = page.locator(
+      `[role="treeitem"][data-template-editor-node-id="${conditionalChildId}"]`,
+    );
+    await conditionalRow.click();
+    const previewInput = page.getByRole('group', { name: '条件预览输入' });
+    const conditionalCanvasChild = page.locator(
+      `[data-template-canvas-authored-node][data-template-canvas-node-id="${conditionalChildId}"]`,
+    );
+    await previewInput.getByRole('button', { name: 'TRUE', exact: true }).click();
+    await expect(conditionalCanvasChild).toBeVisible();
+    await previewInput.getByRole('button', { name: 'FALSE', exact: true }).click();
+    await expect(conditionalCanvasChild).toHaveCount(0);
+    await expect(conditionalChildRow).toBeVisible();
+    await previewInput.getByRole('button', { name: 'ABSENT', exact: true }).click();
+    await expect(conditionalCanvasChild).toHaveCount(0);
+    await expect(conditionalChildRow).toBeVisible();
+
+    const saveResponsePromise = page.waitForResponse(
+      templateSaveResponse(setup.parent.templateId, 200),
+    );
+    await page.getByRole('button', { name: '保存 canonical 本地草稿' }).click();
+    const saved = await (await saveResponsePromise).json() as TemplateCurrentBody;
+    expect(saved).toMatchObject({ revision: 1, readiness: 'READY' });
+    expectStructuralAuthoringResult(saved, {
+      scalarRepeatId,
+      scalarChildIds: [firstScalarChildId, secondScalarChildId],
+      referenceRepeatId,
+      templateUseId,
+      childTemplateId: setup.child.templateId,
+      conditionalId,
+      conditionalChildId,
+    });
+
+    const reloadResponse = page.waitForResponse(templateCurrentResponse(setup.parent.templateId));
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    expect((await reloadResponse).status()).toBe(200);
+    await expect(page.getByText('revision 1', { exact: true })).toBeVisible();
+    for (const nodeId of [
+      scalarRepeatId,
+      firstScalarChildId,
+      secondScalarChildId,
+      referenceRepeatId,
+      templateUseId,
+      conditionalId,
+      conditionalChildId,
+    ]) {
+      await expect(page.locator(
+        `[role="treeitem"][data-template-editor-node-id="${nodeId}"]`,
+      )).toBeVisible();
+    }
+
+    const reloadedResponse = await page.request.get(
+      `/api/v1/templates/${setup.parent.templateId}`,
+    );
+    expect(reloadedResponse.status()).toBe(200);
+    const reloaded = await reloadedResponse.json() as TemplateCurrentBody;
+    expect(reloaded.contentHash).toBe(saved.contentHash);
+    expect(reloaded.designDsl).toEqual(saved.designDsl);
+    expectStructuralAuthoringResult(reloaded, {
+      scalarRepeatId,
+      scalarChildIds: [firstScalarChildId, secondScalarChildId],
+      referenceRepeatId,
+      templateUseId,
+      childTemplateId: setup.child.templateId,
+      conditionalId,
+      conditionalChildId,
+    });
+    expect(browserErrors).toEqual([]);
+  });
 });
 
 async function createTemplateForCompleteWire(
@@ -634,6 +799,134 @@ async function createTemplateForBindingAuthoring(
     {
       headers: { 'Content-Type': DESIGN_MEDIA_TYPE },
       data: initialDesign,
+    },
+  );
+  expect(response.status()).toBe(201);
+  return response.json() as Promise<TemplateCurrentBody>;
+}
+
+async function createTemplateForStructuralAuthoring(
+  request: APIRequestContext,
+): Promise<StructuralAuthoringSetup> {
+  const suffix = `${Date.now().toString(36)}-${process.pid.toString(36)}`;
+  const itemSchemaKey = `t226-item-${suffix}`;
+  const parentSchemaKey = `t226-parent-${suffix}`;
+  const childDisplayName = `T226 商品项 ${suffix}`;
+
+  await publishStaticSchema(request, itemSchemaKey, {
+    dslVersion: 'renderweave-schema/1.0',
+    displayName: `T226 商品项 ${suffix}`,
+    fields: [{
+      fieldKey: 'label',
+      displayName: '商品名称',
+      required: true,
+      value: { type: 'text' },
+    }],
+  });
+  await publishStaticSchema(request, parentSchemaKey, {
+    dslVersion: 'renderweave-schema/1.0',
+    displayName: `T226 结构输入 ${suffix}`,
+    fields: [
+      {
+        fieldKey: 'tags',
+        displayName: '标签',
+        required: true,
+        value: { type: 'array', items: { type: 'text' } },
+      },
+      {
+        fieldKey: 'products',
+        displayName: '商品',
+        required: true,
+        value: {
+          type: 'array',
+          items: {
+            type: 'reference',
+            ref: { schemaKey: itemSchemaKey, versionTag: 'v1' },
+          },
+        },
+      },
+      {
+        fieldKey: 'showDetails',
+        displayName: '显示详情',
+        required: false,
+        value: { type: 'boolean' },
+      },
+    ],
+  });
+
+  const child = await createTemplateWithSchema(request, itemSchemaKey, {
+    dslVersion: 'renderweave-design/1.0',
+    expressionProfile: 'renderweave-expression/1.0',
+    displayName: childDisplayName,
+    definitions: [{
+      definitionId: STRUCTURAL_PUBLIC_DEFINITION_ID,
+      kind: 'custom',
+      displayName: STRUCTURAL_PUBLIC_DEFINITION_NAME,
+      exposure: 'PUBLIC',
+      valueType: 'text',
+      defaultValue: '未命名商品',
+    }],
+    designRoot: {
+      nodeId: '94000000-0000-4000-8000-000000000002',
+      kind: 'canvas',
+      widthMm: 40,
+      heightMm: 20,
+      bindings: [],
+      children: [],
+    },
+  });
+  expect(child).toMatchObject({ revision: 0, readiness: 'READY' });
+
+  const parent = await createTemplateWithSchema(request, parentSchemaKey, {
+    dslVersion: 'renderweave-design/1.0',
+    expressionProfile: 'renderweave-expression/1.0',
+    displayName: `T226 结构 authoring ${suffix}`,
+    definitions: [],
+    designRoot: {
+      nodeId: '95000000-0000-4000-8000-000000000001',
+      kind: 'canvas',
+      widthMm: 210,
+      heightMm: 297,
+      bindings: [],
+      children: [],
+    },
+  });
+  expect(parent).toMatchObject({ revision: 0, readiness: 'READY' });
+  return { parent, child, childDisplayName };
+}
+
+async function publishStaticSchema(
+  request: APIRequestContext,
+  schemaKey: string,
+  definition: Record<string, unknown>,
+): Promise<void> {
+  const draftResponse = await request.post('/api/v1/schema-drafts', {
+    data: { schemaKey, definition },
+  });
+  expect(draftResponse.status()).toBe(201);
+  const draft = await draftResponse.json() as { revision: number };
+
+  const publishResponse = await request.post('/api/v1/static-schemas', {
+    data: {
+      schemaKey,
+      expectedRevision: draft.revision,
+      versionTag: 'v1',
+      releaseNote: 'T226 structural authoring live E2E',
+    },
+  });
+  expect(publishResponse.status()).toBe(201);
+}
+
+async function createTemplateWithSchema(
+  request: APIRequestContext,
+  schemaKey: string,
+  designDsl: Record<string, unknown>,
+): Promise<TemplateCurrentBody> {
+  const response = await request.post(
+    `/api/v1/templates?schemaKey=${encodeURIComponent(schemaKey)}&versionTag=v1`,
+    {
+      headers: { 'Content-Type': DESIGN_MEDIA_TYPE },
+      data: JSON.stringify(designDsl),
     },
   );
   expect(response.status()).toBe(201);
@@ -791,6 +1084,105 @@ async function numericInputValue(page: Page, label: string): Promise<number> {
   const value = Number(raw);
   if (!Number.isFinite(value)) throw new Error(`${label} did not expose a finite number: ${raw}`);
   return value;
+}
+
+async function commitInput(input: Locator, value: string): Promise<void> {
+  await input.fill(value);
+  await input.press('Enter');
+}
+
+async function selectOptionContaining(page: Page, control: Locator, expectedText: string): Promise<void> {
+  const ariaLabel = await control.getAttribute('aria-label');
+  if (!ariaLabel) throw new Error(`SelectField for ${expectedText} has no aria-label`);
+  await control.click();
+  const option = page.getByRole('listbox', { name: ariaLabel }).getByRole('option').filter({ hasText: expectedText });
+  await expect(option).toHaveCount(1);
+  await option.click();
+}
+
+function expectStructuralAuthoringResult(
+  current: TemplateCurrentBody,
+  expected: {
+    scalarRepeatId: string;
+    scalarChildIds: [string, string];
+    referenceRepeatId: string;
+    templateUseId: string;
+    childTemplateId: string;
+    conditionalId: string;
+    conditionalChildId: string;
+  },
+): void {
+  const root = authoredNode(current.designDsl.designRoot, 'designRoot');
+  expect(root.children?.map((child) => child.nodeId)).toEqual([
+    expected.scalarRepeatId,
+    expected.referenceRepeatId,
+    expected.conditionalId,
+  ]);
+
+  const scalarRepeat = requiredAuthoredNode(current.designDsl, expected.scalarRepeatId);
+  expect(scalarRepeat).toMatchObject({
+    kind: 'repeat',
+    items: { kind: 'context', domain: 'invocation', pointer: '/tags' },
+    absentPolicy: 'EMPTY',
+    itemLayout: { kind: 'STACK', direction: 'COLUMN', gapMm: 1.5 },
+    instanceLayout: { kind: 'GRID', columns: 2, columnGapMm: 3, rowGapMm: 4 },
+  });
+  expect(scalarRepeat.children?.map((child) => child.nodeId)).toEqual(expected.scalarChildIds);
+  for (const childId of expected.scalarChildIds) {
+    expect(requiredAuthoredNode(current.designDsl, childId)).toMatchObject({
+      kind: 'rect',
+      placement: { type: 'PACK' },
+    });
+  }
+
+  const referenceRepeat = requiredAuthoredNode(current.designDsl, expected.referenceRepeatId);
+  expect(referenceRepeat).toMatchObject({
+    kind: 'repeat',
+    items: { kind: 'context', domain: 'invocation', pointer: '/products' },
+    absentPolicy: 'EMPTY',
+  });
+  expect(referenceRepeat.loopId).toEqual(expect.stringMatching(
+    /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/,
+  ));
+  expect(referenceRepeat.children?.map((child) => child.nodeId)).toEqual([
+    expected.templateUseId,
+  ]);
+
+  const templateUse = requiredAuthoredNode(current.designDsl, expected.templateUseId);
+  expect(templateUse).toMatchObject({
+    kind: 'templateUse',
+    templateRef: { templateId: expected.childTemplateId },
+    contextSelector: {
+      kind: 'context',
+      domain: { kind: 'loop', loopId: referenceRepeat.loopId },
+      pointer: '',
+      contextAbsentPolicy: 'SKIP',
+    },
+    fills: [{
+      targetDefinitionId: STRUCTURAL_PUBLIC_DEFINITION_ID,
+      source: {
+        kind: 'context',
+        domain: { kind: 'loop', loopId: referenceRepeat.loopId },
+        pointer: '/label',
+      },
+    }],
+    placement: { type: 'PACK' },
+  });
+  expect(templateUse.children).toBeUndefined();
+
+  const conditional = requiredAuthoredNode(current.designDsl, expected.conditionalId);
+  expect(conditional).toMatchObject({
+    kind: 'conditional',
+    condition: { kind: 'context', domain: 'invocation', pointer: '/showDetails' },
+    absentPolicy: 'FALSE',
+  });
+  expect(conditional.children?.map((child) => child.nodeId)).toEqual([
+    expected.conditionalChildId,
+  ]);
+  expect(requiredAuthoredNode(current.designDsl, expected.conditionalChildId)).toMatchObject({
+    kind: 'rect',
+    placement: { type: 'ABSOLUTE' },
+  });
 }
 
 function expectCoreAuthoringResult(

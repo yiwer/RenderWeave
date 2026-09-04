@@ -22,6 +22,64 @@ afterEach(() => {
 });
 
 describe('Template Editor Canvas interaction surface', () => {
+  it('renders editor-only Repeat ordinals and visible structural errors outside authored nodes', () => {
+    const repeat = {
+      ...fixedNode('repeat', 'repeat', '循环商品', 10, 10, 40, 20),
+      loopId: 'loop',
+      items: { kind: 'literal', valueType: { type: 'list', items: 'text' }, value: ['a', 'b'] },
+      absentPolicy: 'EMPTY',
+      itemLayout: { kind: 'STACK', direction: 'COLUMN', gapMm: 0 },
+      instanceLayout: { kind: 'STACK', direction: 'ROW', gapMm: 2 },
+      children: [{
+        ...fixedNode('repeat-child', 'rect', '循环内容', 0, 0, 5, 4),
+        placement: {
+          type: 'PACK', widthMode: 'FIXED', widthMm: 5,
+          heightMode: 'FIXED', heightMm: 4,
+        },
+      }],
+    };
+    const designRoot: Record<string, unknown> = {
+      nodeId: 'canvas', kind: 'canvas', displayName: '画布', widthMm: 100, heightMm: 80,
+      bindings: [], children: [repeat],
+    };
+    const view = render(<TemplateEditorCanvas
+      workingCopy={{
+        canonicalDesignDsl: '{}',
+        designDsl: {
+          dslVersion: 'renderweave-design/1.0',
+          expressionProfile: 'renderweave-expression/1.0',
+          definitions: [], designRoot,
+        },
+      }}
+      nodes={projectNodes(designRoot)}
+      selectedNodeId="repeat"
+      onSelectNode={vi.fn()}
+      structuralStates={{ repeat: { kind: 'repeat', outcome: 'VALUES', count: 2 } }}
+    />);
+
+    expect(view.container.querySelectorAll('[data-template-repeat-occurrence="repeat"]')).toHaveLength(2);
+    expect(view.container.querySelectorAll(
+      '[data-template-canvas-authored-node][data-template-canvas-node-id="repeat-child"]',
+    )).toHaveLength(1);
+
+    view.rerender(<TemplateEditorCanvas
+      workingCopy={{
+        canonicalDesignDsl: '{}',
+        designDsl: {
+          dslVersion: 'renderweave-design/1.0',
+          expressionProfile: 'renderweave-expression/1.0',
+          definitions: [], designRoot,
+        },
+      }}
+      nodes={projectNodes(designRoot)}
+      selectedNodeId="repeat"
+      onSelectNode={vi.fn()}
+      structuralStates={{ repeat: { kind: 'repeat', outcome: 'SOURCE_ERROR' } }}
+    />);
+    expect(screen.getByRole('alert').textContent).toContain('循环商品');
+    expect(view.container.querySelector('[data-template-repeat-occurrence]')).toBeNull();
+  });
+
   it('projects and describes fixed geometry from the lossless canonical working copy', () => {
     const canonicalDesignDsl = JSON.stringify({
       dslVersion: 'renderweave-design/1.0',
