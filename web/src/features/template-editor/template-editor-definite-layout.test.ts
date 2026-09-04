@@ -453,6 +453,110 @@ describe('projectTemplateDefiniteLayout', () => {
     ]);
   });
 
+  it('redistributes bounded Stack FILL space after opposite min and max violations', () => {
+    const stack: Node = {
+      nodeId: 'bounded-stack', kind: 'stack', placement: fixed(0, 0, 100, 20),
+      direction: 'ROW', gapMm: 0, justifyContent: 'START', alignItems: 'START',
+      children: [
+        rect('minimum', stackPlacement({
+          widthMode: 'FILL', widthMm: undefined, minWidthMm: 80,
+        })),
+        rect('maximum', stackPlacement({
+          widthMode: 'FILL', widthMm: undefined, maxWidthMm: 10,
+        })),
+      ],
+    };
+
+    const result = projectTemplateDefiniteLayout(canvas([stack], 100, 20));
+
+    expect(result.state).toBe('ready');
+    if (result.state !== 'ready') throw new Error('expected ready layout');
+    expect(result.entries.find(({ nodeId }) => nodeId === 'minimum')?.worldRect).toEqual({
+      x: 0, y: 0, width: 90, height: 5,
+    });
+    expect(result.entries.find(({ nodeId }) => nodeId === 'maximum')?.worldRect).toEqual({
+      x: 90, y: 0, width: 10, height: 5,
+    });
+  });
+
+  it('prunes statically render-false subtrees from every definite container layout', () => {
+    const hiddenFrame = (nodeId: string, placement: Record<string, unknown>): Node => ({
+      nodeId, kind: 'frame', render: false, placement,
+      children: [rect(`${nodeId}-descendant`, fixed(0, 0, 50, 5))],
+    });
+
+    const stackResult = projectTemplateDefiniteLayout(canvas([{
+      nodeId: 'stack', kind: 'stack', placement: fixed(0, 0, 100, 20),
+      direction: 'ROW', gapMm: 2,
+      children: [
+        rect('stack-first', stackPlacement()),
+        hiddenFrame('stack-hidden', stackPlacement({ widthMm: 50 })),
+        rect('stack-last', stackPlacement()),
+      ],
+    }]));
+    expect(stackResult.state).toBe('ready');
+    if (stackResult.state !== 'ready') throw new Error('expected ready Stack layout');
+    expect(stackResult.entries.map(({ nodeId }) => nodeId)).toEqual([
+      'canvas', 'stack', 'stack-first', 'stack-last',
+    ]);
+    expect(stackResult.entries.at(-1)?.worldRect.x).toBe(12);
+
+    const gridResult = projectTemplateDefiniteLayout(canvas([{
+      nodeId: 'grid', kind: 'grid', placement: fixed(0, 0, 100, 20),
+      columns: [{ type: 'AUTO' }, { type: 'FRACTION', weight: 1 }],
+      rows: [{ type: 'FRACTION', weight: 1 }],
+      children: [
+        hiddenFrame('grid-hidden', gridPlacement({ widthMm: 50 })),
+        rect('grid-auto', gridPlacement({ widthMm: 10 })),
+        rect('grid-fill', gridPlacement({
+          column: 1, widthMode: 'FILL', widthMm: undefined,
+        })),
+      ],
+    }]));
+    expect(gridResult.state).toBe('ready');
+    if (gridResult.state !== 'ready') throw new Error('expected ready Grid layout');
+    expect(gridResult.entries.map(({ nodeId }) => nodeId)).toEqual([
+      'canvas', 'grid', 'grid-auto', 'grid-fill',
+    ]);
+    expect(gridResult.entries.at(-1)?.worldRect).toMatchObject({ x: 10, width: 90 });
+
+    const groupResult = projectTemplateDefiniteLayout(canvas([{
+      nodeId: 'group', kind: 'group',
+      placement: {
+        type: 'ABSOLUTE', xMm: 0, yMm: 0,
+        widthMode: 'HUG_CONTENT', heightMode: 'HUG_CONTENT',
+      },
+      children: [
+        rect('group-visible', fixed(4, 3, 10, 5)),
+        hiddenFrame('group-hidden', fixed(100, 50, 50, 20)),
+      ],
+    }]));
+    expect(groupResult.state).toBe('ready');
+    if (groupResult.state !== 'ready') throw new Error('expected ready Group layout');
+    expect(groupResult.entries.map(({ nodeId }) => nodeId)).toEqual([
+      'canvas', 'group', 'group-visible',
+    ]);
+    expect(groupResult.entries[1]?.worldRect).toMatchObject({ width: 10, height: 5 });
+
+    const frameResult = projectTemplateDefiniteLayout(canvas([{
+      nodeId: 'frame', kind: 'frame',
+      placement: {
+        type: 'ABSOLUTE', xMm: 0, yMm: 0,
+        widthMode: 'HUG_CONTENT', heightMode: 'HUG_CONTENT',
+      },
+      children: [
+        rect('frame-visible', fixed(2, 3, 10, 5)),
+        hiddenFrame('frame-hidden', fixed(100, 50, 50, 20)),
+      ],
+    }]));
+    expect(frameResult.state).toBe('ready');
+    if (frameResult.state !== 'ready') throw new Error('expected ready Frame layout');
+    expect(frameResult.entries.map(({ nodeId }) => nodeId)).toEqual([
+      'canvas', 'frame', 'frame-visible',
+    ]);
+    expect(frameResult.entries[1]?.worldRect).toMatchObject({ width: 12, height: 8 });
+  });
+
   it('applies Stack COLUMN justification and inherited or overridden cross alignment', () => {
     const stack: Node = {
       nodeId: 'column-stack', kind: 'stack', placement: fixed(5, 4, 40, 40),

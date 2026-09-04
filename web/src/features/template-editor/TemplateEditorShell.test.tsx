@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import {
@@ -278,9 +278,11 @@ describe('Template Editor E1/E2 Product shell', () => {
     render(<TemplateEditorShell session={session} />);
 
     fireEvent.click(screen.getByRole('treeitem', { name: /内容区/ }));
-    expect((screen.getByLabelText('宽度模式') as HTMLSelectElement).value)
-      .toBe('HUG_CONTENT');
-    fireEvent.change(screen.getByLabelText('宽度模式'), { target: { value: 'FIXED' } });
+    const widthMode = screen.getByRole('button', { name: '宽度模式' });
+    expect(widthMode.textContent).toContain('适应内容');
+    fireEvent.click(widthMode);
+    fireEvent.click(within(screen.getByRole('listbox', { name: '宽度模式' }))
+      .getByRole('option', { name: '固定' }));
 
     expect((screen.getByLabelText('宽度') as HTMLInputElement).value).toBe('100');
   });

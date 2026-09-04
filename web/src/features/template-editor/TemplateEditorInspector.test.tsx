@@ -118,12 +118,13 @@ describe('Template Editor Inspector', () => {
       operation: 'set-property', nodeId: 'stack', property: 'gapMm', value: 6.25,
     });
 
-    fireEvent.change(screen.getByLabelText('主轴分布'), { target: { value: 'SPACE_BETWEEN' } });
+    expect(screen.getByLabelText('主轴分布').getAttribute('aria-haspopup')).toBe('listbox');
+    chooseSelectFieldOption('主轴分布', '两端对齐');
     expect(onCommand).toHaveBeenLastCalledWith({
       operation: 'set-property', nodeId: 'stack', property: 'justifyContent', value: 'SPACE_BETWEEN',
     });
 
-    fireEvent.change(screen.getByLabelText('交叉轴对齐'), { target: { value: 'CENTER' } });
+    chooseSelectFieldOption('交叉轴对齐', '居中');
     expect(onCommand).toHaveBeenLastCalledWith({
       operation: 'set-property', nodeId: 'stack', property: 'alignItems', value: 'CENTER',
     });
@@ -177,12 +178,12 @@ describe('Template Editor Inspector', () => {
     expect(groupOrder(view.container)).toEqual([
       'content', 'child-constraints', 'appearance', 'advanced',
     ]);
-    expect((screen.getByLabelText('宽度模式') as HTMLSelectElement).value).toBe('FILL');
+    expect(screen.getByLabelText('宽度模式').textContent).toContain('填充可用空间');
     expect((screen.getByLabelText('高度') as HTMLInputElement).value).toBe('20');
     expect((screen.getByLabelText('左外边距') as HTMLInputElement).value).toBe('4');
     expect((screen.getByLabelText('主轴填充权重') as HTMLInputElement).value).toBe('2');
 
-    fireEvent.change(screen.getByLabelText('宽度模式'), { target: { value: 'FIXED' } });
+    chooseSelectFieldOption('宽度模式', '固定');
     expect(onCommand).toHaveBeenLastCalledWith({
       operation: 'set-property', nodeId: 'rect', property: 'widthMm', value: 72,
     });
@@ -199,7 +200,7 @@ describe('Template Editor Inspector', () => {
       operation: 'set-property', nodeId: 'rect', property: 'marginLeftMm', value: null,
     });
 
-    fireEvent.change(screen.getByLabelText('堆叠内对齐'), { target: { value: 'END' } });
+    chooseSelectFieldOption('堆叠内对齐', '末端');
     expect(onCommand).toHaveBeenLastCalledWith({
       operation: 'set-property', nodeId: 'rect', property: 'alignSelf', value: 'END',
     });
@@ -210,7 +211,7 @@ describe('Template Editor Inspector', () => {
       operation: 'set-property', nodeId: 'rect', property: 'fillWeight', value: 3,
     });
 
-    fireEvent.change(screen.getByLabelText('堆叠内对齐'), { target: { value: '' } });
+    chooseSelectFieldOption('堆叠内对齐', '默认（起始）');
     expect(onCommand).toHaveBeenLastCalledWith({
       operation: 'set-property', nodeId: 'rect', property: 'alignSelf', value: null,
     });
@@ -283,8 +284,8 @@ describe('Template Editor Inspector', () => {
     expect((screen.getByLabelText('网格列') as HTMLInputElement).value).toBe('2');
     expect((screen.getByLabelText('跨行') as HTMLInputElement).value).toBe('2');
     expect((screen.getByLabelText('跨列') as HTMLInputElement).value).toBe('3');
-    expect((screen.getByLabelText('单元内水平对齐') as HTMLSelectElement).value).toBe('CENTER');
-    expect((screen.getByLabelText('单元内垂直对齐') as HTMLSelectElement).value).toBe('END');
+    expect(screen.getByLabelText('单元内水平对齐').textContent).toContain('居中');
+    expect(screen.getByLabelText('单元内垂直对齐').textContent).toContain('末端');
 
     fireEvent.change(screen.getByLabelText('网格列'), { target: { value: '4' } });
     fireEvent.blur(screen.getByLabelText('网格列'));
@@ -304,12 +305,12 @@ describe('Template Editor Inspector', () => {
       operation: 'set-property', nodeId: 'rect', property: 'rowSpan', value: null,
     });
 
-    fireEvent.change(screen.getByLabelText('单元内水平对齐'), { target: { value: 'START' } });
+    chooseSelectFieldOption('单元内水平对齐', '起始');
     expect(onCommand).toHaveBeenLastCalledWith({
       operation: 'set-property', nodeId: 'rect', property: 'horizontalAlignSelf', value: 'START',
     });
 
-    fireEvent.change(screen.getByLabelText('单元内垂直对齐'), { target: { value: '' } });
+    chooseSelectFieldOption('单元内垂直对齐', '默认（起始）');
     expect(onCommand).toHaveBeenLastCalledWith({
       operation: 'set-property', nodeId: 'rect', property: 'verticalAlignSelf', value: null,
     });
@@ -327,17 +328,16 @@ describe('Template Editor Inspector', () => {
       },
     }), { onCommand, projectedSizeMm: { widthMm: 80, heightMm: 44 } });
 
-    expect((screen.getByLabelText('宽度模式') as HTMLSelectElement).value).toBe('FIXED');
-    expect((screen.getByLabelText('高度模式') as HTMLSelectElement).value).toBe('FILL');
+    expect(screen.getByLabelText('宽度模式').textContent).toContain('固定');
+    expect(screen.getByLabelText('高度模式').textContent).toContain('填充可用空间');
     expect((screen.getByLabelText('最小宽度') as HTMLInputElement).value).toBe('10');
     expect((screen.getByLabelText('最大高度') as HTMLInputElement).value).toBe('60');
     expect(screen.queryByLabelText('高度')).toBeNull();
 
-    expect(Array.from(
-      (screen.getByLabelText('高度模式') as HTMLSelectElement).options,
-      (option) => option.value,
-    )).toEqual(['FIXED', 'FILL']);
-    fireEvent.change(screen.getByLabelText('高度模式'), { target: { value: 'FIXED' } });
+    const heightModeListbox = openSelectField('高度模式');
+    expect(within(heightModeListbox).getAllByRole('option').map((option) => option.textContent))
+      .toEqual(['固定', '填充可用空间']);
+    fireEvent.click(within(heightModeListbox).getByRole('option', { name: '固定' }));
     expect(onCommand).toHaveBeenLastCalledWith({
       operation: 'set-property', nodeId: 'rect', property: 'heightMm', value: 44,
     });
@@ -365,10 +365,10 @@ describe('Template Editor Inspector', () => {
       },
     }), { onCommand });
 
-    const fixedOption = Array.from(
-      (screen.getByLabelText('高度模式') as HTMLSelectElement).options,
-    ).find((option) => option.value === 'FIXED');
-    expect(fixedOption?.disabled).toBe(true);
+    const fixedOption = within(openSelectField('高度模式')).getByRole('option', { name: '固定' });
+    expect(fixedOption.getAttribute('aria-disabled')).toBe('true');
+    fireEvent.click(fixedOption);
+    expect(onCommand).not.toHaveBeenCalled();
     fireEvent.change(screen.getByLabelText('固定高度'), { target: { value: '33' } });
     fireEvent.blur(screen.getByLabelText('固定高度'));
     expect(onCommand).toHaveBeenLastCalledWith({
@@ -382,10 +382,10 @@ describe('Template Editor Inspector', () => {
     expect(groupOrder(view.container)).toEqual([
       'content', 'position-size', 'advanced',
     ]);
-    const widthMode = screen.getByLabelText('宽度模式') as HTMLSelectElement;
-    const heightMode = screen.getByLabelText('高度模式') as HTMLSelectElement;
-    expect(widthMode.value).toBe('HUG_CONTENT');
-    expect(heightMode.value).toBe('HUG_CONTENT');
+    const widthMode = screen.getByLabelText('宽度模式') as HTMLButtonElement;
+    const heightMode = screen.getByLabelText('高度模式') as HTMLButtonElement;
+    expect(widthMode.textContent).toContain('适应内容');
+    expect(heightMode.textContent).toContain('适应内容');
     expect(widthMode.disabled).toBe(true);
     expect(heightMode.disabled).toBe(true);
     expect(screen.queryByText('内边距')).toBeNull();
@@ -841,6 +841,15 @@ function renderInspector(
     onCommand={vi.fn()}
     {...overrides}
   />);
+}
+
+function openSelectField(label: string): HTMLElement {
+  fireEvent.click(screen.getByRole('button', { name: label }));
+  return screen.getByRole('listbox', { name: label });
+}
+
+function chooseSelectFieldOption(label: string, optionLabel: string): void {
+  fireEvent.click(within(openSelectField(label)).getByRole('option', { name: optionLabel }));
 }
 
 function groupOrder(container: HTMLElement): string[] {

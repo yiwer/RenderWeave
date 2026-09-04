@@ -136,7 +136,7 @@ export function projectTemplateDefiniteLayout(canvas: unknown): TemplateDefinite
     const rootRect = rect(0, 0, width, height);
     const projector = new LayoutProjector();
     projector.push(root, null, rootRect, rootRect, 'ABSOLUTE');
-    for (const child of children(root, rootId)) {
+    for (const child of staticallyRenderedChildren(root, rootId)) {
       projector.absolute(child, rootId, rootRect);
     }
     return Object.freeze({
@@ -289,13 +289,13 @@ class LayoutProjector {
         worldRect.height,
       );
       this.push(node, parentNodeId, localRect, worldRect, parentLayout, normalizedContent);
-      for (const child of children(node, nodeId)) {
+      for (const child of staticallyRenderedChildren(node, nodeId)) {
         this.absolute(child, nodeId, normalizedContent, worldRect);
       }
     } else if (kind === 'frame') {
       const content = containerContentRect(node, worldRect, nodeId);
       this.push(node, parentNodeId, localRect, worldRect, parentLayout, content);
-      for (const child of children(node, nodeId)) {
+      for (const child of staticallyRenderedChildren(node, nodeId)) {
         this.absolute(child, nodeId, content);
       }
     } else if (kind === 'stack') {
@@ -330,7 +330,7 @@ class LayoutProjector {
       'alignItems',
     ) as Alignment;
     const row = direction === 'ROW';
-    const values = children(stack, stackId);
+    const values = staticallyRenderedChildren(stack, stackId);
     const measured = values.map((value) => measureStackChild(value, row, content, alignItems));
     const availableMain = row ? content.width : content.height;
     let usedWithoutFill = gap * Math.max(0, measured.length - 1);
@@ -386,7 +386,7 @@ class LayoutProjector {
     const rowGap = optionalNonnegative(grid.rowGapMm, 0, gridId, 'rowGapMm');
     const columnTracks = gridTracks(grid.columns, gridId, 'columns');
     const rowTracks = gridTracks(grid.rows, gridId, 'rows');
-    const measured = children(grid, gridId).map((value) => measureGridChild(
+    const measured = staticallyRenderedChildren(grid, gridId).map((value) => measureGridChild(
       value,
       columnTracks.length,
       rowTracks.length,
@@ -692,7 +692,7 @@ function spannedSize(axis: GridAxisMeasure, start: number, span: number): number
 
 function measureGroup(group: NodeValue): GroupMeasure {
   const nodeId = text(group.nodeId, '<group>', 'nodeId');
-  const values = children(group, nodeId);
+  const values = staticallyRenderedChildren(group, nodeId);
   if (values.length === 0) {
     return {
       width: 0, height: 0,
@@ -731,7 +731,7 @@ function measureFrameAxis(
     ? undefined
     : containerAxisContentSize(frame, oppositeAxis(axis), oppositeOuter, nodeId);
   let contentExtent = 0;
-  for (const value of children(frame, nodeId)) {
+  for (const value of staticallyRenderedChildren(frame, nodeId)) {
     const bounds = measureAbsoluteDirectChildBounds(
       value,
       nodeId,
@@ -978,11 +978,9 @@ function allocateStackFill(
   }
   const allocations = new Map<number, number>();
   const active = new Set(indices);
-  let frozenMinimum = false;
   while (active.size > 0) {
     const frozen = [...allocations.values()].reduce((sum, value) => sum + value, 0);
-    const remaining = available - frozen;
-    if (remaining < 0 && !frozenMinimum) invalid(children[indices[0]!]!.nodeId, 'placement.fillWeight');
+    const remaining = Math.max(0, available - frozen);
     const activeIndices = indices.filter((index) => active.has(index));
     const totalWeight = activeIndices.reduce((sum, index) => sum + children[index]!.fillWeight, 0);
     let allocatedBeforeLast = 0;
@@ -990,44 +988,44 @@ function allocateStackFill(
     for (let position = 0; position < activeIndices.length; position += 1) {
       const index = activeIndices[position]!;
       const share = position + 1 === activeIndices.length
-        ? Math.max(0, remaining) - allocatedBeforeLast
-        : Math.max(0, remaining) * children[index]!.fillWeight / totalWeight;
+        ? remaining - allocatedBeforeLast
+        : remaining * children[index]!.fillWeight / totalWeight;
       provisional.set(index, share);
       allocatedBeforeLast += share;
     }
-    let froze = false;
-    for (const index of activeIndices) {
+
+    const maximumViolations = activeIndices.filter((index) => {
       const child = children[index]!;
       const axis = row ? 'width' : 'height';
-      const { minimum, maximum } = axisBounds(child.placement, axis, child.nodeId);
-      const share = provisional.get(index)!;
-      if (share < minimum) {
-        allocations.set(index, minimum);
-        active.delete(index);
-        frozenMinimum = true;
-        froze = true;
-      } else if (share > maximum) {
-        allocations.set(index, maximum);
-        active.delete(index);
-        froze = true;
-      }
-    }
-    if (!froze) {
-      for (const [index, share] of provisional) allocations.set(index, share);
-      break;
-    }
-    const frozenTotal = [...allocations.values()].reduce((sum, value) => sum + value, 0);
-    if (frozenTotal > available && frozenMinimum) {
-      for (const index of active) {
+      return provisional.get(index)! > axisBounds(child.placement, axis, child.nodeId).maximum;
+    });
+    if (maximumViolations.length > 0) {
+      for (const index of maximumViolations) {
         const child = children[index]!;
-        allocations.set(index, axisBounds(
-          child.placement,
-          row ? 'width' : 'height',
-          child.nodeId,
-        ).minimum);
+        const axis = row ? 'width' : 'height';
+        allocations.set(index, axisBounds(child.placement, axis, child.nodeId).maximum);
+        active.delete(index);
       }
-      break;
+      continue;
     }
+
+    const minimumViolations = activeIndices.filter((index) => {
+      const child = children[index]!;
+      const axis = row ? 'width' : 'height';
+      return provisional.get(index)! < axisBounds(child.placement, axis, child.nodeId).minimum;
+    });
+    if (minimumViolations.length > 0) {
+      for (const index of minimumViolations) {
+        const child = children[index]!;
+        const axis = row ? 'width' : 'height';
+        allocations.set(index, axisBounds(child.placement, axis, child.nodeId).minimum);
+        active.delete(index);
+      }
+      continue;
+    }
+
+    for (const [index, share] of provisional) allocations.set(index, share);
+    break;
   }
   for (const index of indices) setStackMain(children[index]!, row, allocations.get(index) ?? 0);
 }
@@ -1096,7 +1094,7 @@ function measureStackAxis(
   const oppositeContent = oppositeOuter === undefined
     ? undefined
     : containerAxisContentSize(stack, oppositeAxis(axis), oppositeOuter, stackId);
-  const values = children(stack, stackId);
+  const values = staticallyRenderedChildren(stack, stackId);
   if (axis === mainAxis) {
     let cursor = 0;
     let extent = 0;
@@ -1154,7 +1152,7 @@ function resolveStackMainSizes(
     stackId,
     'alignItems',
   ) as Alignment;
-  const measured = children(stack, stackId).map((value): StackChildMeasure => {
+  const measured = staticallyRenderedChildren(stack, stackId).map((value): StackChildMeasure => {
     const node = record(value, stackId, 'children');
     const nodeId = text(node.nodeId, stackId, 'nodeId');
     const childPlacement = stackChildPlacement(node, nodeId);
@@ -1261,7 +1259,7 @@ function measureGridIntrinsicAxis(
   oppositeOuter: number | undefined,
 ): number {
   const gridId = text(grid.nodeId, '<grid>', 'nodeId');
-  const measured = children(grid, gridId).map((value) => measureGridChild(
+  const measured = staticallyRenderedChildren(grid, gridId).map((value) => measureGridChild(
     value,
     gridTrackCount(grid.columns, gridId, 'columns'),
     gridTrackCount(grid.rows, gridId, 'rows'),
@@ -1426,6 +1424,12 @@ function axisBounds(
 function children(node: NodeValue, nodeId: string): readonly unknown[] {
   if (!Array.isArray(node.children)) invalid(nodeId, 'children');
   return node.children;
+}
+
+function staticallyRenderedChildren(node: NodeValue, nodeId: string): readonly unknown[] {
+  return children(node, nodeId).filter((value) => (
+    record(value, nodeId, 'children').render !== false
+  ));
 }
 
 function assertAcyclicUniqueTree(root: NodeValue): void {
