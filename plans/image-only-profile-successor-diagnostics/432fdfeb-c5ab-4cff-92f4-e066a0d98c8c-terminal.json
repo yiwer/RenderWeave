@@ -1,0 +1,112 @@
+{
+  "version": "renderweave-image-only-profile-successor-diagnostic-result/1.0",
+  "cycleId": "432fdfeb-c5ab-4cff-92f4-e066a0d98c8c",
+  "authorizationId": "20260818-iopa-v49-diagnostic-432fdfeb",
+  "stage": "PROFILE_SUCCESSOR_DIAGNOSTIC_1",
+  "scoring": false,
+  "result": "FAILED",
+  "lifecycle": "TERMINAL_CLOSED",
+  "profileId": "dashscope-qwen38-max-product-v49-hybrid-generic",
+  "profileSha256": "acffdd4dd56ca2f1f7260fc5d37aa48ca3da488a0ae2718f2095bf1530e86eaf",
+  "manifestIdentity": "renderweave-image-only-profile-successor-diagnostic/1.0:8ff24a6161223f9e1c8bfb586ffd89421a1ee0ad393622e72870848509f0c8e2",
+  "evaluatorIdentity": "renderweave-image-only-profile-successor-diagnostic-evaluator/1.0:b2167261ae9d1e3775c91d06d90c57c47c16284d11b685e81aa5073de655f37e",
+  "normalizationIdentity": "renderweave-image-only-fresh-normalization/1.0:3096deba42aeab03be175074e6717ccf6898d4a628950d19eaa6891674d62375",
+  "provider": "DASHSCOPE",
+  "model": "qwen3.8-max",
+  "providerBaseUrl": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+  "inputProvenance": "USER_PROVIDED",
+  "dataClassification": "ORDINARY_DESIGN",
+  "openedAt": "2026-08-18T04:16:27.651881Z",
+  "ledgerClosedAt": "2026-08-18T04:20:09.150572Z",
+  "closedAt": "2026-08-18T04:20:31.3152151Z",
+  "terminalReason": "VISUAL_GROUNDING_REGION_FIELDS_INVALID",
+  "authorizedRuns": 1,
+  "startedRuns": 1,
+  "reviewRequiredRuns": 0,
+  "failedRuns": 1,
+  "providerCalls": 5,
+  "modelTokens": 67373,
+  "costMicrosCny": 1086900,
+  "unsettledReservations": 0,
+  "equivalentRejectBreaker": {
+    "stage": "OBSERVE",
+    "primaryCode": "VISUAL_GROUNDING_REGION_FIELDS_INVALID",
+    "detailCodes": [
+      "VISUAL_GROUNDING_REGION_ID_INVALID",
+      "VISUAL_GROUNDING_REGION_PARENT_ID_INVALID",
+      "VISUAL_GROUNDING_REGION_REPEAT_GROUP_ID_INVALID"
+    ],
+    "countedEquivalentRejectedAttempts": 3,
+    "attemptOrdinals": [0, 3, 4],
+    "nextReservationIssued": false
+  },
+  "hardCap": {
+    "maximumProviderCalls": 5,
+    "providerCalls": 5,
+    "reached": true,
+    "sixthReservationIssued": false
+  },
+  "attemptFixedCodeSets": [
+    {
+      "attemptOrdinal": 0,
+      "codes": [
+        "VISUAL_GROUNDING_REGION_ID_INVALID",
+        "VISUAL_GROUNDING_REGION_PARENT_ID_INVALID",
+        "VISUAL_GROUNDING_REGION_REPEAT_GROUP_ID_INVALID"
+      ]
+    },
+    {
+      "attemptOrdinal": 1,
+      "codes": [
+        "VISUAL_GROUNDING_REGION_ID_INVALID",
+        "VISUAL_GROUNDING_REGION_REPEAT_GROUP_ID_INVALID"
+      ]
+    },
+    {
+      "attemptOrdinal": 2,
+      "codes": ["VISUAL_GROUNDING_ELEMENT_INVALID"]
+    },
+    {
+      "attemptOrdinal": 3,
+      "codes": [
+        "VISUAL_GROUNDING_REGION_ID_INVALID",
+        "VISUAL_GROUNDING_REGION_PARENT_ID_INVALID",
+        "VISUAL_GROUNDING_REGION_REPEAT_GROUP_ID_INVALID"
+      ]
+    },
+    {
+      "attemptOrdinal": 4,
+      "codes": [
+        "VISUAL_GROUNDING_REGION_ID_INVALID",
+        "VISUAL_GROUNDING_REGION_PARENT_ID_INVALID",
+        "VISUAL_GROUNDING_REGION_REPEAT_GROUP_ID_INVALID"
+      ]
+    }
+  ],
+  "cases": [
+    {
+      "caseId": "v46-failed-route-82",
+      "artifactSha256": "51942b84ac65efcb28d02fff359222f60b8550fe5b6d5e87389582fc5a48cfc8",
+      "runId": "3f8a063b-1b3d-4cf4-ab58-1ad0de9127d2",
+      "state": "FAILED",
+      "failureCode": "VISUAL_GROUNDING_REGION_FIELDS_INVALID",
+      "providerCalls": 5,
+      "modelTokens": 67373,
+      "costMicrosCny": 1086900,
+      "candidateSchemas": 0,
+      "candidateFields": 0,
+      "manualVerdict": "NOT_REVIEWABLE"
+    }
+  ],
+  "evidenceDirectory": ".sdlc/evidence/20260818-121611-image-only-v49-successor-diagnostic-live",
+  "liveSummarySha256": "e8c8cfd44bd5cfd2b40660689a4faa4a78ef3c4bf180cb2fd7c79ae9f456815e",
+  "closedAuthorizationSha256": "3eabfef97ad0a9f1c7fe7d947c527587109be30386bd0702a7cb1d671f90c0fa",
+  "diagnosticPassed": false,
+  "certificationCredit": 0,
+  "nextStageUnlocked": false,
+  "automaticRerunAllowed": false,
+  "reviewPackCreated": false,
+  "candidateApplied": false,
+  "staticSchemaPublished": false,
+  "productionDeployed": false
+}

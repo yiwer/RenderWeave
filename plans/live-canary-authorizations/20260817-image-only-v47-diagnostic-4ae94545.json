@@ -1,0 +1,35 @@
+{
+  "version": "renderweave-image-only-certification-authorization/1.0",
+  "authorizationId": "20260817-iopa-v47-diagnostic-4ae94545",
+  "status": "CLOSED",
+  "cycleId": "4ae94545-2c95-41dc-934e-1661aeb6c121",
+  "stage": "PROFILE_SUCCESSOR_DIAGNOSTIC_1",
+  "profileId": "dashscope-qwen38-max-product-v47-hybrid-generic",
+  "profileSha256": "a9fe98e1cfa4b7cc126db1f74601fdebe60526a1c999924daf189ed5f1ac5eb0",
+  "manifestIdentity": "renderweave-image-only-profile-successor-diagnostic/1.0:5fc9b6517744f2c31a043c713d230e2b40667a62e6baf6d0486371913f17c78c",
+  "evaluatorIdentity": "renderweave-image-only-profile-successor-diagnostic-evaluator/1.0:b2167261ae9d1e3775c91d06d90c57c47c16284d11b685e81aa5073de655f37e",
+  "provider": "DASHSCOPE",
+  "model": "qwen3.8-max",
+  "providerBaseUrl": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+  "inputProvenance": "USER_PROVIDED",
+  "dataClassification": "ORDINARY_DESIGN",
+  "cases": [
+    {
+      "caseId": "v46-failed-route-82",
+      "artifactSha256": "51942b84ac65efcb28d02fff359222f60b8550fe5b6d5e87389582fc5a48cfc8"
+    }
+  ],
+  "maximumRuns": 1,
+  "maximumProviderCalls": 5,
+  "maximumModelTokens": 100000,
+  "maximumCostMicrosCny": 3000000,
+  "maximumProviderCallsPerRun": 5,
+  "maximumCostPerRunMicrosCny": 3000000,
+  "effectiveAt": "2026-08-17T12:59:44.8089140Z",
+  "expiresAt": "2026-08-17T14:59:44.8089140Z",
+  "approvedBy": "RenderWeave owner via conversation exact J1",
+  "approvedAt": "2026-08-17T12:59:44.8089140Z",
+  "approvalScope": "IMAGE_ONLY_PROFILE_SUCCESSOR_DIAGNOSTIC_1",
+  "closedAt": "2026-08-17T13:03:07.691859Z",
+  "closureReason": "PROFILE_SUCCESSOR_DIAGNOSTIC_FAILED_VISUAL_GROUNDING_REGION_INVALID"
+}

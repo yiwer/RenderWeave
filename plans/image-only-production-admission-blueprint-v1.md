@@ -1,5 +1,7 @@
 # IMAGE_ONLY Schema Recognition Production Admission Blueprint v1
 
+> 文档指针（2026-09-03）：根 `CONTEXT.md` 已拆分为 `CONTEXT-MAP.md` + `docs/context/` 分片；本索引中的「CONTEXT.md」术语现居 `docs/context/live-admission.md` 与 `schema-inference.md`，checkpoint 中「第 N 行」是登记时点的历史引用，新布局下请按术语名检索。
+
 - 版本：v1（2026-08-17）
 - 来源：wayfinder map `.scratch/image-only-schema-production-admission/map.md`
 - 状态：**决策完备，执行未开始**。本文档是 16 张决策票的唯一汇编视图；每条决策只写 gist + 票链接，细节以票为唯一权威存储。

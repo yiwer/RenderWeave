@@ -1,0 +1,55 @@
+{
+  "version": "renderweave-image-only-profile-successor-diagnostic-preparation/1.0",
+  "cycleId": "4e1f41b7-7c42-40d8-afd6-9fe3a35cc54d",
+  "createdAt": "2026-08-17T17:46:31Z",
+  "stage": "PROFILE_SUCCESSOR_DIAGNOSTIC_1",
+  "scoring": false,
+  "profileId": "dashscope-qwen38-max-product-v48-hybrid-generic",
+  "profileSha256": "22f40ef4c865e11778eef4558c20c383e6611e068d8d08be0d080650074d4470",
+  "pipelineVersion": "renderweave-inference-pipeline/4.30",
+  "elementPromptVersion": "renderweave-visual-elements-prompt/14.0",
+  "normalizationIdentity": "renderweave-image-only-fresh-normalization/1.0:052e77dabb723f07e76b092e3da8afe1b5a56f7a40dc094451c18c42ee4f9aaa",
+  "manifestIdentity": "renderweave-image-only-profile-successor-diagnostic/1.0:7d14e0b85bf07fc67ae20f0399e00be17a86511822fdae15d180a0a1171ecea7",
+  "evaluatorIdentity": "renderweave-image-only-profile-successor-diagnostic-evaluator/1.0:b2167261ae9d1e3775c91d06d90c57c47c16284d11b685e81aa5073de655f37e",
+  "inputProvenance": "USER_PROVIDED",
+  "dataClassification": "ORDINARY_DESIGN",
+  "normalization": {
+    "normalizer": "static-png-identity-verification/1.0",
+    "normalizedAt": "2026-08-17T17:46:31Z",
+    "mediaType": "image/png",
+    "encodedBytes": 337855,
+    "width": 3496,
+    "height": 780
+  },
+  "cases": [
+    {
+      "caseId": "v46-failed-route-82",
+      "artifactSha256": "51942b84ac65efcb28d02fff359222f60b8550fe5b6d5e87389582fc5a48cfc8"
+    }
+  ],
+  "requiredAuthorization": {
+    "authorizationId": "20260818-iopa-v48-diagnostic-4e1f41b7",
+    "status": "PENDING_J1",
+    "approvalScope": "IMAGE_ONLY_PROFILE_SUCCESSOR_DIAGNOSTIC_1",
+    "provider": "DASHSCOPE",
+    "model": "qwen3.8-max",
+    "providerBaseUrl": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+    "maximumRuns": 1,
+    "maximumProviderCalls": 5,
+    "maximumModelTokens": 100000,
+    "maximumCostMicrosCny": 3000000,
+    "maximumProviderCallsPerRun": 5,
+    "maximumCostPerRunMicrosCny": 3000000,
+    "maximumWindowSeconds": 7200
+  },
+  "externalProviderUsage": {
+    "attempts": 0,
+    "reservations": 0,
+    "costMicrosCny": 0,
+    "apiKeyReads": 0
+  },
+  "candidateApplied": false,
+  "staticSchemaPublished": false,
+  "certificationCredit": 0,
+  "nextStageUnlocked": false
+}

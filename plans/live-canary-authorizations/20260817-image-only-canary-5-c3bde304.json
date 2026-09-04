@@ -1,0 +1,51 @@
+{
+  "version": "renderweave-image-only-certification-authorization/1.0",
+  "authorizationId": "20260817-iopa-canary5-c3bde304",
+  "status": "CLOSED",
+  "cycleId": "c3bde304-b0b2-43f8-ab7e-16896ff04aed",
+  "stage": "CANARY_5",
+  "profileId": "dashscope-qwen38-max-product-v46-hybrid-generic",
+  "profileSha256": "22f561c88b30fabbf3ba660bcfe203fb570975f770ff122f2ce1c7216454ac0c",
+  "manifestIdentity": "renderweave-image-only-certification-manifest/1.0:0e8e93ebaf18b083992aa6110aa895e59219f6b34594e7dceb3d44f129bd5fb4",
+  "evaluatorIdentity": "renderweave-image-only-certification-evaluator/1.0:ebdb6bf82083ab35d234d4ded07990848d0e28add6e468c9e5a7b6a90555c29e",
+  "provider": "DASHSCOPE",
+  "model": "qwen3.8-max",
+  "providerBaseUrl": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+  "inputProvenance": "USER_PROVIDED",
+  "dataClassification": "ORDINARY_DESIGN",
+  "cases": [
+    {
+      "caseId": "owner-canary-route-55",
+      "artifactSha256": "26164fcdc0ac199f36305cc42ea3bb31a5bb818f1424d86c232c576406bf53cc"
+    },
+    {
+      "caseId": "owner-canary-route-82",
+      "artifactSha256": "51942b84ac65efcb28d02fff359222f60b8550fe5b6d5e87389582fc5a48cfc8"
+    },
+    {
+      "caseId": "owner-canary-route-m160",
+      "artifactSha256": "62c59ad2fb39fbfafdf1c93cdbd52bf569aa27fc420d0fe10bab89770d9cf78d"
+    },
+    {
+      "caseId": "owner-canary-route-m533",
+      "artifactSha256": "993c47a99d94980a73297eadad94ad2f231fd40fdb991e014f9d67b89bd24e23"
+    },
+    {
+      "caseId": "owner-canary-xihu-industrial-area",
+      "artifactSha256": "ba45fea889a7ef8411afbbf9b4285b8d6bfbcc6623fc563aae29639234af61aa"
+    }
+  ],
+  "maximumRuns": 5,
+  "maximumProviderCalls": 60,
+  "maximumModelTokens": 500000,
+  "maximumCostMicrosCny": 10000000,
+  "maximumProviderCallsPerRun": 12,
+  "maximumCostPerRunMicrosCny": 6000000,
+  "effectiveAt": "2026-08-17T09:48:59Z",
+  "expiresAt": "2026-08-17T13:48:59Z",
+  "approvedBy": "RenderWeave owner via conversation exact J1",
+  "approvedAt": "2026-08-17T09:48:59Z",
+  "approvalScope": "IMAGE_ONLY_PROFILE_CERTIFICATION_CANARY_5",
+  "closedAt": "2026-08-17T10:49:06.053985Z",
+  "closureReason": "CANARY_PROVIDER_BATCH_HALTED_VISUAL_GROUNDING_PARENT_CONTAINMENT_INVALID"
+}

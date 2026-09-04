@@ -1,0 +1,63 @@
+{
+  "version": "renderweave-image-only-profile-successor-diagnostic-preparation/1.0",
+  "cycleId": "7d929b74-47ca-40a7-bfd5-061e070c2bd2",
+  "createdAt": "2026-08-18T06:23:51Z",
+  "stage": "PROFILE_SUCCESSOR_DIAGNOSTIC_1",
+  "scoring": false,
+  "profileId": "dashscope-qwen38-max-product-v51-hybrid-generic",
+  "profileSha256": "972001414977a7cc788def6e8e106b2c7f146a306d1fa328d48ff053d472d3bd",
+  "pipelineVersion": "renderweave-inference-pipeline/4.33",
+  "elementPromptVersion": "renderweave-visual-elements-prompt/16.0",
+  "canonicalizerIdentity": "renderweave-image-only-local-id-canonicalizer/1.0",
+  "parentContainmentPrimaryCode": "VISUAL_GROUNDING_PARENT_CONTAINMENT_CLASSIFIED",
+  "successorImplementationIdentity": "renderweave-image-only-v51-implementation/1.0:45f3e9d6b25a0fbe9788fd7714adecaabc800a9279c2e37d73e76f850df887f1",
+  "normalizationIdentity": "renderweave-image-only-fresh-normalization/1.0:632c601ccdcbd561fcb9502777a888712a564a81352f9f19b163b4a0e9a6b4cc",
+  "manifestIdentity": "renderweave-image-only-profile-successor-diagnostic/1.0:e2a01f1d788c52bcf87838a242201a32d1b28dec741640abd6b6a2be8d690925",
+  "evaluatorIdentity": "renderweave-image-only-profile-successor-diagnostic-evaluator/1.0:b2167261ae9d1e3775c91d06d90c57c47c16284d11b685e81aa5073de655f37e",
+  "inputProvenance": "USER_PROVIDED",
+  "dataClassification": "ORDINARY_DESIGN",
+  "normalization": {
+    "normalizer": "static-png-identity-verification/1.0",
+    "normalizedAt": "2026-08-18T06:23:51Z",
+    "mediaType": "image/png",
+    "encodedBytes": 337855,
+    "width": 3496,
+    "height": 780,
+    "canonicalizerIdentity": "renderweave-image-only-local-id-canonicalizer/1.0",
+    "successorImplementationIdentity": "renderweave-image-only-v51-implementation/1.0:45f3e9d6b25a0fbe9788fd7714adecaabc800a9279c2e37d73e76f850df887f1"
+  },
+  "cases": [
+    {
+      "caseId": "v46-failed-route-82",
+      "artifactSha256": "51942b84ac65efcb28d02fff359222f60b8550fe5b6d5e87389582fc5a48cfc8"
+    }
+  ],
+  "requiredAuthorization": {
+    "authorizationId": "20260818-iopa-v51-diagnostic-7d929b74",
+    "status": "PENDING_J1",
+    "approvalScope": "IMAGE_ONLY_PROFILE_SUCCESSOR_DIAGNOSTIC_1",
+    "normalizationIdentity": "renderweave-image-only-fresh-normalization/1.0:632c601ccdcbd561fcb9502777a888712a564a81352f9f19b163b4a0e9a6b4cc",
+    "provider": "DASHSCOPE",
+    "model": "qwen3.8-max",
+    "providerBaseUrl": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+    "maximumRuns": 1,
+    "maximumProviderCalls": 5,
+    "maximumModelTokens": 100000,
+    "maximumCostMicrosCny": 3000000,
+    "maximumProviderCallsPerRun": 5,
+    "maximumCostPerRunMicrosCny": 3000000,
+    "maximumWindowSeconds": 7200
+  },
+  "externalProviderUsage": {
+    "attempts": 0,
+    "reservations": 0,
+    "modelTokens": 0,
+    "costMicrosCny": 0,
+    "apiKeyReads": 0
+  },
+  "candidateApplied": false,
+  "staticSchemaPublished": false,
+  "certificationCredit": 0,
+  "nextStageUnlocked": false,
+  "productionDeploymentAllowed": false
+}

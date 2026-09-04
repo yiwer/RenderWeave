@@ -1,0 +1,68 @@
+{
+  "version": "renderweave-image-only-certification-cycle-preparation/1.0",
+  "cycleId": "c3bde304-b0b2-43f8-ab7e-16896ff04aed",
+  "createdAt": "2026-08-17T09:02:05Z",
+  "authorityInventorySha256": "62955522563336263a048d5761208bda613821829f414c9821a4e5dc1801932e",
+  "profileId": "dashscope-qwen38-max-product-v46-hybrid-generic",
+  "profileSha256": "22f561c88b30fabbf3ba660bcfe203fb570975f770ff122f2ce1c7216454ac0c",
+  "manifestIdentity": "renderweave-image-only-certification-manifest/1.0:0e8e93ebaf18b083992aa6110aa895e59219f6b34594e7dceb3d44f129bd5fb4",
+  "evaluatorIdentity": "renderweave-image-only-certification-evaluator/1.0:ebdb6bf82083ab35d234d4ded07990848d0e28add6e468c9e5a7b6a90555c29e",
+  "assignmentSeed": "image-only-certification-seed-v1",
+  "stage": "CANARY_5",
+  "inputProvenance": "USER_PROVIDED",
+  "dataClassification": "ORDINARY_DESIGN",
+  "aggregateEncodedBytes": 2811702,
+  "cases": [
+    {
+      "caseId": "owner-canary-route-55",
+      "artifactSha256": "26164fcdc0ac199f36305cc42ea3bb31a5bb818f1424d86c232c576406bf53cc",
+      "mediaType": "image/png",
+      "encodedBytes": 409420,
+      "width": 2953,
+      "height": 1831,
+      "pixelCount": 5406943
+    },
+    {
+      "caseId": "owner-canary-route-82",
+      "artifactSha256": "51942b84ac65efcb28d02fff359222f60b8550fe5b6d5e87389582fc5a48cfc8",
+      "mediaType": "image/png",
+      "encodedBytes": 337855,
+      "width": 3496,
+      "height": 780,
+      "pixelCount": 2726880
+    },
+    {
+      "caseId": "owner-canary-route-m160",
+      "artifactSha256": "62c59ad2fb39fbfafdf1c93cdbd52bf569aa27fc420d0fe10bab89770d9cf78d",
+      "mediaType": "image/png",
+      "encodedBytes": 1532374,
+      "width": 1654,
+      "height": 4488,
+      "pixelCount": 7423152
+    },
+    {
+      "caseId": "owner-canary-route-m533",
+      "artifactSha256": "993c47a99d94980a73297eadad94ad2f231fd40fdb991e014f9d67b89bd24e23",
+      "mediaType": "image/png",
+      "encodedBytes": 279826,
+      "width": 3119,
+      "height": 763,
+      "pixelCount": 2379797
+    },
+    {
+      "caseId": "owner-canary-xihu-industrial-area",
+      "artifactSha256": "ba45fea889a7ef8411afbbf9b4285b8d6bfbcc6623fc563aae29639234af61aa",
+      "mediaType": "image/png",
+      "encodedBytes": 252227,
+      "width": 1654,
+      "height": 4488,
+      "pixelCount": 7423152
+    }
+  ],
+  "externalProviderUsage": {
+    "attempts": 0,
+    "reservations": 0,
+    "costMicrosCny": 0,
+    "apiKeyReads": 0
+  }
+}
