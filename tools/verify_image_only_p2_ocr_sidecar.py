@@ -34,7 +34,7 @@ MATERIAL_PATHS = (
     "renderweave-app/src/test/java/cn/hbads/renderweave/inference/UnixDomainSocketDocumentVisionRunnerTest.java",
     "tools/document-vision/rapidocr_adapter.py",
     "tools/document-vision/model-manifest.json",
-    "docs/adr/0053-run-production-ocr-as-no-ip-unix-socket-sidecar.md",
+    "docs/adr/0058-run-production-ocr-as-no-ip-unix-socket-sidecar.md",
 )
 FORBIDDEN_MARKERS = (
     "api key", "private key", "authorization:", "data:image",
