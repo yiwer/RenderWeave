@@ -34,13 +34,12 @@ renderer/probes/t213/** text eol=lf
 tools/renderer-exact-build-rehearsal.sh text eol=lf
 tools/renderer-production-text-rehearsal.sh text eol=lf
 tools/run-renderer-exact-build-rehearsal*.ps1 text eol=lf
-
 # Cargo vendor bytes are checksum-addressed upstream artifacts; never normalize or lint them.
 renderer/vendor/** -text -whitespace
-
 # Template v1 replay artifacts are byte-addressed and must survive Windows checkout unchanged.
 .scratch/renderweave-template-v1/** text eol=lf
 .scratch/renderweave-template-v1/renderer-spike/*.patch -whitespace
 .scratch/renderweave-template-v1/**/*.bin binary
 .scratch/renderweave-template-v1/renderer-spike/tricky-font-fixture-v1/*.ttf binary
 tools/generate-renderer-tricky-font-fixture.py text eol=lf
+docker/ocr-sidecar/vendor/*.whl filter=lfs diff=lfs merge=lfs -text
