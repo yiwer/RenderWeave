@@ -1,7 +1,7 @@
 # T227 — Preserve editor safety paths and retire the throwaway prototype
 
 Type: task
-Status: in-progress
+Status: done
 Blocked by: T226 (done)
 
 ## What to build
@@ -17,15 +17,15 @@ historical Template records or `.sdlc/evidence` into a new status system.
 
 ## Acceptance criteria
 
-- [ ] Dirty local work survives conflict/reload decisions exactly as before; no force save, auto merge or server draft
+- [x] Dirty local work survives conflict/reload decisions exactly as before; no force save, auto merge or server draft
   appears.
-- [ ] INVALID confirmation, recovery, import, Raw Repair and Compatibility Read-only remain reachable, lossless and
+- [x] INVALID confirmation, recovery, import, Raw Repair and Compatibility Read-only remain reachable, lossless and
   clearly distinct.
-- [ ] The complete keyboard path covers catalog insertion, Structure operations, property/binding editing, save and
+- [x] The complete keyboard path covers catalog insertion, Structure operations, property/binding editing, save and
   recovery; exercised pages have zero serious/critical accessibility findings.
-- [ ] Production route E2E covers the representative data-bound, asset-backed, Stack/Grid, Repeat/Conditional and
+- [x] Production route E2E covers the representative data-bound, asset-backed, Stack/Grid, Repeat/Conditional and
   TemplateUse journeys without API interception.
-- [ ] Obsolete prototype variants/routes and duplicate state models are removed or development-isolated, affected gates
+- [x] Obsolete prototype variants/routes and duplicate state models are removed or development-isolated, affected gates
   pass, fixed-point review blockers are resolved, and the ticket has its own commit.
 
 ## Test plan
@@ -39,3 +39,20 @@ historical Template records or `.sdlc/evidence` into a new status system.
   import.
 
 ## Resolution
+
+- Landed in `0893a6d5`: production editor keyboard paths now cover save, undo/redo and scoped deletion while preserving
+  native editable-field behavior; the keyboard browser journey also covers insertion, rename, property/binding edits,
+  INVALID cancellation, reload and local recovery.
+- Removed the retired Template Designer and Editor State Model prototype routes, implementations, duplicate audit/state
+  model and prototype-only test/style surface. Kept Schema Studio and explicitly dated design evidence.
+- Fixed-point review for `3401efcf...0893a6d5`: Standards PASS and Spec PASS, with zero hard blockers. This range has the
+  same stable patch-id as the pre-housekeeping review range.
+- Focused verification passed: 13 Vitest files / 241 tests, typecheck, affected ESLint, the keyboard-complete Playwright
+  journey (1/1), and web gate (58 files / 709 tests plus production build) at
+  `.sdlc/evidence/20260904-004009-web`.
+- The immediately preceding official no-interception product-route roundtrip passed 5/5 at
+  `C:\Users\Administrator\AppData\Local\Temp\renderweave-t226-final-20260904-002\template-roundtrip-journey`, covering
+  asset-backed, data-bound, Stack/Grid, Repeat/Conditional and TemplateUse journeys. It was not replayed after this
+  Web-only shortcut/prototype retirement change.
+- `fast`, `template`, `server`, generic `e2e`, `full`, hash checks and backtests were not replayed: the web gate is the
+  affected build surface, while the focused browser journey is the affected runtime path.
