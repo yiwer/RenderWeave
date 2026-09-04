@@ -321,8 +321,16 @@ finally {
             }
         }
     }
-    & docker network inspect $networkName *> $null
-    if ($LASTEXITCODE -eq 0) {
+    $previousErrorAction = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
+    try {
+        & docker network inspect $networkName *> $null
+        $networkExists = $LASTEXITCODE -eq 0
+    }
+    finally {
+        $ErrorActionPreference = $previousErrorAction
+    }
+    if ($networkExists) {
         & docker network rm $networkName *> $null
         if ($LASTEXITCODE -ne 0) {
             $cleanupWarnings += "network cleanup failed: $networkName"

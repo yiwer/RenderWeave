@@ -1,7 +1,7 @@
 # T228 — Close data-bound composition through Candidate Preview
 
 Type: task
-Status: ready-for-agent
+Status: in-progress
 Blocked by: T227 (done)
 
 ## What to build
