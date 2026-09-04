@@ -1,97 +1,131 @@
 # RenderWeave
 
-RenderWeave 是一个 AI-native 设计出图系统。本仓库包含已交付的 Schema/Inference v1 定义层，以及正在实现的 additive Template v1：DesignDSL、Template、Asset、Evaluator、Editor、RenderDocument 与独立 Renderer。数据适配和 Workspace 仍不在当前批准范围；Template、Editor 与 Renderer 在剩余认证完成前不得宣称 READY。
+RenderWeave 是一个 AI-native 设计出图系统。服务端采用 Java 21 / Spring Boot 模块化单体，Web 使用
+React + TypeScript strict，正式渲染器是独立 Rust 进程。
 
-## 当前交付
+## 当前状态
 
-- 权威产品与软件规格：[`specs/renderweave-v1.md`](specs/renderweave-v1.md)
-- Additive Template v1 实施权威：[`specs/changes/20260817-template-v1-implementation-authority.md`](specs/changes/20260817-template-v1-implementation-authority.md)
-- 五维领域模型：[`docs/modeling/renderweave-v1-domain-model.md`](docs/modeling/renderweave-v1-domain-model.md)
-- 架构决策：[`docs/adr/`](docs/adr/)
-- 分阶段实施计划：[`plans/renderweave-v1-plan.md`](plans/renderweave-v1-plan.md)
-- 编辑器原型说明：[`docs/prototypes/schema-studio.md`](docs/prototypes/schema-studio.md)
-- OpenAPI 合同：[`openapi/renderweave-v1.yaml`](openapi/renderweave-v1.yaml)
-- Java 21 / Spring Boot 4.1 / PostgreSQL 与 React 19 / Vite 8 可运行产品纵切
-- strict Schema DSL、Draft revision/history/restore/copy、不可变 StaticSchema 与自底向上 JSON Schema 编译
-- Form + 一层 Map 共享状态的 Schema Studio，以及 RootDocument 批量验证
-- synthetic replay 与受控 DashScope live 识别：durable run → evidence review → create-only 原子 Draft Bundle
+- Schema/Inference v1 已交付：支持 Schema Draft、不可变 StaticSchema、权威 RootDocument 验证，以及带
+  Evidence 审核的 Candidate → Draft Bundle 工作流。
+- additive Template v1 正在 `main` 上持续实现：Template、DesignDSL、Asset、Authoritative Preview、
+  RenderDocument、结构化 Editor 与独立 Renderer 已形成真实纵切，但尚未满足最终 READY 条件。
+- IMAGE_ONLY Production Admission 停在稳定检查点：本地 OCR sidecar 与安全准入基础已实现并默认关闭，
+  仍未获得完整生产准入、未发布、未部署。
+- 数据适配与 Workspace 不在当前批准范围。
 
-Schema/Inference v1 的既有产品纵切继续可用；Template v1 当前在 `main` 上按 skills-first ticket 持续推进，尚未完成 Renderer 认证与最终 READY 条件。基础 Compose 中 DashScope adapter
-默认关闭；live overlay 开放逐任务确认的用户输入，提供四个产品 Profile 与可选累计成本硬上限。
-所有产品 Profile 仍为 `EXPERIMENTAL`，只能生成待审核 Candidate，不能直接发布或修改 Schema。
+## 仓库结构
 
-## 运行原型
+| 路径 | 职责 |
+|---|---|
+| `renderweave-schema/` | Schema DSL、Draft/StaticSchema 生命周期与编译 |
+| `renderweave-validation/` | 针对精确 Schema 的权威 RootDocument 验证 |
+| `renderweave-inference/` | 推断 run、Candidate、Evidence 与 Document Vision 投影 |
+| `renderweave-template/` | Template 聚合、DesignDSL、revision 与编辑语义 |
+| `renderweave-asset/` | Asset 接纳、Blob/AssetRef、解析与删除证明 |
+| `renderweave-rendering/` | RenderInput 准入、求值、RenderDocument 与 Renderer seam |
+| `renderweave-app/` | Spring Boot 装配、HTTP/JDBC/进程适配器 |
+| `web/` | React 产品界面与 OpenAPI 生成客户端 |
+| `renderer/` | Rust RenderEngine、离线 vendor 与认证输入 |
+| `docker/ocr-sidecar/` | no-IP Unix-socket OCR sidecar 与冻结的离线 wheel 集合 |
 
-Windows PowerShell 5.1：
+## 权威文档
 
-```powershell
-powershell -ExecutionPolicy Bypass -File tools\dev-web.ps1
-```
+开始工作前先读 [CONSTITUTION.md](CONSTITUTION.md)，再由 [CONTEXT-MAP.md](CONTEXT-MAP.md)
+按任务路由到对应的 `docs/context/` 分片。
 
-打开：
+- Schema/Inference v1：[specs/renderweave-v1.md](specs/renderweave-v1.md)
+- Template v1 实施权威：
+  [specs/changes/20260817-template-v1-implementation-authority.md](specs/changes/20260817-template-v1-implementation-authority.md)
+- Template v1 当前状态入口：[plans/renderweave-template-v1-plan.md](plans/renderweave-template-v1-plan.md)
+- IMAGE_ONLY admission 当前状态入口：
+  [plans/image-only-production-admission-plan-v1.md](plans/image-only-production-admission-plan-v1.md)
+- HTTP 合同：[openapi/renderweave-v1.yaml](openapi/renderweave-v1.yaml)
+- 架构决策索引：[docs/adr/README.md](docs/adr/README.md)
+- Web UI 设计：[design.md](design.md) 与 [design-system/](design-system/)
+- 本地 issue tracker：[docs/agents/issue-tracker.md](docs/agents/issue-tracker.md)
 
-- `http://127.0.0.1:5173/prototype/schema-studio?variant=A`
-- 把 `variant` 改为 `B` 或 `C` 比较方案；页面右下角也可切换。
+`docs/history/` 只用于历史查证，不是当前状态机，也不驱动后续工作。
 
-脚本会下载并校验官方 Node 24.19.0 到 `.sdlc/toolchains/`；不会修改系统 Node。首次运行需要访问 nodejs.org 和 npm registry。
+## 首次检出
 
-真实 PostgreSQL + API + Web 的零网络 replay 闭环可用以下命令重放：
-
-```powershell
-powershell -ExecutionPolicy Bypass -File tools\run-gate.ps1 -Gate server
-powershell -ExecutionPolicy Bypass -File tools\run-gate.ps1 -Gate web
-powershell -ExecutionPolicy Bypass -File tools\run-inference-e2e.ps1
-```
-
-## 验证闭环
-
-```powershell
-# 最短反馈
-powershell -ExecutionPolicy Bypass -File tools\run-gate.ps1 -Gate fast
-
-# Java + Flyway + Testcontainers PostgreSQL
-powershell -ExecutionPolicy Bypass -File tools\run-gate.ps1 -Gate server
-
-# 固定 Node 24：安装、OpenAPI 生成、类型、lint、测试、生产构建
-powershell -ExecutionPolicy Bypass -File tools\run-gate.ps1 -Gate web
-
-# 真实浏览器交互、控制台检查、截图与 1024px 边界
-powershell -ExecutionPolicy Bypass -File tools\run-gate.ps1 -Gate e2e
-
-# 临时 PostgreSQL + 实际 Spring Boot 进程 + HTTP/database readiness
-powershell -ExecutionPolicy Bypass -File tools\run-gate.ps1 -Gate runtime
-
-# 上述全部，加 Compose 结构检查
-powershell -ExecutionPolicy Bypass -File tools\run-gate.ps1 -Gate full
-```
-
-gate 为兼容历史脚本仍会把输入清单、Git 状态、日志、退出码和元数据写入忽略提交的 `.sdlc/evidence/<timestamp>-<gate>/`。这些目录只作为本地构建日志使用，不再分级或承担人工/发布状态判断。
-
-## 本地拓扑
-
-生产 OCR sidecar 的固定 wheel 由 Git LFS 管理。首次 clone 后先确保已安装 Git LFS，并拉取离线构建输入：
+生产 OCR sidecar 的固定 wheel 由 Git LFS 管理。clone 后先安装 Git LFS 并取回完整构建输入：
 
 ```powershell
 git lfs install
 git lfs pull --include="docker/ocr-sidecar/vendor/*.whl"
+git lfs fsck
 ```
 
-`compose.yaml` 定义 Web、API、PostgreSQL 与持久 BlobStore 卷：
+正式 Node 基线是 24 LTS。项目脚本会把校验过的 Node 工具链放在 `.sdlc/toolchains/`，不会修改系统 Node。
+服务端构建需要 Java 21 与 Maven；完整本地拓扑和部分 gate 还需要 Docker。
+
+## 本地运行
+
+完整基础拓扑包含 Web、API、PostgreSQL、MinIO 与本地 OCR sidecar：
 
 ```powershell
 docker compose config --quiet
 docker compose up --build
 ```
 
-基础 Compose 不启用外部模型。仅在明确允许传输的数据上启用 DashScope overlay：
+打开 <http://127.0.0.1:3000>。基础 `compose.yaml` 不启用外部模型调用。
+
+仅启动 Web 开发服务器：
 
 ```powershell
-$env:DASHSCOPE_API_KEY = '<仅设置在当前终端，不写入仓库>'
-docker compose -f compose.yaml -f compose.live.yaml up --build
+powershell -ExecutionPolicy Bypass -File tools/dev-web.ps1
 ```
 
-overlay 仅通过 Compose secret 向 API 容器只读挂载 Key，浏览器端不会接触 Key；它会为当前本地单用户实例同时开启 worker 与上传门。选择文件、预览、切换模型都不会调用 Provider，只有用户确认数据可外发并点击“排队识别并进入审核”后才会创建任务。产品入口提供 `qwen3.7-flash`、`qwen3.7-plus`、`qwen3.8-max`、`qwen3.7-max-2026-06-08` 四个实验 Profile；可设置本次任务累计成本硬上限，也可留空而只保留 Profile 单次预留上界与最多三次调用的保护。
+开发服务器位于 <http://127.0.0.1:5173>，并把 `/api`、`/internal` 与 `/actuator` 代理到
+`RENDERWEAVE_API_URL`；未设置时使用 `http://127.0.0.1:8080`。
 
-2026-08-08 的受控 synthetic canary 已实际连通两个 Profile：各 1 次调用、合计 2 次、估算费用 ¥0.054017；两条 Candidate 均进入 `REVIEW_REQUIRED` 并通过对应结构金标。该结果只证明真实闭环，不是 60-case 质量认证；两个 Profile 仍保持 `EXPERIMENTAL` 和默认关闭。
+当前产品入口：
 
-普通 `compose.yaml` 始终保持零外部模型能力；停止 live overlay 后重新用基础 Compose 启动即可恢复默认关闭状态。
+- `/schemas`：Schema Draft 目录与 Schema Studio
+- `/static-schemas`：不可变 StaticSchema 目录
+- `/validator`：RootDocument 验证
+- `/inference`：推断历史、启动、监控与 Candidate 审核
+- `/templates`：Template 目录、创建与结构化 Editor
+
+仍保留一个用于比较旧 Schema Studio 设计方向的 throwaway 原型：
+`/prototype/schema-studio?variant=A|B|C`。它不是产品入口，也不代表 Template Editor。
+
+## 构建与验证
+
+统一 gate 入口：
+
+```powershell
+# 默认最短检查：服务端打包 + Web 类型检查
+powershell -ExecutionPolicy Bypass -File tools/run-gate.ps1 -Gate fast
+
+# 按受影响面选择
+powershell -ExecutionPolicy Bypass -File tools/run-gate.ps1 -Gate server
+powershell -ExecutionPolicy Bypass -File tools/run-gate.ps1 -Gate web
+powershell -ExecutionPolicy Bypass -File tools/run-gate.ps1 -Gate template
+powershell -ExecutionPolicy Bypass -File tools/run-gate.ps1 -Gate asset
+powershell -ExecutionPolicy Bypass -File tools/run-gate.ps1 -Gate render
+powershell -ExecutionPolicy Bypass -File tools/run-gate.ps1 -Gate e2e
+powershell -ExecutionPolicy Bypass -File tools/run-gate.ps1 -Gate runtime
+```
+
+只有风险覆盖整个产品时才运行：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File tools/run-gate.ps1 -Gate full
+```
+
+直接构建命令：
+
+```powershell
+mvn -B -ntp verify
+npm --prefix web run build
+```
+
+gate 会把本地日志与输入清单写入已忽略的 `.sdlc/evidence/<timestamp>-<gate>/`；这些文件不是发布、
+人工批准或生产资格证明。
+
+## Live AI 边界
+
+外部模型调用默认关闭。`compose.live.yaml` 只是部署配置片段，不构成 Provider 调用、真实数据外传、预算
+或生产运行授权。任何 live 操作都必须遵循 `CONSTITUTION.md` 与 IMAGE_ONLY admission 当前状态，绑定精确
+Profile、数据分类、调用次数、费用和时限；不得把一次成功 replay 或 canary 描述为生产可用。
